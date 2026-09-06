@@ -24,6 +24,7 @@ Deep-dive technical documentation detailing architecture flows, data models, key
 | **[Foundation Layout & Wayfinder Navigation](./features/foundation-layout-wayfinder.md)**    | [Epic-01](../../scrum/Epic-01.md) | Responsive base shell, live WIB clock, shift indicator, role badges, Wayfinder routes, and flash toast pipeline.                                   |
 | **[Department & Section Hierarchy Management](./features/department-section-management.md)** | [Epic-02](../../scrum/Epic-02.md) | Consolidated Master Data Hub, hierarchical department/section CRUD, immutable codes, and referential integrity protection.                         |
 | **[Employee Roster Management & CSV Import](./features/employee-roster-management.md)**      | [Epic-02](../../scrum/Epic-02.md) | Single-hub employee roster, cascading section select, immutable NPK (BR-03), and two-stage pre-commit in-memory CSV import audit.                  |
+| **[Operational Calendar Management & API](./features/operational-calendar-management.md)**   | [Epic-02](../../scrum/Epic-02.md) | Monthly 7-column grid, slide-in day editor, two-stage national holiday CSV import, auto-seeding, and authenticated classification API.             |
 | **[Background Jobs & Redis Queues](./features/background-jobs-queues.md)**                   | [Epic-01](../../scrum/Epic-01.md) | Asynchronous Redis queue workers, retry backoff configuration, and scaffolded background jobs.                                                     |
 | **[Database Seeding & Demo Data](./features/database-seeding-demo-data.md)**                 | [Epic-01](../../scrum/Epic-01.md) | Modular database seeders for automotive plant master data, shifts, employees, thresholds, and budgets.                                             |
 | **[Daily Overtime Entry & SPKL Workflow](./features/daily-overtime-spkl.md)**                | [Epic-03](../../scrum/Epic-03.md) | Shift-end overtime capture, atomic roster validation, and non-blocking SPKL document state machine.                                                |
@@ -39,6 +40,7 @@ Deep-dive technical documentation detailing architecture flows, data models, key
 
 HTTP request, query parameter, and payload specifications:
 
+- **[Calendar API Endpoints](./api/calendar-endpoints.md)** — Day classification endpoint (`GET /api/calendar/{date}`) for timesheet auto-calculation and admin batch management.
 - **[Overtime Submissions & Approvals API](./api/overtime-submissions.md)** — Timesheet batch submissions, SPKL document uploads, and item-level approval/rejection payloads.
 - **[Analytics, Burn Index & Machine Learning API](./api/analytics-reports.md)** — Monthly burn snapshot queries, employee dossier endpoints, and ML predictive horizons.
 

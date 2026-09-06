@@ -23,6 +23,10 @@ import {
 } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
 import ConfirmationDialog from '@/components/admin/ConfirmationDialog.vue';
+import CalendarDaySheet, {
+    type CalendarDayRecord,
+} from '@/components/admin/CalendarDaySheet.vue';
+import CalendarHolidayImportDialog from '@/components/admin/CalendarHolidayImportDialog.vue';
 import DepartmentFormDialog, {
     type DepartmentRecord,
 } from '@/components/admin/DepartmentFormDialog.vue';
@@ -72,6 +76,13 @@ export type PaginatedData<T> = {
     }[];
 };
 
+export type CalendarStats = {
+    total_days: number;
+    hkn_count: number;
+    hlr_count: number;
+    holiday_count: number;
+};
+
 const props = defineProps<{
     activeTab?: string;
     departments: DepartmentWithSections[];
@@ -85,6 +96,12 @@ const props = defineProps<{
         search?: string;
         department_id?: number | null;
         status?: string;
+    };
+    calendar?: {
+        year: number;
+        month: number;
+        days: CalendarDayRecord[];
+        stats: CalendarStats;
     };
 }>();
 
@@ -119,6 +136,77 @@ const empSearchQuery = ref(props.filters?.search || '');
 const empDeptFilter = ref<number | ''>(props.filters?.department_id ?? '');
 const empStatusFilter = ref<string>(props.filters?.status || 'all');
 
+// Operational Calendar Tab State
+const calendarYear = ref(props.calendar?.year || new Date().getFullYear());
+const calendarMonth = ref(props.calendar?.month || new Date().getMonth() + 1);
+const isDaySheetOpen = ref(false);
+const selectedCalendarDay = ref<CalendarDayRecord | null>(null);
+const isHolidayImportOpen = ref(false);
+
+const monthNames = [
+    'Januari',
+    'Februari',
+    'Maret',
+    'April',
+    'Mei',
+    'Juni',
+    'Juli',
+    'Agustus',
+    'September',
+    'Oktober',
+    'November',
+    'Desember',
+];
+
+const weekDayHeaders = [
+    'Senin',
+    'Selasa',
+    'Rabu',
+    'Kamis',
+    'Jumat',
+    'Sabtu',
+    'Minggu',
+];
+
+const currentMonthName = computed(() => {
+    return monthNames[(calendarMonth.value || 1) - 1] || '';
+});
+
+const calendarDaysList = computed(() => {
+    return props.calendar?.days || [];
+});
+
+const leadingBlankCount = computed(() => {
+    if (calendarDaysList.value.length === 0) return 0;
+    const firstDay = calendarDaysList.value[0];
+    return Math.max(0, (firstDay.day_of_week ?? 1) - 1);
+});
+
+const trailingBlankCount = computed(() => {
+    const totalFilled = leadingBlankCount.value + calendarDaysList.value.length;
+    const remainder = totalFilled % 7;
+    return remainder === 0 ? 0 : 7 - remainder;
+});
+
+const todayDateStr = computed(() => {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    const d = String(now.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+});
+
+watch(
+    () => props.calendar,
+    (cal) => {
+        if (cal) {
+            calendarYear.value = cal.year;
+            calendarMonth.value = cal.month;
+        }
+    },
+    { deep: true },
+);
+
 watch(
     () => props.departments,
     (depts) => {
@@ -136,6 +224,54 @@ watch(
     },
 );
 
+function navigateMonth(year: number, month: number) {
+    let targetYear = year;
+    let targetMonth = month;
+    if (targetMonth > 12) {
+        targetYear++;
+        targetMonth = 1;
+    } else if (targetMonth < 1) {
+        targetYear--;
+        targetMonth = 12;
+    }
+    calendarYear.value = targetYear;
+    calendarMonth.value = targetMonth;
+
+    router.get(
+        masterData.url({
+            query: {
+                tab: 'calendar',
+                year: targetYear,
+                month: targetMonth,
+            },
+        }),
+        {},
+        {
+            preserveState: true,
+            preserveScroll: true,
+            replace: true,
+        },
+    );
+}
+
+function prevMonth() {
+    navigateMonth(calendarYear.value, calendarMonth.value - 1);
+}
+
+function nextMonth() {
+    navigateMonth(calendarYear.value, calendarMonth.value + 1);
+}
+
+function jumpToCurrentMonth() {
+    const now = new Date();
+    navigateMonth(now.getFullYear(), now.getMonth() + 1);
+}
+
+function handleDayClick(day: CalendarDayRecord) {
+    selectedCalendarDay.value = day;
+    isDaySheetOpen.value = true;
+}
+
 function switchTab(tab: string) {
     currentTab.value = tab;
     router.get(
@@ -150,6 +286,12 @@ function switchTab(tab: string) {
                               empStatusFilter.value !== 'all'
                                   ? empStatusFilter.value
                                   : undefined,
+                      }
+                    : {}),
+                ...(tab === 'calendar'
+                    ? {
+                          year: calendarYear.value,
+                          month: calendarMonth.value,
                       }
                     : {}),
             },
@@ -681,13 +823,17 @@ function handlePagination(url: string | null) {
                 </h1>
                 <p class="text-muted-foreground text-sm">
                     {{
-                        currentTab === 'employees'
+                        currentTab === 'calendar'
                             ? __(
-                                  'Manage active plant employee rosters, hourly labor rates, and bulk CSV onboardings',
+                                  'Manage factory operational calendar, national holidays, and day classification (HKN/HLR)',
                               )
-                            : __(
-                                  'Manage factory departments and their child production/maintenance sections',
-                              )
+                            : currentTab === 'employees'
+                              ? __(
+                                    'Manage active plant employee rosters, hourly labor rates, and bulk CSV onboardings',
+                                )
+                              : __(
+                                    'Manage factory departments and their child production/maintenance sections',
+                                )
                     }}
                 </p>
             </div>
@@ -1767,23 +1913,345 @@ function handlePagination(url: string | null) {
             </div>
         </div>
 
-        <!-- TAB 3: OPERATIONAL CALENDAR (Coming in E02-03) -->
-        <div
-            v-else-if="currentTab === 'calendar'"
-            class="border-border rounded-lg border border-dashed p-12 text-center"
-        >
-            <Calendar class="text-muted-foreground/60 mx-auto size-10" />
-            <h3 class="text-foreground mt-3 text-base font-semibold">
-                {{ __('Operational Calendar') }} —
-                {{ __('Coming Soon in Next Sprint') }}
-            </h3>
-            <p class="text-muted-foreground mt-1 text-sm">
-                {{
-                    __(
-                        'Employee Roster and Operational Calendar modules will be available in the upcoming Sprint 2 releases.',
-                    )
-                }}
-            </p>
+        <!-- TAB 3: OPERATIONAL CALENDAR (E02-03 Active) -->
+        <div v-else-if="currentTab === 'calendar'" class="space-y-6">
+            <!-- Metrics Summary Cards -->
+            <div class="grid gap-4 sm:grid-cols-4">
+                <Card class="border-border/60 shadow-xs">
+                    <CardHeader
+                        class="flex flex-row items-center justify-between pb-2"
+                    >
+                        <CardTitle
+                            class="text-muted-foreground text-sm font-medium"
+                        >
+                            {{ __('Total Days This Month') }}
+                        </CardTitle>
+                        <Calendar class="text-muted-foreground size-4" />
+                    </CardHeader>
+                    <CardContent>
+                        <div
+                            class="text-2xl font-bold"
+                            data-test="metric-calendar-total-days"
+                        >
+                            {{ calendar?.stats.total_days ?? 0 }}
+                        </div>
+                    </CardContent>
+                </Card>
+
+                <Card class="border-border/60 shadow-xs">
+                    <CardHeader
+                        class="flex flex-row items-center justify-between pb-2"
+                    >
+                        <CardTitle
+                            class="text-muted-foreground text-sm font-medium"
+                        >
+                            {{ __('Workdays (HKN)') }}
+                        </CardTitle>
+                        <CheckCircle2 class="size-4 text-emerald-500" />
+                    </CardHeader>
+                    <CardContent>
+                        <div
+                            class="text-2xl font-bold text-emerald-600 dark:text-emerald-400"
+                            data-test="metric-calendar-hkn-days"
+                        >
+                            {{ calendar?.stats.hkn_count ?? 0 }}
+                        </div>
+                    </CardContent>
+                </Card>
+
+                <Card class="border-border/60 shadow-xs">
+                    <CardHeader
+                        class="flex flex-row items-center justify-between pb-2"
+                    >
+                        <CardTitle
+                            class="text-muted-foreground text-sm font-medium"
+                        >
+                            {{ __('Holidays / Rest Days (HLR)') }}
+                        </CardTitle>
+                        <XCircle class="size-4 text-rose-500" />
+                    </CardHeader>
+                    <CardContent>
+                        <div
+                            class="text-2xl font-bold text-rose-600 dark:text-rose-400"
+                            data-test="metric-calendar-hlr-days"
+                        >
+                            {{ calendar?.stats.hlr_count ?? 0 }}
+                        </div>
+                    </CardContent>
+                </Card>
+
+                <Card class="border-border/60 shadow-xs">
+                    <CardHeader
+                        class="flex flex-row items-center justify-between pb-2"
+                    >
+                        <CardTitle
+                            class="text-muted-foreground text-sm font-medium"
+                        >
+                            {{ __('National Holidays') }}
+                        </CardTitle>
+                        <AlertCircle class="size-4 text-amber-500" />
+                    </CardHeader>
+                    <CardContent>
+                        <div
+                            class="text-2xl font-bold text-amber-600 dark:text-amber-400"
+                            data-test="metric-calendar-national-holidays"
+                        >
+                            {{ calendar?.stats.holiday_count ?? 0 }}
+                        </div>
+                    </CardContent>
+                </Card>
+            </div>
+
+            <!-- Toolbar & Controls -->
+            <div
+                class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
+            >
+                <!-- Month / Year Selector Bar with Navigation -->
+                <div class="flex flex-wrap items-center gap-2">
+                    <div
+                        class="border-border/80 bg-card flex items-center rounded-lg border p-1 shadow-xs"
+                    >
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            class="size-8 p-0"
+                            :title="__('Previous Month')"
+                            data-test="btn-prev-month"
+                            @click="prevMonth"
+                        >
+                            <ChevronLeft class="size-4" />
+                        </Button>
+
+                        <div
+                            class="text-foreground px-3 text-sm font-bold tracking-tight"
+                            data-test="calendar-current-month-display"
+                        >
+                            {{ currentMonthName }} {{ calendarYear }}
+                        </div>
+
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            class="size-8 p-0"
+                            :title="__('Next Month')"
+                            data-test="btn-next-month"
+                            @click="nextMonth"
+                        >
+                            <ChevronRight class="size-4" />
+                        </Button>
+                    </div>
+
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        class="h-9 text-xs"
+                        data-test="btn-this-month"
+                        @click="jumpToCurrentMonth"
+                    >
+                        {{ __('This Month') }}
+                    </Button>
+
+                    <!-- Direct Selectors for Month and Year -->
+                    <div class="flex items-center gap-1.5">
+                        <select
+                            :value="calendarMonth"
+                            class="border-input bg-background focus:ring-ring flex h-9 rounded-md border px-2.5 py-1 text-xs shadow-xs focus:ring-2 focus:outline-hidden"
+                            data-test="select-calendar-month"
+                            @change="
+                                (e) =>
+                                    navigateMonth(
+                                        calendarYear,
+                                        parseInt(
+                                            (e.target as HTMLSelectElement)
+                                                .value,
+                                            10,
+                                        ),
+                                    )
+                            "
+                        >
+                            <option
+                                v-for="(name, idx) in monthNames"
+                                :key="idx"
+                                :value="idx + 1"
+                            >
+                                {{ name }}
+                            </option>
+                        </select>
+
+                        <select
+                            :value="calendarYear"
+                            class="border-input bg-background focus:ring-ring flex h-9 rounded-md border px-2.5 py-1 text-xs shadow-xs focus:ring-2 focus:outline-hidden"
+                            data-test="select-calendar-year"
+                            @change="
+                                (e) =>
+                                    navigateMonth(
+                                        parseInt(
+                                            (e.target as HTMLSelectElement)
+                                                .value,
+                                            10,
+                                        ),
+                                        calendarMonth,
+                                    )
+                            "
+                        >
+                            <option
+                                v-for="y in [2025, 2026, 2027, 2028]"
+                                :key="y"
+                                :value="y"
+                            >
+                                {{ y }}
+                            </option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Legend Pills & Import Action Button -->
+                <div class="flex flex-wrap items-center gap-3">
+                    <!-- Legend Pills (UX Requirement) -->
+                    <div class="flex items-center gap-2 text-xs">
+                        <div
+                            class="flex items-center gap-1.5 rounded-full border border-slate-500/20 bg-slate-500/10 px-2.5 py-1 text-[11px] font-medium text-slate-700 dark:text-slate-300"
+                        >
+                            <span class="size-2 rounded-full bg-slate-500" />
+                            <span>{{ __('HKN (Hari Kerja Normal)') }}</span>
+                        </div>
+                        <div
+                            class="flex items-center gap-1.5 rounded-full border border-rose-500/25 bg-rose-500/10 px-2.5 py-1 text-[11px] font-medium text-rose-700 dark:text-rose-300"
+                        >
+                            <span class="size-2 rounded-full bg-rose-500" />
+                            <span>{{ __('HLR (Hari Libur / Rest Day)') }}</span>
+                        </div>
+                    </div>
+
+                    <!-- Header Action: Import Hari Libur Nasional (CSV) -->
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        class="gap-1.5 text-xs"
+                        data-test="btn-import-holidays"
+                        @click="isHolidayImportOpen = true"
+                    >
+                        <UploadCloud class="size-4" />
+                        <span>{{
+                            __('Import Hari Libur Nasional (CSV)')
+                        }}</span>
+                    </Button>
+                </div>
+            </div>
+
+            <!-- Operational 7-Column Calendar Grid (Senin - Minggu) -->
+            <div
+                class="border-border/80 bg-card overflow-hidden rounded-lg border shadow-xs"
+            >
+                <!-- Day-of-Week Table Header -->
+                <div
+                    class="border-border/80 bg-muted/40 grid grid-cols-7 border-b text-center text-xs font-semibold"
+                >
+                    <div
+                        v-for="(headerName, hIdx) in weekDayHeaders"
+                        :key="headerName"
+                        :class="[
+                            hIdx >= 5
+                                ? 'bg-rose-500/5 text-rose-600 dark:text-rose-400'
+                                : 'text-muted-foreground',
+                            'border-border/60 border-r py-2.5 last:border-r-0',
+                        ]"
+                    >
+                        {{ headerName }}
+                    </div>
+                </div>
+
+                <!-- Day Cells Grid -->
+                <div
+                    class="divide-border/60 grid grid-cols-7 divide-x divide-y"
+                    data-test="calendar-grid"
+                >
+                    <!-- Leading Blank Cells -->
+                    <div
+                        v-for="blankIdx in leadingBlankCount"
+                        :key="`leading-${blankIdx}`"
+                        class="bg-muted/15 text-muted-foreground/30 min-h-[105px] p-2 select-none"
+                    />
+
+                    <!-- Active Month Day Cells -->
+                    <div
+                        v-for="day in calendarDaysList"
+                        :key="day.calendar_date"
+                        :class="[
+                            day.day_type === 'HLR'
+                                ? 'border-rose-500/20 bg-rose-500/5 hover:bg-rose-500/10'
+                                : 'bg-card hover:bg-muted/40',
+                            day.calendar_date === todayDateStr
+                                ? 'ring-primary z-10 ring-2 ring-inset'
+                                : '',
+                            'flex min-h-[105px] cursor-pointer flex-col justify-between p-2.5 text-xs transition-colors',
+                        ]"
+                        :data-test="`calendar-cell-${day.calendar_date}`"
+                        @click="handleDayClick(day)"
+                    >
+                        <!-- Cell Top: Day Number & Day Type Badge -->
+                        <div class="flex items-center justify-between">
+                            <span
+                                :class="[
+                                    day.calendar_date === todayDateStr
+                                        ? 'bg-primary text-primary-foreground flex size-6 items-center justify-center rounded-full text-xs font-black'
+                                        : day.day_type === 'HLR'
+                                          ? 'font-bold text-rose-600 dark:text-rose-400'
+                                          : 'text-foreground font-semibold',
+                                    'text-sm',
+                                ]"
+                                :data-test="`day-number-${day.day_number}`"
+                            >
+                                {{ day.day_number }}
+                            </span>
+
+                            <Badge
+                                :variant="
+                                    day.day_type === 'HLR'
+                                        ? 'outline'
+                                        : 'secondary'
+                                "
+                                :class="[
+                                    day.day_type === 'HLR'
+                                        ? 'border-rose-500/30 bg-rose-500/15 font-bold text-rose-700 dark:text-rose-300'
+                                        : 'border-slate-500/20 bg-slate-500/15 font-medium text-slate-700 dark:text-slate-300',
+                                    'px-1.5 py-0 font-mono text-[10px]',
+                                ]"
+                            >
+                                {{ day.day_type }}
+                            </Badge>
+                        </div>
+
+                        <!-- Cell Middle/Bottom: Holiday Name Pill or Workday Tag -->
+                        <div class="mt-2 flex flex-col justify-end">
+                            <div
+                                v-if="day.holiday_name"
+                                class="line-clamp-2 rounded bg-rose-500/15 px-1.5 py-1 text-[11px] leading-tight font-medium text-rose-800 dark:text-rose-200"
+                                :title="day.holiday_name"
+                            >
+                                {{ day.holiday_name }}
+                            </div>
+                            <span
+                                v-else-if="day.day_type === 'HKN'"
+                                class="text-muted-foreground/50 hidden text-[10px] sm:inline"
+                            >
+                                {{ __('Normal Workday') }}
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Trailing Blank Cells -->
+                    <div
+                        v-for="trailingIdx in trailingBlankCount"
+                        :key="`trailing-${trailingIdx}`"
+                        class="bg-muted/15 text-muted-foreground/30 min-h-[105px] p-2 select-none"
+                    />
+                </div>
+            </div>
         </div>
     </div>
 
@@ -1810,6 +2278,15 @@ function handlePagination(url: string | null) {
 
     <!-- Employee CSV Import Sheet (E02-02) -->
     <EmployeeImportSheet v-model:open="isEmpImportOpen" />
+
+    <!-- Operational Calendar Day Sheet (E02-03) -->
+    <CalendarDaySheet
+        v-model:open="isDaySheetOpen"
+        :day="selectedCalendarDay"
+    />
+
+    <!-- Operational Calendar Holiday CSV Import Modal (E02-03) -->
+    <CalendarHolidayImportDialog v-model:open="isHolidayImportOpen" />
 
     <ConfirmationDialog
         v-model:open="confirmDialog.open"

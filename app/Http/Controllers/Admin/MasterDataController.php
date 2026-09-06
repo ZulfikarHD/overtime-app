@@ -5,12 +5,17 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Department;
 use App\Models\Employee;
+use App\Services\OperationalCalendarService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class MasterDataController extends Controller
 {
+    public function __construct(
+        public OperationalCalendarService $calendarService,
+    ) {}
+
     /**
      * Display the Master Data Hub.
      */
@@ -84,6 +89,28 @@ class MasterDataController extends Controller
             'inactive' => Employee::where('is_active', false)->count(),
         ];
 
+        // Operational Calendar Data
+        $currentYear = (int) $request->query('year', now()->year);
+        $currentMonth = (int) $request->query('month', now()->month);
+        if ($currentMonth < 1 || $currentMonth > 12) {
+            $currentMonth = (int) now()->month;
+        }
+        if ($currentYear < 2020 || $currentYear > 2050) {
+            $currentYear = (int) now()->year;
+        }
+
+        $calendarDays = $this->calendarService->getMonthCalendar($currentYear, $currentMonth)->map(fn ($day) => [
+            'calendar_date' => $day->calendar_date->format('Y-m-d'),
+            'day_type' => $day->day_type,
+            'is_holiday' => (bool) $day->is_holiday,
+            'holiday_name' => $day->holiday_name,
+            'description' => $day->description,
+            'day_of_week' => (int) $day->calendar_date->dayOfWeekIso, // 1 (Monday) to 7 (Sunday)
+            'day_number' => (int) $day->calendar_date->day,
+        ]);
+
+        $calendarStats = $this->calendarService->getMonthStats($currentYear, $currentMonth);
+
         return Inertia::render('admin/MasterData', [
             'activeTab' => $tab,
             'departments' => $departments,
@@ -93,6 +120,12 @@ class MasterDataController extends Controller
                 'search' => $search ?? '',
                 'department_id' => $deptFilter ? (int) $deptFilter : null,
                 'status' => $status ?? 'all',
+            ],
+            'calendar' => [
+                'year' => $currentYear,
+                'month' => $currentMonth,
+                'days' => $calendarDays,
+                'stats' => $calendarStats,
             ],
         ]);
     }

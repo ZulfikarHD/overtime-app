@@ -45,6 +45,7 @@ Technical specifications and decision records for the engineering implementation
     - [Foundation Layout & Wayfinder Navigation](./dev-docs/features/foundation-layout-wayfinder.md)
     - [Department & Section Hierarchy Management](./dev-docs/features/department-section-management.md)
     - [Employee Roster Management & CSV Import](./dev-docs/features/employee-roster-management.md)
+    - [Operational Calendar Management & API](./dev-docs/features/operational-calendar-management.md)
     - [Background Jobs & Redis Queues](./dev-docs/features/background-jobs-queues.md)
     - [Database Seeding & Demo Data](./dev-docs/features/database-seeding-demo-data.md)
     - [Daily Overtime Entry & SPKL Workflow](./dev-docs/features/daily-overtime-spkl.md)
@@ -54,6 +55,7 @@ Technical specifications and decision records for the engineering implementation
     - [CapEx Project Labor Management](./dev-docs/features/capex-project-labor.md)
     - [Supervised Machine Learning Analytics](./dev-docs/features/ml-predictive-analytics.md)
 - **API Reference Design:**
+    - [Calendar Classification & Management API](./dev-docs/api/calendar-endpoints.md)
     - [Overtime Submissions & Approvals API](./dev-docs/api/overtime-submissions.md)
     - [Analytics, Burn Index & Machine Learning API](./dev-docs/api/analytics-reports.md)
 

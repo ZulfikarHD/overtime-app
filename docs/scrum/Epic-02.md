@@ -108,24 +108,24 @@ Key real-world constraints:
 
 #### Acceptance Criteria
 
-- [ ] System auto-populates the calendar for the current and next fiscal year using Saturday/Sunday = HLR, weekdays = HKN as the default rule
-- [ ] Admin can view the calendar in a monthly grid view (like a standard calendar UI)
-- [ ] Admin can click any date to toggle it between HKN and HLR
-- [ ] Admin can add/edit a `holiday_name` and `description` for HLR dates
-- [ ] Bulk import of national holidays via CSV (columns: `date`, `holiday_name`)
-- [ ] Calendar changes take effect **immediately** for new submissions; already-submitted records retain their `day_type` snapshot and are **not retroactively updated**
-- [ ] API endpoint: `GET /api/calendar/{date}` — returns `{ date, day_type, is_holiday, holiday_name }` — used by the overtime form to auto-classify the selected date
+- [x] System auto-populates the calendar for the current and next fiscal year using Saturday/Sunday = HLR, weekdays = HKN as the default rule
+- [x] Admin can view the calendar in a monthly grid view (like a standard calendar UI)
+- [x] Admin can click any date to toggle it between HKN and HLR
+- [x] Admin can add/edit a `holiday_name` and `description` for HLR dates
+- [x] Bulk import of national holidays via CSV (columns: `date`, `holiday_name`)
+- [x] Calendar changes take effect **immediately** for new submissions; already-submitted records retain their `day_type` snapshot and are **not retroactively updated**
+- [x] API endpoint: `GET /api/calendar/{date}` — returns `{ date, day_type, is_holiday, holiday_name }` — used by the overtime form to auto-classify the selected date
 
 #### Technical Tasks
 
-- [ ] `php artisan make:controller Admin/OperationalCalendarController`
-- [ ] `OperationalCalendarService::generateForYear(int $year)` — bulk create rows for full year
-- [ ] Run generation on `php artisan app:seed-calendar {year}` command
-- [ ] `php artisan make:command SeedOperationalCalendarCommand`
-- [ ] Create `resources/js/Pages/Admin/Calendar/Index.vue` — monthly grid component
-- [ ] Create Vue `CalendarDayCell.vue` component — shows day type badge, togglable
-- [ ] `GET /api/calendar/{date}` route: `->middleware('auth')->name('api.calendar.show')`
-- [ ] Import CSV command or admin upload form
+- [x] `php artisan make:controller Admin/OperationalCalendarController`
+- [x] `OperationalCalendarService::generateForYear(int $year)` — bulk create rows for full year
+- [x] Run generation on `php artisan app:seed-calendar {year}` command
+- [x] `php artisan make:command SeedOperationalCalendarCommand`
+- [x] Integrate into `MasterData.vue` tab=calendar — monthly 7-column grid component
+- [x] Create Vue `CalendarDaySheet.vue` component — shows day type badge, togglable
+- [x] `GET /api/calendar/{date}` route: `->middleware('auth')->name('api.calendar.show')`
+- [x] Import CSV command and admin upload modal dialog with two-stage audit
 
 ---
 
