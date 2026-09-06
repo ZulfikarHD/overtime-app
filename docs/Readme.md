@@ -34,7 +34,9 @@ Technical specifications and decision records for the engineering implementation
     - [ADR-003: Non-Blocking SPKL Document Workflow](./dev-docs/decisions/003-non-blocking-spkl-document-workflow.md)
     - [ADR-004: Chart.js Visualization Engine](./dev-docs/decisions/004-chartjs-visualization-engine.md)
     - [ADR-005: Denormalized Monthly Burn Snapshots](./dev-docs/decisions/005-denormalized-monthly-burn-snapshots.md)
+    - [ADR-006: Multi-Database Stored Generated Columns and Partial Indexes](./dev-docs/decisions/006-multi-database-stored-generated-columns-and-partial-indexes.md)
 - **Technical Feature Design Specifications:**
+    - [Database Schema Migrations (Full DDL)](./dev-docs/features/database-schema-migrations.md)
     - [Daily Overtime Entry & SPKL Workflow](./dev-docs/features/daily-overtime-spkl.md)
     - [Verification & Granular Approval Lifecycle](./dev-docs/features/verification-approval.md)
     - [Budget Management & Burn Index Dashboard](./dev-docs/features/budget-burn-index.md)

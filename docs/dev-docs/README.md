@@ -18,6 +18,7 @@ Deep-dive technical documentation detailing architecture flows, data models, key
 
 | Document                                                                              | Epic Reference                    | Description                                                                                                    |
 | ------------------------------------------------------------------------------------- | --------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| **[Database Schema Migrations (Full DDL)](./features/database-schema-migrations.md)** | [Epic-01](../../scrum/Epic-01.md) | Relational database schema across 15 tables, foreign keys, stored generated columns, and partial indexes.      |
 | **[Daily Overtime Entry & SPKL Workflow](./features/daily-overtime-spkl.md)**         | [Epic-03](../../scrum/Epic-03.md) | Shift-end overtime capture, atomic roster validation, and non-blocking SPKL document state machine.            |
 | **[Verification & Granular Approval Lifecycle](./features/verification-approval.md)** | [Epic-04](../../scrum/Epic-04.md) | Item-level partial approval/rejection queue, optimistic locking (`lock_version`), and immutable audit logging. |
 | **[Budget Management & Burn Index Dashboard](./features/budget-burn-index.md)**       | [Epic-05](../../scrum/Epic-05.md) | Analytical dashboard, Chart.js Burn Index gauges/burndown lines, and asynchronous monthly rollups.             |
@@ -45,6 +46,7 @@ Durable technical decisions and trade-offs:
 - **[ADR-003: Non-Blocking SPKL Document Attachment with Policy Grace Periods](./decisions/003-non-blocking-spkl-document-workflow.md)**
 - **[ADR-004: Standardizing Chart.js for Manufacturing Analytics and Machine Learning Visualizations](./decisions/004-chartjs-visualization-engine.md)**
 - **[ADR-005: Asynchronous Denormalized Monthly Burn Snapshots for Dashboard Performance](./decisions/005-denormalized-monthly-burn-snapshots.md)**
+- **[ADR-006: Multi-Database Stored Generated Columns and Partial Indexes](./decisions/006-multi-database-stored-generated-columns-and-partial-indexes.md)**
 
 ---
 
