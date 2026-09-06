@@ -10,10 +10,11 @@ Welcome to the end-user documentation library for the OT-CapEx system. These gui
 
 Step-by-step instructions for everyday plant operations:
 
-| Guide                                                                      | Target Persona      | Description                                                                                                     |
-| -------------------------------------------------------------------------- | ------------------- | --------------------------------------------------------------------------------------------------------------- |
-| **[Authentication & Access Control](./guides/authentication-rbac.md)**     | All Plant Personnel | Logging in using NPK or Email, understanding role badges, monitoring live shift clocks, and safely signing out. |
-| **[Dashboard & Operational Navigation](./guides/dashboard-navigation.md)** | All Plant Personnel | Navigating the main dashboard, checking active shift hours, live WIB clock, and shift handover sign-out.        |
+| Guide                                                                            | Target Persona       | Description                                                                                                     |
+| -------------------------------------------------------------------------------- | -------------------- | --------------------------------------------------------------------------------------------------------------- |
+| **[Authentication & Access Control](./guides/authentication-rbac.md)**           | All Plant Personnel  | Logging in using NPK or Email, understanding role badges, monitoring live shift clocks, and safely signing out. |
+| **[Dashboard & Operational Navigation](./guides/dashboard-navigation.md)**       | All Plant Personnel  | Navigating the main dashboard, checking active shift hours, live WIB clock, and shift handover sign-out.        |
+| **[Department & Section Management](./guides/department-section-management.md)** | Plant Administrators | Managing factory department and section hierarchy, default overtime rates, cost centers, and line activation.   |
 
 ---
 
@@ -22,6 +23,7 @@ Step-by-step instructions for everyday plant operations:
 All navigation in the OT-CapEx system corresponds directly to your assigned sidebar items:
 
 - **Dashboard**: High-level shift summary, operational clock, and role capability status.
+- **Master Data**: Consolidated administrative hub for plant departments, sections, employee rosters, and operational calendars (Admin role).
 - **Settings → Profile / Security / Appearance**: Update personal profile details, change password, configure two-factor authentication, or toggle dark/light theme.
 
 ---

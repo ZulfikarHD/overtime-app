@@ -42,6 +42,7 @@ Technical specifications and decision records for the engineering implementation
     - [Database Schema Migrations (Full DDL)](./dev-docs/features/database-schema-migrations.md)
     - [Eloquent Models & Domain Relationships](./dev-docs/features/eloquent-models-relationships.md)
     - [Foundation Layout & Wayfinder Navigation](./dev-docs/features/foundation-layout-wayfinder.md)
+    - [Department & Section Hierarchy Management](./dev-docs/features/department-section-management.md)
     - [Background Jobs & Redis Queues](./dev-docs/features/background-jobs-queues.md)
     - [Database Seeding & Demo Data](./dev-docs/features/database-seeding-demo-data.md)
     - [Daily Overtime Entry & SPKL Workflow](./dev-docs/features/daily-overtime-spkl.md)
@@ -83,6 +84,7 @@ Plain-language operating guides for factory supervisors, team leaders, and opera
 - **[User Documentation Index](./user-docs/README.md)**
     - [Authentication & Access Control Guide](./user-docs/guides/authentication-rbac.md)
     - [Dashboard & Operational Navigation Guide](./user-docs/guides/dashboard-navigation.md)
+    - [Department & Section Management Guide](./user-docs/guides/department-section-management.md)
 
 ---
 

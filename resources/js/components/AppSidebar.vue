@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { Link } from '@inertiajs/vue3';
-import { LayoutGrid } from '@lucide/vue';
+import { Link, usePage } from '@inertiajs/vue3';
+import { Database, LayoutGrid } from '@lucide/vue';
 import { computed } from 'vue';
 import AppLogo from '@/components/AppLogo.vue';
 import NavMain from '@/components/NavMain.vue';
@@ -16,17 +16,32 @@ import {
 } from '@/components/ui/sidebar';
 import { useTrans } from '@/composables/useTrans';
 import { dashboard } from '@/routes';
-import type { NavItem } from '@/types';
+import { masterData } from '@/routes/admin';
+import type { NavItem, User } from '@/types';
 
 const { __ } = useTrans();
+const page = usePage();
+const user = computed(() => page.props.auth?.user as User | undefined);
 
-const mainNavItems = computed<NavItem[]>(() => [
-    {
-        title: __('Dashboard'),
-        href: dashboard(),
-        icon: LayoutGrid,
-    },
-]);
+const mainNavItems = computed<NavItem[]>(() => {
+    const items: NavItem[] = [
+        {
+            title: __('Dashboard'),
+            href: dashboard(),
+            icon: LayoutGrid,
+        },
+    ];
+
+    if (user.value?.role === 'admin') {
+        items.push({
+            title: __('Master Data'),
+            href: masterData(),
+            icon: Database,
+        });
+    }
+
+    return items;
+});
 </script>
 
 <template>
