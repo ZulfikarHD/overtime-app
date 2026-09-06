@@ -32,26 +32,26 @@ The factory runs three shifts (07:00, 15:00, 23:00 WIB). Every timestamp, form s
 
 #### Acceptance Criteria
 
-- [ ] Laravel 11+ project initialized with PHP 8.3+ requirement enforced in `composer.json`
-- [ ] Vue 3 with `<script setup>` SFC pattern installed via `pnpm`
-- [ ] Inertia.js (server + client) installed and `HandleInertiaRequests` middleware registered
-- [ ] **Wayfinder** installed and configured; `@wayfinder/laravel` + `@wayfinder/vue` packages in place — Ziggy is NOT installed
-- [ ] `pnpm lint` configured (ESLint + PHP CS Fixer or Pint)
-- [ ] `pnpm build` succeeds (Vite production build)
-- [ ] `.env.example` includes all required keys: `APP_TIMEZONE=Asia/Jakarta`, `DB_*`, `REDIS_*`, `QUEUE_CONNECTION=redis`
-- [ ] `config/app.php` timezone set to `'Asia/Jakarta'`
-- [ ] `AppServiceProvider` registers Carbon locale `id` (Indonesian)
+- [x] Laravel 11+ project initialized with PHP 8.3+ requirement enforced in `composer.json`
+- [x] Vue 3 with `<script setup>` SFC pattern installed via `pnpm`
+- [x] Inertia.js (server + client) installed and `HandleInertiaRequests` middleware registered
+- [x] **Wayfinder** installed and configured; `@wayfinder/laravel` + `@wayfinder/vue` packages in place — Ziggy is NOT installed
+- [x] `pnpm lint` configured (ESLint + PHP CS Fixer or Pint)
+- [x] `pnpm build` succeeds (Vite production build)
+- [x] `.env.example` includes all required keys: `APP_TIMEZONE=Asia/Jakarta`, `DB_*`, `REDIS_*`, `QUEUE_CONNECTION=redis`
+- [x] `config/app.php` timezone set to `'Asia/Jakarta'`
+- [x] `AppServiceProvider` registers Carbon locale `id` (Indonesian)
 
 #### Technical Tasks
 
-- [ ] `laravel new capex-ot-system --jet` or minimal `laravel new` + manual Inertia setup
-- [ ] `pnpm add @inertiajs/vue3 vue @vitejs/plugin-vue`
-- [ ] `pnpm add @wayfinder/vue` — configure Wayfinder generation in `vite.config.ts`
-- [ ] Configure `vite.config.ts` with `laravel()` plugin + Vue plugin
-- [ ] Set up PHP Pint (`composer require laravel/pint --dev`) and `.pint.json`
-- [ ] Set up ESLint + Vue plugin: `pnpm add -D eslint @vue/eslint-config-typescript`
-- [ ] Create `.eslintrc.cjs` with `vue/vue3-essential` rules
-- [ ] Run `pnpm lint && pnpm build` to validate baseline
+- [x] `laravel new capex-ot-system --jet` or minimal `laravel new` + manual Inertia setup
+- [x] `pnpm add @inertiajs/vue3 vue @vitejs/plugin-vue`
+- [x] `pnpm add @wayfinder/vue` — configure Wayfinder generation in `vite.config.ts`
+- [x] Configure `vite.config.ts` with `laravel()` plugin + Vue plugin
+- [x] Set up PHP Pint (`composer require laravel/pint --dev`) and `.pint.json`
+- [x] Set up ESLint + Vue plugin: `pnpm add -D eslint @vue/eslint-config-typescript`
+- [x] Create `.eslintrc.cjs` with `vue/vue3-essential` rules
+- [x] Run `pnpm lint && pnpm build` to validate baseline
 
 ---
 
@@ -66,14 +66,14 @@ The factory runs three shifts (07:00, 15:00, 23:00 WIB). Every timestamp, form s
 
 #### Acceptance Criteria
 
-- [ ] All migrations run successfully via `php artisan migrate` with zero errors
-- [ ] Foreign key constraints use `ON DELETE RESTRICT` by default (no cascading deletes on financial records)
-- [ ] `overtime_items.total_hours` is a **Stored Generated Column** (`GENERATED ALWAYS AS (hours_production + hours_tpm + hours_project + hours_others) STORED`)
-- [ ] Enum types defined correctly (PostgreSQL `CREATE TYPE` or MySQL `ENUM`)
-- [ ] All CHECK constraints enforced: min 0.5 total hours, non-negative category hours, `capex_project_id NOT NULL when hours_project > 0`
-- [ ] All partial indexes created for performance (e.g., `WHERE status = 'PENDING'`, `WHERE is_active = TRUE`)
-- [ ] `php artisan migrate:fresh` runs cleanly on a blank database
-- [ ] `php artisan migrate:status` shows all migrations as "Ran"
+- [x] All migrations run successfully via `php artisan migrate` with zero errors
+- [x] Foreign key constraints use `ON DELETE RESTRICT` by default (no cascading deletes on financial records)
+- [x] `overtime_items.total_hours` is a **Stored Generated Column** (`GENERATED ALWAYS AS (hours_production + hours_tpm + hours_project + hours_others) STORED`)
+- [x] Enum types defined correctly (PostgreSQL `CREATE TYPE` or MySQL `ENUM`)
+- [x] All CHECK constraints enforced: min 0.5 total hours, non-negative category hours, `capex_project_id NOT NULL when hours_project > 0`
+- [x] All partial indexes created for performance (e.g., `WHERE status = 'PENDING'`, `WHERE is_active = TRUE`)
+- [x] `php artisan migrate:fresh` runs cleanly on a blank database
+- [x] `php artisan migrate:status` shows all migrations as "Ran"
 
 #### Migration Files (Create in this order)
 
@@ -98,11 +98,11 @@ database/migrations/
 
 #### Technical Tasks
 
-- [ ] Create each migration file following the DDL in `data-architect-analyst.md` §2.3
-- [ ] For MySQL: replace `BIGSERIAL` → `BIGINT UNSIGNED AUTO_INCREMENT`, `TIMESTAMPTZ` → `TIMESTAMP`, `JSONB` → `JSON`
-- [ ] For the generated column on `overtime_items`, use `->storedAs('hours_production + hours_tpm + hours_project + hours_others')`
-- [ ] Use `$table->enum()` for enum columns or raw `DB::statement()` for PostgreSQL custom types
-- [ ] Run `php artisan migrate:fresh --seed` after each new migration during development
+- [x] Create each migration file following the DDL in `data-architect-analyst.md` §2.3
+- [x] For MySQL: replace `BIGSERIAL` → `BIGINT UNSIGNED AUTO_INCREMENT`, `TIMESTAMPTZ` → `TIMESTAMP`, `JSONB` → `JSON`
+- [x] For the generated column on `overtime_items`, use `->storedAs('hours_production + hours_tpm + hours_project + hours_others')`
+- [x] Use `$table->enum()` for enum columns or raw `DB::statement()` for PostgreSQL custom types
+- [x] Run `php artisan migrate:fresh --seed` after each new migration during development
 
 ---
 
@@ -117,15 +117,15 @@ database/migrations/
 
 #### Acceptance Criteria
 
-- [ ] All 15 models created in `app/Models/`
-- [ ] Each model defines `$fillable` OR `$guarded = []` (no unguarded wildcard on financial models)
-- [ ] All `NUMERIC` fields cast to `'decimal:2'`
-- [ ] All `BOOLEAN` fields cast to `'boolean'`
-- [ ] All `JSONB`/`JSON` fields cast to `'array'`
-- [ ] All `TIMESTAMPTZ`/`TIMESTAMP` fields cast to `'datetime'`
-- [ ] Relationships defined: `hasMany`, `belongsTo`, `hasOne` as per ERD in `data-architect-analyst.md` §2.2
-- [ ] `Employee` model scopes: `scopeActive()`, `scopeForSection($sectionId)`, `scopeForDepartment($deptId)`
-- [ ] `OvertimeItem` model: `total_hours` marked as `$appends` computed property if not using generated column in MySQL
+- [x] All 15 models created in `app/Models/`
+- [x] Each model defines `$fillable` OR `$guarded = []` (no unguarded wildcard on financial models)
+- [x] All `NUMERIC` fields cast to `'decimal:2'`
+- [x] All `BOOLEAN` fields cast to `'boolean'`
+- [x] All `JSONB`/`JSON` fields cast to `'array'`
+- [x] All `TIMESTAMPTZ`/`TIMESTAMP` fields cast to `'datetime'`
+- [x] Relationships defined: `hasMany`, `belongsTo`, `hasOne` as per ERD in `data-architect-analyst.md` §2.2
+- [x] `Employee` model scopes: `scopeActive()`, `scopeForSection($sectionId)`, `scopeForDepartment($deptId)`
+- [x] `OvertimeItem` model: `total_hours` marked as `$appends` computed property if not using generated column in MySQL
 
 #### Model List
 
@@ -150,12 +150,12 @@ app/Models/
 
 #### Technical Tasks
 
-- [ ] Generate stubs: `php artisan make:model [Name]`
-- [ ] Add all `$casts` arrays per field type
-- [ ] Define `BelongsTo`, `HasMany`, `HasOne` relationships with inverse counterparts
-- [ ] Add `Employee::scopeActiveInSection()` composite scope
-- [ ] Add `OvertimeSubmission::scopePending()`, `scopeForSection()` scopes
-- [ ] Add `OvertimeItem::scopeApproved()`, `scopeByEmployee()` scopes
+- [x] Generate stubs: `php artisan make:model [Name]`
+- [x] Add all `$casts` arrays per field type
+- [x] Define `BelongsTo`, `HasMany`, `HasOne` relationships with inverse counterparts
+- [x] Add `Employee::scopeActiveInSection()` composite scope
+- [x] Add `OvertimeSubmission::scopePending()`, `scopeForSection()` scopes
+- [x] Add `OvertimeItem::scopeApproved()`, `scopeByEmployee()` scopes
 
 ---
 
@@ -170,17 +170,17 @@ app/Models/
 
 #### Acceptance Criteria
 
-- [ ] `users` table has `role` column with ENUM: `admin`, `manager`, `team_leader`, `user`
-- [ ] `users` table has `department_id` (nullable FK) to scope Manager/Team Leader access
-- [ ] Login page with email + password (no social auth required at MVP)
-- [ ] Failed login: lockout after 5 attempts (Laravel's `ThrottlesLogins`)
-- [ ] Password: minimum 8 characters, complexity configurable
-- [ ] `AuthenticatedLayout.vue` shows different navigation items based on authenticated user role
-- [ ] Laravel Gates defined for each role: `Gate::define('is-admin', ...)`, `Gate::define('is-manager', ...)`, etc.
-- [ ] Middleware `EnsureRole::class` applied to route groups
-- [ ] A Team Leader cannot access another section's overtime data
-- [ ] A Manager can only see departments they are assigned to (unless Admin)
-- [ ] `pnpm lint && pnpm build` passes
+- [x] `users` table has `role` column with ENUM: `admin`, `manager`, `team_leader`, `user`
+- [x] `users` table has `department_id` (nullable FK) to scope Manager/Team Leader access
+- [x] Login page with email + password (no social auth required at MVP)
+- [x] Failed login: lockout after 5 attempts (Laravel's `ThrottlesLogins`)
+- [x] Password: minimum 8 characters, complexity configurable
+- [x] `AuthenticatedLayout.vue` shows different navigation items based on authenticated user role
+- [x] Laravel Gates defined for each role: `Gate::define('is-admin', ...)`, `Gate::define('is-manager', ...)`, etc.
+- [x] Middleware `EnsureRole::class` applied to route groups
+- [x] A Team Leader cannot access another section's overtime data
+- [x] A Manager can only see departments they are assigned to (unless Admin)
+- [x] `pnpm lint && pnpm build` passes
 
 #### Role Permission Matrix
 
@@ -196,13 +196,13 @@ app/Models/
 
 #### Technical Tasks
 
-- [ ] `php artisan make:migration add_role_to_users_table`
-- [ ] `php artisan make:middleware EnsureRole`
-- [ ] Register middleware in `bootstrap/app.php` middleware aliases
-- [ ] Define Gates in `AuthServiceProvider` or `AppServiceProvider`
-- [ ] Create `LoginController` and update Inertia auth pages in `resources/js/Pages/Auth/`
-- [ ] Update `HandleInertiaRequests` to share `auth.user.role` in shared props
-- [ ] Protect route groups: `->middleware(['auth', 'role:admin'])` etc.
+- [x] `php artisan make:migration add_role_to_users_table`
+- [x] `php artisan make:middleware EnsureRole`
+- [x] Register middleware in `bootstrap/app.php` middleware aliases
+- [x] Define Gates in `AuthServiceProvider` or `AppServiceProvider`
+- [x] Create `LoginController` and update Inertia auth pages in `resources/js/Pages/Auth/`
+- [x] Update `HandleInertiaRequests` to share `auth.user.role` in shared props
+- [x] Protect route groups: `->middleware(['auth', 'role:admin'])` etc.
 
 ---
 

@@ -4,12 +4,15 @@ namespace App\Providers;
 
 use App\Actions\Fortify\CreateNewUser;
 use App\Actions\Fortify\ResetUserPassword;
+use App\Models\User;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Password;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Laravel\Fortify\Features;
 use Laravel\Fortify\Fortify;
@@ -32,6 +35,40 @@ class FortifyServiceProvider extends ServiceProvider
         $this->configureActions();
         $this->configureViews();
         $this->configureRateLimiting();
+        $this->configureAuthentication();
+    }
+
+    /**
+     * Configure Fortify authentication logic.
+     */
+    private function configureAuthentication(): void
+    {
+        Fortify::authenticateUsing(function (Request $request) {
+            $login = $request->input('email') ?? $request->input('login');
+            $password = $request->input('password');
+
+            if (! $login || ! $password) {
+                return null;
+            }
+
+            $normalized = Str::lower(trim($login));
+
+            $user = User::whereRaw('LOWER(email) = ?', [$normalized])
+                ->orWhereRaw('LOWER(npk) = ?', [$normalized])
+                ->first();
+
+            if ($user && Hash::check($password, $user->password)) {
+                if (! $user->is_active) {
+                    throw ValidationException::withMessages([
+                        'email' => [__('Your account has been deactivated. Please contact the administrator.')],
+                    ]);
+                }
+
+                return $user;
+            }
+
+            return null;
+        });
     }
 
     /**

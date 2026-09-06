@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\User;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -35,13 +36,44 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
+        /** @var User|null $user */
+        $user = $request->user();
+
+        if ($user) {
+            $user->loadMissing([
+                'department:id,code,name',
+                'section:id,department_id,code,name',
+            ]);
+        }
+
         return [
             ...parent::share($request),
             'name' => config('app.name'),
             'auth' => [
-                'user' => $request->user(),
+                'user' => $user,
             ],
+            'locale' => app()->getLocale(),
+            'translations' => $this->getTranslations(),
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
         ];
+    }
+
+    /**
+     * Get translations for the current active locale.
+     *
+     * @return array<string, string>
+     */
+    protected function getTranslations(): array
+    {
+        $locale = app()->getLocale();
+        $path = base_path("lang/{$locale}.json");
+
+        if (file_exists($path)) {
+            $content = file_get_contents($path);
+
+            return json_decode($content ?: '{}', true) ?: [];
+        }
+
+        return [];
     }
 }

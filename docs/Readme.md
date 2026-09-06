@@ -35,7 +35,9 @@ Technical specifications and decision records for the engineering implementation
     - [ADR-004: Chart.js Visualization Engine](./dev-docs/decisions/004-chartjs-visualization-engine.md)
     - [ADR-005: Denormalized Monthly Burn Snapshots](./dev-docs/decisions/005-denormalized-monthly-burn-snapshots.md)
     - [ADR-006: Multi-Database Stored Generated Columns and Partial Indexes](./dev-docs/decisions/006-multi-database-stored-generated-columns-and-partial-indexes.md)
+    - [ADR-007: Role-Based Access Control and Scoping](./dev-docs/decisions/007-role-based-access-control-and-scoping.md)
 - **Technical Feature Design Specifications:**
+    - [Authentication & Role-Based Access Control](./dev-docs/features/authentication-rbac.md)
     - [Database Schema Migrations (Full DDL)](./dev-docs/features/database-schema-migrations.md)
     - [Eloquent Models & Domain Relationships](./dev-docs/features/eloquent-models-relationships.md)
     - [Daily Overtime Entry & SPKL Workflow](./dev-docs/features/daily-overtime-spkl.md)
@@ -70,7 +72,16 @@ Agile backlog, user stories, acceptance criteria, and estimation:
 
 ---
 
-## 4. Engineering Standards & Quality Checklist
+## 4. End-User Documentation (`docs/user-docs/`)
+
+Plain-language operating guides for factory supervisors, team leaders, and operators:
+
+- **[User Documentation Index](./user-docs/README.md)**
+    - [Authentication & Access Control Guide](./user-docs/guides/authentication-rbac.md)
+
+---
+
+## 5. Engineering Standards & Quality Checklist
 
 Before committing or pushing any changes, enforce the following quality gates:
 

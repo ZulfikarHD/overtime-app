@@ -2,9 +2,13 @@
 
 namespace App\Providers;
 
+use App\Models\Department;
+use App\Models\Section;
+use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
 
@@ -24,6 +28,32 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->configureDefaults();
+        $this->configureAuthorization();
+    }
+
+    /**
+     * Configure role-based authorization gates.
+     */
+    protected function configureAuthorization(): void
+    {
+        // Role Gates
+        Gate::define('is-admin', fn (User $user): bool => $user->isAdmin());
+        Gate::define('is-manager', fn (User $user): bool => $user->isManager());
+        Gate::define('is-team-leader', fn (User $user): bool => $user->isTeamLeader());
+        Gate::define('is-user', fn (User $user): bool => $user->isUser());
+
+        // Capability Gates per Role Permission Matrix
+        Gate::define('manage-users', fn (User $user): bool => $user->isAdmin());
+        Gate::define('create-overtime', fn (User $user): bool => $user->isAdmin() || $user->isTeamLeader());
+        Gate::define('approve-overtime', fn (User $user): bool => $user->isAdmin() || $user->isManager());
+        Gate::define('view-all-sections', fn (User $user): bool => $user->isAdmin());
+        Gate::define('view-personal-report', fn (User $user): bool => true);
+        Gate::define('view-ml-dashboard', fn (User $user): bool => $user->isAdmin() || $user->isManager());
+        Gate::define('configure-policy', fn (User $user): bool => $user->isAdmin());
+
+        // Scoping Gates
+        Gate::define('view-section-overtime', fn (User $user, int|Section $section): bool => $user->canAccessSection($section));
+        Gate::define('view-department-overtime', fn (User $user, int|Department $department): bool => $user->canAccessDepartment($department));
     }
 
     /**
