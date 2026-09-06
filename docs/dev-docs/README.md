@@ -26,6 +26,7 @@ Deep-dive technical documentation detailing architecture flows, data models, key
 | **[Employee Roster Management & CSV Import](./features/employee-roster-management.md)**                    | [Epic-02](../../scrum/Epic-02.md) | Single-hub employee roster, cascading section select, immutable NPK (BR-03), and two-stage pre-commit in-memory CSV import audit.                  |
 | **[Operational Calendar Management & API](./features/operational-calendar-management.md)**                 | [Epic-02](../../scrum/Epic-02.md) | Monthly 7-column grid, slide-in day editor, two-stage national holiday CSV import, auto-seeding, and authenticated classification API.             |
 | **[Policy Threshold Configuration & Hierarchical Fallback](./features/policy-threshold-configuration.md)** | [Epic-02](../../scrum/Epic-02.md) | Consolidated Administration Hub, plant baseline defaults, departmental overrides, slide-in sheet, and hierarchical inheritance fallback engine.    |
+| **[User Account Management & Role-Based Access Control (RBAC)](./features/user-account-management.md)**    | [Epic-02](../../scrum/Epic-02.md) | Consolidated Administration Hub users tab, self-lockout guards, role-change audit logging, dynamic cascading scopes, and credential management.    |
 | **[Background Jobs & Redis Queues](./features/background-jobs-queues.md)**                                 | [Epic-01](../../scrum/Epic-01.md) | Asynchronous Redis queue workers, retry backoff configuration, and scaffolded background jobs.                                                     |
 | **[Database Seeding & Demo Data](./features/database-seeding-demo-data.md)**                               | [Epic-01](../../scrum/Epic-01.md) | Modular database seeders for automotive plant master data, shifts, employees, thresholds, and budgets.                                             |
 | **[Daily Overtime Entry & SPKL Workflow](./features/daily-overtime-spkl.md)**                              | [Epic-03](../../scrum/Epic-03.md) | Shift-end overtime capture, atomic roster validation, and non-blocking SPKL document state machine.                                                |
@@ -61,6 +62,7 @@ Durable technical decisions and trade-offs:
 - **[ADR-008: Redis Queue Worker and Background Job Architecture](./decisions/008-redis-queue-worker-and-background-job-architecture.md)**
 - **[ADR-009: Two-Stage Pre-Commit In-Memory CSV Roster Import](./decisions/009-two-stage-pre-commit-csv-roster-import.md)**
 - **[ADR-010: Policy Threshold Hierarchical Inheritance Fallback](./decisions/010-policy-threshold-hierarchical-inheritance-fallback.md)**
+- **[ADR-011: User Lifecycle and Role-Change Audit Logging](./decisions/011-user-lifecycle-and-role-change-audit-logging.md)**
 
 ---
 

@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\MasterDataController;
 use App\Http\Controllers\Admin\OperationalCalendarController;
 use App\Http\Controllers\Admin\PolicyThresholdController;
 use App\Http\Controllers\Admin\SectionController;
+use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Api\CalendarController;
 use Illuminate\Support\Facades\Route;
 
@@ -61,6 +62,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/policy-thresholds', [PolicyThresholdController::class, 'store'])->name('policy-thresholds.store');
         Route::put('/policy-thresholds/{policy_threshold}', [PolicyThresholdController::class, 'update'])->name('policy-thresholds.update');
         Route::delete('/policy-thresholds/{policy_threshold}', [PolicyThresholdController::class, 'destroy'])->name('policy-thresholds.destroy');
+
+        // User Account Management & RBAC (E02-05)
+        Route::post('/users', [UserController::class, 'store'])->name('users.store');
+        Route::put('/users/{user}', [UserController::class, 'update'])->name('users.update');
+        Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
+        Route::post('/users/{user}/reset-password', [UserController::class, 'sendResetLink'])->name('users.reset-password');
     });
 
     // Calendar Classification API for timesheet and general auto-classification (E02-03)

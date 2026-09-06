@@ -17,6 +17,7 @@ Step-by-step instructions for everyday plant operations:
 | **[Department & Section Management](./guides/department-section-management.md)**      | Plant Administrators | Managing factory department and section hierarchy, default overtime rates, cost centers, and line activation.   |
 | **[Employee Roster Management & CSV Import](./guides/employee-roster-management.md)** | Plant Administrators | Managing factory employee roster, NPK protection, custom overtime labor rates, and bulk CSV onboardings.        |
 | **[Policy Threshold Configuration](./guides/policy-threshold-configuration.md)**      | Plant Administrators | Configuring plant-wide overtime soft limits, SPKL grace periods, and department-specific threshold overrides.   |
+| **[User Account Management](./guides/user-account-management.md)**                    | Plant Administrators | Provisioning system logins, assigning operational roles, setting department scopes, and resetting passwords.    |
 
 ---
 

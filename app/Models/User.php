@@ -7,6 +7,7 @@ use App\Enums\UserRole;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -29,6 +30,7 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
  * @property int|null $department_id
  * @property int|null $section_id
  * @property bool $is_active
+ * @property Carbon|null $last_login_at
  * @property string|null $two_factor_secret
  * @property string|null $two_factor_recovery_codes
  * @property Carbon|null $two_factor_confirmed_at
@@ -38,8 +40,10 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
  * @property-read Department|null $department
  * @property-read Section|null $section
  * @property-read Employee|null $employee
+ * @property-read Collection<int, UserAudit> $audits
+ * @property-read Collection<int, UserAudit> $actionedAudits
  */
-#[Fillable(['name', 'email', 'password', 'role', 'npk', 'department_id', 'section_id', 'is_active'])]
+#[Fillable(['name', 'email', 'password', 'role', 'npk', 'department_id', 'section_id', 'is_active', 'last_login_at'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class User extends Authenticatable implements PasskeyUser
 {
@@ -58,6 +62,7 @@ class User extends Authenticatable implements PasskeyUser
         'department_id',
         'section_id',
         'is_active',
+        'last_login_at',
     ];
 
     /**
@@ -73,6 +78,7 @@ class User extends Authenticatable implements PasskeyUser
             'two_factor_confirmed_at' => 'datetime',
             'role' => UserRole::class,
             'is_active' => 'boolean',
+            'last_login_at' => 'datetime',
         ];
     }
 
@@ -234,5 +240,21 @@ class User extends Authenticatable implements PasskeyUser
     public function dismissedAnomalyLogs(): HasMany
     {
         return $this->hasMany(MlAnomalyLog::class, 'dismissed_by_user_id');
+    }
+
+    /**
+     * @return HasMany<UserAudit, $this>
+     */
+    public function audits(): HasMany
+    {
+        return $this->hasMany(UserAudit::class, 'user_id');
+    }
+
+    /**
+     * @return HasMany<UserAudit, $this>
+     */
+    public function actionedAudits(): HasMany
+    {
+        return $this->hasMany(UserAudit::class, 'actor_user_id');
     }
 }

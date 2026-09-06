@@ -4,19 +4,27 @@ import {
     AlertCircle,
     Building2,
     CheckCircle2,
+    ChevronLeft,
+    ChevronRight,
     Clock,
     Edit2,
     Flame,
     Info,
+    KeyRound,
     Layers,
+    Lock,
     Plus,
+    RotateCcw,
     Search,
     Shield,
     ShieldAlert,
     ShieldCheck,
     Trash2,
     UserCheck,
+    UserPlus,
     Users,
+    UserX,
+    XCircle,
 } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
 import ConfirmationDialog from '@/components/admin/ConfirmationDialog.vue';
@@ -24,6 +32,11 @@ import PolicyThresholdSheet, {
     type DepartmentOption,
     type PolicyThresholdRecord,
 } from '@/components/admin/PolicyThresholdSheet.vue';
+import UserFormSheet, {
+    type DepartmentWithSections,
+    type RoleOption,
+    type UserRecord,
+} from '@/components/admin/UserFormSheet.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -38,6 +51,7 @@ import { useTrans } from '@/composables/useTrans';
 import { dashboard } from '@/routes';
 import { administration } from '@/routes/admin';
 import policyThresholdsRoute from '@/routes/admin/policy-thresholds';
+import usersRoute from '@/routes/admin/users';
 
 export type DepartmentPolicyStatus = {
     department_id: number;
@@ -60,12 +74,48 @@ export type PolicyStats = {
     inherited_count: number;
 };
 
+export type UserPagination = {
+    data: UserRecord[];
+    links: { url: string | null; label: string; active: boolean }[];
+    current_page: number;
+    last_page: number;
+    total: number;
+    from: number | null;
+    to: number | null;
+    prev_page_url: string | null;
+    next_page_url: string | null;
+};
+
+export type UserStats = {
+    total: number;
+    active: number;
+    inactive: number;
+    by_role: {
+        admin: number;
+        manager: number;
+        team_leader: number;
+        user: number;
+    };
+};
+
+export type UserFilters = {
+    user_search?: string;
+    user_role?: string;
+    user_status?: string;
+    user_department_id?: number | null;
+};
+
 const props = defineProps<{
     activeTab?: string;
     plantDefault: PolicyThresholdRecord;
     departments: DepartmentPolicyStatus[];
     availableDepartments: DepartmentOption[];
     policyStats: PolicyStats;
+    users?: UserPagination;
+    userStats?: UserStats;
+    userFilters?: UserFilters;
+    availableRoles?: RoleOption[];
+    departmentsWithSections?: DepartmentWithSections[];
 }>();
 
 const { __ } = useTrans();
@@ -111,7 +161,9 @@ function switchTab(tab: string) {
     );
 }
 
-// Search and filter state for departmental overrides table
+// -------------------------------------------------------------
+// TAB 1: POLICY THRESHOLDS LOGIC
+// -------------------------------------------------------------
 const searchQuery = ref('');
 const statusFilter = ref<'all' | 'override' | 'inherited'>('all');
 
@@ -136,14 +188,12 @@ const filteredDepartments = computed(() => {
     return result;
 });
 
-// Existing override department IDs to filter options in sheet
 const existingOverrideDeptIds = computed(() => {
     return props.departments
         .filter((d) => d.has_override)
         .map((d) => d.department_id);
 });
 
-// Sheet Drawer State
 const sheetOpen = ref(false);
 const sheetIsPlantDefault = ref(true);
 const selectedThreshold = ref<PolicyThresholdRecord | null>(null);
@@ -208,7 +258,6 @@ function openEditOverride(dept: DepartmentPolicyStatus) {
     sheetOpen.value = true;
 }
 
-// Delete Confirmation Dialog State
 const deleteDialogOpen = ref(false);
 const deptToDelete = ref<DepartmentPolicyStatus | null>(null);
 const isDeleting = ref(false);
@@ -237,6 +286,186 @@ function executeDeleteOverride() {
             },
         },
     );
+}
+
+// -------------------------------------------------------------
+// TAB 2: USER ACCOUNTS LOGIC (E02-05)
+// -------------------------------------------------------------
+const userSearchInput = ref(props.userFilters?.user_search || '');
+const userRoleFilter = ref(props.userFilters?.user_role || 'all');
+const userStatusFilter = ref(props.userFilters?.user_status || 'all');
+const userDeptFilter = ref<string | number>(
+    props.userFilters?.user_department_id || '',
+);
+
+function applyUserFilters() {
+    router.get(
+        administration.url({
+            query: {
+                tab: 'users',
+                user_search: userSearchInput.value.trim() || undefined,
+                user_role:
+                    userRoleFilter.value !== 'all'
+                        ? userRoleFilter.value
+                        : undefined,
+                user_status:
+                    userStatusFilter.value !== 'all'
+                        ? userStatusFilter.value
+                        : undefined,
+                user_department_id: userDeptFilter.value || undefined,
+            },
+        }),
+        {},
+        {
+            preserveState: true,
+            preserveScroll: true,
+            replace: true,
+        },
+    );
+}
+
+function handleUserPagination(url: string | null) {
+    if (!url) {
+        return;
+    }
+    router.visit(url, {
+        preserveScroll: true,
+        preserveState: true,
+    });
+}
+
+function selectUserRoleFilter(role: string) {
+    userRoleFilter.value = role;
+    applyUserFilters();
+}
+
+function selectUserStatusFilter(status: string) {
+    userStatusFilter.value = status;
+    applyUserFilters();
+}
+
+// User Form Sheet State
+const userSheetOpen = ref(false);
+const selectedUser = ref<UserRecord | null>(null);
+
+function openCreateUser() {
+    selectedUser.value = null;
+    userSheetOpen.value = true;
+}
+
+function openEditUser(user: UserRecord) {
+    selectedUser.value = { ...user };
+    userSheetOpen.value = true;
+}
+
+// Status Toggle Confirmation Dialog State
+const statusDialogOpen = ref(false);
+const userToToggle = ref<UserRecord | null>(null);
+const isTogglingStatus = ref(false);
+
+function triggerToggleStatus(user: UserRecord) {
+    if (user.is_self) {
+        return;
+    }
+    userToToggle.value = user;
+    statusDialogOpen.value = true;
+}
+
+function executeToggleStatus() {
+    if (!userToToggle.value) {
+        return;
+    }
+    isTogglingStatus.value = true;
+    router.put(
+        usersRoute.update.url(userToToggle.value.id),
+        {
+            name: userToToggle.value.name,
+            email: userToToggle.value.email,
+            role: userToToggle.value.role,
+            department_id: userToToggle.value.department_id,
+            section_id: userToToggle.value.section_id,
+            npk: userToToggle.value.npk,
+            is_active: !userToToggle.value.is_active,
+        },
+        {
+            preserveScroll: true,
+            onFinish: () => {
+                isTogglingStatus.value = false;
+                statusDialogOpen.value = false;
+                userToToggle.value = null;
+            },
+        },
+    );
+}
+
+// Password Reset Dialog State
+const resetDialogOpen = ref(false);
+const userToReset = ref<UserRecord | null>(null);
+const isSendingReset = ref(false);
+
+function triggerResetPassword(user: UserRecord) {
+    userToReset.value = user;
+    resetDialogOpen.value = true;
+}
+
+function executeResetPassword() {
+    if (!userToReset.value) {
+        return;
+    }
+    isSendingReset.value = true;
+    router.post(
+        usersRoute.resetPassword.url(userToReset.value.id),
+        {},
+        {
+            preserveScroll: true,
+            onFinish: () => {
+                isSendingReset.value = false;
+                resetDialogOpen.value = false;
+                userToReset.value = null;
+            },
+        },
+    );
+}
+
+// Delete User Dialog State
+const deleteUserDialogOpen = ref(false);
+const userToDelete = ref<UserRecord | null>(null);
+const isDeletingUser = ref(false);
+
+function triggerDeleteUser(user: UserRecord) {
+    if (user.is_self || !user.can_delete) {
+        return;
+    }
+    userToDelete.value = user;
+    deleteUserDialogOpen.value = true;
+}
+
+function executeDeleteUser() {
+    if (!userToDelete.value) {
+        return;
+    }
+    isDeletingUser.value = true;
+    router.delete(usersRoute.destroy.url(userToDelete.value.id), {
+        preserveScroll: true,
+        onFinish: () => {
+            isDeletingUser.value = false;
+            deleteUserDialogOpen.value = false;
+            userToDelete.value = null;
+        },
+    });
+}
+
+function getRoleBadgeStyle(role: string): string {
+    switch (role) {
+        case 'admin':
+            return 'bg-purple-100 text-purple-800 dark:bg-purple-950/60 dark:text-purple-300 border-purple-200 dark:border-purple-800';
+        case 'manager':
+            return 'bg-blue-100 text-blue-800 dark:bg-blue-950/60 dark:text-blue-300 border-blue-200 dark:border-blue-800';
+        case 'team_leader':
+            return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800';
+        default:
+            return 'bg-slate-100 text-slate-800 dark:bg-slate-800/60 dark:text-slate-300 border-slate-200 dark:border-slate-700';
+    }
 }
 
 // Flash notification
@@ -317,6 +546,13 @@ const flashSuccess = computed(
                 >
                     <Users class="size-4" />
                     <span>{{ __('User Accounts') }}</span>
+                    <Badge
+                        v-if="userStats"
+                        variant="secondary"
+                        class="ml-1 text-xs"
+                    >
+                        {{ userStats.total }}
+                    </Badge>
                 </button>
             </nav>
         </div>
@@ -854,33 +1090,664 @@ const flashSuccess = computed(
             </div>
         </div>
 
-        <!-- Tab 2: User Accounts (E02-05 Placeholder within same single surface) -->
+        <!-- Tab 2: User Accounts (E02-05 Full Implementation) -->
         <div v-else-if="currentTab === 'users'" class="space-y-6">
-            <Card class="border-dashed p-8 text-center">
+            <!-- User KPI Summary Cards -->
+            <div
+                v-if="userStats"
+                class="grid grid-cols-2 gap-4 sm:grid-cols-4"
+                data-test="user-stats-grid"
+            >
+                <Card>
+                    <CardHeader
+                        class="flex flex-row items-center justify-between pb-2"
+                    >
+                        <CardTitle
+                            class="text-muted-foreground text-xs font-medium tracking-wider uppercase"
+                        >
+                            {{ __('Total Accounts') }}
+                        </CardTitle>
+                        <Users class="text-muted-foreground size-4" />
+                    </CardHeader>
+                    <CardContent>
+                        <div class="text-2xl font-bold">
+                            {{ userStats.total }}
+                        </div>
+                        <p class="text-muted-foreground mt-1 text-xs">
+                            {{ __('System user directory') }}
+                        </p>
+                    </CardContent>
+                </Card>
+
+                <Card>
+                    <CardHeader
+                        class="flex flex-row items-center justify-between pb-2"
+                    >
+                        <CardTitle
+                            class="text-muted-foreground text-xs font-medium tracking-wider uppercase"
+                        >
+                            {{ __('Active Logins') }}
+                        </CardTitle>
+                        <UserCheck class="size-4 text-emerald-500" />
+                    </CardHeader>
+                    <CardContent>
+                        <div
+                            class="text-2xl font-bold text-emerald-600 dark:text-emerald-400"
+                        >
+                            {{ userStats.active }}
+                        </div>
+                        <p class="text-muted-foreground mt-1 text-xs">
+                            {{ __('Can authenticate') }}
+                        </p>
+                    </CardContent>
+                </Card>
+
+                <Card>
+                    <CardHeader
+                        class="flex flex-row items-center justify-between pb-2"
+                    >
+                        <CardTitle
+                            class="text-muted-foreground text-xs font-medium tracking-wider uppercase"
+                        >
+                            {{ __('Deactivated') }}
+                        </CardTitle>
+                        <UserX class="size-4 text-rose-500" />
+                    </CardHeader>
+                    <CardContent>
+                        <div
+                            class="text-2xl font-bold text-rose-600 dark:text-rose-400"
+                        >
+                            {{ userStats.inactive }}
+                        </div>
+                        <p class="text-muted-foreground mt-1 text-xs">
+                            {{ __('Blocked from access') }}
+                        </p>
+                    </CardContent>
+                </Card>
+
+                <Card>
+                    <CardHeader
+                        class="flex flex-row items-center justify-between pb-2"
+                    >
+                        <CardTitle
+                            class="text-muted-foreground text-xs font-medium tracking-wider uppercase"
+                        >
+                            {{ __('Role Breakdown') }}
+                        </CardTitle>
+                        <Shield class="text-primary size-4" />
+                    </CardHeader>
+                    <CardContent>
+                        <div class="flex items-center gap-1.5 pt-1">
+                            <Badge
+                                variant="outline"
+                                class="bg-purple-50 text-xs font-semibold text-purple-700 dark:bg-purple-950/60 dark:text-purple-300"
+                                :title="__('Administrators')"
+                            >
+                                {{ userStats.by_role.admin }} Adm
+                            </Badge>
+                            <Badge
+                                variant="outline"
+                                class="bg-blue-50 text-xs font-semibold text-blue-700 dark:bg-blue-950/60 dark:text-blue-300"
+                                :title="__('Managers')"
+                            >
+                                {{ userStats.by_role.manager }} Mgr
+                            </Badge>
+                            <Badge
+                                variant="outline"
+                                class="bg-emerald-50 text-xs font-semibold text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300"
+                                :title="__('Team Leaders')"
+                            >
+                                {{ userStats.by_role.team_leader }} TL
+                            </Badge>
+                        </div>
+                    </CardContent>
+                </Card>
+            </div>
+
+            <!-- User Accounts Header & Action Bar -->
+            <div class="space-y-4">
                 <div
-                    class="bg-primary/10 text-primary mx-auto flex size-12 items-center justify-center rounded-full"
+                    class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
                 >
-                    <UserCheck class="size-6" />
+                    <div>
+                        <h2 class="text-lg font-bold tracking-tight">
+                            {{ __('User Accounts & Access Control') }}
+                        </h2>
+                        <p class="text-muted-foreground text-xs">
+                            {{
+                                __(
+                                    'Provision logins, assign operational roles, scope permissions, and manage credential resets.',
+                                )
+                            }}
+                        </p>
+                    </div>
+
+                    <div class="flex flex-wrap items-center gap-2">
+                        <Button
+                            size="sm"
+                            data-test="btn-add-user"
+                            @click="openCreateUser"
+                        >
+                            <UserPlus class="mr-1.5 size-4" />
+                            <span>{{ __('+ Add User Account') }}</span>
+                        </Button>
+                    </div>
                 </div>
-                <h3 class="mt-4 text-lg font-bold">
-                    {{ __('User Account Management & RBAC') }}
-                </h3>
-                <p class="text-muted-foreground mx-auto mt-2 max-w-md text-sm">
-                    {{
-                        __(
-                            'User provisioning, role assignments, department scoping, and security credentials management (Epic E02-05).',
-                        )
-                    }}
-                </p>
-                <div class="mt-6">
-                    <Badge variant="outline" class="font-mono text-xs">
-                        STORY [E02-05]
-                    </Badge>
+
+                <!-- Search and Filter Bar -->
+                <div
+                    class="flex flex-col items-stretch justify-between gap-3 lg:flex-row lg:items-center"
+                >
+                    <div
+                        class="flex flex-1 flex-col gap-2 sm:flex-row sm:items-center"
+                    >
+                        <div class="relative w-full sm:max-w-xs">
+                            <Search
+                                class="text-muted-foreground absolute top-2.5 left-2.5 size-4"
+                            />
+                            <Input
+                                v-model="userSearchInput"
+                                type="search"
+                                :placeholder="
+                                    __('Search by name, email, NPK...')
+                                "
+                                class="h-9 pl-8 text-xs"
+                                data-test="input-search-users"
+                                @keyup.enter="applyUserFilters"
+                            />
+                        </div>
+
+                        <!-- Department Filter Dropdown -->
+                        <select
+                            v-model="userDeptFilter"
+                            class="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus:ring-ring h-9 rounded-md border px-3 text-xs shadow-xs focus:ring-2 focus:ring-offset-2 focus:outline-hidden"
+                            data-test="select-filter-dept"
+                            @change="applyUserFilters"
+                        >
+                            <option value="">
+                                {{ __('All Departments') }}
+                            </option>
+                            <option
+                                v-for="dept in departments"
+                                :key="dept.department_id"
+                                :value="dept.department_id"
+                            >
+                                {{ dept.department_code }} -
+                                {{ dept.department_name }}
+                            </option>
+                        </select>
+
+                        <Button
+                            variant="secondary"
+                            size="sm"
+                            class="h-9 px-3 text-xs"
+                            data-test="btn-apply-user-search"
+                            @click="applyUserFilters"
+                        >
+                            {{ __('Filter') }}
+                        </Button>
+                    </div>
+
+                    <!-- Role & Status Pills -->
+                    <div class="flex flex-wrap items-center gap-2">
+                        <!-- Role Pills -->
+                        <div
+                            class="bg-muted/40 flex items-center gap-1 rounded-lg border p-1"
+                        >
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                class="h-7 px-2 text-xs"
+                                :class="{
+                                    'bg-background font-semibold shadow-xs':
+                                        userRoleFilter === 'all',
+                                }"
+                                data-test="filter-role-all"
+                                @click="selectUserRoleFilter('all')"
+                            >
+                                {{ __('All Roles') }}
+                            </Button>
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                class="h-7 px-2 text-xs"
+                                :class="{
+                                    'bg-background font-semibold shadow-xs':
+                                        userRoleFilter === 'admin',
+                                }"
+                                data-test="filter-role-admin"
+                                @click="selectUserRoleFilter('admin')"
+                            >
+                                {{ __('Admin') }}
+                            </Button>
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                class="h-7 px-2 text-xs"
+                                :class="{
+                                    'bg-background font-semibold shadow-xs':
+                                        userRoleFilter === 'manager',
+                                }"
+                                data-test="filter-role-manager"
+                                @click="selectUserRoleFilter('manager')"
+                            >
+                                {{ __('Manager') }}
+                            </Button>
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                class="h-7 px-2 text-xs"
+                                :class="{
+                                    'bg-background font-semibold shadow-xs':
+                                        userRoleFilter === 'team_leader',
+                                }"
+                                data-test="filter-role-team-leader"
+                                @click="selectUserRoleFilter('team_leader')"
+                            >
+                                {{ __('Team Leader') }}
+                            </Button>
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                class="h-7 px-2 text-xs"
+                                :class="{
+                                    'bg-background font-semibold shadow-xs':
+                                        userRoleFilter === 'user',
+                                }"
+                                data-test="filter-role-user"
+                                @click="selectUserRoleFilter('user')"
+                            >
+                                {{ __('Operator') }}
+                            </Button>
+                        </div>
+
+                        <!-- Status Filter -->
+                        <div
+                            class="bg-muted/40 flex items-center gap-1 rounded-lg border p-1"
+                        >
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                class="h-7 px-2 text-xs"
+                                :class="{
+                                    'bg-background font-semibold shadow-xs':
+                                        userStatusFilter === 'all',
+                                }"
+                                data-test="filter-status-all"
+                                @click="selectUserStatusFilter('all')"
+                            >
+                                {{ __('All Status') }}
+                            </Button>
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                class="h-7 px-2 text-xs"
+                                :class="{
+                                    'bg-background font-semibold text-emerald-700 shadow-xs dark:text-emerald-300':
+                                        userStatusFilter === 'active',
+                                }"
+                                data-test="filter-status-active"
+                                @click="selectUserStatusFilter('active')"
+                            >
+                                {{ __('Active') }}
+                            </Button>
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                class="h-7 px-2 text-xs"
+                                :class="{
+                                    'bg-background font-semibold text-rose-700 shadow-xs dark:text-rose-300':
+                                        userStatusFilter === 'inactive',
+                                }"
+                                data-test="filter-status-inactive"
+                                @click="selectUserStatusFilter('inactive')"
+                            >
+                                {{ __('Inactive') }}
+                            </Button>
+                        </div>
+                    </div>
                 </div>
-            </Card>
+
+                <!-- User Accounts Table -->
+                <div
+                    class="bg-card overflow-hidden rounded-lg border shadow-2xs"
+                >
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm">
+                            <thead
+                                class="bg-muted/50 text-muted-foreground border-b text-xs"
+                            >
+                                <tr>
+                                    <th class="px-4 py-3 font-semibold">
+                                        {{ __('User / Credentials') }}
+                                    </th>
+                                    <th class="px-4 py-3 font-semibold">
+                                        {{ __('Role') }}
+                                    </th>
+                                    <th class="px-4 py-3 font-semibold">
+                                        {{ __('Organizational Assignment') }}
+                                    </th>
+                                    <th class="px-4 py-3 font-semibold">
+                                        {{ __('Last Login (WIB)') }}
+                                    </th>
+                                    <th
+                                        class="px-4 py-3 text-center font-semibold"
+                                    >
+                                        {{ __('Status') }}
+                                    </th>
+                                    <th
+                                        class="px-4 py-3 text-right font-semibold"
+                                    >
+                                        {{ __('Actions') }}
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-border divide-y">
+                                <tr
+                                    v-if="!users || users.data.length === 0"
+                                    class="text-center"
+                                >
+                                    <td
+                                        colspan="6"
+                                        class="text-muted-foreground py-8 text-sm"
+                                    >
+                                        {{ __('No user accounts found.') }}
+                                    </td>
+                                </tr>
+
+                                <tr
+                                    v-for="userItem in users?.data"
+                                    :key="userItem.id"
+                                    class="hover:bg-muted/40 transition-colors"
+                                    :data-test="`row-user-${userItem.email}`"
+                                >
+                                    <!-- User Identity -->
+                                    <td class="px-4 py-3">
+                                        <div class="space-y-0.5">
+                                            <div
+                                                class="flex items-center gap-2"
+                                            >
+                                                <span
+                                                    class="text-foreground font-semibold"
+                                                >
+                                                    {{ userItem.name }}
+                                                </span>
+                                                <Badge
+                                                    v-if="userItem.is_self"
+                                                    variant="secondary"
+                                                    class="border-primary/30 bg-primary/10 text-primary text-2xs"
+                                                >
+                                                    {{ __('You') }}
+                                                </Badge>
+                                            </div>
+                                            <div
+                                                class="text-muted-foreground flex items-center gap-2 text-xs"
+                                            >
+                                                <span>{{
+                                                    userItem.email
+                                                }}</span>
+                                                <span
+                                                    v-if="userItem.npk"
+                                                    class="border-border bg-muted/60 text-2xs rounded border px-1 font-mono"
+                                                >
+                                                    {{ userItem.npk }}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </td>
+
+                                    <!-- Role Badge -->
+                                    <td class="px-4 py-3">
+                                        <Badge
+                                            class="text-xs font-semibold capitalize"
+                                            :class="
+                                                getRoleBadgeStyle(userItem.role)
+                                            "
+                                        >
+                                            {{ userItem.role_label }}
+                                        </Badge>
+                                    </td>
+
+                                    <!-- Scope -->
+                                    <td class="px-4 py-3 text-xs">
+                                        <div
+                                            v-if="userItem.department"
+                                            class="space-y-0.5"
+                                        >
+                                            <div
+                                                class="flex items-center gap-1.5 font-medium"
+                                            >
+                                                <Building2
+                                                    class="text-muted-foreground size-3.5"
+                                                />
+                                                <span>{{
+                                                    userItem.department.name
+                                                }}</span>
+                                            </div>
+                                            <div
+                                                v-if="userItem.section"
+                                                class="text-muted-foreground text-2xs ml-5 flex items-center gap-1"
+                                            >
+                                                <Layers class="size-3" />
+                                                <span>{{
+                                                    userItem.section.name
+                                                }}</span>
+                                            </div>
+                                        </div>
+                                        <span
+                                            v-else
+                                            class="text-muted-foreground text-2xs italic"
+                                        >
+                                            {{
+                                                __('Plant-wide / Unrestricted')
+                                            }}
+                                        </span>
+                                    </td>
+
+                                    <!-- Last Login -->
+                                    <td class="px-4 py-3 text-xs">
+                                        <span
+                                            v-if="userItem.last_login_at"
+                                            class="font-mono"
+                                        >
+                                            {{ userItem.last_login_at }}
+                                        </span>
+                                        <span
+                                            v-else
+                                            class="text-muted-foreground text-2xs italic"
+                                        >
+                                            {{ __('Never Logged In') }}
+                                        </span>
+                                    </td>
+
+                                    <!-- Status Badge & Toggle -->
+                                    <td class="px-4 py-3 text-center">
+                                        <div
+                                            class="inline-flex items-center gap-1.5"
+                                        >
+                                            <Badge
+                                                v-if="userItem.is_active"
+                                                class="border-emerald-200 bg-emerald-100 text-xs text-emerald-800 dark:border-emerald-900/60 dark:bg-emerald-950/60 dark:text-emerald-300"
+                                            >
+                                                <CheckCircle2
+                                                    class="mr-1 size-3"
+                                                />
+                                                {{ __('Active') }}
+                                            </Badge>
+                                            <Badge
+                                                v-else
+                                                class="border-rose-200 bg-rose-100 text-xs text-rose-800 dark:border-rose-900/60 dark:bg-rose-950/60 dark:text-rose-300"
+                                            >
+                                                <XCircle class="mr-1 size-3" />
+                                                {{ __('Inactive') }}
+                                            </Badge>
+                                        </div>
+                                    </td>
+
+                                    <!-- Actions -->
+                                    <td class="px-4 py-3 text-right">
+                                        <div
+                                            class="flex items-center justify-end gap-1"
+                                        >
+                                            <!-- Status Toggle Button -->
+                                            <Button
+                                                v-if="!userItem.is_self"
+                                                variant="ghost"
+                                                size="icon-sm"
+                                                :data-test="`btn-toggle-status-${userItem.email}`"
+                                                :title="
+                                                    userItem.is_active
+                                                        ? __(
+                                                              'Deactivate Account',
+                                                          )
+                                                        : __('Activate Account')
+                                                "
+                                                @click="
+                                                    triggerToggleStatus(
+                                                        userItem,
+                                                    )
+                                                "
+                                            >
+                                                <UserX
+                                                    v-if="userItem.is_active"
+                                                    class="size-4 text-amber-600 hover:text-amber-700"
+                                                />
+                                                <UserCheck
+                                                    v-else
+                                                    class="size-4 text-emerald-600 hover:text-emerald-700"
+                                                />
+                                            </Button>
+
+                                            <!-- Edit User Button -->
+                                            <Button
+                                                variant="ghost"
+                                                size="icon-sm"
+                                                :data-test="`btn-edit-user-${userItem.id}`"
+                                                :title="__('Edit User Account')"
+                                                @click="openEditUser(userItem)"
+                                            >
+                                                <Edit2
+                                                    class="text-muted-foreground hover:text-foreground size-4"
+                                                />
+                                            </Button>
+
+                                            <!-- Send Password Reset Link -->
+                                            <Button
+                                                variant="ghost"
+                                                size="icon-sm"
+                                                :data-test="`btn-reset-password-${userItem.email}`"
+                                                :title="
+                                                    __(
+                                                        'Send Password Reset Link',
+                                                    )
+                                                "
+                                                @click="
+                                                    triggerResetPassword(
+                                                        userItem,
+                                                    )
+                                                "
+                                            >
+                                                <KeyRound
+                                                    class="size-4 text-blue-500 hover:text-blue-600"
+                                                />
+                                            </Button>
+
+                                            <!-- Delete User Button (Guarded) -->
+                                            <Button
+                                                v-if="userItem.can_delete"
+                                                variant="ghost"
+                                                size="icon-sm"
+                                                :data-test="`btn-delete-user-${userItem.email}`"
+                                                :title="
+                                                    __('Delete User Account')
+                                                "
+                                                @click="
+                                                    triggerDeleteUser(userItem)
+                                                "
+                                            >
+                                                <Trash2
+                                                    class="size-4 text-red-500 hover:text-red-600"
+                                                />
+                                            </Button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- User Pagination Bar -->
+                    <div
+                        v-if="users && users.total > 0"
+                        class="border-border/70 bg-muted/20 text-muted-foreground flex flex-col gap-3 border-t px-4 py-3 text-xs sm:flex-row sm:items-center sm:justify-between"
+                        data-test="user-pagination-bar"
+                    >
+                        <div>
+                            {{
+                                __(
+                                    'Showing :from to :to of :total user accounts',
+                                    {
+                                        from: users.from ?? 0,
+                                        to: users.to ?? 0,
+                                        total: users.total,
+                                    },
+                                )
+                            }}
+                        </div>
+
+                        <div class="flex items-center gap-1 self-center">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                class="size-8 p-0"
+                                :disabled="!users.prev_page_url"
+                                data-test="btn-prev-page"
+                                @click="
+                                    handleUserPagination(users.prev_page_url)
+                                "
+                            >
+                                <ChevronLeft class="size-4" />
+                            </Button>
+
+                            <template
+                                v-for="(link, idx) in users.links.slice(1, -1)"
+                                :key="idx"
+                            >
+                                <Button
+                                    type="button"
+                                    size="sm"
+                                    :variant="
+                                        link.active ? 'default' : 'outline'
+                                    "
+                                    class="h-8 min-w-8 px-2 text-xs"
+                                    :disabled="!link.url"
+                                    @click="handleUserPagination(link.url)"
+                                >
+                                    <span v-html="link.label" />
+                                </Button>
+                            </template>
+
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                class="size-8 p-0"
+                                :disabled="!users.next_page_url"
+                                data-test="btn-next-page"
+                                @click="
+                                    handleUserPagination(users.next_page_url)
+                                "
+                            >
+                                <ChevronRight class="size-4" />
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
 
-        <!-- Form Sheet Component (Drawer) -->
+        <!-- Sheet Form: Policy Threshold (Tab 1) -->
         <PolicyThresholdSheet
             v-model:open="sheetOpen"
             :is-plant-default="sheetIsPlantDefault"
@@ -889,7 +1756,15 @@ const flashSuccess = computed(
             :existing-override-dept-ids="existingOverrideDeptIds"
         />
 
-        <!-- Revert Override Confirmation Dialog -->
+        <!-- Sheet Form: User Account (Tab 2) -->
+        <UserFormSheet
+            v-model:open="userSheetOpen"
+            :user="selectedUser"
+            :departments="departmentsWithSections || []"
+            :roles="availableRoles || []"
+        />
+
+        <!-- Dialog: Delete Policy Override -->
         <ConfirmationDialog
             v-model:open="deleteDialogOpen"
             :title="__('Delete department override?')"
@@ -903,6 +1778,78 @@ const flashSuccess = computed(
             variant="destructive"
             :loading="isDeleting"
             @confirm="executeDeleteOverride"
+        />
+
+        <!-- Dialog: Toggle User Active Status -->
+        <ConfirmationDialog
+            v-model:open="statusDialogOpen"
+            :title="
+                userToToggle?.is_active
+                    ? __('Deactivate user account :name?', {
+                          name: userToToggle?.name ?? '',
+                      })
+                    : __('Activate user account :name?', {
+                          name: userToToggle?.name ?? '',
+                      })
+            "
+            :description="
+                userToToggle?.is_active
+                    ? __(
+                          'This user will be blocked from logging into the system until re-activated. All historical overtime records and review trails remain securely preserved.',
+                      )
+                    : __(
+                          'This user will regain access to log in and perform actions matching their assigned role.',
+                      )
+            "
+            :confirm-text="
+                userToToggle?.is_active
+                    ? __('Yes, Deactivate Account')
+                    : __('Yes, Activate Account')
+            "
+            :cancel-text="__('Cancel')"
+            :variant="userToToggle?.is_active ? 'destructive' : 'default'"
+            :loading="isTogglingStatus"
+            @confirm="executeToggleStatus"
+        />
+
+        <!-- Dialog: Send Password Reset Link -->
+        <ConfirmationDialog
+            v-model:open="resetDialogOpen"
+            :title="
+                __('Send password reset link to :email?', {
+                    email: userToReset?.email ?? '',
+                })
+            "
+            :description="
+                __(
+                    'An email containing a secure password reset link will be sent to the user. The link will remain active for 60 minutes.',
+                )
+            "
+            :confirm-text="__('Send Reset Link')"
+            :cancel-text="__('Cancel')"
+            variant="default"
+            :loading="isSendingReset"
+            @confirm="executeResetPassword"
+        />
+
+        <!-- Dialog: Delete User Account -->
+        <ConfirmationDialog
+            v-model:open="deleteUserDialogOpen"
+            :title="
+                __('Delete user account :name?', {
+                    name: userToDelete?.name ?? '',
+                })
+            "
+            :description="
+                __(
+                    'This user account will be permanently deleted from the system. This action cannot be reversed.',
+                )
+            "
+            :confirm-text="__('Yes, Delete Account')"
+            :cancel-text="__('Cancel')"
+            variant="destructive"
+            :loading="isDeletingUser"
+            @confirm="executeDeleteUser"
         />
     </div>
 </template>
