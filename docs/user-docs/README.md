@@ -10,14 +10,16 @@ Welcome to the end-user documentation library for the OT-CapEx system. These gui
 
 Step-by-step instructions for everyday plant operations:
 
-| Guide                                                                                 | Target Persona       | Description                                                                                                     |
-| ------------------------------------------------------------------------------------- | -------------------- | --------------------------------------------------------------------------------------------------------------- |
-| **[Authentication & Access Control](./guides/authentication-rbac.md)**                | All Plant Personnel  | Logging in using NPK or Email, understanding role badges, monitoring live shift clocks, and safely signing out. |
-| **[Dashboard & Operational Navigation](./guides/dashboard-navigation.md)**            | All Plant Personnel  | Navigating the main dashboard, checking active shift hours, live WIB clock, and shift handover sign-out.        |
-| **[Department & Section Management](./guides/department-section-management.md)**      | Plant Administrators | Managing factory department and section hierarchy, default overtime rates, cost centers, and line activation.   |
-| **[Employee Roster Management & CSV Import](./guides/employee-roster-management.md)** | Plant Administrators | Managing factory employee roster, NPK protection, custom overtime labor rates, and bulk CSV onboardings.        |
-| **[Policy Threshold Configuration](./guides/policy-threshold-configuration.md)**      | Plant Administrators | Configuring plant-wide overtime soft limits, SPKL grace periods, and department-specific threshold overrides.   |
-| **[User Account Management](./guides/user-account-management.md)**                    | Plant Administrators | Provisioning system logins, assigning operational roles, setting department scopes, and resetting passwords.    |
+| Guide                                                                                 | Target Persona       | Description                                                                                                       |
+| ------------------------------------------------------------------------------------- | -------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| **[Authentication & Access Control](./guides/authentication-rbac.md)**                | All Plant Personnel  | Logging in using NPK or Email, understanding role badges, monitoring live shift clocks, and safely signing out.   |
+| **[Dashboard & Operational Navigation](./guides/dashboard-navigation.md)**            | All Plant Personnel  | Navigating the main dashboard, checking active shift hours, live WIB clock, and shift handover sign-out.          |
+| **[Department & Section Management](./guides/department-section-management.md)**      | Plant Administrators | Managing factory department and section hierarchy, default overtime rates, cost centers, and line activation.     |
+| **[Employee Roster Management & CSV Import](./guides/employee-roster-management.md)** | Plant Administrators | Managing factory employee roster, NPK protection, custom overtime labor rates, and bulk CSV onboardings.          |
+| **[Policy Threshold Configuration](./guides/policy-threshold-configuration.md)**      | Plant Administrators | Configuring plant-wide overtime soft limits, SPKL grace periods, and department-specific threshold overrides.     |
+| **[User Account Management](./guides/user-account-management.md)**                    | Plant Administrators | Provisioning system logins, assigning operational roles, setting department scopes, and resetting passwords.      |
+| **[User Preferences & Display Standards](./guides/user-preferences-settings.md)**     | All Plant Personnel  | Customizing theme modes (Light/Dark/System), configuring alert notification toggles, and viewing plant standards. |
+| **[Overtime Budget Planning](./guides/overtime-budget-planning.md)**                  | Admins & Managers    | Planning section monthly overtime hours, 5-week breakdown, estimating costs in Rupiah, and two-stage CSV import.  |
 
 ---
 
@@ -28,7 +30,8 @@ All navigation in the OT-CapEx system corresponds directly to your assigned side
 - **Dashboard**: High-level shift summary, operational clock, and role capability status.
 - **Master Data**: Consolidated administrative hub for plant departments, sections, employee rosters, and operational calendars (Admin role).
 - **Administration**: Consolidated administrative hub for plant-wide policy thresholds and user accounts (Admin role).
-- **Settings → Profile / Security / Appearance**: Update personal profile details, change password, configure two-factor authentication, or toggle dark/light theme.
+- **Budget Planning**: Consolidated hub for section-level monthly overtime hour quotas, 5-week distributions, and labor cost estimates (Admin and Manager roles).
+- **Settings → Profile / Security / Appearance / Preferences**: Update personal profile details, change password, configure two-factor authentication, or set UI and alert preferences.
 
 ---
 

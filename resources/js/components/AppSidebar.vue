@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Link, usePage } from '@inertiajs/vue3';
-import { Database, LayoutGrid, ShieldCheck } from '@lucide/vue';
+import { Calculator, Database, LayoutGrid, ShieldCheck } from '@lucide/vue';
 import { computed } from 'vue';
 import AppLogo from '@/components/AppLogo.vue';
 import NavMain from '@/components/NavMain.vue';
@@ -17,6 +17,7 @@ import {
 import { useTrans } from '@/composables/useTrans';
 import { dashboard } from '@/routes';
 import { administration, masterData } from '@/routes/admin';
+import { planning } from '@/routes/budgets';
 import type { NavItem, User } from '@/types';
 
 const { __ } = useTrans();
@@ -42,6 +43,14 @@ const mainNavItems = computed<NavItem[]>(() => {
             title: __('Administration'),
             href: administration(),
             icon: ShieldCheck,
+        });
+    }
+
+    if (user.value?.role === 'admin' || user.value?.role === 'manager') {
+        items.push({
+            title: __('Budget Planning'),
+            href: planning(),
+            icon: Calculator,
         });
     }
 

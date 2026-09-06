@@ -40,6 +40,8 @@ Technical specifications and decision records for the engineering implementation
     - [ADR-009: Two-Stage Pre-Commit CSV Roster Import](./dev-docs/decisions/009-two-stage-pre-commit-csv-roster-import.md)
     - [ADR-010: Policy Threshold Hierarchical Inheritance Fallback](./dev-docs/decisions/010-policy-threshold-hierarchical-inheritance-fallback.md)
     - [ADR-011: User Lifecycle and Role-Change Audit Logging](./dev-docs/decisions/011-user-lifecycle-and-role-change-audit-logging.md)
+    - [ADR-012: User Preferences and Display Standards](./dev-docs/decisions/012-user-preferences-and-display-standards.md)
+    - [ADR-013: Overtime Budget Planning and CSV Import](./dev-docs/decisions/013-overtime-budget-planning-and-csv-import.md)
 - **Technical Feature Design Specifications:**
     - [Authentication & Role-Based Access Control](./dev-docs/features/authentication-rbac.md)
     - [Database Schema Migrations (Full DDL)](./dev-docs/features/database-schema-migrations.md)
@@ -50,6 +52,8 @@ Technical specifications and decision records for the engineering implementation
     - [Operational Calendar Management & API](./dev-docs/features/operational-calendar-management.md)
     - [Policy Threshold Configuration & Hierarchical Fallback](./dev-docs/features/policy-threshold-configuration.md)
     - [User Account Management & Role-Based Access Control (RBAC)](./dev-docs/features/user-account-management.md)
+    - [User Preferences & Display Standards](./dev-docs/features/user-preferences-settings.md)
+    - [Overtime Budget Planning & Scoping](./dev-docs/features/overtime-budget-planning.md)
     - [Background Jobs & Redis Queues](./dev-docs/features/background-jobs-queues.md)
     - [Database Seeding & Demo Data](./dev-docs/features/database-seeding-demo-data.md)
     - [Daily Overtime Entry & SPKL Workflow](./dev-docs/features/daily-overtime-spkl.md)
@@ -96,6 +100,8 @@ Plain-language operating guides for factory supervisors, team leaders, and opera
     - [Employee Roster Management & CSV Import Guide](./user-docs/guides/employee-roster-management.md)
     - [Policy Threshold Configuration Guide](./user-docs/guides/policy-threshold-configuration.md)
     - [User Account Management Guide](./user-docs/guides/user-account-management.md)
+    - [User Preferences & Display Standards Guide](./user-docs/guides/user-preferences-settings.md)
+    - [Overtime Budget Planning Guide](./user-docs/guides/overtime-budget-planning.md)
 
 ---
 

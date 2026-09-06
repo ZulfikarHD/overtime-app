@@ -1,5 +1,12 @@
 export type UserRole = 'admin' | 'manager' | 'team_leader' | 'user';
 
+export type UserPreferences = {
+    theme: 'light' | 'dark' | 'system';
+    spkl_pending_reminder: boolean;
+    budget_threshold_alert: boolean;
+    approval_status_notification: boolean;
+};
+
 export type UserDepartment = {
     id: number;
     code: string;
@@ -25,6 +32,7 @@ export type User = {
     department?: UserDepartment | null;
     section?: UserSection | null;
     avatar?: string;
+    preferences?: UserPreferences | null;
     email_verified_at: string | null;
     two_factor_enabled?: boolean;
     created_at: string;

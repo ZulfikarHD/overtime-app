@@ -31,6 +31,7 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
  * @property int|null $section_id
  * @property bool $is_active
  * @property Carbon|null $last_login_at
+ * @property array<string, mixed>|null $preferences
  * @property string|null $two_factor_secret
  * @property string|null $two_factor_recovery_codes
  * @property Carbon|null $two_factor_confirmed_at
@@ -43,7 +44,7 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
  * @property-read Collection<int, UserAudit> $audits
  * @property-read Collection<int, UserAudit> $actionedAudits
  */
-#[Fillable(['name', 'email', 'password', 'role', 'npk', 'department_id', 'section_id', 'is_active', 'last_login_at'])]
+#[Fillable(['name', 'email', 'password', 'role', 'npk', 'department_id', 'section_id', 'is_active', 'last_login_at', 'preferences'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class User extends Authenticatable implements PasskeyUser
 {
@@ -63,6 +64,7 @@ class User extends Authenticatable implements PasskeyUser
         'section_id',
         'is_active',
         'last_login_at',
+        'preferences',
     ];
 
     /**
@@ -79,6 +81,24 @@ class User extends Authenticatable implements PasskeyUser
             'role' => UserRole::class,
             'is_active' => 'boolean',
             'last_login_at' => 'datetime',
+            'preferences' => 'array',
+        ];
+    }
+
+    /**
+     * Get user preferences with standard defaults applied.
+     *
+     * @return array{theme: string, spkl_pending_reminder: bool, budget_threshold_alert: bool, approval_status_notification: bool}
+     */
+    public function getEffectivePreferences(): array
+    {
+        $prefs = is_array($this->preferences) ? $this->preferences : [];
+
+        return [
+            'theme' => (string) ($prefs['theme'] ?? 'system'),
+            'spkl_pending_reminder' => (bool) ($prefs['spkl_pending_reminder'] ?? true),
+            'budget_threshold_alert' => (bool) ($prefs['budget_threshold_alert'] ?? true),
+            'approval_status_notification' => (bool) ($prefs['approval_status_notification'] ?? true),
         ];
     }
 

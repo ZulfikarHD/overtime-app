@@ -10,6 +10,8 @@ use App\Http\Controllers\Admin\PolicyThresholdController;
 use App\Http\Controllers\Admin\SectionController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Api\CalendarController;
+use App\Http\Controllers\Budgets\OvertimeBudgetController;
+use App\Http\Controllers\Budgets\OvertimeBudgetImportController;
 use Illuminate\Support\Facades\Route;
 
 Route::inertia('/', 'Welcome')->name('home');
@@ -72,6 +74,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // Calendar Classification API for timesheet and general auto-classification (E02-03)
     Route::get('/api/calendar/{date}', [CalendarController::class, 'show'])->name('api.calendar.show');
+
+    // Overtime Budget Planning Hub (E02-07 - Admin & Manager)
+    Route::middleware(['role:admin,manager'])->prefix('budgets')->name('budgets.')->group(function () {
+        Route::get('/planning', [OvertimeBudgetController::class, 'index'])->name('planning');
+        Route::post('/planning', [OvertimeBudgetController::class, 'store'])->name('store');
+        Route::post('/planning/import/preview', [OvertimeBudgetImportController::class, 'preview'])->name('import.preview');
+        Route::post('/planning/import', [OvertimeBudgetImportController::class, 'import'])->name('import');
+        Route::get('/planning/template', [OvertimeBudgetImportController::class, 'template'])->name('template');
+    });
 
     Route::middleware(['role:admin,manager'])->prefix('manager')->name('manager.')->group(function () {
         Route::get('/overview', fn () => response()->json(['status' => 'manager-access-granted']))->name('overview');
