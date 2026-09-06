@@ -36,10 +36,14 @@ Technical specifications and decision records for the engineering implementation
     - [ADR-005: Denormalized Monthly Burn Snapshots](./dev-docs/decisions/005-denormalized-monthly-burn-snapshots.md)
     - [ADR-006: Multi-Database Stored Generated Columns and Partial Indexes](./dev-docs/decisions/006-multi-database-stored-generated-columns-and-partial-indexes.md)
     - [ADR-007: Role-Based Access Control and Scoping](./dev-docs/decisions/007-role-based-access-control-and-scoping.md)
+    - [ADR-008: Redis Queue Worker and Background Job Architecture](./dev-docs/decisions/008-redis-queue-worker-and-background-job-architecture.md)
 - **Technical Feature Design Specifications:**
     - [Authentication & Role-Based Access Control](./dev-docs/features/authentication-rbac.md)
     - [Database Schema Migrations (Full DDL)](./dev-docs/features/database-schema-migrations.md)
     - [Eloquent Models & Domain Relationships](./dev-docs/features/eloquent-models-relationships.md)
+    - [Foundation Layout & Wayfinder Navigation](./dev-docs/features/foundation-layout-wayfinder.md)
+    - [Background Jobs & Redis Queues](./dev-docs/features/background-jobs-queues.md)
+    - [Database Seeding & Demo Data](./dev-docs/features/database-seeding-demo-data.md)
     - [Daily Overtime Entry & SPKL Workflow](./dev-docs/features/daily-overtime-spkl.md)
     - [Verification & Granular Approval Lifecycle](./dev-docs/features/verification-approval.md)
     - [Budget Management & Burn Index Dashboard](./dev-docs/features/budget-burn-index.md)
@@ -78,6 +82,7 @@ Plain-language operating guides for factory supervisors, team leaders, and opera
 
 - **[User Documentation Index](./user-docs/README.md)**
     - [Authentication & Access Control Guide](./user-docs/guides/authentication-rbac.md)
+    - [Dashboard & Operational Navigation Guide](./user-docs/guides/dashboard-navigation.md)
 
 ---
 

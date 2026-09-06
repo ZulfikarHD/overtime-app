@@ -10,9 +10,10 @@ Welcome to the end-user documentation library for the OT-CapEx system. These gui
 
 Step-by-step instructions for everyday plant operations:
 
-| Guide                                                                  | Target Persona      | Description                                                                                                     |
-| ---------------------------------------------------------------------- | ------------------- | --------------------------------------------------------------------------------------------------------------- |
-| **[Authentication & Access Control](./guides/authentication-rbac.md)** | All Plant Personnel | Logging in using NPK or Email, understanding role badges, monitoring live shift clocks, and safely signing out. |
+| Guide                                                                      | Target Persona      | Description                                                                                                     |
+| -------------------------------------------------------------------------- | ------------------- | --------------------------------------------------------------------------------------------------------------- |
+| **[Authentication & Access Control](./guides/authentication-rbac.md)**     | All Plant Personnel | Logging in using NPK or Email, understanding role badges, monitoring live shift clocks, and safely signing out. |
+| **[Dashboard & Operational Navigation](./guides/dashboard-navigation.md)** | All Plant Personnel | Navigating the main dashboard, checking active shift hours, live WIB clock, and shift handover sign-out.        |
 
 ---
 

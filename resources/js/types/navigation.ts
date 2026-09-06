@@ -1,5 +1,6 @@
 import type { InertiaLinkProps } from '@inertiajs/vue3';
 import type { LucideIcon } from '@lucide/vue';
+import type { UserRole } from '@/types/auth';
 
 export type BreadcrumbItem = {
     title: string;
@@ -11,4 +12,5 @@ export type NavItem = {
     href: NonNullable<InertiaLinkProps['href']>;
     icon?: LucideIcon;
     isActive?: boolean;
+    roles?: UserRole[];
 };

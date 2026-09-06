@@ -21,6 +21,9 @@ Deep-dive technical documentation detailing architecture flows, data models, key
 | **[Authentication & Role-Based Access Control](./features/authentication-rbac.md)**       | [Epic-01](../../scrum/Epic-01.md) | Dual-identifier (Email/NPK) login, 4-tier RBAC matrix, department/section scoping, live WIB shift clock, rate limiting, and friendly 403 recovery. |
 | **[Database Schema Migrations (Full DDL)](./features/database-schema-migrations.md)**     | [Epic-01](../../scrum/Epic-01.md) | Relational database schema across 15 tables, foreign keys, stored generated columns, and partial indexes.                                          |
 | **[Eloquent Models & Domain Relationships](./features/eloquent-models-relationships.md)** | [Epic-01](../../scrum/Epic-01.md) | Type-safe ORM entities across 15 models, explicit fillable guards, decimal casts, and domain query scopes.                                         |
+| **[Foundation Layout & Wayfinder Navigation](./features/foundation-layout-wayfinder.md)** | [Epic-01](../../scrum/Epic-01.md) | Responsive base shell, live WIB clock, shift indicator, role badges, Wayfinder routes, and flash toast pipeline.                                   |
+| **[Background Jobs & Redis Queues](./features/background-jobs-queues.md)**                | [Epic-01](../../scrum/Epic-01.md) | Asynchronous Redis queue workers, retry backoff configuration, and scaffolded background jobs.                                                     |
+| **[Database Seeding & Demo Data](./features/database-seeding-demo-data.md)**              | [Epic-01](../../scrum/Epic-01.md) | Modular database seeders for automotive plant master data, shifts, employees, thresholds, and budgets.                                             |
 | **[Daily Overtime Entry & SPKL Workflow](./features/daily-overtime-spkl.md)**             | [Epic-03](../../scrum/Epic-03.md) | Shift-end overtime capture, atomic roster validation, and non-blocking SPKL document state machine.                                                |
 | **[Verification & Granular Approval Lifecycle](./features/verification-approval.md)**     | [Epic-04](../../scrum/Epic-04.md) | Item-level partial approval/rejection queue, optimistic locking (`lock_version`), and immutable audit logging.                                     |
 | **[Budget Management & Burn Index Dashboard](./features/budget-burn-index.md)**           | [Epic-05](../../scrum/Epic-05.md) | Analytical dashboard, Chart.js Burn Index gauges/burndown lines, and asynchronous monthly rollups.                                                 |
@@ -50,6 +53,7 @@ Durable technical decisions and trade-offs:
 - **[ADR-005: Asynchronous Denormalized Monthly Burn Snapshots for Dashboard Performance](./decisions/005-denormalized-monthly-burn-snapshots.md)**
 - **[ADR-006: Multi-Database Stored Generated Columns and Partial Indexes](./decisions/006-multi-database-stored-generated-columns-and-partial-indexes.md)**
 - **[ADR-007: Role-Based Access Control and Scoping](./decisions/007-role-based-access-control-and-scoping.md)**
+- **[ADR-008: Redis Queue Worker and Background Job Architecture](./decisions/008-redis-queue-worker-and-background-job-architecture.md)**
 
 ---
 
