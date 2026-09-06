@@ -140,26 +140,26 @@ Key real-world constraints:
 
 #### Acceptance Criteria
 
-- [ ] Admin can view and edit the **plant-wide default** policy threshold (where `department_id IS NULL`)
-- [ ] Admin can create **department-specific** overrides (where `department_id` is set)
-- [ ] Configurable fields per threshold record:
+- [x] Admin can view and edit the **plant-wide default** policy threshold (where `department_id IS NULL`)
+- [x] Admin can create **department-specific** overrides (where `department_id` is set)
+- [x] Configurable fields per threshold record:
     - `weekly_soft_limit_hours` (default: 20.0 hrs)
     - `consecutive_weeks_alert` (default: 3 weeks)
     - `spkl_grace_period_days` (default: 2 days)
     - `burn_warning_pct` (default: 100%)
     - `burn_danger_pct` (default: 115%)
-- [ ] Changes to `spkl_grace_period_days` affect **new submissions only** — existing SPKL due dates are not retroactively recalculated
-- [ ] Changes to `burn_warning_pct` / `burn_danger_pct` are reflected in dashboards **on next page load** (no cache required)
-- [ ] If no department-specific threshold exists, the system falls back to the plant-wide default
-- [ ] All numeric inputs are validated (non-negative, reasonable range: hours 0–168, pct 0–500)
+- [x] Changes to `spkl_grace_period_days` affect **new submissions only** — existing SPKL due dates are not retroactively recalculated
+- [x] Changes to `burn_warning_pct` / `burn_danger_pct` are reflected in dashboards **on next page load** (no cache required)
+- [x] If no department-specific threshold exists, the system falls back to the plant-wide default
+- [x] All numeric inputs are validated (non-negative, reasonable range: hours 0–168, pct 0–500)
 
 #### Technical Tasks
 
-- [ ] `php artisan make:controller Admin/PolicyThresholdController`
-- [ ] `php artisan make:request StorePolicyThresholdRequest`
-- [ ] `PolicyThresholdService::getForDepartment(int $departmentId): PolicyThreshold` — implements fallback logic
-- [ ] Create `resources/js/Pages/Admin/PolicyThresholds/Index.vue` — table grouped by plant default + dept overrides
-- [ ] Create `resources/js/Pages/Admin/PolicyThresholds/Form.vue` — edit modal
+- [x] `php artisan make:controller Admin/PolicyThresholdController`
+- [x] `php artisan make:request StorePolicyThresholdRequest`
+- [x] `PolicyThresholdService::getForDepartment(int $departmentId): PolicyThreshold` — implements fallback logic
+- [x] Create `resources/js/pages/admin/Administration.vue` (tab=policies) — unified Administration Hub with plant default + dept overrides
+- [x] Create `resources/js/components/admin/PolicyThresholdSheet.vue` — slide-in right drawer form
 - [ ] Inject `PolicyThresholdService` into `SubmitOvertimeAction` (wired in Epic-03)
 
 ---

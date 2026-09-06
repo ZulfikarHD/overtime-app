@@ -16,6 +16,7 @@ Step-by-step instructions for everyday plant operations:
 | **[Dashboard & Operational Navigation](./guides/dashboard-navigation.md)**            | All Plant Personnel  | Navigating the main dashboard, checking active shift hours, live WIB clock, and shift handover sign-out.        |
 | **[Department & Section Management](./guides/department-section-management.md)**      | Plant Administrators | Managing factory department and section hierarchy, default overtime rates, cost centers, and line activation.   |
 | **[Employee Roster Management & CSV Import](./guides/employee-roster-management.md)** | Plant Administrators | Managing factory employee roster, NPK protection, custom overtime labor rates, and bulk CSV onboardings.        |
+| **[Policy Threshold Configuration](./guides/policy-threshold-configuration.md)**      | Plant Administrators | Configuring plant-wide overtime soft limits, SPKL grace periods, and department-specific threshold overrides.   |
 
 ---
 
@@ -25,6 +26,7 @@ All navigation in the OT-CapEx system corresponds directly to your assigned side
 
 - **Dashboard**: High-level shift summary, operational clock, and role capability status.
 - **Master Data**: Consolidated administrative hub for plant departments, sections, employee rosters, and operational calendars (Admin role).
+- **Administration**: Consolidated administrative hub for plant-wide policy thresholds and user accounts (Admin role).
 - **Settings → Profile / Security / Appearance**: Update personal profile details, change password, configure two-factor authentication, or toggle dark/light theme.
 
 ---

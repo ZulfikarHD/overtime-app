@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Link, usePage } from '@inertiajs/vue3';
-import { Database, LayoutGrid } from '@lucide/vue';
+import { Database, LayoutGrid, ShieldCheck } from '@lucide/vue';
 import { computed } from 'vue';
 import AppLogo from '@/components/AppLogo.vue';
 import NavMain from '@/components/NavMain.vue';
@@ -16,7 +16,7 @@ import {
 } from '@/components/ui/sidebar';
 import { useTrans } from '@/composables/useTrans';
 import { dashboard } from '@/routes';
-import { masterData } from '@/routes/admin';
+import { administration, masterData } from '@/routes/admin';
 import type { NavItem, User } from '@/types';
 
 const { __ } = useTrans();
@@ -37,6 +37,11 @@ const mainNavItems = computed<NavItem[]>(() => {
             title: __('Master Data'),
             href: masterData(),
             icon: Database,
+        });
+        items.push({
+            title: __('Administration'),
+            href: administration(),
+            icon: ShieldCheck,
         });
     }
 

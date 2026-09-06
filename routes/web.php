@@ -1,10 +1,12 @@
 <?php
 
+use App\Http\Controllers\Admin\AdministrationController;
 use App\Http\Controllers\Admin\DepartmentController;
 use App\Http\Controllers\Admin\EmployeeController;
 use App\Http\Controllers\Admin\EmployeeImportController;
 use App\Http\Controllers\Admin\MasterDataController;
 use App\Http\Controllers\Admin\OperationalCalendarController;
+use App\Http\Controllers\Admin\PolicyThresholdController;
 use App\Http\Controllers\Admin\SectionController;
 use App\Http\Controllers\Api\CalendarController;
 use Illuminate\Support\Facades\Route;
@@ -48,6 +50,17 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/calendar/import-holidays/preview', [OperationalCalendarController::class, 'preview'])->name('calendar.import.preview');
         Route::post('/calendar/import-holidays', [OperationalCalendarController::class, 'import'])->name('calendar.import');
         Route::get('/calendar/template', [OperationalCalendarController::class, 'template'])->name('calendar.template');
+
+        // Administration Hub (E02-04, E02-05)
+        Route::get('/administration', [AdministrationController::class, 'index'])->name('administration');
+        Route::redirect('/policies', '/admin/administration?tab=policies');
+        Route::redirect('/policy-thresholds', '/admin/administration?tab=policies');
+        Route::redirect('/users', '/admin/administration?tab=users');
+
+        // Policy Threshold Configuration (E02-04)
+        Route::post('/policy-thresholds', [PolicyThresholdController::class, 'store'])->name('policy-thresholds.store');
+        Route::put('/policy-thresholds/{policy_threshold}', [PolicyThresholdController::class, 'update'])->name('policy-thresholds.update');
+        Route::delete('/policy-thresholds/{policy_threshold}', [PolicyThresholdController::class, 'destroy'])->name('policy-thresholds.destroy');
     });
 
     // Calendar Classification API for timesheet and general auto-classification (E02-03)

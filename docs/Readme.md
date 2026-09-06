@@ -38,6 +38,7 @@ Technical specifications and decision records for the engineering implementation
     - [ADR-007: Role-Based Access Control and Scoping](./dev-docs/decisions/007-role-based-access-control-and-scoping.md)
     - [ADR-008: Redis Queue Worker and Background Job Architecture](./dev-docs/decisions/008-redis-queue-worker-and-background-job-architecture.md)
     - [ADR-009: Two-Stage Pre-Commit CSV Roster Import](./dev-docs/decisions/009-two-stage-pre-commit-csv-roster-import.md)
+    - [ADR-010: Policy Threshold Hierarchical Inheritance Fallback](./dev-docs/decisions/010-policy-threshold-hierarchical-inheritance-fallback.md)
 - **Technical Feature Design Specifications:**
     - [Authentication & Role-Based Access Control](./dev-docs/features/authentication-rbac.md)
     - [Database Schema Migrations (Full DDL)](./dev-docs/features/database-schema-migrations.md)
@@ -46,6 +47,7 @@ Technical specifications and decision records for the engineering implementation
     - [Department & Section Hierarchy Management](./dev-docs/features/department-section-management.md)
     - [Employee Roster Management & CSV Import](./dev-docs/features/employee-roster-management.md)
     - [Operational Calendar Management & API](./dev-docs/features/operational-calendar-management.md)
+    - [Policy Threshold Configuration & Hierarchical Fallback](./dev-docs/features/policy-threshold-configuration.md)
     - [Background Jobs & Redis Queues](./dev-docs/features/background-jobs-queues.md)
     - [Database Seeding & Demo Data](./dev-docs/features/database-seeding-demo-data.md)
     - [Daily Overtime Entry & SPKL Workflow](./dev-docs/features/daily-overtime-spkl.md)
@@ -90,6 +92,7 @@ Plain-language operating guides for factory supervisors, team leaders, and opera
     - [Dashboard & Operational Navigation Guide](./user-docs/guides/dashboard-navigation.md)
     - [Department & Section Management Guide](./user-docs/guides/department-section-management.md)
     - [Employee Roster Management & CSV Import Guide](./user-docs/guides/employee-roster-management.md)
+    - [Policy Threshold Configuration Guide](./user-docs/guides/policy-threshold-configuration.md)
 
 ---
 

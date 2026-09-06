@@ -2,7 +2,9 @@
 
 namespace App\Models;
 
+use Database\Factories\PolicyThresholdFactory;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
@@ -20,6 +22,9 @@ use Illuminate\Support\Carbon;
  */
 class PolicyThreshold extends Model
 {
+    /** @use HasFactory<PolicyThresholdFactory> */
+    use HasFactory;
+
     /**
      * @var list<string>
      */
