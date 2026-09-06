@@ -12,6 +12,7 @@
 ## Business Context
 
 CapEx labor is a distinct financial category. When engineers spend overtime building a new assembly line, installing machinery, or fabricating tooling, those hours don't go to operational cost (P&L expense) — they are **capitalized** onto a fixed asset's cost basis. This has direct implications for:
+
 - **Tax depreciation schedules** — an asset's capitalizable cost must include direct labor
 - **Financial audit compliance** — external auditors will verify that capitalized hours are traceable to formal project codes
 - **Project manager oversight** — capital projects routinely overrun their labor budgets when physical progress lags behind burn velocity
@@ -27,6 +28,7 @@ Business Rule **BR-08** is the foundation: any overtime hour categorized as "Pro
 ---
 
 ### Story E07-01: CapEx Project Master Data Management (Admin/Manager)
+
 **As an** Admin or Manager,  
 **I want** to create and manage CapEx project records with budget allocations and milestone tracking,  
 **So that** Team Leaders can attribute "Project" overtime hours to the correct capital project and the system can track labor burn against each project's allocated budget.
@@ -35,15 +37,16 @@ Business Rule **BR-08** is the foundation: any overtime hour categorized as "Pro
 **Priority:** Must Have
 
 #### Acceptance Criteria
+
 - [ ] Admin and Manager can create a CapEx project with:
-  - `project_code` (unique, e.g., `CPX-2026-ASSY-001`)
-  - `asset_code` (nullable, fixed asset tag reference for accounting)
-  - `name` (descriptive project name)
-  - `department_id` (which department owns this project)
-  - `allocated_labor_hours` (planned capitalized labor hours)
-  - `allocated_labor_budget_idr` (Rp value of the labor allocation)
-  - `start_date` and `target_end_date`
-  - `status`: `PLANNING | ACTIVE | ON_HOLD | COMPLETED | CLOSED`
+    - `project_code` (unique, e.g., `CPX-2026-ASSY-001`)
+    - `asset_code` (nullable, fixed asset tag reference for accounting)
+    - `name` (descriptive project name)
+    - `department_id` (which department owns this project)
+    - `allocated_labor_hours` (planned capitalized labor hours)
+    - `allocated_labor_budget_idr` (Rp value of the labor allocation)
+    - `start_date` and `target_end_date`
+    - `status`: `PLANNING | ACTIVE | ON_HOLD | COMPLETED | CLOSED`
 - [ ] `project_code` is immutable after creation (same invariant as NPK)
 - [ ] Only `ACTIVE` projects appear in the Team Leader's "Project" dropdown on the overtime form
 - [ ] Admin can transition project status: `PLANNING → ACTIVE`, `ACTIVE → ON_HOLD / COMPLETED`, `COMPLETED → CLOSED`
@@ -52,6 +55,7 @@ Business Rule **BR-08** is the foundation: any overtime hour categorized as "Pro
 - [ ] Project detail page: shows basic info + labor burn summary (from E07-02)
 
 #### Technical Tasks
+
 - [ ] `php artisan make:controller Admin/CapexProjectController --resource`
 - [ ] `php artisan make:request StoreCapexProjectRequest` + `UpdateCapexProjectRequest`
 - [ ] `StoreOvertimeSubmissionRequest`: when `hours_project > 0`, validate `capex_project_id` exists AND `capex_projects.status = 'ACTIVE'`
@@ -65,6 +69,7 @@ Business Rule **BR-08** is the foundation: any overtime hour categorized as "Pro
 ---
 
 ### Story E07-02: CapEx Project Labor Burn Tracking Dashboard
+
 **As a** Manager or CapEx Project Manager,  
 **I want** to see how much overtime labor has been consumed against each CapEx project's allocated budget,  
 **So that** I can identify projects that are at risk of exceeding their capitalized labor allowance before it happens.
@@ -73,20 +78,22 @@ Business Rule **BR-08** is the foundation: any overtime hour categorized as "Pro
 **Priority:** Must Have
 
 #### Acceptance Criteria
+
 - [ ] CapEx project detail page shows:
-  - `Allocated Labor Hours` vs `Consumed Labor Hours` (from approved "Project" items)
-  - `Allocated Budget (Rp)` vs `Consumed Labor Cost (Rp)` (sum of `total_cost_snapshot` where `capex_project_id = X`)
-  - **CapEx Burn Index** = `(Consumed Hours / Allocated Hours) × 100%` — same formula as section Burn Index, applied to project
-  - **Physical Progress %** (`capex_projects.physical_progress_pct`) — editable by Manager
-  - **Milestone Burn Ratio** = `CapEx Burn Index / Physical Progress %` — if > 1.0, labor is burning faster than physical progress (warning signal)
-  - Labor hours timeline chart: cumulative hours by week
-  - Team composition: list of employees who contributed hours, sorted by hours descending
+    - `Allocated Labor Hours` vs `Consumed Labor Hours` (from approved "Project" items)
+    - `Allocated Budget (Rp)` vs `Consumed Labor Cost (Rp)` (sum of `total_cost_snapshot` where `capex_project_id = X`)
+    - **CapEx Burn Index** = `(Consumed Hours / Allocated Hours) × 100%` — same formula as section Burn Index, applied to project
+    - **Physical Progress %** (`capex_projects.physical_progress_pct`) — editable by Manager
+    - **Milestone Burn Ratio** = `CapEx Burn Index / Physical Progress %` — if > 1.0, labor is burning faster than physical progress (warning signal)
+    - Labor hours timeline chart: cumulative hours by week
+    - Team composition: list of employees who contributed hours, sorted by hours descending
 - [ ] Manager can update `physical_progress_pct` (0–100) directly from the project detail page
 - [ ] Warning badge shown if `Milestone Burn Ratio > 1.2`: `⚠️ Labor consuming faster than project progress`
 - [ ] Alert notification sent to Project Manager when CapEx Burn Index > 80% (configurable)
 - [ ] Zero hours case: if no hours logged yet, show "No labor recorded — project is in allocation phase"
 
 #### Technical Tasks
+
 - [ ] `CapExAccountingService::getProjectLaborMetrics(int $projectId): array`
 - [ ] Returns: `allocated_hours`, `consumed_hours`, `remaining_hours`, `burn_index_pct`, `physical_progress_pct`, `milestone_burn_ratio`, `consumed_cost_idr`, `top_contributors`
 - [ ] Consumed hours query: `SUM(overtime_items.total_hours)` + `SUM(overtime_items.hours_project)` where `capex_project_id = X` and `status = 'APPROVED'`
@@ -101,6 +108,7 @@ Business Rule **BR-08** is the foundation: any overtime hour categorized as "Pro
 ---
 
 ### Story E07-03: Multi-Project Portfolio Overview (Manager/Admin)
+
 **As a** Department Manager,  
 **I want** a consolidated view of all CapEx projects in my department with their labor burn status,  
 **So that** I can prioritize which projects need attention during my weekly management review.
@@ -109,6 +117,7 @@ Business Rule **BR-08** is the foundation: any overtime hour categorized as "Pro
 **Priority:** Should Have
 
 #### Acceptance Criteria
+
 - [ ] Portfolio page lists all CapEx projects for the Manager's department
 - [ ] Table columns: `Project Code`, `Name`, `Status`, `Allocated Hours`, `Consumed Hours`, `Burn Index %`, `Physical Progress %`, `Milestone Burn Ratio`, `Target End Date`, `Days Remaining`
 - [ ] Color-coded rows by CapEx Burn Index: same threshold scheme as section Burn Index
@@ -118,6 +127,7 @@ Business Rule **BR-08** is the foundation: any overtime hour categorized as "Pro
 - [ ] Admin sees cross-department portfolio with department column
 
 #### Technical Tasks
+
 - [ ] `CapexProjectController@portfolio` — `GET /reports/capex-projects/portfolio`
 - [ ] Query: joins `capex_projects` with aggregated approved item hours per project
 - [ ] Create `resources/js/Pages/Reports/CapexPortfolio.vue`
@@ -126,6 +136,7 @@ Business Rule **BR-08** is the foundation: any overtime hour categorized as "Pro
 ---
 
 ### Story E07-04: CapEx Project Labor Attribution Report (Finance)
+
 **As an** Admin or Finance Controller,  
 **I want** a detailed labor attribution report showing which employees worked on which CapEx project, when, and at what cost,  
 **So that** I can produce the capitalization schedule required by the accounting/tax team.
@@ -134,6 +145,7 @@ Business Rule **BR-08** is the foundation: any overtime hour categorized as "Pro
 **Priority:** Should Have
 
 #### Acceptance Criteria
+
 - [ ] Detailed report: one row per overtime item with `capex_project_id` not null
 - [ ] Report columns: `Project Code`, `Project Name`, `Asset Code`, `Date`, `Employee NPK`, `Employee Name`, `Hours`, `Hourly Rate Snapshot (Rp)`, `Cost (Rp)`, `Submission Code`, `Approval Date`, `Approved By`
 - [ ] Filterable by: project code, department, date range
@@ -144,6 +156,7 @@ Business Rule **BR-08** is the foundation: any overtime hour categorized as "Pro
 - [ ] Rate snapshot and cost are the **immutable values** stored at submission time — no recalculation
 
 #### Technical Tasks
+
 - [ ] `CapexLaborReportController@index` — `GET /reports/capex-labor`
 - [ ] Query: `overtime_items` joined to `overtime_submissions`, `employees`, `capex_projects`, `users (reviewer)` where `capex_project_id IS NOT NULL AND status = 'APPROVED'`
 - [ ] Create `resources/js/Pages/Reports/CapexLaborReport.vue` — filterable report table
@@ -153,6 +166,7 @@ Business Rule **BR-08** is the foundation: any overtime hour categorized as "Pro
 ---
 
 ### Story E07-05: CapEx Project Physical Progress Update (Manager)
+
 **As a** Project Manager,  
 **I want** to update the physical completion percentage of a CapEx project,  
 **So that** the system can calculate the Milestone Burn Ratio and alert me if labor is running ahead of physical work.
@@ -161,6 +175,7 @@ Business Rule **BR-08** is the foundation: any overtime hour categorized as "Pro
 **Priority:** Must Have
 
 #### Acceptance Criteria
+
 - [ ] Manager can update `physical_progress_pct` (0.0 to 100.0) directly from the project detail page
 - [ ] Updating `physical_progress_pct` **does not require a full page reload** — in-place edit with instant save
 - [ ] Each update to `physical_progress_pct` is logged in `overtime_item_audits` (or a `capex_project_audits` table): `{ action: 'PROGRESS_UPDATE', previous_pct: X, new_pct: Y, actor_user_id: Z }`
@@ -168,6 +183,7 @@ Business Rule **BR-08** is the foundation: any overtime hour categorized as "Pro
 - [ ] Milestone Burn Ratio re-evaluates immediately after update
 
 #### Technical Tasks
+
 - [ ] `PATCH /admin/capex-projects/{id}/progress` → `CapexProjectController@updateProgress`
 - [ ] Request: `{ physical_progress_pct: 0-100 }` with validation `between:0,100`
 - [ ] Inline edit: Vue `<InlineEditableField>` component — shows current value as text, click to edit in-place
@@ -178,32 +194,32 @@ Business Rule **BR-08** is the foundation: any overtime hour categorized as "Pro
 
 ## Sprint 6–7 Schedule (Partial Sprint 6, Full Sprint 7)
 
-| Sprint Day | Focus | Stories |
-|-----------|-------|---------|
-| Sprint 6, Day 6–7 | CapEx project master data management | E07-01 |
+| Sprint Day         | Focus                                              | Stories        |
+| ------------------ | -------------------------------------------------- | -------------- |
+| Sprint 6, Day 6–7  | CapEx project master data management               | E07-01         |
 | Sprint 6, Day 8–10 | CapEx project detail dashboard + physical progress | E07-02, E07-05 |
-| Sprint 7, Day 1–3 | Multi-project portfolio overview | E07-03 |
-| Sprint 7, Day 4–6 | CapEx labor attribution report + Excel export | E07-04 |
+| Sprint 7, Day 1–3  | Multi-project portfolio overview                   | E07-03         |
+| Sprint 7, Day 4–6  | CapEx labor attribution report + Excel export      | E07-04         |
 
 ---
 
 ## Key Business Rules Implemented in This Epic
 
-| Rule | Implementation |
-|------|---------------|
+| Rule                             | Implementation                                                                                                                        |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
 | BR-08: CapEx Project Attribution | `StoreOvertimeSubmissionRequest`: validates `capex_project_id` not null when `hours_project > 0`, and project status must be `ACTIVE` |
-| CapEx Burn Index | Same formula as section Burn Index applied per project: `(Consumed Hours / Allocated Hours) × 100%` |
-| Immutable cost snapshots | `CapexLaborAttributionReport` always uses `total_cost_snapshot` from DB, never recalculates |
+| CapEx Burn Index                 | Same formula as section Burn Index applied per project: `(Consumed Hours / Allocated Hours) × 100%`                                   |
+| Immutable cost snapshots         | `CapexLaborAttributionReport` always uses `total_cost_snapshot` from DB, never recalculates                                           |
 
 ---
 
 ## Risks & Assumptions
 
-| Risk | Likelihood | Mitigation |
-|------|-----------|------------|
-| Project code naming convention not standardized by client | High | Enforce format with regex validation in `StoreCapexProjectRequest` (e.g., `CPX-YYYY-*`) — discuss with client in Sprint 2 |
-| CapEx Burn Alert notification flooding on multi-project departments | Low | Per-project, per-month deduplication — store `burn_alerted_at` on `capex_projects` |
-| `physical_progress_pct` manually entered incorrectly | Medium | Input capped 0–100, previous value shown in audit, Manager can correct it |
+| Risk                                                                | Likelihood | Mitigation                                                                                                                |
+| ------------------------------------------------------------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------- |
+| Project code naming convention not standardized by client           | High       | Enforce format with regex validation in `StoreCapexProjectRequest` (e.g., `CPX-YYYY-*`) — discuss with client in Sprint 2 |
+| CapEx Burn Alert notification flooding on multi-project departments | Low        | Per-project, per-month deduplication — store `burn_alerted_at` on `capex_projects`                                        |
+| `physical_progress_pct` manually entered incorrectly                | Medium     | Input capped 0–100, previous value shown in audit, Manager can correct it                                                 |
 
 ---
 

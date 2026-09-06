@@ -11,9 +11,9 @@ Contoh commit message menggunakan standar format: **cerita/deskripsi singkat + b
 ```
 feat(ui): tambah DataTable, EmptyState, CurrencyDisplay, dan FormField components
 
-Dibutuhkan kumpulan reusable components untuk standardisasi tampilan dan 
-interaksi halaman CRUD pada sprint berikutnya. Tanpa standar ini, setiap 
-developer berpotensi membuat implementasi sendiri yang inkonsisten. Komponen 
+Dibutuhkan kumpulan reusable components untuk standardisasi tampilan dan
+interaksi halaman CRUD pada sprint berikutnya. Tanpa standar ini, setiap
+developer berpotensi membuat implementasi sendiri yang inkonsisten. Komponen
 ini juga dioptimalkan agar responsif dan ringan di perangkat mobile.
 
 Perubahan:
@@ -34,9 +34,9 @@ Refs: US-S0.6, US-S0.7
 ```
 feat(layout): tambah sidebar navigation dan role-based layout untuk admin, guru, dan ortu
 
-Setiap role pengguna membutuhkan navigasi yang berbeda sesuai hak aksesnya. 
-Layout dirancang responsif dengan sidebar collapsible pada desktop dan bottom 
-nav pada mobile (khusus ortu) untuk memastikan pengalaman penggunaan optimal 
+Setiap role pengguna membutuhkan navigasi yang berbeda sesuai hak aksesnya.
+Layout dirancang responsif dengan sidebar collapsible pada desktop dan bottom
+nav pada mobile (khusus ortu) untuk memastikan pengalaman penggunaan optimal
 di setiap perangkat.
 
 Perubahan:
@@ -56,9 +56,9 @@ Refs: US-S0.4
 ```
 feat(ci): tambah GitHub Actions CI/CD pipeline dengan tenant isolation scan
 
-Aplikasi multi-tenant membutuhkan jaminan data isolation agar tidak bocor 
-antar tenant sebelum rilis ke production. Deployment manual sebelumnya lambat 
-dan rentan human error, sehingga dibutuhkan pipeline otomatis untuk lint, 
+Aplikasi multi-tenant membutuhkan jaminan data isolation agar tidak bocor
+antar tenant sebelum rilis ke production. Deployment manual sebelumnya lambat
+dan rentan human error, sehingga dibutuhkan pipeline otomatis untuk lint,
 test, verifikasi isolasi data, dan deployment.
 
 Perubahan:
@@ -76,9 +76,9 @@ Refs: US-S0.5
 ```
 fix(auth): perbaiki redirect loop saat session expired di halaman dashboard
 
-Ketika session pengguna kedaluwarsa saat berada di dashboard, request API 
-mengembalikan error 401 tetapi frontend tidak menangani redirect dengan benar, 
-sehingga pengguna stuck dalam refresh loop tanpa informasi jelas. Masalah ini 
+Ketika session pengguna kedaluwarsa saat berada di dashboard, request API
+mengembalikan error 401 tetapi frontend tidak menangani redirect dengan benar,
+sehingga pengguna stuck dalam refresh loop tanpa informasi jelas. Masalah ini
 dilaporkan oleh beberapa pengguna dalam seminggu terakhir.
 
 Perubahan:
@@ -94,9 +94,9 @@ Tests: Feature test simulasi expired session dengan assertRedirect, manual test 
 ```
 refactor(payment): ekstrak payment logic dari controller ke PaymentService
 
-PaymentController sebelumnya memiliki lebih dari 400 baris kode yang mencampur 
-penanganan HTTP request dengan logika transaksi pembayaran. Logika ini perlu 
-diekstrak agar dapat digunakan kembali pada fitur booking dan membership, serta 
+PaymentController sebelumnya memiliki lebih dari 400 baris kode yang mencampur
+penanganan HTTP request dengan logika transaksi pembayaran. Logika ini perlu
+diekstrak agar dapat digunakan kembali pada fitur booking dan membership, serta
 mempermudah unit testing secara terisolasi.
 
 Perubahan:
@@ -112,8 +112,8 @@ Tests: Semua existing test passing tanpa modifikasi, tambah 12 unit test cases d
 ```
 feat(akademik): tambah tabel mata pelajaran dan jadwal kelas
 
-Guru dan admin membutuhkan pengelolaan jadwal mengajar dan pembagian mata 
-pelajaran untuk tahun ajaran baru. Struktur relasi database ini menjadi 
+Guru dan admin membutuhkan pengelolaan jadwal mengajar dan pembagian mata
+pelajaran untuk tahun ajaran baru. Struktur relasi database ini menjadi
 fondasi utama sebelum fitur absensi dan penginputan nilai dapat dibangun.
 
 Perubahan:
@@ -132,9 +132,9 @@ Refs: US-S1.3
 ```
 fix(pos): perbaiki stok tidak berkurang saat order redemption poin
 
-Order yang dibayar menggunakan redemption poin loyalty sebelumnya tidak 
-mengurangi stok fisik produk karena kolom redemption belum tercatat di tabel 
-orders. Akibatnya pengecekan payment method selalu fallback ke default dan 
+Order yang dibayar menggunakan redemption poin loyalty sebelumnya tidak
+mengurangi stok fisik produk karena kolom redemption belum tercatat di tabel
+orders. Akibatnya pengecekan payment method selalu fallback ke default dan
 melewati event pengurangan stok.
 
 Perubahan:
@@ -150,8 +150,8 @@ Tests: Feature test transaksi order dengan redemption poin, assert kuantitas sto
 ```
 style(produk): redesign card produk jadi lebih compact dan konsisten dengan brand
 
-Card produk saat ini memiliki whitespace berlebih di mobile sehingga hanya 
-memuat 2 item per scroll. Tampilan diperbarui agar lebih padat dan menyelaraskan 
+Card produk saat ini memiliki whitespace berlebih di mobile sehingga hanya
+memuat 2 item per scroll. Tampilan diperbarui agar lebih padat dan menyelaraskan
 palet warna dengan standar desain baru tanpa mengubah data maupun logika bisnis.
 
 Perubahan:
@@ -164,8 +164,8 @@ Perubahan:
 ```
 refactor(checkout): pecah CheckoutPage jadi CheckoutSummary dan CheckoutForm
 
-Komponen CheckoutPage sebelumnya melebihi 500 baris karena menggabungkan 
-input form pelanggan, opsi pengiriman, dan ringkasan total biaya. Pemisahan ini 
+Komponen CheckoutPage sebelumnya melebihi 500 baris karena menggabungkan
+input form pelanggan, opsi pengiriman, dan ringkasan total biaya. Pemisahan ini
 mempermudah pemeliharaan dan memungkinkan komponen ringkasan dipakai ulang.
 
 Perubahan:
@@ -181,8 +181,8 @@ Tests: Existing feature test checkout tetap passing tanpa modifikasi
 ```
 perf(dashboard): eager load relasi order items untuk hilangkan N+1 query
 
-Halaman dashboard sebelumnya mengeksekusi 200+ query terpisah saat memuat 100 
-order karena relasi item diakses di loop tanpa eager loading. Hal ini menyebabkan 
+Halaman dashboard sebelumnya mengeksekusi 200+ query terpisah saat memuat 100
+order karena relasi item diakses di loop tanpa eager loading. Hal ini menyebabkan
 waktu pemuatan mencapai 4-5 detik di jam operasional sibuk.
 
 Perubahan:
@@ -197,8 +197,8 @@ Tests: Query count via DB::listen berkurang dari 200+ query menjadi 3 query
 ```
 chore(deps): update laravel/framework ke v13.2 dan vue ke v3.5.x
 
-Pembaruan framework diperlukan untuk mengatasi security advisory terkait 
-validasi unggah file pada Laravel, serta memperbaiki bug reactivity pada 
+Pembaruan framework diperlukan untuk mengatasi security advisory terkait
+validasi unggah file pada Laravel, serta memperbaiki bug reactivity pada
 Vue 3.5 yang berpengaruh ke composable mata uang.
 
 Perubahan:
@@ -213,8 +213,8 @@ Tests: `composer ci:check` passing, manual smoke test alur checkout
 ```
 docs(adr): tambah ADR-030 alasan pnpm sebagai package manager eksklusif
 
-Pencatatan keputusan arsitektur diperlukan setelah beberapa kontributor tanpa 
-sengaja menggunakan npm yang menghasilkan lockfile ganda dan inkonsistensi 
+Pencatatan keputusan arsitektur diperlukan setelah beberapa kontributor tanpa
+sengaja menggunakan npm yang menghasilkan lockfile ganda dan inkonsistensi
 resolusi paket dependensi di CI/CD.
 
 Perubahan:
@@ -227,8 +227,8 @@ Perubahan:
 ```
 revert: batalkan "feat(promo): tambah diskon otomatis per kategori"
 
-Perhitungan diskon kategori ganda mengalami kesalahan logika yang menyebabkan 
-beberapa produk mendapatkan potongan harga dua kali pada transaksi pagi ini. 
+Perhitungan diskon kategori ganda mengalami kesalahan logika yang menyebabkan
+beberapa produk mendapatkan potongan harga dua kali pada transaksi pagi ini.
 Fitur dibatalkan sementara agar transaksi kasir tidak terdampak hingga perbaikan tuntas.
 
 Perubahan:
@@ -287,8 +287,8 @@ Modified: LoginPage.vue, LoginController.php
 # Body yang BAIK seharusnya:
 feat(auth): tambah login page
 
-User sekarang harus login dulu sebelum akses dashboard karena ada data 
-sensitif siswa. Implementasi login dengan session-based auth dan remember 
+User sekarang harus login dulu sebelum akses dashboard karena ada data
+sensitif siswa. Implementasi login dengan session-based auth dan remember
 me feature untuk UX yang lebih baik di perangkat bersama.
 
 Perubahan:
@@ -319,28 +319,33 @@ refactor(produk): restrukturisasi ProductPage jadi komponen lebih kecil
 
 ```markdown
 ## Ringkasan
+
 - Tambah reusable DataTable component dengan pagination dan responsive card view
 - Tambah shared components: EmptyState, CurrencyDisplay, DateDisplay
 - Tambah FormField component untuk standarisasi form layout
 
 ## Mengapa
+
 Sprint berikutnya akan banyak halaman CRUD (siswa, guru, pembayaran).
 Tanpa standar components, setiap halaman akan punya implementasi berbeda
 yang menyulitkan maintenance. Components ini juga sudah dioptimasi untuk
 budget Android device (Redmi 9-class) yang jadi target utama user parent.
 
 ## Perubahan Utama
+
 - `DataTable.vue`: support server-side pagination, search filter, mobile card layout
 - `useCurrency.ts`: format Rupiah dengan useCurrency composable
 - `EmptyState.vue`: consistent empty state dengan icon, title, description, CTA
 - `FormField.vue`: wrapper untuk label + input + error + hint
 
 ## Testing
+
 - [x] Unit test useCurrency formatting
 - [x] Manual test responsive DataTable di 360px viewport
 - [ ] Integration test dengan real API data
 
 ## Catatan untuk Reviewer
+
 - DataTable pagination menggunakan Inertia preserveState untuk UX
 - CurrencyDisplay intentionally tidak pakai Intl.NumberFormat karena
   inconsistent di Android WebView lama

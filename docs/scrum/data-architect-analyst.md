@@ -1,4 +1,5 @@
 # Architectural Blueprint: Overtime & CapEx Labor Management System (OT-CapEx)
+
 **Lead Database & Systems Architect:** Senior Data Architect Agent  
 **Client / Lead Developer:** Zulfikar Hidayatullah (+62 857-1583-8733)  
 **Target Stack:** Laravel 11/12 (PHP 8.3+) + Vue 3 Inertia.js (Wayfinder routing) + PostgreSQL 16 / MySQL 8.0 (InnoDB)  
@@ -9,36 +10,40 @@
 ## 1. Assumptions & Business Context
 
 ### 1.1 Workload & Scale Profile
+
 From auditing `@migration-plan/ba-analyst-reqs-draft.md` and the shop-floor mockups, here is the technical reality of this manufacturing system:
-* **Workload Characteristics (Balanced with Burst Writes)**:
-  * **Burst Writes at Shift Handover**: 10–50 Team Leaders simultaneously submit batch timesheets (10–30 workers per section) at shift ends (07:00, 15:00, 23:00 WIB).
-  * **Concurrent Review Queues**: Department Managers and Section Heads audit lines, execute partial approvals, and reject line items in bulk during morning standups (07:30–09:00 WIB).
-  * **Continuous Analytical Reads**: Management dashboards, weekly 5-week burndown trackers, individual employee dossiers, and CapEx capitalization reports.
-  * **Background ML & Asynchronous Jobs**: Batch feature extraction, anomaly inference during submission, and scheduled SPKL grace-period escalations.
-* **Data Volume Projections**:
-  * **Plant Scale**: ~1,500 active employees across 35 sections and 6 departments (Production, Maintenance, Engineering, Quality, Logistics, Tooling).
-  * **Daily Volume**: ~800 to 1,500 line items/day (average 25 shifts per month).
-  * **Year 1**: ~300,000–450,000 records.
-  * **Year 3–5**: ~1.5M–2.5M records.
-  * *Architectural takeaway*: This is **not** distributed "Big Data" requiring distributed sharding or Cassandra. It is a **high-integrity relational OLTP & financial governance system**. Vertical scaling on a single primary database (e.g., 4–8 vCPUs, 16–32 GB RAM) with proper B-Tree indexing and selective denormalization will maintain sub-10ms query response times for the next decade.
+
+- **Workload Characteristics (Balanced with Burst Writes)**:
+    - **Burst Writes at Shift Handover**: 10–50 Team Leaders simultaneously submit batch timesheets (10–30 workers per section) at shift ends (07:00, 15:00, 23:00 WIB).
+    - **Concurrent Review Queues**: Department Managers and Section Heads audit lines, execute partial approvals, and reject line items in bulk during morning standups (07:30–09:00 WIB).
+    - **Continuous Analytical Reads**: Management dashboards, weekly 5-week burndown trackers, individual employee dossiers, and CapEx capitalization reports.
+    - **Background ML & Asynchronous Jobs**: Batch feature extraction, anomaly inference during submission, and scheduled SPKL grace-period escalations.
+- **Data Volume Projections**:
+    - **Plant Scale**: ~1,500 active employees across 35 sections and 6 departments (Production, Maintenance, Engineering, Quality, Logistics, Tooling).
+    - **Daily Volume**: ~800 to 1,500 line items/day (average 25 shifts per month).
+    - **Year 1**: ~300,000–450,000 records.
+    - **Year 3–5**: ~1.5M–2.5M records.
+    - _Architectural takeaway_: This is **not** distributed "Big Data" requiring distributed sharding or Cassandra. It is a **high-integrity relational OLTP & financial governance system**. Vertical scaling on a single primary database (e.g., 4–8 vCPUs, 16–32 GB RAM) with proper B-Tree indexing and selective denormalization will maintain sub-10ms query response times for the next decade.
 
 ### 1.2 Consistency & Concurrency Requirements
-* **Strict ACID Transactions are Mandatory**:
-  * An overtime submission and its child line items must be written atomically.
-  * Item-level partial approvals and budget quota adjustments cannot tolerate lost updates or race conditions when two managers review the same section simultaneously.
-  * CapEx project labor attribution directly impacts financial capitalization of physical assets (audited by external tax and financial auditors). Orphaned records or floating-point rounding errors are intolerable.
-* **Eventual Consistency is Acceptable For**:
-  * Pre-aggregated dashboard statistics (weekly burndown snapshots).
-  * Supervised ML feature recalculation and prediction cache.
-  * SPKL grace-period reminder dispatching via Redis queues.
+
+- **Strict ACID Transactions are Mandatory**:
+    - An overtime submission and its child line items must be written atomically.
+    - Item-level partial approvals and budget quota adjustments cannot tolerate lost updates or race conditions when two managers review the same section simultaneously.
+    - CapEx project labor attribution directly impacts financial capitalization of physical assets (audited by external tax and financial auditors). Orphaned records or floating-point rounding errors are intolerable.
+- **Eventual Consistency is Acceptable For**:
+    - Pre-aggregated dashboard statistics (weekly burndown snapshots).
+    - Supervised ML feature recalculation and prediction cache.
+    - SPKL grace-period reminder dispatching via Redis queues.
 
 ### 1.3 Open Questions & Architectural Safeguards
-1. **Master Organizational Structure**: Production screens show mixed legacy naming (`Assembly Line 1` vs `TCF FS`).  
-   * *Architectural Solution*: Implement an explicit `departments` $\rightarrow$ `sections` hierarchical schema with immutable primary keys (`UUID` or `BIGINT`) and natural shop-floor codes (`code`), decoupling UI labels from database foreign keys.
-2. **Overtime Costing Baseline**:  
-   * *Architectural Solution*: Store standard labor hourly rates at both the Department level (`department_labor_rates`) and Employee level (`employees.hourly_rate`). When an overtime line is approved, the system **takes an immutable snapshot** of the effective hourly rate (`hourly_rate_snapshot`) to prevent historical cost shifts when salaries or standard costing tables are updated in future fiscal years.
-3. **SPKL Grace Period**:  
-   * *Architectural Solution*: Treat the SPKL attachment workflow as an asynchronous document state machine (`pending` $\rightarrow$ `attached` $\rightarrow$ `verified`) with a configurable grace period parameter (`policy_thresholds.spkl_grace_period_days`, default: 2 business days).
+
+1. **Master Organizational Structure**: Production screens show mixed legacy naming (`Assembly Line 1` vs `TCF FS`).
+    - _Architectural Solution_: Implement an explicit `departments` $\rightarrow$ `sections` hierarchical schema with immutable primary keys (`UUID` or `BIGINT`) and natural shop-floor codes (`code`), decoupling UI labels from database foreign keys.
+2. **Overtime Costing Baseline**:
+    - _Architectural Solution_: Store standard labor hourly rates at both the Department level (`department_labor_rates`) and Employee level (`employees.hourly_rate`). When an overtime line is approved, the system **takes an immutable snapshot** of the effective hourly rate (`hourly_rate_snapshot`) to prevent historical cost shifts when salaries or standard costing tables are updated in future fiscal years.
+3. **SPKL Grace Period**:
+    - _Architectural Solution_: Treat the SPKL attachment workflow as an asynchronous document state machine (`pending` $\rightarrow$ `attached` $\rightarrow$ `verified`) with a configurable grace period parameter (`policy_thresholds.spkl_grace_period_days`, default: 2 business days).
 
 ---
 
@@ -119,7 +124,7 @@ From auditing `@migration-plan/ba-analyst-reqs-draft.md` and the shop-floor mock
 
 ### 2.3 Production-Grade Database DDL (PostgreSQL Dialect)
 
-*Note: Fully compatible with MySQL 8.0 InnoDB with minor syntax adjustments (`JSONB` $\rightarrow$ `JSON`, `TIMESTAMPTZ` $\rightarrow$ `DATETIME/TIMESTAMP`).*
+_Note: Fully compatible with MySQL 8.0 InnoDB with minor syntax adjustments (`JSONB` $\rightarrow$ `JSON`, `TIMESTAMPTZ` $\rightarrow$ `DATETIME/TIMESTAMP`)._
 
 ```sql
 -- ============================================================================
@@ -234,10 +239,10 @@ CREATE TABLE overtime_budgets (
 -- ============================================================================
 
 CREATE TYPE submission_status_enum AS ENUM (
-    'DRAFT', 
-    'SUBMITTED', 
-    'PARTIALLY_APPROVED', 
-    'APPROVED', 
+    'DRAFT',
+    'SUBMITTED',
+    'PARTIALLY_APPROVED',
+    'APPROVED',
     'REJECTED'
 );
 
@@ -283,12 +288,12 @@ CREATE INDEX idx_spkl_pending_due ON spkl_documents(status, due_date) WHERE stat
 CREATE TYPE item_status_enum AS ENUM ('PENDING', 'APPROVED', 'REJECTED');
 
 CREATE TYPE rca_category_enum AS ENUM (
-    'MACHINE_BREAKDOWN', 
-    'SUPPLIER_DELAY', 
-    'QUALITY_REWORK', 
-    'CUSTOMER_RUSH', 
-    'TRIAL_MODEL', 
-    'FACILITY_MAINTENANCE', 
+    'MACHINE_BREAKDOWN',
+    'SUPPLIER_DELAY',
+    'QUALITY_REWORK',
+    'CUSTOMER_RUSH',
+    'TRIAL_MODEL',
+    'FACILITY_MAINTENANCE',
     'OTHER'
 );
 
@@ -298,38 +303,38 @@ CREATE TABLE overtime_items (
     employee_id BIGINT NOT NULL REFERENCES employees(id) ON DELETE RESTRICT,
     npk_snapshot VARCHAR(20) NOT NULL,            -- Permanent snapshot of worker identifier
     capex_project_id BIGINT NULL REFERENCES capex_projects(id) ON DELETE RESTRICT,
-    
+
     -- Category Decimal Allocations (Enforced >= 0.0)
     hours_production NUMERIC(4, 2) NOT NULL DEFAULT 0.00 CHECK (hours_production >= 0.00),
     hours_tpm NUMERIC(4, 2) NOT NULL DEFAULT 0.00 CHECK (hours_tpm >= 0.00),
     hours_project NUMERIC(4, 2) NOT NULL DEFAULT 0.00 CHECK (hours_project >= 0.00),
     hours_others NUMERIC(4, 2) NOT NULL DEFAULT 0.00 CHECK (hours_others >= 0.00),
-    
+
     -- Theoretical Foundation: Stored Generated Column guarantees BR-01 & BR-04 integrity
     total_hours NUMERIC(4, 2) GENERATED ALWAYS AS (
         hours_production + hours_tpm + hours_project + hours_others
     ) STORED,
-    
+
     -- Financial Standard Costing Snapshots (Immutable upon approval)
     hourly_rate_snapshot NUMERIC(15, 2) NOT NULL DEFAULT 0.00,
     total_cost_snapshot NUMERIC(15, 2) NOT NULL DEFAULT 0.00,
-    
+
     -- Root Cause Analysis (Optional per BR-07)
     rca_category rca_category_enum NULL,
     rca_notes TEXT NULL,
     task_description TEXT NULL,
-    
+
     -- Item-Level Independent Approval Lifecycle (BR-10)
     status item_status_enum NOT NULL DEFAULT 'PENDING',
     reviewed_by_user_id BIGINT NULL,
     reviewed_at TIMESTAMPTZ NULL,
     rejection_reason TEXT NULL,                   -- Mandatory if status = 'REJECTED'
-    
+
     -- Concurrency & Audit Control
     lock_version INTEGER NOT NULL DEFAULT 1,      -- Optimistic locking to eliminate race conditions
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    
+
     -- Business Constraint: Must have at least 0.5 total hours
     CONSTRAINT chk_min_hours CHECK (
         (hours_production + hours_tpm + hours_project + hours_others) >= 0.50
@@ -393,9 +398,9 @@ CREATE INDEX idx_burn_snapshot_lookup ON monthly_burn_snapshots(department_id, f
 -- ============================================================================
 
 CREATE TYPE ml_model_type_enum AS ENUM (
-    'DEMAND_FORECAST', 
-    'BURN_TRAJECTORY', 
-    'CAPEX_FORECAST', 
+    'DEMAND_FORECAST',
+    'BURN_TRAJECTORY',
+    'CAPEX_FORECAST',
     'ANOMALY_DETECTION'
 );
 
@@ -450,6 +455,7 @@ CREATE INDEX idx_anomaly_item ON ml_anomaly_logs(overtime_item_id) WHERE is_dism
 ## 3. Application Architecture (Laravel 11+ & Vue-Inertia)
 
 To adhere strictly to your engineering rules:
+
 - **Routing**: `Wayfinder` is used exclusively for type-safe route generation; legacy Ziggy is completely omitted.
 - **Service Pattern**: Controllers are kept lean (less than 30 lines). Business transactions live in single-responsibility Domain Action and Service classes.
 - **Financial Standards**: Timezone strictly managed as `Asia/Jakarta`, Currency formatted as Rupiah (`Rp`), and decimal calculations performed via standard arbitrary precision.
@@ -508,7 +514,7 @@ class SubmitOvertimeAction
     {
         return DB::transaction(function () use ($data, $userId) {
             $operationalDate = Carbon::parse($data['operational_date'])->format('Y-m-d');
-            
+
             // 1. Resolve Day Classification (HKN vs HLR)
             $calendar = OperationalCalendar::firstOrCreate(
                 ['calendar_date' => $operationalDate],
@@ -521,7 +527,7 @@ class SubmitOvertimeAction
             // 2. Lock & Validate Roster Integrity
             $department = Department::findOrFail($data['department_id']);
             $employeeIds = collect($data['items'])->pluck('employee_id')->all();
-            
+
             $roster = Employee::whereIn('id', $employeeIds)
                 ->where('department_id', $data['department_id'])
                 ->where('section_id', $data['section_id'])
@@ -573,7 +579,7 @@ class SubmitOvertimeAction
             foreach ($data['items'] as $itemData) {
                 /** @var Employee $employee */
                 $employee = $roster[$itemData['employee_id']];
-                
+
                 $prod = (float) ($itemData['hours_production'] ?? 0);
                 $tpm  = (float) ($itemData['hours_tpm'] ?? 0);
                 $proj = (float) ($itemData['hours_project'] ?? 0);
@@ -687,14 +693,14 @@ class ApproveOvertimeItemsAction
             // Synchronize Parent Header Status
             $allApproved = $submission->items()->where('status', '!=', 'APPROVED')->doesntExist();
             $allRejected = $submission->items()->where('status', '!=', 'REJECTED')->doesntExist();
-            
+
             $headerStatus = $allApproved ? 'APPROVED' : ($allRejected ? 'REJECTED' : 'PARTIALLY_APPROVED');
             $submission->update(['status' => $headerStatus]);
 
             // Dispatch Snapshot Rollup recalculation for the affected section
             RecalculateMonthlyBurnSnapshotJob::dispatch(
-                $submission->section_id, 
-                Carbon::parse($submission->operational_date)->year, 
+                $submission->section_id,
+                Carbon::parse($submission->operational_date)->year,
                 Carbon::parse($submission->operational_date)->month
             );
 
@@ -754,8 +760,8 @@ class BurnIndexCalculatorService
         $opexHours   = (float) ($metrics->total_prod + $metrics->total_tpm + $metrics->total_others);
 
         // CALC-03: Burn Index (%)
-        $burnIndex = $plannedHours > 0 
-            ? round(($actualHours / $plannedHours) * 100, 2) 
+        $burnIndex = $plannedHours > 0
+            ? round(($actualHours / $plannedHours) * 100, 2)
             : 0.0;
 
         // CALC-04: Remaining Budget Hours
@@ -763,10 +769,10 @@ class BurnIndexCalculatorService
 
         // CALC-05: Weekly Burn Velocity
         $now = now('Asia/Jakarta');
-        $elapsedWeeks = ($now->year === $year && $now->month === $month) 
-            ? max(1.0, round($now->day / 7.0, 1)) 
+        $elapsedWeeks = ($now->year === $year && $now->month === $month)
+            ? max(1.0, round($now->day / 7.0, 1))
             : 4.3; // Default weeks in closed month
-        
+
         $velocity = round($actualHours / $elapsedWeeks, 2);
 
         // CALC-08: CapEx vs OpEx Labor Ratio (%)
@@ -808,14 +814,14 @@ class BurnIndexCalculatorService
 
 As a database architect who has lived through production outages and audit investigations, every design decision balances **mathematical rigor** against **factory-floor pragmatic reality**:
 
-| Architecture Component | Textbook Approach | Pragmatic Real-World Decision | Tradeoff & Rationale |
-| :--- | :--- | :--- | :--- |
-| **Sum of Categories (`total_hours`)** | Computed on the fly via `SUM(c1..c4)` in SELECT queries or handled in client JS. | **Stored Generated Column (`GENERATED ALWAYS AS ... STORED`)** at the DB engine level. | **Zero Drift**: Guarantees that neither a frontend bug nor a third-party API insertion can ever violate $Total = Prod + TPM + Proj + Others$. B-Tree indexing on `total_hours` becomes instant without index expressions. |
-| **Labor Cost Calculation (IDR)** | Dynamically join `employees.hourly_rate` or calculate at query time. | **Immutable Rate Snapshots (`hourly_rate_snapshot`, `total_cost_snapshot`)** stored directly on the item. | **Scar Tissue Protection**: If an operator's wage changes or standard costing is revised next quarter, prior historical CapEx asset capitalization and fiscal burndown records **must never change**. |
-| **SPKL Document Workflow** | Strict foreign key gate: reject timesheet submission if SPKL is absent. | **Asynchronous Non-Blocking Container with Due-Date State Machine**. | **Prevents Factory Halt**: Shift supervisors cannot be blocked from logging 30 workers at 23:00 WIB because HR hasn't stamped the paper yet. Shifts get logged; reminders enforce compliance before payroll lock. |
-| **Dashboard Query Performance** | Aggregate raw `overtime_items` with joins across 5 tables on every dashboard load. | **Denormalized Rollup Table (`monthly_burn_snapshots`)** updated via queued jobs upon approval. | **OLAP vs. OLTP Isolation**: Keeps executive and section dashboards rendering in $< 50\text{ms}$ even when the plant logs millions of historical rows, avoiding read lock contention on active shift tables. |
-| **Concurrency on Approvals** | Blind `UPDATE overtime_items SET status = 'APPROVED'`. | **Row-Level Pessimistic Locking (`lockForUpdate()`) + Optimistic `lock_version` check**. | **Prevents Double-Processing**: Eliminates race conditions when two supervisors simultaneously act on the same submission from different terminals. |
-| **Currency Storage** | `FLOAT` or `DOUBLE` | `NUMERIC(15, 2)` / PostgreSQL `BIGINT` | **Financial Integrity**: Floating point math produces fractional rounding anomalies (e.g., `0.1 + 0.2 = 0.30000000000000004`). In Indonesian Rupiah, financial audits require exact penny-level precision. |
+| Architecture Component                | Textbook Approach                                                                  | Pragmatic Real-World Decision                                                                             | Tradeoff & Rationale                                                                                                                                                                                                      |
+| :------------------------------------ | :--------------------------------------------------------------------------------- | :-------------------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Sum of Categories (`total_hours`)** | Computed on the fly via `SUM(c1..c4)` in SELECT queries or handled in client JS.   | **Stored Generated Column (`GENERATED ALWAYS AS ... STORED`)** at the DB engine level.                    | **Zero Drift**: Guarantees that neither a frontend bug nor a third-party API insertion can ever violate $Total = Prod + TPM + Proj + Others$. B-Tree indexing on `total_hours` becomes instant without index expressions. |
+| **Labor Cost Calculation (IDR)**      | Dynamically join `employees.hourly_rate` or calculate at query time.               | **Immutable Rate Snapshots (`hourly_rate_snapshot`, `total_cost_snapshot`)** stored directly on the item. | **Scar Tissue Protection**: If an operator's wage changes or standard costing is revised next quarter, prior historical CapEx asset capitalization and fiscal burndown records **must never change**.                     |
+| **SPKL Document Workflow**            | Strict foreign key gate: reject timesheet submission if SPKL is absent.            | **Asynchronous Non-Blocking Container with Due-Date State Machine**.                                      | **Prevents Factory Halt**: Shift supervisors cannot be blocked from logging 30 workers at 23:00 WIB because HR hasn't stamped the paper yet. Shifts get logged; reminders enforce compliance before payroll lock.         |
+| **Dashboard Query Performance**       | Aggregate raw `overtime_items` with joins across 5 tables on every dashboard load. | **Denormalized Rollup Table (`monthly_burn_snapshots`)** updated via queued jobs upon approval.           | **OLAP vs. OLTP Isolation**: Keeps executive and section dashboards rendering in $< 50\text{ms}$ even when the plant logs millions of historical rows, avoiding read lock contention on active shift tables.              |
+| **Concurrency on Approvals**          | Blind `UPDATE overtime_items SET status = 'APPROVED'`.                             | **Row-Level Pessimistic Locking (`lockForUpdate()`) + Optimistic `lock_version` check**.                  | **Prevents Double-Processing**: Eliminates race conditions when two supervisors simultaneously act on the same submission from different terminals.                                                                       |
+| **Currency Storage**                  | `FLOAT` or `DOUBLE`                                                                | `NUMERIC(15, 2)` / PostgreSQL `BIGINT`                                                                    | **Financial Integrity**: Floating point math produces fractional rounding anomalies (e.g., `0.1 + 0.2 = 0.30000000000000004`). In Indonesian Rupiah, financial audits require exact penny-level precision.                |
 
 ---
 
@@ -856,12 +862,13 @@ The Business Analysis specification mandates replacing synthetic toy formulas wi
 ```
 
 ### 5.1 Concrete Feature Store Extraction Query
+
 To train or score models for a given section, execute this high-performance feature aggregation:
 
 ```sql
 -- Feature Vector for Section Overtime Demand & Burn Trajectory
 WITH monthly_history AS (
-    SELECT 
+    SELECT
         s.section_id,
         DATE_TRUNC('month', s.operational_date) AS fiscal_month,
         SUM(i.total_hours) AS total_hours_consumed,
@@ -874,7 +881,7 @@ WITH monthly_history AS (
       AND s.operational_date >= CURRENT_DATE - INTERVAL '12 months'
     GROUP BY s.section_id, DATE_TRUNC('month', s.operational_date)
 )
-SELECT 
+SELECT
     section_id,
     fiscal_month,
     total_hours_consumed,
@@ -882,8 +889,8 @@ SELECT
     breakdown_tpm_hours,
     -- 4-week lagging moving average feature
     AVG(total_hours_consumed) OVER (
-        PARTITION BY section_id 
-        ORDER BY fiscal_month 
+        PARTITION BY section_id
+        ORDER BY fiscal_month
         ROWS BETWEEN 3 PRECEDING AND 1 PRECEDING
     ) AS lagged_3m_avg_hours
 FROM monthly_history;
@@ -894,33 +901,36 @@ FROM monthly_history;
 ## 6. Tradeoffs, Failure Modes & Mitigations
 
 ### 6.1 Failure Mode 1: High-Concurrency Shift-End Lock Contention
-* **The Risk**: At 15:00 WIB, 30 Team Leaders submit timesheets simultaneously. If the system attempted to lock or update the master `overtime_budgets` row in real time inside the same transaction, transactions would queue and trigger deadlocks (`Lock wait timeout exceeded`).
-* **The Mitigation**: **Decouple budget reading from transaction locking**. The overtime submission transaction only inserts rows into `overtime_submissions` and `overtime_items`. Burndown calculations and snapshot updates are offloaded to an asynchronous Redis worker (`RecalculateMonthlyBurnSnapshotJob`). The submission path is pure lock-free append.
+
+- **The Risk**: At 15:00 WIB, 30 Team Leaders submit timesheets simultaneously. If the system attempted to lock or update the master `overtime_budgets` row in real time inside the same transaction, transactions would queue and trigger deadlocks (`Lock wait timeout exceeded`).
+- **The Mitigation**: **Decouple budget reading from transaction locking**. The overtime submission transaction only inserts rows into `overtime_submissions` and `overtime_items`. Burndown calculations and snapshot updates are offloaded to an asynchronous Redis worker (`RecalculateMonthlyBurnSnapshotJob`). The submission path is pure lock-free append.
 
 ### 6.2 Failure Mode 2: Uncontrolled File Bloat from SPKL Document Uploads
-* **The Risk**: Frontline supervisors uploading uncompressed 15 MB smartphone photos of signed paper SPKLs directly to the web server, filling the web server disk and blowing up backup windows.
-* **The Mitigation**:
-  * Validation layer restricts files to PDF, JPEG, PNG with a hard maximum of `3 MB`.
-  * Store documents in a dedicated private S3-compatible object store (e.g., MinIO or AWS S3), saving only the URI string in `spkl_documents.file_path`.
-  * Serve files via short-lived temporary signed URLs generated by the Laravel backend.
+
+- **The Risk**: Frontline supervisors uploading uncompressed 15 MB smartphone photos of signed paper SPKLs directly to the web server, filling the web server disk and blowing up backup windows.
+- **The Mitigation**:
+    - Validation layer restricts files to PDF, JPEG, PNG with a hard maximum of `3 MB`.
+    - Store documents in a dedicated private S3-compatible object store (e.g., MinIO or AWS S3), saving only the URI string in `spkl_documents.file_path`.
+    - Serve files via short-lived temporary signed URLs generated by the Laravel backend.
 
 ### 6.3 Failure Mode 3: Cold-Start ML Hallucinations in New Production Lines
-* **The Risk**: A newly commissioned line (e.g., "Battery Pack Assembly") has zero historical training records. An unchecked ML regressor could predict negative overtime or wildly inflated figures, destroying manager confidence.
-* **The Mitigation**: **Strict Fallback Circuit Breaker (BR Criteria 5.3)**:
-  * The inference pipeline checks sample size: if $n_{\text{historical\_shifts}} < 30$, it flags `fallback_used = true` and applies a rule-based moving average:
-    $$\text{Fallback Budget} = \text{Headcount} \times \text{Standard Working Days} \times 0.10$$
-  * Displays the UI badge: `Calculation: Moving Average (Insufficient ML Baseline)`.
+
+- **The Risk**: A newly commissioned line (e.g., "Battery Pack Assembly") has zero historical training records. An unchecked ML regressor could predict negative overtime or wildly inflated figures, destroying manager confidence.
+- **The Mitigation**: **Strict Fallback Circuit Breaker (BR Criteria 5.3)**:
+    - The inference pipeline checks sample size: if $n_{\text{historical\_shifts}} < 30$, it flags `fallback_used = true` and applies a rule-based moving average:
+      $$\text{Fallback Budget} = \text{Headcount} \times \text{Standard Working Days} \times 0.10$$
+    - Displays the UI badge: `Calculation: Moving Average (Insufficient ML Baseline)`.
 
 ---
 
 ## 7. Alternatives Considered & Rejected
 
 1. **MongoDB / NoSQL Document Store**:
-   * *Why Rejected*: Timesheet records are intrinsically relational and tied to general ledger accounting (CapEx capitalization, departmental cost centers). NoSQL lacks declarative ACID foreign key constraints, creating severe risks of orphaned records and silent budget accounting drift.
+    - _Why Rejected_: Timesheet records are intrinsically relational and tied to general ledger accounting (CapEx capitalization, departmental cost centers). NoSQL lacks declarative ACID foreign key constraints, creating severe risks of orphaned records and silent budget accounting drift.
 2. **Pure Event Sourcing (CQRS / Event Store)**:
-   * *Why Rejected*: Overengineering for this operational scale. Event sourcing would introduce significant cognitive load and operational friction for a standard manufacturing shop-floor app. The chosen design achieves 100% auditability through a dedicated append-only ledger (`overtime_item_audits`) alongside standard 3NF state tables.
+    - _Why Rejected_: Overengineering for this operational scale. Event sourcing would introduce significant cognitive load and operational friction for a standard manufacturing shop-floor app. The chosen design achieves 100% auditability through a dedicated append-only ledger (`overtime_item_audits`) alongside standard 3NF state tables.
 3. **Frontend Calculation of Overtime Sums & Statuses**:
-   * *Why Rejected*: Critical business calculations (Burn Index, Day-type rates, category sums) must never be trusted to browser JavaScript. All computations are enforced via database generated columns and server-side domain services (`BurnIndexCalculatorService`).
+    - _Why Rejected_: Critical business calculations (Burn Index, Day-type rates, category sums) must never be trusted to browser JavaScript. All computations are enforced via database generated columns and server-side domain services (`BurnIndexCalculatorService`).
 
 ---
 
@@ -929,16 +939,16 @@ FROM monthly_history;
 To kick off development cleanly using your preferred toolchain:
 
 1. **Database Schema & Migrations**:
-   - Implement the SQL DDL provided in Section 2.3 as modular Laravel migration files (`database/migrations/`).
-   - Run `php artisan migrate` to verify all foreign keys and check constraints.
+    - Implement the SQL DDL provided in Section 2.3 as modular Laravel migration files (`database/migrations/`).
+    - Run `php artisan migrate` to verify all foreign keys and check constraints.
 2. **Wayfinder Route Setup**:
-   - Install and configure Wayfinder (`pnpm add @wayfinder/vue` or appropriate package) to generate route definitions for Vue Inertia pages.
-   - Establish typed API routes for:
-     - `POST /overtime/submissions` $\rightarrow$ `OvertimeSubmissionController@store`
-     - `POST /overtime/submissions/{id}/approve` $\rightarrow$ `OvertimeApprovalController@approveItems`
-     - `POST /overtime/submissions/{id}/spkl` $\rightarrow$ `SpklController@attach`
+    - Install and configure Wayfinder (`pnpm add @wayfinder/vue` or appropriate package) to generate route definitions for Vue Inertia pages.
+    - Establish typed API routes for:
+        - `POST /overtime/submissions` $\rightarrow$ `OvertimeSubmissionController@store`
+        - `POST /overtime/submissions/{id}/approve` $\rightarrow$ `OvertimeApprovalController@approveItems`
+        - `POST /overtime/submissions/{id}/spkl` $\rightarrow$ `SpklController@attach`
 3. **Core Actions & Services**:
-   - Implement `SubmitOvertimeAction`, `ApproveOvertimeItemsAction`, and `BurnIndexCalculatorService`.
+    - Implement `SubmitOvertimeAction`, `ApproveOvertimeItemsAction`, and `BurnIndexCalculatorService`.
 4. **Vue 3 Inertia Components**:
-   - Modernize the prototype screens (`PlanningIndexOvertime`, `SummaryListOvertime`, `IndexOvertime`) into Vue 3 `<script setup>` SFC components.
-   - Run `pnpm lint` and `pnpm build` continuously to ensure bundle integrity.
+    - Modernize the prototype screens (`PlanningIndexOvertime`, `SummaryListOvertime`, `IndexOvertime`) into Vue 3 `<script setup>` SFC components.
+    - Run `pnpm lint` and `pnpm build` continuously to ensure bundle integrity.

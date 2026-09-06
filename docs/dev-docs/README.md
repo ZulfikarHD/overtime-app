@@ -1,0 +1,56 @@
+# Developer Documentation (Dev Docs)
+
+## Overtime & CapEx Labor Management System (OT-CapEx)
+
+Welcome to the technical engineering documentation for the OT-CapEx system. This documentation is written for backend, frontend, and data engineers maintaining and developing the application.
+
+---
+
+## 1. Core Architecture
+
+- **[System Architecture Blueprint](../architecture.md)** — Comprehensive architecture, technology verification matrix, entity relationship diagrams, database constraints, Chart.js visualization engine, and background queues.
+
+---
+
+## 2. Technical Feature Documentation (`features/`)
+
+Deep-dive technical documentation detailing architecture flows, data models, key file mappings to UI, and controller/service layers:
+
+| Document                                                                              | Epic Reference                    | Description                                                                                                    |
+| ------------------------------------------------------------------------------------- | --------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| **[Daily Overtime Entry & SPKL Workflow](./features/daily-overtime-spkl.md)**         | [Epic-03](../../scrum/Epic-03.md) | Shift-end overtime capture, atomic roster validation, and non-blocking SPKL document state machine.            |
+| **[Verification & Granular Approval Lifecycle](./features/verification-approval.md)** | [Epic-04](../../scrum/Epic-04.md) | Item-level partial approval/rejection queue, optimistic locking (`lock_version`), and immutable audit logging. |
+| **[Budget Management & Burn Index Dashboard](./features/budget-burn-index.md)**       | [Epic-05](../../scrum/Epic-05.md) | Analytical dashboard, Chart.js Burn Index gauges/burndown lines, and asynchronous monthly rollups.             |
+| **[Individual Employee Reporting & Welfare](./features/employee-welfare-report.md)**  | [Epic-06](../../scrum/Epic-06.md) | Personal employee dossiers, welfare fatigue soft limits, and peer variance benchmarking.                       |
+| **[CapEx Project Labor Management](./features/capex-project-labor.md)**               | [Epic-07](../../scrum/Epic-07.md) | Fixed asset labor capitalization, project codes, progress vs. burn curves, and statutory audit integrity.      |
+| **[Supervised Machine Learning Analytics](./features/ml-predictive-analytics.md)**    | [Epic-08](../../scrum/Epic-08.md) | Overtime demand forecasting, Burn Index trajectory ribbon charts, anomaly detection, and cold-start fallback.  |
+
+---
+
+## 3. API & Endpoint Documentation (`api/`)
+
+HTTP request, query parameter, and payload specifications:
+
+- **[Overtime Submissions & Approvals API](./api/overtime-submissions.md)** — Timesheet batch submissions, SPKL document uploads, and item-level approval/rejection payloads.
+- **[Analytics, Burn Index & Machine Learning API](./api/analytics-reports.md)** — Monthly burn snapshot queries, employee dossier endpoints, and ML predictive horizons.
+
+---
+
+## 4. Architecture Decision Records (`decisions/`)
+
+Durable technical decisions and trade-offs:
+
+- **[ADR-001: Use Laravel Wayfinder Instead of Ziggy for TypeScript Routing](./decisions/001-wayfinder-routing-over-ziggy.md)**
+- **[ADR-002: Immutable Financial Rate Snapshotting on Overtime Approval](./decisions/002-immutable-labor-rate-snapshotting.md)**
+- **[ADR-003: Non-Blocking SPKL Document Attachment with Policy Grace Periods](./decisions/003-non-blocking-spkl-document-workflow.md)**
+- **[ADR-004: Standardizing Chart.js for Manufacturing Analytics and Machine Learning Visualizations](./decisions/004-chartjs-visualization-engine.md)**
+- **[ADR-005: Asynchronous Denormalized Monthly Burn Snapshots for Dashboard Performance](./decisions/005-denormalized-monthly-burn-snapshots.md)**
+
+---
+
+## 5. Engineering Standards & Quality Gates
+
+1. **Routing Rule**: Import exclusively from `@/actions/...` and `@/routes/...` via Wayfinder. Never use legacy Ziggy.
+2. **Controller Rule**: Keep controllers thin (≤ 30 lines). Encapsulate domain transactions in `app/Actions/` or `app/Services/`.
+3. **Database Precision**: Currency stored as `NUMERIC(15,2)` in Rupiah (`Rp`). Timezone fixed to `Asia/Jakarta` (WIB).
+4. **Code Quality**: Run `vendor/bin/pint --dirty --format agent` on modified PHP files; run `pnpm check` and `pnpm build` before pushing.

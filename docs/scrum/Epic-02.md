@@ -14,6 +14,7 @@
 The system cannot function without clean, authoritative master data. Every overtime timesheet entry references a Department, Section, Employee (NPK), and an Operational Calendar date. Every budget calculation references a Policy Threshold. This epic builds the Administration module — the backbone that all other epics depend on.
 
 Key real-world constraints:
+
 - **NPK is immutable** once assigned (Business Rule BR-03). The system must enforce this.
 - **Department/Section hierarchy** must resolve the naming conflict found during legacy analysis (e.g., `Assembly Line 1` vs `TCF FS`). This is the moment to standardize.
 - **Operational Calendar** must be pre-seeded for the entire fiscal year so that every timesheet date is classified as `HKN` or `HLR` automatically.
@@ -26,6 +27,7 @@ Key real-world constraints:
 ---
 
 ### Story E02-01: Department & Section Hierarchy Management (Admin)
+
 **As an** Admin,  
 **I want** to create, edit, and deactivate Departments and their child Sections,  
 **So that** the organizational hierarchy is authoritative and all timesheet references are consistent.
@@ -34,6 +36,7 @@ Key real-world constraints:
 **Priority:** Must Have
 
 #### Acceptance Criteria
+
 - [ ] Admin can create a Department with: `code` (unique, e.g. `PROD`), `name`, `cost_center_code`, `default_hourly_rate` (Rp), `is_active`
 - [ ] Admin can create a Section nested under a Department with: `code` (unique), `name`, `is_active`
 - [ ] Department `code` and Section `code` are unique across the entire table — enforced at both DB and application layer
@@ -45,6 +48,7 @@ Key real-world constraints:
 - [ ] `pnpm lint && pnpm build` passes
 
 #### Technical Tasks
+
 - [ ] `php artisan make:controller Admin/DepartmentController --resource`
 - [ ] `php artisan make:controller Admin/SectionController --resource`
 - [ ] `php artisan make:request StoreDepartmentRequest` (validate unique `code`, numeric `default_hourly_rate`)
@@ -59,6 +63,7 @@ Key real-world constraints:
 ---
 
 ### Story E02-02: Employee Roster Management (Admin)
+
 **As an** Admin,  
 **I want** to create, edit, deactivate, and search employee records,  
 **So that** Team Leaders always see an accurate and up-to-date section roster when entering overtime.
@@ -67,6 +72,7 @@ Key real-world constraints:
 **Priority:** Must Have
 
 #### Acceptance Criteria
+
 - [ ] Admin can create an Employee with: `npk` (unique, max 20 chars), `full_name`, `department_id`, `section_id`, `job_position`, `hourly_rate` (Rp), `is_active`
 - [ ] **NPK is read-only after creation** — the edit form does not show a writable NPK field (BR-03)
 - [ ] `section_id` dropdown is dynamically filtered based on selected `department_id` (no cross-department section assignment)
@@ -79,6 +85,7 @@ Key real-world constraints:
 - [ ] Pagination: 25 employees per page with server-side search
 
 #### Technical Tasks
+
 - [ ] `php artisan make:controller Admin/EmployeeController --resource`
 - [ ] `php artisan make:request StoreEmployeeRequest` + `UpdateEmployeeRequest` (NPK excluded from update fillable)
 - [ ] `php artisan make:job ImportEmployeesFromCsvJob`
@@ -91,6 +98,7 @@ Key real-world constraints:
 ---
 
 ### Story E02-03: Operational Calendar Management (Admin)
+
 **As an** Admin,  
 **I want** to manage the operational calendar to classify each date as HKN (normal workday) or HLR (holiday/rest day),  
 **So that** every overtime submission is automatically tagged with the correct day type and analytics correctly separate regular vs. holiday overtime.
@@ -99,6 +107,7 @@ Key real-world constraints:
 **Priority:** Must Have
 
 #### Acceptance Criteria
+
 - [ ] System auto-populates the calendar for the current and next fiscal year using Saturday/Sunday = HLR, weekdays = HKN as the default rule
 - [ ] Admin can view the calendar in a monthly grid view (like a standard calendar UI)
 - [ ] Admin can click any date to toggle it between HKN and HLR
@@ -108,6 +117,7 @@ Key real-world constraints:
 - [ ] API endpoint: `GET /api/calendar/{date}` — returns `{ date, day_type, is_holiday, holiday_name }` — used by the overtime form to auto-classify the selected date
 
 #### Technical Tasks
+
 - [ ] `php artisan make:controller Admin/OperationalCalendarController`
 - [ ] `OperationalCalendarService::generateForYear(int $year)` — bulk create rows for full year
 - [ ] Run generation on `php artisan app:seed-calendar {year}` command
@@ -120,6 +130,7 @@ Key real-world constraints:
 ---
 
 ### Story E02-04: Policy Threshold Configuration (Admin)
+
 **As an** Admin,  
 **I want** to configure company policy thresholds for overtime safety limits and SPKL grace periods,  
 **So that** the system enforces internal company policy (kebijakan perusahaan) rather than hardcoded values.
@@ -128,20 +139,22 @@ Key real-world constraints:
 **Priority:** Must Have
 
 #### Acceptance Criteria
+
 - [ ] Admin can view and edit the **plant-wide default** policy threshold (where `department_id IS NULL`)
 - [ ] Admin can create **department-specific** overrides (where `department_id` is set)
 - [ ] Configurable fields per threshold record:
-  - `weekly_soft_limit_hours` (default: 20.0 hrs)
-  - `consecutive_weeks_alert` (default: 3 weeks)
-  - `spkl_grace_period_days` (default: 2 days)
-  - `burn_warning_pct` (default: 100%)
-  - `burn_danger_pct` (default: 115%)
+    - `weekly_soft_limit_hours` (default: 20.0 hrs)
+    - `consecutive_weeks_alert` (default: 3 weeks)
+    - `spkl_grace_period_days` (default: 2 days)
+    - `burn_warning_pct` (default: 100%)
+    - `burn_danger_pct` (default: 115%)
 - [ ] Changes to `spkl_grace_period_days` affect **new submissions only** — existing SPKL due dates are not retroactively recalculated
 - [ ] Changes to `burn_warning_pct` / `burn_danger_pct` are reflected in dashboards **on next page load** (no cache required)
 - [ ] If no department-specific threshold exists, the system falls back to the plant-wide default
 - [ ] All numeric inputs are validated (non-negative, reasonable range: hours 0–168, pct 0–500)
 
 #### Technical Tasks
+
 - [ ] `php artisan make:controller Admin/PolicyThresholdController`
 - [ ] `php artisan make:request StorePolicyThresholdRequest`
 - [ ] `PolicyThresholdService::getForDepartment(int $departmentId): PolicyThreshold` — implements fallback logic
@@ -152,6 +165,7 @@ Key real-world constraints:
 ---
 
 ### Story E02-05: User Account Management (Admin)
+
 **As an** Admin,  
 **I want** to create, edit, deactivate, and reset passwords for user accounts,  
 **So that** workforce changes (new hires, transfers, departures) are reflected immediately in system access.
@@ -160,6 +174,7 @@ Key real-world constraints:
 **Priority:** Must Have
 
 #### Acceptance Criteria
+
 - [ ] Admin can create a user with: `name`, `email` (unique), `password`, `role` (admin/manager/team_leader/user), `department_id` (optional, for scoping)
 - [ ] Admin can deactivate a user (`is_active = false`) — deactivated users cannot log in (middleware check)
 - [ ] Admin can trigger a password reset link email for any user
@@ -169,6 +184,7 @@ Key real-world constraints:
 - [ ] Role-change audit: when Admin changes a user's role, it is logged to `overtime_item_audits` (or a `user_audits` table if preferred) with `actor_user_id`, `previous_role`, `new_role`
 
 #### Technical Tasks
+
 - [ ] `php artisan make:controller Admin/UserController --resource`
 - [ ] Update `users` table: add `is_active` boolean, `department_id` FK, `last_login_at` timestamp
 - [ ] Update `AuthenticatedSessionController` to stamp `last_login_at` and check `is_active`
@@ -181,6 +197,7 @@ Key real-world constraints:
 ---
 
 ### Story E02-06: Notification & UI Preference Settings (Per User)
+
 **As any** logged-in user,  
 **I want** to configure my UI theme and notification preferences,  
 **So that** I receive the right alerts (SPKL reminders, budget alerts) through my preferred channel and in a comfortable UI mode.
@@ -189,17 +206,19 @@ Key real-world constraints:
 **Priority:** Should Have
 
 #### Acceptance Criteria
+
 - [ ] Each user can toggle: `theme` (Light / Dark / Auto)
 - [ ] Each user can toggle notification preferences:
-  - SPKL pending reminders (on/off)
-  - Budget threshold alerts (on/off)
-  - Approval status notifications (on/off)
+    - SPKL pending reminders (on/off)
+    - Budget threshold alerts (on/off)
+    - Approval status notifications (on/off)
 - [ ] Preferences are persisted per user in `user_preferences` table or `users.preferences JSON` column
 - [ ] Theme preference is applied immediately via CSS class on `<html>` or `<body>` (no page reload)
 - [ ] Date format shown as `DD/MM/YYYY` (Indonesian standard) throughout the app — not configurable per user but confirmed as global standard
 - [ ] Number format shown as Indonesian: `1.234,56` — enforced globally
 
 #### Technical Tasks
+
 - [ ] `php artisan make:migration add_preferences_to_users_table` (add `preferences JSON NULL`)
 - [ ] `UserPreferencesController::update()` — PATCH `/user/preferences`
 - [ ] Create `resources/js/Pages/Settings/Preferences.vue`
@@ -211,6 +230,7 @@ Key real-world constraints:
 ---
 
 ### Story E02-07: Overtime Budget Plan Setup (Admin/Manager)
+
 **As an** Admin or Manager,  
 **I want** to set the monthly overtime budget (planned hours) for each Department/Section,  
 **So that** the Burn Index calculation has a denominator and budget tracking is possible.
@@ -219,6 +239,7 @@ Key real-world constraints:
 **Priority:** Must Have
 
 #### Acceptance Criteria
+
 - [ ] Admin and Manager can create/update an `overtime_budget` record per Section per fiscal month
 - [ ] Required fields: `department_id`, `section_id` (optional for dept-level), `fiscal_year`, `fiscal_month`, `planned_hours`
 - [ ] Optional 5-week breakdown: `week1_planned_hours` through `week5_planned_hours` (defaults to `planned_hours / 4.3` if not specified)
@@ -229,6 +250,7 @@ Key real-world constraints:
 - [ ] Bulk import: Admin can upload a CSV with columns `section_code`, `fiscal_year`, `fiscal_month`, `planned_hours`
 
 #### Technical Tasks
+
 - [ ] `php artisan make:controller OvertimeBudgetController --resource`
 - [ ] `php artisan make:request StoreOvertimeBudgetRequest`
 - [ ] Upsert logic: `OvertimeBudget::updateOrCreate(['department_id' => ..., 'section_id' => ..., 'fiscal_year' => ..., 'fiscal_month' => ...], [...])`
@@ -240,24 +262,24 @@ Key real-world constraints:
 
 ## Sprint 2 Breakdown
 
-| Sprint Day | Focus | Stories |
-|-----------|-------|---------|
-| Day 1–2 | Department & Section CRUD + UI | E02-01 |
-| Day 3–4 | Employee Roster management + CSV import | E02-02 |
-| Day 5–6 | Operational Calendar + auto-generation + API | E02-03 |
-| Day 7–8 | Policy Thresholds + User Account Management | E02-04, E02-05 |
-| Day 9–10 | Budget Plan setup + User Preferences | E02-07, E02-06 |
+| Sprint Day | Focus                                        | Stories        |
+| ---------- | -------------------------------------------- | -------------- |
+| Day 1–2    | Department & Section CRUD + UI               | E02-01         |
+| Day 3–4    | Employee Roster management + CSV import      | E02-02         |
+| Day 5–6    | Operational Calendar + auto-generation + API | E02-03         |
+| Day 7–8    | Policy Thresholds + User Account Management  | E02-04, E02-05 |
+| Day 9–10   | Budget Plan setup + User Preferences         | E02-07, E02-06 |
 
 ---
 
 ## Risks & Assumptions
 
-| Risk | Likelihood | Mitigation |
-|------|-----------|------------|
-| Legacy naming conflicts (Assembly Line 1 vs TCF FS) unresolved by client | High | Architect's solution: use immutable `code` + flexible `name`; get client to sign off on code list early in Sprint 2 |
-| CSV import edge cases (duplicate NPK, invalid section codes) | Medium | Validate in-memory before DB write; return per-row error report |
-| Employee `hourly_rate` missing for many employees initially | High | System gracefully falls back to `department.default_hourly_rate` — enforce this in `SubmitOvertimeAction` |
-| Calendar auto-generation missing edge cases (substitute holidays) | Low | Admin can override any date manually; design clearly documents this |
+| Risk                                                                     | Likelihood | Mitigation                                                                                                          |
+| ------------------------------------------------------------------------ | ---------- | ------------------------------------------------------------------------------------------------------------------- |
+| Legacy naming conflicts (Assembly Line 1 vs TCF FS) unresolved by client | High       | Architect's solution: use immutable `code` + flexible `name`; get client to sign off on code list early in Sprint 2 |
+| CSV import edge cases (duplicate NPK, invalid section codes)             | Medium     | Validate in-memory before DB write; return per-row error report                                                     |
+| Employee `hourly_rate` missing for many employees initially              | High       | System gracefully falls back to `department.default_hourly_rate` — enforce this in `SubmitOvertimeAction`           |
+| Calendar auto-generation missing edge cases (substitute holidays)        | Low        | Admin can override any date manually; design clearly documents this                                                 |
 
 ---
 

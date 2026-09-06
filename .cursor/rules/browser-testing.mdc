@@ -1,0 +1,50 @@
+---
+description: Always create browser tests using Pest and Playwright for user-facing features and flows
+alwaysApply: true
+---
+
+# Browser Testing with Pest & Playwright
+
+Always accompany user-facing features, forms, and Inertia pages with browser tests powered by Pest and Playwright to verify full end-to-end interactions.
+
+## Requirements
+
+1. **Always Create Browser Tests**: For any feature touching Vue pages, Inertia navigation, forms, or user interactions, create or update a browser test in `tests/Browser/`.
+2. **Test Location**: Place all browser tests in `tests/Browser/` using the `*Test.php` naming convention.
+3. **Execution Engine**: Use Pest's Playwright-powered browser testing API (`visit()`, `click()`, `fill()`, `assertSee()`, `assertPathIs()`, `actingAs()`).
+4. **Resilient Assertions**: Rely on Playwright's automatic waiting and Pest assertions (`assertSee()`, `waitForText()`) instead of arbitrary `sleep()` delays.
+
+## Example
+
+```php
+<?php
+
+use App\Models\User;
+
+test('user can log in and view dashboard', function () {
+    $user = User::factory()->create();
+
+    visit('/login')
+        ->fill('email', $user->email)
+        ->fill('password', 'password')
+        ->click('Log in')
+        ->assertPathIs('/dashboard')
+        ->assertSee('Dashboard');
+});
+
+test('authenticated user can navigate and interact with inertia components', function () {
+    $user = User::factory()->create();
+
+    visit('/dashboard')
+        ->actingAs($user)
+        ->click('Submit Overtime')
+        ->fill('reason', 'Server migration')
+        ->click('Save')
+        ->assertSee('Request submitted');
+});
+```
+
+## Anti-Patterns
+
+- ❌ Relying solely on HTTP feature tests (`$this->get()`) for interactive Inertia/Vue client interactions.
+- ❌ Hardcoding arbitrary `sleep()` pauses instead of relying on Playwright's auto-wait assertions.

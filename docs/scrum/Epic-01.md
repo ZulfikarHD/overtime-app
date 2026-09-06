@@ -22,6 +22,7 @@ The factory runs three shifts (07:00, 15:00, 23:00 WIB). Every timestamp, form s
 ---
 
 ### Story E01-01: Laravel Project Scaffolding & Stack Configuration
+
 **As a** developer,  
 **I want** a clean Laravel 11+ project configured with Vue 3 Inertia.js, Wayfinder routing, and pnpm,  
 **So that** the full team has a consistent, runnable local development baseline from day one.
@@ -30,6 +31,7 @@ The factory runs three shifts (07:00, 15:00, 23:00 WIB). Every timestamp, form s
 **Priority:** Must Have
 
 #### Acceptance Criteria
+
 - [ ] Laravel 11+ project initialized with PHP 8.3+ requirement enforced in `composer.json`
 - [ ] Vue 3 with `<script setup>` SFC pattern installed via `pnpm`
 - [ ] Inertia.js (server + client) installed and `HandleInertiaRequests` middleware registered
@@ -41,6 +43,7 @@ The factory runs three shifts (07:00, 15:00, 23:00 WIB). Every timestamp, form s
 - [ ] `AppServiceProvider` registers Carbon locale `id` (Indonesian)
 
 #### Technical Tasks
+
 - [ ] `laravel new capex-ot-system --jet` or minimal `laravel new` + manual Inertia setup
 - [ ] `pnpm add @inertiajs/vue3 vue @vitejs/plugin-vue`
 - [ ] `pnpm add @wayfinder/vue` — configure Wayfinder generation in `vite.config.ts`
@@ -53,6 +56,7 @@ The factory runs three shifts (07:00, 15:00, 23:00 WIB). Every timestamp, form s
 ---
 
 ### Story E01-02: Database Schema Migrations (Full DDL)
+
 **As a** developer,  
 **I want** all database tables created via modular Laravel migration files,  
 **So that** the schema is version-controlled, repeatable across environments, and enforces all business constraints at the database layer.
@@ -61,6 +65,7 @@ The factory runs three shifts (07:00, 15:00, 23:00 WIB). Every timestamp, form s
 **Priority:** Must Have
 
 #### Acceptance Criteria
+
 - [ ] All migrations run successfully via `php artisan migrate` with zero errors
 - [ ] Foreign key constraints use `ON DELETE RESTRICT` by default (no cascading deletes on financial records)
 - [ ] `overtime_items.total_hours` is a **Stored Generated Column** (`GENERATED ALWAYS AS (hours_production + hours_tpm + hours_project + hours_others) STORED`)
@@ -71,6 +76,7 @@ The factory runs three shifts (07:00, 15:00, 23:00 WIB). Every timestamp, form s
 - [ ] `php artisan migrate:status` shows all migrations as "Ran"
 
 #### Migration Files (Create in this order)
+
 ```
 database/migrations/
 ├── 2026_01_01_000001_create_departments_table.php
@@ -91,6 +97,7 @@ database/migrations/
 ```
 
 #### Technical Tasks
+
 - [ ] Create each migration file following the DDL in `data-architect-analyst.md` §2.3
 - [ ] For MySQL: replace `BIGSERIAL` → `BIGINT UNSIGNED AUTO_INCREMENT`, `TIMESTAMPTZ` → `TIMESTAMP`, `JSONB` → `JSON`
 - [ ] For the generated column on `overtime_items`, use `->storedAs('hours_production + hours_tpm + hours_project + hours_others')`
@@ -100,6 +107,7 @@ database/migrations/
 ---
 
 ### Story E01-03: Eloquent Models & Relationships
+
 **As a** developer,  
 **I want** all Eloquent models created with proper relationships, casts, and fillable guards,  
 **So that** the application layer can interact with the database with full type safety and no mass-assignment vulnerabilities.
@@ -108,6 +116,7 @@ database/migrations/
 **Priority:** Must Have
 
 #### Acceptance Criteria
+
 - [ ] All 15 models created in `app/Models/`
 - [ ] Each model defines `$fillable` OR `$guarded = []` (no unguarded wildcard on financial models)
 - [ ] All `NUMERIC` fields cast to `'decimal:2'`
@@ -119,6 +128,7 @@ database/migrations/
 - [ ] `OvertimeItem` model: `total_hours` marked as `$appends` computed property if not using generated column in MySQL
 
 #### Model List
+
 ```
 app/Models/
 ├── Department.php
@@ -139,6 +149,7 @@ app/Models/
 ```
 
 #### Technical Tasks
+
 - [ ] Generate stubs: `php artisan make:model [Name]`
 - [ ] Add all `$casts` arrays per field type
 - [ ] Define `BelongsTo`, `HasMany`, `HasOne` relationships with inverse counterparts
@@ -149,6 +160,7 @@ app/Models/
 ---
 
 ### Story E01-04: Authentication & Role-Based Access Control (RBAC)
+
 **As an** Admin,  
 **I want** a secure authentication system with four distinct roles enforced at the route and gate level,  
 **So that** only authorized personnel can access the correct features (Admin, Manager, Team Leader, User/Employee).
@@ -157,6 +169,7 @@ app/Models/
 **Priority:** Must Have
 
 #### Acceptance Criteria
+
 - [ ] `users` table has `role` column with ENUM: `admin`, `manager`, `team_leader`, `user`
 - [ ] `users` table has `department_id` (nullable FK) to scope Manager/Team Leader access
 - [ ] Login page with email + password (no social auth required at MVP)
@@ -170,17 +183,19 @@ app/Models/
 - [ ] `pnpm lint && pnpm build` passes
 
 #### Role Permission Matrix
-| Capability | Admin | Manager | Team Leader | User |
-|-----------|-------|---------|-------------|------|
-| User management | ✅ | ❌ | ❌ | ❌ |
-| Overtime submission (create) | ✅ | ❌ | ✅ | ❌ |
-| Overtime approval | ✅ | ✅ | ❌ | ❌ |
-| View all sections | ✅ | ✅ (own dept) | ❌ | ❌ |
-| View personal report | ✅ | ✅ | ✅ | ✅ |
-| ML dashboard | ✅ | ✅ | ❌ | ❌ |
-| Policy configuration | ✅ | ❌ | ❌ | ❌ |
+
+| Capability                   | Admin | Manager       | Team Leader | User |
+| ---------------------------- | ----- | ------------- | ----------- | ---- |
+| User management              | ✅    | ❌            | ❌          | ❌   |
+| Overtime submission (create) | ✅    | ❌            | ✅          | ❌   |
+| Overtime approval            | ✅    | ✅            | ❌          | ❌   |
+| View all sections            | ✅    | ✅ (own dept) | ❌          | ❌   |
+| View personal report         | ✅    | ✅            | ✅          | ✅   |
+| ML dashboard                 | ✅    | ✅            | ❌          | ❌   |
+| Policy configuration         | ✅    | ❌            | ❌          | ❌   |
 
 #### Technical Tasks
+
 - [ ] `php artisan make:migration add_role_to_users_table`
 - [ ] `php artisan make:middleware EnsureRole`
 - [ ] Register middleware in `bootstrap/app.php` middleware aliases
@@ -192,6 +207,7 @@ app/Models/
 ---
 
 ### Story E01-05: Wayfinder Route Generation & Base Inertia Layout
+
 **As a** developer,  
 **I want** Wayfinder route generation configured and a base Inertia layout shell in place,  
 **So that** all Vue pages can navigate type-safely using generated route functions from the first commit.
@@ -200,6 +216,7 @@ app/Models/
 **Priority:** Must Have
 
 #### Acceptance Criteria
+
 - [ ] `wayfinder.json` or Vite Wayfinder plugin configured to auto-generate route files on `pnpm dev`
 - [ ] No `route()` Ziggy calls anywhere in the codebase — confirmed by `pnpm lint` rule
 - [ ] `AuthenticatedLayout.vue` scaffolded with sidebar, top navigation, and role-based menu rendering
@@ -209,6 +226,7 @@ app/Models/
 - [ ] `pnpm build` passes
 
 #### Technical Tasks
+
 - [ ] Configure Wayfinder in `vite.config.ts`
 - [ ] Register all application routes in `routes/web.php` with named routes
 - [ ] Run `pnpm dev` and verify `resources/js/wayfinder/` (or equivalent) route files are generated
@@ -219,6 +237,7 @@ app/Models/
 ---
 
 ### Story E01-06: Redis Queue, Background Jobs & Environment Configuration
+
 **As a** developer,  
 **I want** Redis queue workers configured and base job classes scaffolded,  
 **So that** asynchronous workloads (SPKL reminders, Burn snapshot rollups, ML anomaly scans) do not block user-facing requests.
@@ -227,16 +246,18 @@ app/Models/
 **Priority:** Must Have
 
 #### Acceptance Criteria
+
 - [ ] `QUEUE_CONNECTION=redis` set in `.env.example` with Redis `REDIS_*` keys
 - [ ] `php artisan queue:work` starts without errors
 - [ ] Three base job classes scaffolded (empty implementations, dispatching will be wired in later epics):
-  - `RunAnomalyDetectionJob`
-  - `RecalculateMonthlyBurnSnapshotJob`
-  - `SendSpklReminderJob`
+    - `RunAnomalyDetectionJob`
+    - `RecalculateMonthlyBurnSnapshotJob`
+    - `SendSpklReminderJob`
 - [ ] Horizon or Supervisor config documented in `README.md` or deployment notes
 - [ ] Jobs have `$tries = 3`, `$backoff = [30, 120, 300]` configured
 
 #### Technical Tasks
+
 - [ ] `php artisan make:job RunAnomalyDetectionJob`
 - [ ] `php artisan make:job RecalculateMonthlyBurnSnapshotJob`
 - [ ] `php artisan make:job SendSpklReminderJob`
@@ -247,6 +268,7 @@ app/Models/
 ---
 
 ### Story E01-07: Database Seeding (Dev & Demo Data)
+
 **As a** developer,  
 **I want** comprehensive database seeders with realistic factory floor data,  
 **So that** I can develop and test all features without manually entering data through the UI.
@@ -255,6 +277,7 @@ app/Models/
 **Priority:** Must Have
 
 #### Acceptance Criteria
+
 - [ ] `DatabaseSeeder` orchestrates all seeders in dependency order
 - [ ] At least 1 demo Admin, 2 Managers, 5 Team Leaders, 20 Users seeded
 - [ ] At least 6 Departments and 12+ Sections seeded with realistic automotive plant names
@@ -266,6 +289,7 @@ app/Models/
 - [ ] `php artisan migrate:fresh --seed` resets and re-seeds cleanly
 
 #### Technical Tasks
+
 - [ ] `php artisan make:seeder DepartmentSeeder`
 - [ ] `php artisan make:seeder SectionSeeder`
 - [ ] `php artisan make:seeder EmployeeSeeder` (use Faker, Indonesian locale)
@@ -278,24 +302,24 @@ app/Models/
 
 ## Sprint 1 Breakdown
 
-| Sprint Day | Focus | Stories |
-|-----------|-------|---------|
-| Day 1–2 | Project scaffolding, pnpm/Vite/Inertia/Wayfinder setup | E01-01 |
-| Day 3–5 | All 15 database migrations, verify foreign keys & constraints | E01-02 |
-| Day 6–7 | Eloquent models, relationships, casts, scopes | E01-03 |
-| Day 8–9 | Authentication, RBAC Gates, role middleware | E01-04 |
-| Day 9–10 | Wayfinder config, layouts, base routes; Redis jobs; Seeders | E01-05, E01-06, E01-07 |
+| Sprint Day | Focus                                                         | Stories                |
+| ---------- | ------------------------------------------------------------- | ---------------------- |
+| Day 1–2    | Project scaffolding, pnpm/Vite/Inertia/Wayfinder setup        | E01-01                 |
+| Day 3–5    | All 15 database migrations, verify foreign keys & constraints | E01-02                 |
+| Day 6–7    | Eloquent models, relationships, casts, scopes                 | E01-03                 |
+| Day 8–9    | Authentication, RBAC Gates, role middleware                   | E01-04                 |
+| Day 9–10   | Wayfinder config, layouts, base routes; Redis jobs; Seeders   | E01-05, E01-06, E01-07 |
 
 ---
 
 ## Risks & Assumptions
 
-| Risk | Likelihood | Mitigation |
-|------|-----------|------------|
-| MySQL vs PostgreSQL DDL differences (JSONB, GENERATED columns, enum types) | Medium | Architect has noted MySQL equivalents; test both dialects in CI |
-| Wayfinder route generation breaking on Windows path separators | Low | Test on Windows dev environment early (developer uses Windows 10) |
-| Redis not available on local dev | Low | Provide Docker Compose with Redis service in repo |
-| Generated column syntax differences across MySQL versions | Medium | Test on MySQL 8.0.29+ specifically; document minimum version |
+| Risk                                                                       | Likelihood | Mitigation                                                        |
+| -------------------------------------------------------------------------- | ---------- | ----------------------------------------------------------------- |
+| MySQL vs PostgreSQL DDL differences (JSONB, GENERATED columns, enum types) | Medium     | Architect has noted MySQL equivalents; test both dialects in CI   |
+| Wayfinder route generation breaking on Windows path separators             | Low        | Test on Windows dev environment early (developer uses Windows 10) |
+| Redis not available on local dev                                           | Low        | Provide Docker Compose with Redis service in repo                 |
+| Generated column syntax differences across MySQL versions                  | Medium     | Test on MySQL 8.0.29+ specifically; document minimum version      |
 
 ---
 

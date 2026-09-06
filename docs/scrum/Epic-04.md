@@ -14,6 +14,7 @@
 After a Team Leader submits overtime, a Manager or Admin must review and approve or reject individual line items. This is not a simple "approve the whole batch" button — approvers have **granular, item-level authority**: they can approve some employees in a submission while rejecting others (e.g., approve Production workers, reject someone miscategorized as CapEx without a project reference).
 
 Key invariants from the architecture:
+
 - **Optimistic locking** (`lock_version`) prevents two managers from simultaneously overriding each other on the same record (concurrency-safe).
 - **Approved items are immutable** — they cannot be edited or deleted by the Team Leader after approval.
 - **Rejection requires a documented reason** — no silent rejections allowed (audit compliance).
@@ -27,6 +28,7 @@ Key invariants from the architecture:
 ---
 
 ### Story E04-01: Pending Approval Queue (Manager/Admin)
+
 **As a** Manager,  
 **I want** to view a filtered queue of all overtime submissions pending my review,  
 **So that** I can efficiently process the morning standup approval workload without missing any submissions.
@@ -35,6 +37,7 @@ Key invariants from the architecture:
 **Priority:** Must Have
 
 #### Acceptance Criteria
+
 - [ ] Manager sees all `SUBMITTED` and `PARTIALLY_APPROVED` submissions for their department(s)
 - [ ] Admin sees submissions across ALL departments
 - [ ] Queue displays per submission: `submission_code`, `operational_date`, day type badge (HKN/HLR), `section`, submitting Team Leader name, `total_hours_cached`, SPKL status badge, `status` badge, item count
@@ -46,6 +49,7 @@ Key invariants from the architecture:
 - [ ] Pagination: 20 records per page, server-side
 
 #### Technical Tasks
+
 - [ ] `php artisan make:controller OvertimeApprovalController` with `index()` and `approveItems()` methods
 - [ ] `OvertimeApprovalController@index` query: scoped by Manager's `department_id`, filter params, eager-load items, SPKL doc, anomaly log count
 - [ ] Route: `GET /overtime/approvals` → `OvertimeApprovalController@index`
@@ -57,6 +61,7 @@ Key invariants from the architecture:
 ---
 
 ### Story E04-02: Item-Level Approval/Rejection Modal (Manager/Admin)
+
 **As a** Manager,  
 **I want** to review each employee's line item in a submission and approve or reject them individually,  
 **So that** I can approve valid overtime while rejecting specific entries that are miscategorized, over-budget, or otherwise non-compliant.
@@ -65,18 +70,19 @@ Key invariants from the architecture:
 **Priority:** Must Have
 
 #### Acceptance Criteria
+
 - [ ] Clicking "Review" on a submission opens a detailed **Approval Modal**
 - [ ] Modal displays for each employee item:
-  - Employee name + NPK (read-only snapshot)
-  - Day type (HKN/HLR)
-  - Hours breakdown: Production, TPM, Project (CapEx), Others
-  - Total hours + estimated cost (formatted as `Rp 1.234.567`)
-  - Linked CapEx project name (if applicable)
-  - RCA category and notes (if provided)
-  - Task description
-  - Individual policy warning badges (if applicable)
-  - ML anomaly flag and reason (if flagged — see Epic-08)
-  - Current `status` badge
+    - Employee name + NPK (read-only snapshot)
+    - Day type (HKN/HLR)
+    - Hours breakdown: Production, TPM, Project (CapEx), Others
+    - Total hours + estimated cost (formatted as `Rp 1.234.567`)
+    - Linked CapEx project name (if applicable)
+    - RCA category and notes (if provided)
+    - Task description
+    - Individual policy warning badges (if applicable)
+    - ML anomaly flag and reason (if flagged — see Epic-08)
+    - Current `status` badge
 - [ ] Each item has individual radio or toggle: `✅ Approve` / `❌ Reject`
 - [ ] Rejecting an item makes `rejection_reason` text field **mandatory** (BR-10)
 - [ ] "Approve All" button sets all items to Approved
@@ -87,6 +93,7 @@ Key invariants from the architecture:
 - [ ] Approved items display as locked in the Team Leader's submission history
 
 #### Technical Tasks
+
 - [ ] `ApproveOvertimeItemsAction` — implement exactly as in `data-architect-analyst.md` §3.2 (with `lockForUpdate()` + `lock_version` check)
 - [ ] Route: `POST /overtime/submissions/{id}/approve-items` → `OvertimeApprovalController@approveItems`
 - [ ] `BulkApprovalRequest` — validates `decisions[]` array: each has `item_id`, `action` (APPROVED/REJECTED), optional `rejection_reason`, optional `lock_version`
@@ -101,6 +108,7 @@ Key invariants from the architecture:
 ---
 
 ### Story E04-03: Bulk Approval & Rejection (Manager/Admin)
+
 **As a** Manager,  
 **I want** to bulk-approve or bulk-reject multiple submissions at once,  
 **So that** I can efficiently clear a backlog of pending approvals during busy production periods.
@@ -109,6 +117,7 @@ Key invariants from the architecture:
 **Priority:** Must Have
 
 #### Acceptance Criteria
+
 - [ ] Manager can select multiple submissions via checkboxes in the queue list
 - [ ] "Bulk Approve" button: approves **all items in all selected submissions** in a single transaction
 - [ ] "Bulk Reject" button: rejects all items in all selected submissions — requires a single shared rejection reason
@@ -119,6 +128,7 @@ Key invariants from the architecture:
 - [ ] After bulk action: queue refreshes, toast summary: "38/45 items approved (7 skipped due to conflicts)"
 
 #### Technical Tasks
+
 - [ ] `BulkApproveSubmissionsAction` — loops over submission IDs, calls `ApproveOvertimeItemsAction` per submission in separate try-catch
 - [ ] Route: `POST /overtime/approvals/bulk` → `OvertimeApprovalController@bulkProcess`
 - [ ] `BulkApprovalRequest` — validates `submission_ids[]` max 50, `action`, `rejection_reason` (required if action=REJECT)
@@ -129,6 +139,7 @@ Key invariants from the architecture:
 ---
 
 ### Story E04-04: Export to CSV/Excel (Manager/Admin)
+
 **As a** Manager,  
 **I want** to export overtime records to CSV or Excel,  
 **So that** I can share data with HR, finance, or payroll systems for processing and audit.
@@ -137,6 +148,7 @@ Key invariants from the architecture:
 **Priority:** Must Have
 
 #### Acceptance Criteria
+
 - [ ] Export is available on the Approval Queue page with the same filters applied (date range, department, section, status)
 - [ ] CSV format columns: `submission_code`, `operational_date`, `day_type`, `department`, `section`, `npk`, `employee_name`, `hours_production`, `hours_tpm`, `hours_project`, `hours_others`, `total_hours`, `hourly_rate_snapshot`, `total_cost_idr`, `rca_category`, `status`, `rejection_reason`, `capex_project_code`, `spkl_status`
 - [ ] Export is streamed (not loaded into memory) using Laravel's `LazyCollection` for large datasets
@@ -146,6 +158,7 @@ Key invariants from the architecture:
 - [ ] Export action is logged in the audit trail: `{ action: 'EXPORT', actor_user_id: X, filters: {...} }`
 
 #### Technical Tasks
+
 - [ ] Install `maatwebsite/excel`: `composer require maatwebsite/excel`
 - [ ] `php artisan make:export OvertimeExport --model=OvertimeItem`
 - [ ] `OvertimeExport` implements `FromQuery`, `WithHeadings`, `WithMapping`
@@ -157,6 +170,7 @@ Key invariants from the architecture:
 ---
 
 ### Story E04-05: Immutable Audit Trail (Full Lifecycle)
+
 **As an** Auditor / Admin,  
 **I want** a complete, tamper-proof log of every state change to every overtime item,  
 **So that** any dispute over hours, approvals, or cost allocations can be traced to the exact user action and timestamp.
@@ -165,6 +179,7 @@ Key invariants from the architecture:
 **Priority:** Must Have
 
 #### Acceptance Criteria
+
 - [ ] Every state change to `overtime_items` (`SUBMITTED → APPROVED`, `SUBMITTED → REJECTED`, re-review) writes a row to `overtime_item_audits`
 - [ ] Each audit record contains: `overtime_item_id`, `action`, `actor_user_id`, `previous_state` (JSON), `new_state` (JSON), `notes`, `ip_address`, `created_at`
 - [ ] `overtime_item_audits` records are **insert-only** — no UPDATE or DELETE is permitted on this table (enforced at application layer + DB level if supported)
@@ -173,6 +188,7 @@ Key invariants from the architecture:
 - [ ] Export action (E04-04) is also recorded
 
 #### Technical Tasks
+
 - [ ] `OvertimeItemAudit::create(...)` called inside `ApproveOvertimeItemsAction` — already in architecture spec
 - [ ] `OvertimeItemObserver::creating()` — if someone attempts to update an existing audit record, throw exception
 - [ ] Create `resources/js/Components/Overtime/AuditTrailDrawer.vue` — shows timeline of audit events
@@ -183,6 +199,7 @@ Key invariants from the architecture:
 ---
 
 ### Story E04-06: Modification Lock on Approved Records
+
 **As a** system,  
 **I want** approved overtime items to be locked against any modification or deletion by the submitting Team Leader,  
 **So that** finalized payroll and financial records cannot be tampered with after management approval.
@@ -191,6 +208,7 @@ Key invariants from the architecture:
 **Priority:** Must Have
 
 #### Acceptance Criteria
+
 - [ ] A Team Leader attempting to edit or delete a submission that contains any `APPROVED` item receives a `422` error: "This submission contains approved items and cannot be modified."
 - [ ] The edit button is hidden in the UI for submissions with `status = APPROVED` or `PARTIALLY_APPROVED`
 - [ ] Even via direct API call, the lock is enforced at the controller layer (not just UI-level)
@@ -198,6 +216,7 @@ Key invariants from the architecture:
 - [ ] After force-unlock, the submission returns to `SUBMITTED` status for re-review
 
 #### Technical Tasks
+
 - [ ] Gate check in `OvertimeSubmissionController@update`: `if ($submission->items()->where('status', 'APPROVED')->exists()) abort(422, ...)`
 - [ ] UI: `v-if="submission.status === 'SUBMITTED'"` on the edit button in `SubmissionQueueRow.vue`
 - [ ] Admin-only route: `PATCH /overtime/submissions/{id}/unlock` → `OvertimeSubmissionController@forceUnlock`
@@ -208,36 +227,36 @@ Key invariants from the architecture:
 
 ## Sprint 4 Breakdown
 
-| Sprint Day | Focus | Stories |
-|-----------|-------|---------|
-| Day 1–2 | Approval queue page + server-side filtering + ML anomaly badge | E04-01 |
-| Day 3–5 | `ApproveOvertimeItemsAction` + approval modal + optimistic lock | E04-02 |
-| Day 6–7 | Bulk approval/rejection + confirmation dialog | E04-03 |
-| Day 7–8 | CSV/Excel export with streaming | E04-04 |
-| Day 9 | Audit trail page + audit drawer UI | E04-05 |
-| Day 10 | Modification lock + Admin force-unlock | E04-06 |
+| Sprint Day | Focus                                                           | Stories |
+| ---------- | --------------------------------------------------------------- | ------- |
+| Day 1–2    | Approval queue page + server-side filtering + ML anomaly badge  | E04-01  |
+| Day 3–5    | `ApproveOvertimeItemsAction` + approval modal + optimistic lock | E04-02  |
+| Day 6–7    | Bulk approval/rejection + confirmation dialog                   | E04-03  |
+| Day 7–8    | CSV/Excel export with streaming                                 | E04-04  |
+| Day 9      | Audit trail page + audit drawer UI                              | E04-05  |
+| Day 10     | Modification lock + Admin force-unlock                          | E04-06  |
 
 ---
 
 ## Key Business Rules Implemented in This Epic
 
-| Rule | Implementation |
-|------|---------------|
-| BR-09: Burn Index governance | Triggered indirectly — `RecalculateMonthlyBurnSnapshotJob` dispatched after each approval |
-| BR-10: Item-level approval independence | Each `overtime_items` row has independent `status`, reviewed independently |
-| Rejection reason mandatory | `BulkApprovalRequest` validates `rejection_reason` required when `action = REJECTED` |
-| Immutability after approval | Gate check in controller + UI hide pattern |
+| Rule                                    | Implementation                                                                            |
+| --------------------------------------- | ----------------------------------------------------------------------------------------- |
+| BR-09: Burn Index governance            | Triggered indirectly — `RecalculateMonthlyBurnSnapshotJob` dispatched after each approval |
+| BR-10: Item-level approval independence | Each `overtime_items` row has independent `status`, reviewed independently                |
+| Rejection reason mandatory              | `BulkApprovalRequest` validates `rejection_reason` required when `action = REJECTED`      |
+| Immutability after approval             | Gate check in controller + UI hide pattern                                                |
 
 ---
 
 ## Risks & Assumptions
 
-| Risk | Likelihood | Mitigation |
-|------|-----------|------------|
-| Two managers reviewing the same section simultaneously | Medium | `lockForUpdate()` pessimistic lock + `lock_version` optimistic check in `ApproveOvertimeItemsAction` |
-| Bulk approval transaction timeout on large batches | Low | Max 50 submissions per bulk; per-submission try-catch continues on conflict |
-| Excel export memory exhaustion on large data | Medium | Use `FromQuery` + `LazyCollection` cursor streaming, not `collect()->all()` |
-| Audit table size growth | Low | Append-only, indexed on `overtime_item_id`; no performance concern for foreseeable volume |
+| Risk                                                   | Likelihood | Mitigation                                                                                           |
+| ------------------------------------------------------ | ---------- | ---------------------------------------------------------------------------------------------------- |
+| Two managers reviewing the same section simultaneously | Medium     | `lockForUpdate()` pessimistic lock + `lock_version` optimistic check in `ApproveOvertimeItemsAction` |
+| Bulk approval transaction timeout on large batches     | Low        | Max 50 submissions per bulk; per-submission try-catch continues on conflict                          |
+| Excel export memory exhaustion on large data           | Medium     | Use `FromQuery` + `LazyCollection` cursor streaming, not `collect()->all()`                          |
+| Audit table size growth                                | Low        | Append-only, indexed on `overtime_item_id`; no performance concern for foreseeable volume            |
 
 ---
 

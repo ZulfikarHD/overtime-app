@@ -1,4 +1,5 @@
 # Scrum Planning Overview
+
 ## Overtime & CapEx Labor Management System (OT-CapEx System)
 
 **Prepared by:** Senior Business Analyst & Data Architect  
@@ -6,6 +7,7 @@
 **Tech Stack:** Laravel 11/12 (PHP 8.3+) · Vue 3 Inertia.js (Wayfinder) · PostgreSQL 16 / MySQL 8.0  
 **Standards:** Timezone `Asia/Jakarta` · Currency `Rp (IDR)` · Package Manager `pnpm`  
 **Reference Docs:**
+
 - BA Requirements: `migration-plan/ba-analyst-reqs-draft.md`
 - Data Architecture: `migration-plan/data-architect-analyst.md`
 
@@ -13,16 +15,16 @@
 
 ## Epic Index
 
-| Epic | Title | Priority | Est. Points | Sprints | Status |
-|------|-------|----------|-------------|---------|--------|
-| [Epic-01](./Epic-01.md) | Foundation & Infrastructure Setup | P0 – Critical | 55 SP | Sprint 1 | 🔴 Not Started |
-| [Epic-02](./Epic-02.md) | Master Data & Administration | P0 – Critical | 42 SP | Sprint 2 | 🔴 Not Started |
-| [Epic-03](./Epic-03.md) | Daily Overtime Entry & SPKL Workflow | P1 – Must Have | 47 SP | Sprint 3 | 🔴 Not Started |
-| [Epic-04](./Epic-04.md) | Verification & Approval Lifecycle | P1 – Must Have | 38 SP | Sprint 4 | 🔴 Not Started |
-| [Epic-05](./Epic-05.md) | Budget Management & Burn Index Dashboard | P1 – Must Have | 45 SP | Sprint 5 | 🔴 Not Started |
-| [Epic-06](./Epic-06.md) | Individual Employee Reporting & Welfare | P2 – Should Have | 30 SP | Sprint 6 | 🔴 Not Started |
-| [Epic-07](./Epic-07.md) | CapEx Project Labor Management | P2 – Should Have | 35 SP | Sprint 6–7 | 🔴 Not Started |
-| [Epic-08](./Epic-08.md) | Supervised ML Analytics & Predictive Intelligence | P3 – Nice to Have | 58 SP | Sprint 7–8 | 🔴 Not Started |
+| Epic                    | Title                                             | Priority          | Est. Points | Sprints    | Status         |
+| ----------------------- | ------------------------------------------------- | ----------------- | ----------- | ---------- | -------------- |
+| [Epic-01](./Epic-01.md) | Foundation & Infrastructure Setup                 | P0 – Critical     | 55 SP       | Sprint 1   | 🔴 Not Started |
+| [Epic-02](./Epic-02.md) | Master Data & Administration                      | P0 – Critical     | 42 SP       | Sprint 2   | 🔴 Not Started |
+| [Epic-03](./Epic-03.md) | Daily Overtime Entry & SPKL Workflow              | P1 – Must Have    | 47 SP       | Sprint 3   | 🔴 Not Started |
+| [Epic-04](./Epic-04.md) | Verification & Approval Lifecycle                 | P1 – Must Have    | 38 SP       | Sprint 4   | 🔴 Not Started |
+| [Epic-05](./Epic-05.md) | Budget Management & Burn Index Dashboard          | P1 – Must Have    | 45 SP       | Sprint 5   | 🔴 Not Started |
+| [Epic-06](./Epic-06.md) | Individual Employee Reporting & Welfare           | P2 – Should Have  | 30 SP       | Sprint 6   | 🔴 Not Started |
+| [Epic-07](./Epic-07.md) | CapEx Project Labor Management                    | P2 – Should Have  | 35 SP       | Sprint 6–7 | 🔴 Not Started |
+| [Epic-08](./Epic-08.md) | Supervised ML Analytics & Predictive Intelligence | P3 – Nice to Have | 58 SP       | Sprint 7–8 | 🔴 Not Started |
 
 **Total Estimated Effort:** ~350 Story Points  
 **Estimated Duration:** 8 Sprints × 2-Week Cycles = ~16 Weeks
@@ -47,36 +49,40 @@ Sprint 8  │  Epic-08 cont.: ML (CapEx Forecast + Anomaly Detection) + UAT Hard
 ## Architecture Quick Reference
 
 ### User Roles
-| Role | Description |
-|------|-------------|
-| `Admin` | Plant-wide access, master data, user management, policy config |
-| `Manager` | Dept-level oversight, bulk approval, ML dashboard, CapEx splits |
-| `Team Leader` | Daily OT entry, SPKL attachment, section dashboard |
-| `User` | Read-only: personal timesheet, individual Burn Index |
+
+| Role          | Description                                                     |
+| ------------- | --------------------------------------------------------------- |
+| `Admin`       | Plant-wide access, master data, user management, policy config  |
+| `Manager`     | Dept-level oversight, bulk approval, ML dashboard, CapEx splits |
+| `Team Leader` | Daily OT entry, SPKL attachment, section dashboard              |
+| `User`        | Read-only: personal timesheet, individual Burn Index            |
 
 ### Core Calculation Cheatsheet
-| Formula | Code Reference |
-|---------|---------------|
-| `CALC-01` Total OT Hours | `Production + TPM + Project + Others` |
-| `CALC-02` Burn Index | `(Actual Hours / Budget Hours) × 100%` |
-| `CALC-03` Remaining Budget | `Budget Hours − Actual Hours` |
-| `CALC-04` Burn Velocity | `Cumulative Hours / Elapsed Weeks` |
-| `CALC-05` Projected Total | `Velocity × Total Weeks in Period` |
-| `CALC-06` Peer Variance | `Individual Hours − Dept Average Hours` |
-| `CALC-07` CapEx Ratio | `(Project Hours / Total Hours) × 100%` |
+
+| Formula                    | Code Reference                          |
+| -------------------------- | --------------------------------------- |
+| `CALC-01` Total OT Hours   | `Production + TPM + Project + Others`   |
+| `CALC-02` Burn Index       | `(Actual Hours / Budget Hours) × 100%`  |
+| `CALC-03` Remaining Budget | `Budget Hours − Actual Hours`           |
+| `CALC-04` Burn Velocity    | `Cumulative Hours / Elapsed Weeks`      |
+| `CALC-05` Projected Total  | `Velocity × Total Weeks in Period`      |
+| `CALC-06` Peer Variance    | `Individual Hours − Dept Average Hours` |
+| `CALC-07` CapEx Ratio      | `(Project Hours / Total Hours) × 100%`  |
 
 ### Burn Index Status Thresholds
-| Range | Status | Zone |
-|-------|--------|------|
-| `< 85%` | Under Budget (High Efficiency) | ZONE_1_EXCELLENT |
-| `85% – 100%` | On Track | ZONE_2_GOOD |
-| `101% – 115%` | Warning (Slight Overrun) | ZONE_3_WARNING |
-| `> 115%` | Over Budget (Deficit) | ZONE_4_POOR |
+
+| Range         | Status                         | Zone             |
+| ------------- | ------------------------------ | ---------------- |
+| `< 85%`       | Under Budget (High Efficiency) | ZONE_1_EXCELLENT |
+| `85% – 100%`  | On Track                       | ZONE_2_GOOD      |
+| `101% – 115%` | Warning (Slight Overrun)       | ZONE_3_WARNING   |
+| `> 115%`      | Over Budget (Deficit)          | ZONE_4_POOR      |
 
 ### Day Types
-| Code | Meaning |
-|------|---------|
-| `HKN` | Hari Kerja Normal – standard operational weekday |
+
+| Code  | Meaning                                                             |
+| ----- | ------------------------------------------------------------------- |
+| `HKN` | Hari Kerja Normal – standard operational weekday                    |
 | `HLR` | Hari Libur / Istirahat Mingguan – weekend, rest day, public holiday |
 
 ---

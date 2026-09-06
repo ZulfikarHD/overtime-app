@@ -41,34 +41,35 @@ Each feature doc MUST include:
 # [Feature Name]
 
 ## Overview
+
 One-paragraph summary of what this feature does and why it exists.
 
 ## Architecture Diagram
 
 \`\`\`mermaid
 flowchart TD
-    A[User Action] --> B[Controller]
-    B --> C[Service/Model]
-    C --> D[Database]
+A[User Action] --> B[Controller]
+B --> C[Service/Model]
+C --> D[Database]
 \`\`\`
 
 ## Data Model
 
 \`\`\`mermaid
 erDiagram
-    ORDER ||--o{ ORDER_ITEM : contains
-    ORDER_ITEM }o--|| MENU_ITEM : references
+ORDER ||--o{ ORDER_ITEM : contains
+ORDER_ITEM }o--|| MENU_ITEM : references
 \`\`\`
 
 ## Key Files & UI Mapping
 
-| Layer | File / Route / Menu | Purpose |
-|-------|---------------------|---------|
-| Sidebar Menu | `Pesan masuk` / `Tahap Penjualan` | User entry point in UI |
-| Page Component | `resources/js/pages/X/Index.vue` | Vue page component |
-| Controller | `app/Http/Controllers/XController.php` | Handles requests |
-| Model | `app/Models/X.php` | Eloquent model |
-| Request | `app/Http/Requests/XRequest.php` | Validation |
+| Layer          | File / Route / Menu                           | Purpose                |
+| -------------- | --------------------------------------------- | ---------------------- |
+| Sidebar Menu   | `Overtime Entry` / `Verification & Approvals` | User entry point in UI |
+| Page Component | `resources/js/pages/X/Index.vue`              | Vue page component     |
+| Controller     | `app/Http/Controllers/XController.php`        | Handles requests       |
+| Model          | `app/Models/X.php`                            | Eloquent model         |
+| Request        | `app/Http/Requests/XRequest.php`              | Validation             |
 
 ## Flow Explanation
 
@@ -81,14 +82,15 @@ Step-by-step explanation of how data flows through the system for this feature.
 
 ## API Endpoints & Routes (if applicable)
 
-| Method | URI | Controller Action | Purpose | Auth |
-|--------|-----|-------------------|---------|------|
-| GET | `/t/{tenant}/orders` | `OrderController@index` | List orders | auth, verified |
-| POST | `/t/{tenant}/orders` | `OrderController@store` | Create order | auth, verified |
+| Method | URI                  | Controller Action       | Purpose      | Auth           |
+| ------ | -------------------- | ----------------------- | ------------ | -------------- |
+| GET    | `/t/{tenant}/orders` | `OrderController@index` | List orders  | auth, verified |
+| POST   | `/t/{tenant}/orders` | `OrderController@store` | Create order | auth, verified |
 
 ## Decisions & Trade-offs
 
 Document WHY certain approaches were chosen:
+
 - Why X library over Y?
 - Why this data structure?
 - What constraints influenced the design?
@@ -104,9 +106,11 @@ Document WHY certain approaches were chosen:
 # [Endpoint Group] API
 
 ## Base URL
+
 `/api/v1/[resource]`
 
 ## Authentication
+
 Bearer token via Laravel Sanctum
 
 ## Endpoints
@@ -118,24 +122,24 @@ Bearer token via Laravel Sanctum
 **Query Parameters:**
 
 | Param | Type | Required | Default | Description |
-|-------|------|----------|---------|-------------|
-| page | int | No | 1 | Page number |
+| ----- | ---- | -------- | ------- | ----------- |
+| page  | int  | No       | 1       | Page number |
 
 **Response 200:**
 
 \`\`\`json
 {
-  "data": [...],
-  "meta": { "current_page": 1, "total": 50 }
+"data": [...],
+"meta": { "current_page": 1, "total": 50 }
 }
 \`\`\`
 
 **Error Responses:**
 
-| Code | Description |
-|------|-------------|
-| 401 | Unauthenticated |
-| 403 | Unauthorized |
+| Code | Description     |
+| ---- | --------------- |
+| 401  | Unauthenticated |
+| 403  | Unauthorized    |
 ```
 
 ### Architecture Decision Records (`docs/dev-docs/decisions/[NNN]-[title].md`)
@@ -150,22 +154,27 @@ Number sequentially (001, 002, etc.). Format:
 **Supersedes:** ADR-XXX (if applicable)
 
 ## Context
+
 What is the issue? What forces are at play?
 
 ## Decision
+
 What is the change we're making?
 
 ## Consequences
 
 ### Positive
+
 - Benefit 1
 - Benefit 2
 
 ### Negative
+
 - Trade-off 1
 - Trade-off 2
 
 ### Neutral
+
 - Side effect that is neither good nor bad
 ```
 
@@ -175,50 +184,51 @@ What is the change we're making?
 
 ### User Guide (`docs/user-docs/guides/[feature-name].md`)
 
-Written for end-users (cafe owner, cashier, agent, supervisor). No technical jargon or raw URL paths.
+Written for end-users (supervisors, managers, HR admins, team leaders). Use clear, accessible English with no technical jargon or raw URL paths.
 
 > **CRITICAL GATE: Navigation Names by Sidebar**  
-> Always refer to UI navigation using the exact **sidebar display name** in Indonesian, NEVER raw URL paths (`/inbox`, `/pipeline`) or English technical jargon. See [ADR-020](../../dev-docs/decisions/020-plain-language-sidebar-ia.md) and `.cursor/rules/documentation-standards.mdc`:
-> - **Pesan masuk** (not `Inbox` or `/inbox`)
-> - **Tahap Penjualan** (not `Pipeline` or `/pipeline`)
-> - **Tiket Dukungan** (not `Tickets` or `/tickets`)
-> - **Kampanye** (not `Bulk Campaigns` or `/campaigns`)
-> - **Laporan → Performa tim** / **Performa kampanye** / **Kecepatan balas**
-> - **Saluran → WhatsApp** / **Instagram** / **Messenger**
-> - **Tim** / **Template pesan** / **Otomatisasi** / **Batas waktu tiket** / **Paket**
+> Always refer to UI navigation using the exact **sidebar display name** in English as shown in the UI, NEVER raw URL paths (`/overtime/create`, `/approvals`) or English technical/code jargon.
+>
+> - **Overtime Entry** (not `/overtime/create` or `StoreOvertimeSubmission`)
+> - **Verification & Approval** (not `/approvals` or `VerificationController`)
+> - **Budget Burn Index** (not `/analytics/burn` or `BurnIndex`)
+> - **Employee Welfare** (not `/reports/welfare`)
+> - **Settings → Profile / Security / Appearance**
 
 ```markdown
-# [Feature Name] - Panduan Pengguna
+# [Feature Name] - User Guide
 
-## Apa itu [Feature]?
-Penjelasan singkat dalam bahasa yang mudah dipahami.
+## What is [Feature]?
 
-## Cara Menggunakan
+Brief explanation in plain, easy-to-understand English.
 
-### [Langkah/Aksi 1]
+## How to Use
 
-1. Buka menu **[Nama Menu Sidebar]** di sidebar
-2. Klik tombol **[Nama Tombol]**
-3. Isi form yang muncul:
-   - **[Field 1]**: penjelasan
-   - **[Field 2]**: penjelasan
-4. Klik **Simpan**
+### [Step / Action 1]
 
-> 💡 **Tips:** Helpful tip for the user.
+1. Open the **[Sidebar Menu Name]** menu in the sidebar
+2. Click the **[Button Name]** button
+3. Fill in the form fields:
+    - **[Field 1]**: explanation
+    - **[Field 2]**: explanation
+4. Click **Save** (or **Submit**)
 
-### [Langkah/Aksi 2]
+> 💡 **Tip:** Helpful tip for the user.
+
+### [Step / Action 2]
+
 ...
 
-## FAQ
+## Frequently Asked Questions (FAQ)
 
-**Q: [Pertanyaan umum]?**
-A: [Jawaban singkat dan jelas]
+**Q: [Common question]?**
+A: [Clear and concise answer]
 
 ## Troubleshooting
 
-| Masalah | Solusi |
-|---------|--------|
-| [Problem] | [Solution] |
+| Issue                 | Solution           |
+| --------------------- | ------------------ |
+| [Problem description] | [Resolution steps] |
 ```
 
 ---
@@ -229,8 +239,8 @@ When creating documentation:
 
 1. **Identify scope** — Which feature/module to document?
 2. **Explore the code** — Read controllers, models, routes, Vue pages
-3. **Create dev-docs** — Technical explanation with diagrams
-4. **Create user-docs** — End-user guide in Indonesian
+3. **Create dev-docs** — Technical explanation with diagrams in English
+4. **Create user-docs** — End-user guide in English
 5. **Update indexes** — Add entry to README files
 6. **Record decisions** — If architectural choices were made, create ADR
 
@@ -238,21 +248,23 @@ When creating documentation:
 
 Use appropriate diagram types:
 
-| Purpose | Mermaid Type |
-|---------|-------------|
-| Request/data flow | `flowchart TD` or `sequenceDiagram` |
-| Data relationships | `erDiagram` |
-| State transitions | `stateDiagram-v2` |
-| User journey | `journey` |
-| Component structure | `graph TD` |
+| Purpose             | Mermaid Type                        |
+| ------------------- | ----------------------------------- |
+| Request/data flow   | `flowchart TD` or `sequenceDiagram` |
+| Data relationships  | `erDiagram`                         |
+| State transitions   | `stateDiagram-v2`                   |
+| User journey        | `journey`                           |
+| Component structure | `graph TD`                          |
 
 ## Writing Style
 
-| Audience | Language | Tone |
-|----------|----------|------|
-| Dev docs | English (technical) | Precise, reference-style |
-| User docs | Indonesian (Bahasa) | Friendly, step-by-step |
-| ADRs | English | Concise, factual |
+All documentation (Dev docs, User docs, API specs, and ADRs) MUST be written in **English**.
+
+| Audience  | Language                 | Tone                     |
+| --------- | ------------------------ | ------------------------ |
+| Dev docs  | English (technical)      | Precise, reference-style |
+| User docs | English (plain language) | Friendly, step-by-step   |
+| ADRs      | English                  | Concise, factual         |
 
 ## Index Updates
 

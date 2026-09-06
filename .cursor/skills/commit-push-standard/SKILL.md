@@ -118,17 +118,18 @@ mendeskripsikan intent yang berbeda sama sekali. Jawab pertanyaan berikut
 <type>(<scope>): <ringkasan deskriptif present tense>
 ```
 
-| Aturan | Detail |
-|--------|--------|
+| Aturan  | Detail                                                          |
+| ------- | --------------------------------------------------------------- |
 | Panjang | Maksimal **100 karakter** (bukan 50 — deskriptif lebih penting) |
-| Tense | Present tense: "tambah", "perbaiki", "refactor" |
-| Huruf | Huruf kecil setelah colon |
-| Titik | Tanpa titik di akhir |
-| Bahasa | Indonesia, istilah teknis boleh English |
+| Tense   | Present tense: "tambah", "perbaiki", "refactor"                 |
+| Huruf   | Huruf kecil setelah colon                                       |
+| Titik   | Tanpa titik di akhir                                            |
+| Bahasa  | Indonesia, istilah teknis boleh English                         |
 
 ### Body (WAJIB kecuali trivial)
 
 Struktur body terdiri dari 2 bagian utama:
+
 1. **Cerita / Deskripsi Singkat (Brief Story/Context)**: Paragraf narasi yang menjelaskan latar belakang, konteks masalah, atau alasan bisnis/teknis di balik perubahan.
 2. **Bullet Points Perubahan & File Terdampak**: Rincian poin-poin perubahan spesifik beserta file/komponen terkait agar mudah dan cepat dipahami saat membaca git log.
 
@@ -155,9 +156,9 @@ Refs: #<ticket-number>
 ```
 feat(auth): tambah JWT authentication dengan refresh token support
 
-Mobile app butuh stateless auth karena session-based auth tidak 
-reliable di React Native akibat isu cookie persistence. Kita migrasi 
-ke JWT dengan 24h expiration dan refresh token support agar user 
+Mobile app butuh stateless auth karena session-based auth tidak
+reliable di React Native akibat isu cookie persistence. Kita migrasi
+ke JWT dengan 24h expiration dan refresh token support agar user
 experience tetap seamless tanpa sering ter-logout.
 
 Perubahan:
@@ -166,7 +167,7 @@ Perubahan:
 - Middleware verifikasi Bearer token untuk API route di `AuthMiddleware.php`
 - Konfigurasi token secret key dan default TTL di `config/jwt.php`
 
-Breaking: Endpoint /api/auth/login sekarang me-return JWT token, bukan 
+Breaking: Endpoint /api/auth/login sekarang me-return JWT token, bukan
 session cookie. Client harus migrate ke token-based auth header.
 Tests: Feature test login flow, unit test TokenService validation
 Refs: #123
@@ -185,19 +186,19 @@ Refs: #123
 Referensi lengkap semua type (bukan urutan prioritas — lihat decision tree
 di atas untuk menentukan type yang tepat):
 
-| Type | Penggunaan | Contoh Scope |
-|------|-----------|--------------|
-| `fix` | Memperbaiki bug/behavior yang salah | validation, ui, api, auth |
-| `feat` | Kapabilitas/fitur yang belum pernah ada | auth, booking, payment, ui |
-| `refactor` | Restrukturisasi kode/komponen tanpa ubah behavior | service, model, ui |
-| `style` | Formatting, redesign visual murni, tanpa ubah logic | lint, format, ui |
-| `perf` | Optimasi performa tanpa ubah behavior fungsional | query, cache, bundle |
-| `test` | Penambahan/update test, tanpa ubah production code | unit, feature |
-| `docs` | Dokumentasi saja (README, ADR, komentar) | readme, adr, comments |
-| `build` | Build tooling, dependency, versi package | deps, vite, composer |
-| `ci` | Konfigurasi CI/CD (workflow, pipeline) | github-actions, ci |
-| `revert` | Membatalkan commit sebelumnya | — |
-| `chore` | Task rutin lain yang tidak masuk kategori di atas | config, gitignore |
+| Type       | Penggunaan                                          | Contoh Scope               |
+| ---------- | --------------------------------------------------- | -------------------------- |
+| `fix`      | Memperbaiki bug/behavior yang salah                 | validation, ui, api, auth  |
+| `feat`     | Kapabilitas/fitur yang belum pernah ada             | auth, booking, payment, ui |
+| `refactor` | Restrukturisasi kode/komponen tanpa ubah behavior   | service, model, ui         |
+| `style`    | Formatting, redesign visual murni, tanpa ubah logic | lint, format, ui           |
+| `perf`     | Optimasi performa tanpa ubah behavior fungsional    | query, cache, bundle       |
+| `test`     | Penambahan/update test, tanpa ubah production code  | unit, feature              |
+| `docs`     | Dokumentasi saja (README, ADR, komentar)            | readme, adr, comments      |
+| `build`    | Build tooling, dependency, versi package            | deps, vite, composer       |
+| `ci`       | Konfigurasi CI/CD (workflow, pipeline)              | github-actions, ci         |
+| `revert`   | Membatalkan commit sebelumnya                       | —                          |
+| `chore`    | Task rutin lain yang tidak masuk kategori di atas   | config, gitignore          |
 
 **Catatan bias yang harus dihindari:** jangan pilih `feat` hanya karena
 scope-nya `ui`/`layout` atau karena ada file baru — banyak perubahan `ui`
@@ -229,34 +230,39 @@ DENGAN body (SEMUA sisanya):
 
 Summary harus membuat pembaca paham **apa yang terjadi** tanpa buka diff.
 
-| Buruk (terlalu singkat) | Baik (deskriptif) |
-|------------------------|-------------------|
-| `feat(ui): tambah components` | `feat(ui): tambah DataTable, EmptyState, dan FormField components` |
-| `fix(auth): perbaiki login` | `fix(auth): perbaiki redirect loop saat session expired` |
-| `feat(layout): tambah layout` | `feat(layout): tambah sidebar navigation dan role-based layout` |
-| `refactor(payment): refactor service` | `refactor(payment): ekstrak payment logic ke PaymentService` |
-| `chore(deps): update deps` | `chore(deps): update laravel ke v12.1 dan vue ke v3.5` |
-| `feat(ci): tambah pipeline` | `feat(ci): tambah GitHub Actions CI/CD dengan tenant isolation scan` |
+| Buruk (terlalu singkat)               | Baik (deskriptif)                                                    |
+| ------------------------------------- | -------------------------------------------------------------------- |
+| `feat(ui): tambah components`         | `feat(ui): tambah DataTable, EmptyState, dan FormField components`   |
+| `fix(auth): perbaiki login`           | `fix(auth): perbaiki redirect loop saat session expired`             |
+| `feat(layout): tambah layout`         | `feat(layout): tambah sidebar navigation dan role-based layout`      |
+| `refactor(payment): refactor service` | `refactor(payment): ekstrak payment logic ke PaymentService`         |
+| `chore(deps): update deps`            | `chore(deps): update laravel ke v12.1 dan vue ke v3.5`               |
+| `feat(ci): tambah pipeline`           | `feat(ci): tambah GitHub Actions CI/CD dengan tenant isolation scan` |
 
 ## PR Description Format
 
 ```markdown
 ## Ringkasan
+
 <1-3 poin penjelasan perubahan utama>
 
 ## Mengapa
+
 <konteks bisnis/teknis mengapa perubahan ini diperlukan>
 
 ## Perubahan Utama
+
 - <list perubahan signifikan dengan file/komponen>
 
 ## Testing
+
 - [ ] <langkah testing yang sudah dilakukan>
 - [ ] <hal yang perlu di-test oleh reviewer>
 
 ## Screenshot (jika ada perubahan UI)
 
 ## Catatan untuk Reviewer
+
 <hal penting yang perlu diperhatikan>
 ```
 

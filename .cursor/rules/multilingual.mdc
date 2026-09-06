@@ -1,0 +1,66 @@
+---
+description: Multilingual (i18n) standards using JSON translations, SetLocale middleware, and Vue translation helper
+globs: resources/js/**/*.{vue,ts},app/Http/**/*.php,lang/*.json
+alwaysApply: false
+---
+
+# Multilingual (i18n) Standards
+
+All user-facing text must support Indonesian (`id`) and English (`en`), with `id` as default/fallback.
+
+## Core Rules
+
+1. **Default & Supported Locales**: Default is `id` (Bahasa Indonesia), secondary is `en` (English).
+2. **Translation Storage**: Store string mappings in `lang/id.json` and `lang/en.json`. When introducing new UI text, update both files synchronously.
+3. **No Hardcoded UI Text**: Never hardcode user-visible labels, placeholders, titles, or button texts in Vue templates.
+4. **Wayfinder for Switching**: When building language-switching actions or forms, always use Wayfinder routes (never legacy Ziggy `route()`).
+
+## Frontend Usage (Vue 3 / Inertia)
+
+Use the translation helper `__()` via `useTrans()` composable:
+
+```vue
+<!-- ❌ BAD -->
+<button>Submit Overtime</button>
+<p>Total hours worked: {{ hours }}</p>
+
+<!-- ✅ GOOD -->
+<script setup lang="ts">
+import { useTrans } from '@/composables/useTrans';
+
+const { __ } = useTrans();
+</script>
+
+<template>
+    <button>{{ __('Submit Overtime') }}</button>
+    <p>{{ __('Total hours: :hours', { hours }) }}</p>
+</template>
+```
+
+## Backend Usage (Laravel)
+
+- Share locale and translations in `HandleInertiaRequests::share()`:
+  - `locale`: Active locale (`app()->getLocale()`).
+  - `translations`: Decoded JSON strings for the active locale.
+- Resolve user locale in `SetLocale` middleware: `user?->locale ?? cookie('locale') ?? session('locale') ?? 'id'`.
+- Flash notifications & backend validation errors should use `__('Translation Key')`.
+
+## Translation File Conventions
+
+Keys should be clear English phrases:
+
+```json
+// lang/id.json
+{
+  "Submit Overtime": "Ajukan Lembur",
+  "Total hours: :hours": "Total jam: :hours",
+  "Request submitted successfully.": "Pengajuan berhasil dikirim."
+}
+
+// lang/en.json
+{
+  "Submit Overtime": "Submit Overtime",
+  "Total hours: :hours": "Total hours: :hours",
+  "Request submitted successfully.": "Request submitted successfully."
+}
+```
