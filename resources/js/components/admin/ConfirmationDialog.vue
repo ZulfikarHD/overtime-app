@@ -78,6 +78,7 @@ function handleConfirm() {
                     type="button"
                     variant="outline"
                     :disabled="loading"
+                    data-test="confirm-dialog-cancel-button"
                     @click="handleClose"
                 >
                     {{ cancelText || __('Cancel') }}
@@ -86,6 +87,7 @@ function handleConfirm() {
                     type="button"
                     :variant="variant"
                     :disabled="loading"
+                    data-test="confirm-dialog-confirm-button"
                     @click="handleConfirm"
                 >
                     {{ loading ? __('Loading...') : confirmText }}

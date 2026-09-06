@@ -10,11 +10,12 @@ Welcome to the end-user documentation library for the OT-CapEx system. These gui
 
 Step-by-step instructions for everyday plant operations:
 
-| Guide                                                                            | Target Persona       | Description                                                                                                     |
-| -------------------------------------------------------------------------------- | -------------------- | --------------------------------------------------------------------------------------------------------------- |
-| **[Authentication & Access Control](./guides/authentication-rbac.md)**           | All Plant Personnel  | Logging in using NPK or Email, understanding role badges, monitoring live shift clocks, and safely signing out. |
-| **[Dashboard & Operational Navigation](./guides/dashboard-navigation.md)**       | All Plant Personnel  | Navigating the main dashboard, checking active shift hours, live WIB clock, and shift handover sign-out.        |
-| **[Department & Section Management](./guides/department-section-management.md)** | Plant Administrators | Managing factory department and section hierarchy, default overtime rates, cost centers, and line activation.   |
+| Guide                                                                                 | Target Persona       | Description                                                                                                     |
+| ------------------------------------------------------------------------------------- | -------------------- | --------------------------------------------------------------------------------------------------------------- |
+| **[Authentication & Access Control](./guides/authentication-rbac.md)**                | All Plant Personnel  | Logging in using NPK or Email, understanding role badges, monitoring live shift clocks, and safely signing out. |
+| **[Dashboard & Operational Navigation](./guides/dashboard-navigation.md)**            | All Plant Personnel  | Navigating the main dashboard, checking active shift hours, live WIB clock, and shift handover sign-out.        |
+| **[Department & Section Management](./guides/department-section-management.md)**      | Plant Administrators | Managing factory department and section hierarchy, default overtime rates, cost centers, and line activation.   |
+| **[Employee Roster Management & CSV Import](./guides/employee-roster-management.md)** | Plant Administrators | Managing factory employee roster, NPK protection, custom overtime labor rates, and bulk CSV onboardings.        |
 
 ---
 

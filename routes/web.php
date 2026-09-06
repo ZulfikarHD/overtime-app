@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\Admin\DepartmentController;
+use App\Http\Controllers\Admin\EmployeeController;
+use App\Http\Controllers\Admin\EmployeeImportController;
 use App\Http\Controllers\Admin\MasterDataController;
 use App\Http\Controllers\Admin\SectionController;
 use Illuminate\Support\Facades\Route;
@@ -18,6 +20,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/master-data', [MasterDataController::class, 'index'])->name('master-data');
         Route::redirect('/departments', '/admin/master-data?tab=departments');
         Route::redirect('/sections', '/admin/master-data?tab=departments');
+        Route::redirect('/employees', '/admin/master-data?tab=employees');
 
         // Department & Section Hierarchy CRUD (E02-01)
         Route::post('/departments', [DepartmentController::class, 'store'])->name('departments.store');
@@ -27,6 +30,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/sections', [SectionController::class, 'store'])->name('sections.store');
         Route::put('/sections/{section}', [SectionController::class, 'update'])->name('sections.update');
         Route::delete('/sections/{section}', [SectionController::class, 'destroy'])->name('sections.destroy');
+
+        // Employee Roster Management & CSV Import (E02-02)
+        Route::post('/employees', [EmployeeController::class, 'store'])->name('employees.store');
+        Route::put('/employees/{employee}', [EmployeeController::class, 'update'])->name('employees.update');
+        Route::delete('/employees/{employee}', [EmployeeController::class, 'destroy'])->name('employees.destroy');
+        Route::post('/employees/import/preview', [EmployeeImportController::class, 'preview'])->name('employees.import.preview');
+        Route::post('/employees/import', [EmployeeImportController::class, 'import'])->name('employees.import');
+        Route::get('/employees/template', [EmployeeImportController::class, 'template'])->name('employees.template');
     });
 
     Route::middleware(['role:admin,manager'])->prefix('manager')->name('manager.')->group(function () {

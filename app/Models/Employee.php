@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -15,13 +17,16 @@ use Illuminate\Support\Carbon;
  * @property int $section_id
  * @property string $full_name
  * @property string $job_position
- * @property string $hourly_rate
+ * @property string|null $hourly_rate
  * @property bool $is_active
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
+ * @property-read float $effective_hourly_rate
  */
 class Employee extends Model
 {
+    use HasFactory;
+
     /**
      * @var list<string>
      */
@@ -36,6 +41,13 @@ class Employee extends Model
     ];
 
     /**
+     * @var list<string>
+     */
+    protected $appends = [
+        'effective_hourly_rate',
+    ];
+
+    /**
      * @return array<string, string>
      */
     protected function casts(): array
@@ -44,6 +56,22 @@ class Employee extends Model
             'hourly_rate' => 'decimal:2',
             'is_active' => 'boolean',
         ];
+    }
+
+    /**
+     * Get the effective hourly rate for the employee (custom rate or department default).
+     */
+    public function effectiveHourlyRate(): Attribute
+    {
+        return Attribute::make(
+            get: function (): float {
+                if ($this->hourly_rate !== null) {
+                    return (float) $this->hourly_rate;
+                }
+
+                return (float) ($this->department?->default_hourly_rate ?? 0.0);
+            },
+        );
     }
 
     /**
