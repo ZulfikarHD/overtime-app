@@ -16,15 +16,16 @@ Welcome to the technical engineering documentation for the OT-CapEx system. This
 
 Deep-dive technical documentation detailing architecture flows, data models, key file mappings to UI, and controller/service layers:
 
-| Document                                                                              | Epic Reference                    | Description                                                                                                    |
-| ------------------------------------------------------------------------------------- | --------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| **[Database Schema Migrations (Full DDL)](./features/database-schema-migrations.md)** | [Epic-01](../../scrum/Epic-01.md) | Relational database schema across 15 tables, foreign keys, stored generated columns, and partial indexes.      |
-| **[Daily Overtime Entry & SPKL Workflow](./features/daily-overtime-spkl.md)**         | [Epic-03](../../scrum/Epic-03.md) | Shift-end overtime capture, atomic roster validation, and non-blocking SPKL document state machine.            |
-| **[Verification & Granular Approval Lifecycle](./features/verification-approval.md)** | [Epic-04](../../scrum/Epic-04.md) | Item-level partial approval/rejection queue, optimistic locking (`lock_version`), and immutable audit logging. |
-| **[Budget Management & Burn Index Dashboard](./features/budget-burn-index.md)**       | [Epic-05](../../scrum/Epic-05.md) | Analytical dashboard, Chart.js Burn Index gauges/burndown lines, and asynchronous monthly rollups.             |
-| **[Individual Employee Reporting & Welfare](./features/employee-welfare-report.md)**  | [Epic-06](../../scrum/Epic-06.md) | Personal employee dossiers, welfare fatigue soft limits, and peer variance benchmarking.                       |
-| **[CapEx Project Labor Management](./features/capex-project-labor.md)**               | [Epic-07](../../scrum/Epic-07.md) | Fixed asset labor capitalization, project codes, progress vs. burn curves, and statutory audit integrity.      |
-| **[Supervised Machine Learning Analytics](./features/ml-predictive-analytics.md)**    | [Epic-08](../../scrum/Epic-08.md) | Overtime demand forecasting, Burn Index trajectory ribbon charts, anomaly detection, and cold-start fallback.  |
+| Document                                                                                  | Epic Reference                    | Description                                                                                                    |
+| ----------------------------------------------------------------------------------------- | --------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| **[Database Schema Migrations (Full DDL)](./features/database-schema-migrations.md)**     | [Epic-01](../../scrum/Epic-01.md) | Relational database schema across 15 tables, foreign keys, stored generated columns, and partial indexes.      |
+| **[Eloquent Models & Domain Relationships](./features/eloquent-models-relationships.md)** | [Epic-01](../../scrum/Epic-01.md) | Type-safe ORM entities across 15 models, explicit fillable guards, decimal casts, and domain query scopes.     |
+| **[Daily Overtime Entry & SPKL Workflow](./features/daily-overtime-spkl.md)**             | [Epic-03](../../scrum/Epic-03.md) | Shift-end overtime capture, atomic roster validation, and non-blocking SPKL document state machine.            |
+| **[Verification & Granular Approval Lifecycle](./features/verification-approval.md)**     | [Epic-04](../../scrum/Epic-04.md) | Item-level partial approval/rejection queue, optimistic locking (`lock_version`), and immutable audit logging. |
+| **[Budget Management & Burn Index Dashboard](./features/budget-burn-index.md)**           | [Epic-05](../../scrum/Epic-05.md) | Analytical dashboard, Chart.js Burn Index gauges/burndown lines, and asynchronous monthly rollups.             |
+| **[Individual Employee Reporting & Welfare](./features/employee-welfare-report.md)**      | [Epic-06](../../scrum/Epic-06.md) | Personal employee dossiers, welfare fatigue soft limits, and peer variance benchmarking.                       |
+| **[CapEx Project Labor Management](./features/capex-project-labor.md)**                   | [Epic-07](../../scrum/Epic-07.md) | Fixed asset labor capitalization, project codes, progress vs. burn curves, and statutory audit integrity.      |
+| **[Supervised Machine Learning Analytics](./features/ml-predictive-analytics.md)**        | [Epic-08](../../scrum/Epic-08.md) | Overtime demand forecasting, Burn Index trajectory ribbon charts, anomaly detection, and cold-start fallback.  |
 
 ---
 

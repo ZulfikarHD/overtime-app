@@ -37,6 +37,7 @@ Technical specifications and decision records for the engineering implementation
     - [ADR-006: Multi-Database Stored Generated Columns and Partial Indexes](./dev-docs/decisions/006-multi-database-stored-generated-columns-and-partial-indexes.md)
 - **Technical Feature Design Specifications:**
     - [Database Schema Migrations (Full DDL)](./dev-docs/features/database-schema-migrations.md)
+    - [Eloquent Models & Domain Relationships](./dev-docs/features/eloquent-models-relationships.md)
     - [Daily Overtime Entry & SPKL Workflow](./dev-docs/features/daily-overtime-spkl.md)
     - [Verification & Granular Approval Lifecycle](./dev-docs/features/verification-approval.md)
     - [Budget Management & Burn Index Dashboard](./dev-docs/features/budget-burn-index.md)
