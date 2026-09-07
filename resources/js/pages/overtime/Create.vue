@@ -7,8 +7,10 @@ import {
     FileText,
     Layers,
     ListPlus,
+    Pencil,
     Plus,
     RefreshCw,
+    Save,
     Search,
     Send,
     Users,
@@ -39,6 +41,7 @@ import {
     create as createSubmissionRoute,
     index as indexSubmissionRoute,
     store as storeSubmissionRoute,
+    update as updateSubmissionRoute,
 } from '@/routes/overtime/submissions';
 import type { User } from '@/types';
 
@@ -70,6 +73,42 @@ interface SectionOption {
     name: string;
 }
 
+export interface EditingSubmissionItem {
+    id: number;
+    employee_id: number;
+    npk_snapshot: string;
+    hours_production: number | string;
+    hours_tpm: number | string;
+    hours_project: number | string;
+    hours_others: number | string;
+    total_hours: number | string;
+    hourly_rate_snapshot: number | string;
+    total_cost_snapshot: number | string;
+    capex_project_id?: number | null;
+    rca_category?: string | null;
+    rca_notes?: string | null;
+    task_description?: string | null;
+    employee?: {
+        id: number;
+        npk: string;
+        full_name: string;
+        job_position: string;
+        hourly_rate: number | string | null;
+    } | null;
+}
+
+export interface EditingSubmission {
+    id: number;
+    submission_code: string;
+    operational_date: string;
+    day_type: 'HKN' | 'HLR';
+    department_id: number;
+    section_id: number;
+    submission_notes?: string | null;
+    status: string;
+    items?: EditingSubmissionItem[];
+}
+
 const props = defineProps<{
     departments: DepartmentOption[];
     sections: SectionOption[];
@@ -81,14 +120,60 @@ const props = defineProps<{
     burn_indicator: BurnIndicator;
     initial_roster: RosterEmployee[];
     last_submission?: LastSubmissionSummary | null;
+    editing_submission?: EditingSubmission | null;
 }>();
 
 const { __ } = useTrans();
 const page = usePage();
 const authUser = computed(() => page.props.auth?.user as User | undefined);
 
+const isEditMode = computed(() => Boolean(props.editing_submission));
+
+const initialDate = props.editing_submission
+    ? typeof props.editing_submission.operational_date === 'string'
+        ? props.editing_submission.operational_date.slice(0, 10)
+        : props.today
+    : props.today;
+
+const initialDayType = props.editing_submission
+    ? props.editing_submission.day_type
+    : props.default_day_type;
+
+const initialDeptId = props.editing_submission
+    ? props.editing_submission.department_id
+    : props.selected_department_id;
+
+const initialSecId = props.editing_submission
+    ? props.editing_submission.section_id
+    : props.selected_section_id;
+
+function getInitialItems(): OvertimeItemModel[] {
+    if (
+        props.editing_submission?.items &&
+        props.editing_submission.items.length > 0
+    ) {
+        return props.editing_submission.items.map((it) => ({
+            employee_id: it.employee_id,
+            npk: it.employee?.npk ?? it.npk_snapshot,
+            full_name: it.employee?.full_name ?? it.npk_snapshot,
+            job_position: it.employee?.job_position ?? '',
+            hourly_rate:
+                it.employee?.hourly_rate ?? it.hourly_rate_snapshot ?? null,
+            hours_production: Number(it.hours_production) || 0,
+            hours_tpm: Number(it.hours_tpm) || 0,
+            hours_project: Number(it.hours_project) || 0,
+            hours_others: Number(it.hours_others) || 0,
+            capex_project_id: it.capex_project_id ?? null,
+            rca_category: (it.rca_category as any) ?? null,
+            rca_notes: it.rca_notes ?? null,
+            task_description: it.task_description ?? null,
+        }));
+    }
+    return [];
+}
+
 // Operational date ref & reactive calendar classification
-const operationalDate = ref(props.today);
+const operationalDate = ref(initialDate);
 const {
     dayType,
     isHoliday,
@@ -96,10 +181,10 @@ const {
     isOverridden,
     toggleOverride,
     isLoading: isLoadingCalendar,
-} = useCalendarDayType(operationalDate, props.default_day_type);
+} = useCalendarDayType(operationalDate, initialDayType);
 
 // Section roster & budget burn indicator
-const selectedSectionId = ref<number | null>(props.selected_section_id);
+const selectedSectionId = ref<number | null>(initialSecId);
 const {
     roster,
     burnIndicator,
@@ -122,7 +207,7 @@ watch(
 watch(
     () => props.selected_section_id,
     (newSecId) => {
-        if (newSecId) {
+        if (newSecId && !isEditMode.value) {
             selectedSectionId.value = newSecId;
         }
     },
@@ -130,12 +215,12 @@ watch(
 
 // Form state using Inertia useForm (ensures zero data loss upon validation failure)
 const form = useForm({
-    operational_date: props.today,
-    day_type: props.default_day_type,
-    department_id: props.selected_department_id ?? 0,
-    section_id: props.selected_section_id ?? 0,
-    submission_notes: '',
-    items: [] as OvertimeItemModel[],
+    operational_date: initialDate,
+    day_type: initialDayType,
+    department_id: initialDeptId ?? 0,
+    section_id: initialSecId ?? 0,
+    submission_notes: props.editing_submission?.submission_notes ?? '',
+    items: getInitialItems(),
 });
 
 // Sync date & day_type into form
@@ -152,7 +237,7 @@ watch(selectedSectionId, (newSecId) => {
 });
 
 // Selected department & sections filtering
-const selectedDepartmentId = ref<number | null>(props.selected_department_id);
+const selectedDepartmentId = ref<number | null>(initialDeptId);
 const availableSections = computed(() => {
     if (!selectedDepartmentId.value) {
         return props.sections;
@@ -305,6 +390,18 @@ function dismissSuccessCard() {
 
 // Form submission handler
 function submitOvertime() {
+    if (isEditMode.value && props.editing_submission) {
+        form.put(
+            updateSubmissionRoute.url({
+                submission: props.editing_submission.id,
+            }),
+            {
+                preserveScroll: true,
+            },
+        );
+        return;
+    }
+
     form.post(storeSubmissionRoute.url(), {
         preserveScroll: true,
         onSuccess: (pageRes) => {
@@ -324,7 +421,15 @@ function submitOvertime() {
 
 <template>
     <div class="space-y-4 p-4 md:p-6" data-test="overtime-create-page">
-        <Head :title="__('Form Input Lembur Shift')" />
+        <Head
+            :title="
+                isEditMode
+                    ? __('Edit Pengajuan Lembur - :code', {
+                          code: editing_submission?.submission_code ?? '',
+                      })
+                    : __('Form Input Lembur Shift')
+            "
+        />
 
         <!-- Top Navigation Switcher -->
         <div
@@ -337,7 +442,11 @@ function submitOvertime() {
                     data-test="tab-form-input"
                 >
                     <ListPlus class="size-4" />
-                    <span>{{ __('Form Input Lembur') }}</span>
+                    <span>{{
+                        isEditMode
+                            ? __('Edit Pengajuan Lembur')
+                            : __('Form Input Lembur')
+                    }}</span>
                 </Link>
                 <Link
                     :href="indexSubmissionRoute()"
@@ -364,6 +473,41 @@ function submitOvertime() {
                     }}
                 </span>
             </div>
+        </div>
+
+        <!-- Edit Mode Notice Banner -->
+        <div
+            v-if="isEditMode && editing_submission"
+            class="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200"
+            data-test="edit-mode-banner"
+        >
+            <div class="flex items-center gap-2">
+                <Pencil
+                    class="size-4 shrink-0 text-amber-600 dark:text-amber-400"
+                />
+                <span>
+                    {{ __('Mode Edit Pengajuan:') }}
+                    <strong class="font-mono font-bold">{{
+                        editing_submission.submission_code
+                    }}</strong>
+                    <span
+                        class="ml-1 text-[11px] text-amber-700 dark:text-amber-300"
+                    >
+                        ({{
+                            __(
+                                'Tarif snapshot dan total biaya akan dihitung ulang secara otomatis saat disimpan.',
+                            )
+                        }})
+                    </span>
+                </span>
+            </div>
+
+            <Link
+                :href="indexSubmissionRoute()"
+                class="inline-flex items-center gap-1 font-semibold text-slate-700 underline hover:text-slate-900 dark:text-slate-300 dark:hover:text-white"
+            >
+                {{ __('Batal & Kembali ke Riwayat') }}
+            </Link>
         </div>
 
         <!-- Post-Submission Celebratory Success Card (Zero Data Loss Confirmation) -->
@@ -779,15 +923,22 @@ function submitOvertime() {
                             class="inline-flex h-10 items-center justify-center rounded-md bg-[#cc0000] px-5 font-bold text-white shadow-sm hover:bg-[#b30000] active:scale-95 disabled:bg-slate-300 disabled:text-slate-500 dark:disabled:bg-slate-800"
                             data-test="btn-submit-overtime"
                         >
-                            <Send v-if="!form.processing" class="mr-2 size-4" />
+                            <template v-if="!form.processing">
+                                <Save v-if="isEditMode" class="mr-2 size-4" />
+                                <Send v-else class="mr-2 size-4" />
+                            </template>
                             <RefreshCw
                                 v-else
                                 class="mr-2 size-4 animate-spin"
                             />
                             <span>{{
                                 form.processing
-                                    ? __('Menyimpan Pengajuan...')
-                                    : __('Kirim Pengajuan Lembur')
+                                    ? isEditMode
+                                        ? __('Menyimpan Perubahan...')
+                                        : __('Menyimpan Pengajuan...')
+                                    : isEditMode
+                                      ? __('Simpan Perubahan')
+                                      : __('Kirim Pengajuan Lembur')
                             }}</span>
                         </button>
                     </div>

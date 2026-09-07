@@ -115,31 +115,31 @@ This is the primary daily workflow of the application. Every workday, Team Leade
 
 #### Acceptance Criteria
 
-- [ ] Team Leader can view a list of their own submissions filtered by date range and status
-- [ ] List shows: `submission_code`, `operational_date`, day type badge (HKN/HLR), `section`, `total_hours_cached`, `status` badge, SPKL status badge
-- [ ] Status badges:
+- [x] Team Leader can view a list of their own submissions filtered by date range and status
+- [x] List shows: `submission_code`, `operational_date`, day type badge (HKN/HLR), `section`, `total_hours_cached`, `status` badge, SPKL status badge
+- [x] Status badges:
     - `SUBMITTED` → 🟡 Submitted / Pending Review
     - `PARTIALLY_APPROVED` → 🟠 Partially Approved
     - `APPROVED` → 🟢 Approved
     - `REJECTED` → 🔴 Rejected
-- [ ] SPKL badges:
+- [x] SPKL badges:
     - `PENDING` → 📎 SPKL: Belum Dilampirkan (shows due date)
     - `ATTACHED` → 📎 SPKL: Terlampir
     - `VERIFIED` → ✅ SPKL: Terverifikasi
-- [ ] Clicking a submission opens a **read-only detail modal** showing each employee's hours, categories, costs
-- [ ] Team Leader can edit a submission that is still in `SUBMITTED` or `DRAFT` status (NOT if `APPROVED` or `PARTIALLY_APPROVED`) — full re-edit with re-snapshot
-- [ ] Filter by: date range, status (multi-select), section
-- [ ] Server-side pagination: 20 records per page
+- [x] Clicking a submission opens a **read-only detail modal** showing each employee's hours, categories, costs
+- [x] Team Leader can edit a submission that is still in `SUBMITTED` or `DRAFT` status (NOT if `APPROVED` or `PARTIALLY_APPROVED`) — full re-edit with re-snapshot
+- [x] Filter by: date range, status (multi-select), section
+- [x] Server-side pagination: 20 records per page
 
 #### Technical Tasks
 
-- [ ] `OvertimeSubmissionController@index` — returns paginated, filtered list for current user's sections
-- [ ] `OvertimeSubmissionController@show` — returns submission detail with eager-loaded items, employees, SPKL doc
-- [ ] `OvertimeSubmissionController@update` — re-runs `SubmitOvertimeAction` with updated data on a draft/submitted record
-- [ ] Create `resources/js/Pages/Overtime/Index.vue` — submission list with filters and pagination
-- [ ] Create `resources/js/Components/Overtime/SubmissionDetailModal.vue` — read-only detail modal
-- [ ] Guard edit: `abort(422)` if submission is `APPROVED` or `PARTIALLY_APPROVED`
-- [ ] Route: `GET /overtime/submissions` → `index()`, `GET /overtime/submissions/{id}` → `show()`
+- [x] `OvertimeSubmissionController@index` — returns paginated, filtered list for current user's sections
+- [x] `OvertimeSubmissionController@show` — returns submission detail with eager-loaded items, employees, SPKL doc
+- [x] `OvertimeSubmissionController@update` — re-runs `SubmitOvertimeAction` with updated data on a draft/submitted record
+- [x] Create `resources/js/Pages/Overtime/Index.vue` — submission list with filters and pagination
+- [x] Create `resources/js/Components/Overtime/SubmissionDetailModal.vue` — read-only detail modal
+- [x] Guard edit: `abort(422)` if submission is `APPROVED` or `PARTIALLY_APPROVED`
+- [x] Route: `GET /overtime/submissions` → `index()`, `GET /overtime/submissions/{id}` → `show()`
 
 ---
 

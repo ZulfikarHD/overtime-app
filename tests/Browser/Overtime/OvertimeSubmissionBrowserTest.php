@@ -3,6 +3,8 @@
 use App\Models\CapexProject;
 use App\Models\Department;
 use App\Models\Employee;
+use App\Models\OperationalCalendar;
+use App\Models\OvertimeSubmission;
 use App\Models\Section;
 use App\Models\User;
 
@@ -219,4 +221,199 @@ test('financial cost snapshot is displayed and remains immutable across employee
         ->assertPathIs('/overtime/submissions')
         ->assertSee('Rp 100.000')
         ->assertDontSee('Rp 200.000');
+});
+
+test('team leader can view history, use filters, and inspect detail modal', function () {
+    $dept = Department::factory()->create([
+        'code' => 'DEPT_BRW_MODAL',
+        'name' => 'Die Casting Plant',
+        'default_hourly_rate' => 35000.00,
+        'is_active' => true,
+    ]);
+
+    $section = Section::factory()->create([
+        'department_id' => $dept->id,
+        'code' => 'SEC_BRW_CAST',
+        'name' => 'HPDC Line 1',
+        'is_active' => true,
+    ]);
+
+    $tl = User::factory()->teamLeader($section->id, $dept->id)->create([
+        'email' => 'tl.diecast@factory.com',
+        'password' => 'password',
+    ]);
+
+    $emp = Employee::factory()->forDepartmentAndSection($dept, $section)->create([
+        'npk' => 'EMP-99001',
+        'full_name' => 'Danang Wijaya',
+        'hourly_rate' => 40000.00,
+        'is_active' => true,
+    ]);
+
+    $date = '2026-09-08';
+    $calendar = OperationalCalendar::whereDate('calendar_date', $date)->first();
+    if (! $calendar) {
+        OperationalCalendar::create([
+            'calendar_date' => $date,
+            'day_type' => 'HKN',
+            'is_holiday' => false,
+        ]);
+    }
+
+    $submission = OvertimeSubmission::create([
+        'submission_code' => 'OT-20260908-CAST-001',
+        'submission_date' => $date,
+        'operational_date' => $date,
+        'day_type' => 'HKN',
+        'department_id' => $dept->id,
+        'section_id' => $section->id,
+        'submitted_by_user_id' => $tl->id,
+        'status' => 'SUBMITTED',
+        'total_hours_cached' => 3.0,
+        'submission_notes' => 'Pekerjaan die repair mendesak',
+    ]);
+
+    $submission->items()->create([
+        'employee_id' => $emp->id,
+        'npk_snapshot' => $emp->npk,
+        'hours_production' => 3.0,
+        'hourly_rate_snapshot' => 40000.00,
+        'total_cost_snapshot' => 120000.00,
+        'status' => 'PENDING',
+        'lock_version' => 1,
+    ]);
+
+    $submission->spklDocument()->create([
+        'status' => 'PENDING',
+        'due_date' => '2026-09-11',
+    ]);
+
+    visit('/login')
+        ->fill('email', 'tl.diecast@factory.com')
+        ->fill('password', 'password')
+        ->click('Log in to System')
+        ->assertPathIs('/dashboard');
+
+    visit('/overtime/submissions')
+        ->assertPathIs('/overtime/submissions')
+        ->assertSee('OT-20260908-CAST-001')
+        ->assertSee('Rp 120.000')
+        // Open Detail Modal
+        ->click('[data-test="btn-detail-'.$submission->id.'"]')
+        ->assertSee('OT-20260908-CAST-001')
+        ->assertSee('Pekerjaan die repair mendesak')
+        ->assertSee('EMP-99001')
+        ->assertSee('Danang Wijaya')
+        // Close Detail Modal
+        ->click('[data-test="btn-close-modal"]')
+        ->assertDontSee('Pekerjaan die repair mendesak');
+});
+
+test('team leader can edit submitted overtime while approved submission displays locked badge', function () {
+    $dept = Department::factory()->create([
+        'code' => 'DEPT_BRW_EDIT',
+        'name' => 'Paint Plant',
+        'default_hourly_rate' => 35000.00,
+        'is_active' => true,
+    ]);
+
+    $section = Section::factory()->create([
+        'department_id' => $dept->id,
+        'code' => 'SEC_BRW_TOP',
+        'name' => 'Top Coat Line',
+        'is_active' => true,
+    ]);
+
+    $tl = User::factory()->teamLeader($section->id, $dept->id)->create([
+        'email' => 'tl.paint@factory.com',
+        'password' => 'password',
+    ]);
+
+    $emp = Employee::factory()->forDepartmentAndSection($dept, $section)->create([
+        'npk' => 'EMP-55001',
+        'full_name' => 'Rahmat Hidayat',
+        'hourly_rate' => 36000.00,
+        'is_active' => true,
+    ]);
+
+    $date = '2026-09-08';
+    $calendar = OperationalCalendar::whereDate('calendar_date', $date)->first();
+    if (! $calendar) {
+        OperationalCalendar::create([
+            'calendar_date' => $date,
+            'day_type' => 'HKN',
+            'is_holiday' => false,
+        ]);
+    }
+
+    // Submission 1: SUBMITTED (Editable)
+    $subEditable = OvertimeSubmission::create([
+        'submission_code' => 'OT-20260908-TOP-001',
+        'submission_date' => $date,
+        'operational_date' => $date,
+        'day_type' => 'HKN',
+        'department_id' => $dept->id,
+        'section_id' => $section->id,
+        'submitted_by_user_id' => $tl->id,
+        'status' => 'SUBMITTED',
+        'total_hours_cached' => 1.5,
+    ]);
+
+    $subEditable->items()->create([
+        'employee_id' => $emp->id,
+        'npk_snapshot' => $emp->npk,
+        'hours_production' => 1.5,
+        'hourly_rate_snapshot' => 36000.00,
+        'total_cost_snapshot' => 54000.00,
+        'status' => 'PENDING',
+        'lock_version' => 1,
+    ]);
+
+    $subEditable->spklDocument()->create([
+        'status' => 'PENDING',
+        'due_date' => '2026-09-11',
+    ]);
+
+    // Submission 2: APPROVED (Locked)
+    $subLocked = OvertimeSubmission::create([
+        'submission_code' => 'OT-20260908-TOP-002',
+        'submission_date' => $date,
+        'operational_date' => $date,
+        'day_type' => 'HKN',
+        'department_id' => $dept->id,
+        'section_id' => $section->id,
+        'submitted_by_user_id' => $tl->id,
+        'status' => 'APPROVED',
+        'total_hours_cached' => 2.0,
+    ]);
+
+    $subLocked->items()->create([
+        'employee_id' => $emp->id,
+        'npk_snapshot' => $emp->npk,
+        'hours_production' => 2.0,
+        'hourly_rate_snapshot' => 36000.00,
+        'total_cost_snapshot' => 72000.00,
+        'status' => 'APPROVED',
+        'lock_version' => 1,
+    ]);
+
+    visit('/login')
+        ->fill('email', 'tl.paint@factory.com')
+        ->fill('password', 'password')
+        ->click('Log in to System')
+        ->assertPathIs('/dashboard');
+
+    visit('/overtime/submissions')
+        ->assertPathIs('/overtime/submissions')
+        // Verify locked indicator on approved submission
+        ->assertSee('Locked')
+        // Click edit on submitted submission
+        ->click('[data-test="btn-edit-'.$subEditable->id.'"]')
+        ->assertPathIs('/overtime/submissions/'.$subEditable->id.'/edit')
+        ->assertSee('OT-20260908-TOP-001')
+        ->assertSee('EMP-55001')
+        // Submit changes
+        ->click('[data-test="btn-submit-overtime"]')
+        ->assertPathIs('/overtime/submissions')
+        ->assertSee('OT-20260908-TOP-001');
 });

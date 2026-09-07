@@ -118,7 +118,89 @@
 
 ---
 
-### 2. POST /overtime/submissions/{id}/spkl
+### 3. GET /overtime/submissions
+
+**Description:** Paginated history list (20 items per page) of overtime submissions, scoped by user section/department and filtered by query parameters.
+
+**Authentication:** `auth`, Role: `Team Leader`, `Manager`, `Admin`
+
+**Query Parameters:**
+
+| Parameter     | Type                | Required | Description                                                                                                |
+| ------------- | ------------------- | -------- | ---------------------------------------------------------------------------------------------------------- |
+| `status`      | string              | No       | Single status (`SUBMITTED`, `PARTIALLY_APPROVED`, `APPROVED`, `REJECTED`, `DRAFT`) or comma-separated list |
+| `section_id`  | integer             | No       | Section ID filter (validated against user access)                                                          |
+| `spkl_status` | string              | No       | `PENDING`, `ATTACHED`, `VERIFIED`, or `OVERDUE`                                                            |
+| `date_from`   | string (YYYY-MM-DD) | No       | Operational date lower bound                                                                               |
+| `date_to`     | string (YYYY-MM-DD) | No       | Operational date upper bound                                                                               |
+| `page`        | integer             | No       | Pagination page number (default: 1)                                                                        |
+
+---
+
+### 4. GET /overtime/submissions/{id}
+
+**Description:** Fetch eager-loaded submission details for read-only modal inspection.
+
+**Authentication:** `auth`, Role: `Team Leader`, `Manager`, `Admin`
+
+**Response (`200 OK` JSON when requested with `Accept: application/json`):**
+
+```json
+{
+    "submission": {
+        "id": 842,
+        "submission_code": "OT-20260907-SEC-001",
+        "operational_date": "2026-09-07",
+        "day_type": "HKN",
+        "status": "SUBMITTED",
+        "total_hours_cached": 3.5,
+        "submission_notes": "Shift 2 catch-up for assembly line 1",
+        "department": { "id": 1, "code": "DEPT_ASSY", "name": "Assembly" },
+        "section": {
+            "id": 4,
+            "code": "SEC_ASSY_01",
+            "name": "Assembly Line 1"
+        },
+        "submitted_by": { "id": 12, "name": "Agus Pratama", "npk": "EMP-1002" },
+        "spkl_document": {
+            "id": 842,
+            "status": "PENDING",
+            "due_date": "2026-09-10"
+        },
+        "items": [
+            {
+                "id": 1501,
+                "employee_id": 105,
+                "npk_snapshot": "EMP-60001",
+                "hours_production": "2.00",
+                "hours_tpm": "0.50",
+                "hours_project": "1.00",
+                "hours_others": "0.00",
+                "total_hours": "3.50",
+                "hourly_rate_snapshot": "40000.00",
+                "total_cost_snapshot": "140000.00",
+                "status": "PENDING"
+            }
+        ]
+    }
+}
+```
+
+---
+
+### 5. PUT /overtime/submissions/{id}
+
+**Description:** Atomically re-save an existing submission with fresh rate snapshots. Strictly guarded: rejected with HTTP 422 if submission status is `APPROVED` or `PARTIALLY_APPROVED`.
+
+**Authentication:** `auth`, Role: `Team Leader`, `Manager`, `Admin`
+
+**Request Body:** Same schema as `POST /overtime/submissions`.
+
+**Response 302 Found:** Redirects to `overtime.submissions.index` with success flash message.
+
+---
+
+### 6. POST /overtime/submissions/{id}/spkl
 
 **Description:** Upload and attach a scanned physical or digital SPKL document (PDF/JPG/PNG) to an existing submission.
 

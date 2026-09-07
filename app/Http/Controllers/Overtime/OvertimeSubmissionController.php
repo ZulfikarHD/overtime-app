@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Overtime;
 use App\Actions\Overtime\SubmitOvertimeAction;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Overtime\StoreOvertimeSubmissionRequest;
+use App\Http\Requests\Overtime\UpdateOvertimeSubmissionRequest;
 use App\Models\CapexProject;
 use App\Models\Department;
 use App\Models\Employee;
@@ -181,8 +182,39 @@ class OvertimeSubmissionController extends Controller
             $query->where('department_id', $user->department_id);
         }
 
+        // Section filter
+        if ($request->filled('section_id')) {
+            $filterSecId = (int) $request->input('section_id');
+            if ($user->canAccessSection($filterSecId)) {
+                $query->where('section_id', $filterSecId);
+            }
+        }
+
+        // Status filter (single, multiple or ALL)
         if ($request->filled('status')) {
-            $query->where('status', $request->input('status'));
+            $statusInput = $request->input('status');
+            if (is_array($statusInput)) {
+                $query->whereIn('status', $statusInput);
+            } elseif (str_contains($statusInput, ',')) {
+                $query->whereIn('status', explode(',', $statusInput));
+            } elseif ($statusInput !== 'ALL') {
+                $query->where('status', $statusInput);
+            }
+        }
+
+        // SPKL status filter
+        if ($request->filled('spkl_status')) {
+            $spklStatus = (string) $request->input('spkl_status');
+            if ($spklStatus === 'OVERDUE') {
+                $query->whereHas('spklDocument', function ($q) {
+                    $q->where('status', 'PENDING')
+                        ->whereDate('due_date', '<', Carbon::now('Asia/Jakarta')->toDateString());
+                });
+            } elseif (in_array($spklStatus, ['PENDING', 'ATTACHED', 'VERIFIED'], true)) {
+                $query->whereHas('spklDocument', function ($q) use ($spklStatus) {
+                    $q->where('status', $spklStatus);
+                });
+            }
         }
 
         if ($request->filled('date_from')) {
@@ -195,14 +227,151 @@ class OvertimeSubmissionController extends Controller
 
         $submissions = $query->paginate(20)->withQueryString();
 
+        // Accessible sections for filtering
+        $availableSectionsQuery = Section::where('is_active', true)->orderBy('name');
+        if ($user->isTeamLeader() && $user->section_id) {
+            $availableSectionsQuery->where('id', $user->section_id);
+        } elseif ($user->isManager() && $user->department_id) {
+            $availableSectionsQuery->where('department_id', $user->department_id);
+        }
+        $availableSections = $availableSectionsQuery->get(['id', 'department_id', 'code', 'name']);
+
         return Inertia::render('overtime/Index', [
             'submissions' => $submissions,
+            'available_sections' => $availableSections,
             'filters' => [
                 'status' => $request->input('status', ''),
+                'section_id' => $request->input('section_id', ''),
+                'spkl_status' => $request->input('spkl_status', ''),
                 'date_from' => $request->input('date_from', ''),
                 'date_to' => $request->input('date_to', ''),
             ],
+            'detail_id' => $request->input('detail') ? (int) $request->input('detail') : null,
         ]);
+    }
+
+    /**
+     * Display the specified overtime submission detail (JSON or redirect for modal view).
+     */
+    public function show(Request $request, OvertimeSubmission $submission): JsonResponse|RedirectResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+
+        if (! $user->canAccessSection($submission->section_id)) {
+            abort(403, __('Anda tidak memiliki akses ke data pengajuan seksi ini.'));
+        }
+
+        $submission->load([
+            'items.employee:id,npk,full_name,job_position,hourly_rate',
+            'items.capexProject:id,project_code,name',
+            'spklDocument',
+            'department:id,name,code',
+            'section:id,name,code',
+            'submittedBy:id,name,npk',
+        ]);
+
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'submission' => $submission,
+            ]);
+        }
+
+        return redirect()->route('overtime.submissions.index', ['detail' => $submission->id]);
+    }
+
+    /**
+     * Show the form for editing the specified overtime submission.
+     */
+    public function edit(Request $request, OvertimeSubmission $submission): Response
+    {
+        /** @var User $user */
+        $user = $request->user();
+
+        if (! $user->canAccessSection($submission->section_id)) {
+            abort(403, __('Anda tidak memiliki akses ke data pengajuan seksi ini.'));
+        }
+
+        if (in_array($submission->status, ['APPROVED', 'PARTIALLY_APPROVED'], true)) {
+            abort(422, __('Pengajuan yang sudah disetujui atau disetujui sebagian terkunci dan tidak dapat diedit.'));
+        }
+
+        // 1. Resolve departments accessible to the user
+        if ($user->isAdmin()) {
+            $departments = Department::where('is_active', true)->orderBy('name')->get(['id', 'code', 'name']);
+        } elseif ($user->department_id) {
+            $departments = Department::where('id', $user->department_id)->get(['id', 'code', 'name']);
+        } else {
+            $departments = Department::where('is_active', true)->orderBy('name')->get(['id', 'code', 'name']);
+        }
+
+        // 2. Resolve sections accessible to the user
+        $sections = Section::where('is_active', true)
+            ->where('department_id', $submission->department_id)
+            ->orderBy('name')
+            ->get(['id', 'department_id', 'code', 'name']);
+
+        // 3. Resolve active CapEx projects
+        $activeCapexProjects = CapexProject::active()
+            ->orderBy('name')
+            ->get(['id', 'project_code', 'asset_code', 'name']);
+
+        // 4. Monthly budget burn indicator for section
+        $burnIndicator = $this->getSectionBurnIndicator($submission->section_id);
+
+        // 5. Preload roster for section
+        $roster = Employee::where('section_id', $submission->section_id)
+            ->where('is_active', true)
+            ->orderBy('full_name')
+            ->get(['id', 'npk', 'full_name', 'job_position', 'hourly_rate']);
+
+        $submission->load([
+            'items.employee:id,npk,full_name,job_position,hourly_rate',
+            'items.capexProject:id,project_code,name',
+            'spklDocument',
+            'department:id,name,code',
+            'section:id,name,code',
+        ]);
+
+        return Inertia::render('overtime/Create', [
+            'departments' => $departments,
+            'sections' => $sections,
+            'selected_department_id' => $submission->department_id,
+            'selected_section_id' => $submission->section_id,
+            'active_capex_projects' => $activeCapexProjects,
+            'today' => $submission->operational_date->format('Y-m-d'),
+            'default_day_type' => $submission->day_type,
+            'burn_indicator' => $burnIndicator,
+            'initial_roster' => $roster,
+            'editing_submission' => $submission,
+        ]);
+    }
+
+    /**
+     * Update the specified overtime submission in storage.
+     */
+    public function update(UpdateOvertimeSubmissionRequest $request, OvertimeSubmission $submission): RedirectResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+
+        if (! $user->canAccessSection($submission->section_id)) {
+            abort(403, __('Anda tidak memiliki akses ke data pengajuan seksi ini.'));
+        }
+
+        if (in_array($submission->status, ['APPROVED', 'PARTIALLY_APPROVED'], true)) {
+            abort(422, __('Pengajuan yang sudah disetujui atau disetujui sebagian terkunci dan tidak dapat diedit.'));
+        }
+
+        $updatedSubmission = $this->submitOvertimeAction->update($submission, $request->validated(), $user->id);
+
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'message' => __('Perubahan pengajuan lembur berhasil disimpan: :code', ['code' => $updatedSubmission->submission_code]),
+        ]);
+
+        return redirect()->route('overtime.submissions.index')
+            ->with('success', __('Perubahan pengajuan lembur berhasil disimpan: :code', ['code' => $updatedSubmission->submission_code]));
     }
 
     /**

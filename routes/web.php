@@ -91,6 +91,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/submissions/create', [OvertimeSubmissionController::class, 'create'])->name('submissions.create');
         Route::post('/submissions', [OvertimeSubmissionController::class, 'store'])->name('submissions.store');
         Route::get('/submissions/roster/{section}', [OvertimeSubmissionController::class, 'roster'])->name('submissions.roster');
+        Route::get('/submissions/{submission}', [OvertimeSubmissionController::class, 'show'])->name('submissions.show');
+        Route::get('/submissions/{submission}/edit', [OvertimeSubmissionController::class, 'edit'])->name('submissions.edit');
+        Route::put('/submissions/{submission}', [OvertimeSubmissionController::class, 'update'])->name('submissions.update');
     });
 
     Route::middleware(['role:admin,manager'])->prefix('manager')->name('manager.')->group(function () {

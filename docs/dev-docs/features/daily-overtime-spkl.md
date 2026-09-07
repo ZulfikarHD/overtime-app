@@ -48,14 +48,16 @@ erDiagram
 | ------------------ | ------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
 | Sidebar Menu       | `Input Lembur` (`/overtime/submissions/create`)                                       | Frontline entry point for shift supervisors                    |
 | Page Component     | `resources/js/pages/overtime/Create.vue`                                              | Reactive Vue 3 timesheet entry table                           |
-| History Page       | `resources/js/pages/overtime/Index.vue`                                               | Overtime submission history & navigation tab                   |
+| History Page       | `resources/js/pages/overtime/Index.vue`                                               | Overtime submission history hub, filter toolbar, & pagination  |
+| Detail Modal       | `resources/js/components/overtime/SubmissionDetailModal.vue`                          | High-density read-only detail inspection modal (E03-03)        |
 | Form Sub-component | `resources/js/components/overtime/OvertimeItemRow.vue`                                | Row component handling 4 category inputs and live total        |
 | Burn Indicator     | `resources/js/components/overtime/SectionBurnIndicator.vue`                           | Live section budget burn badge & progress bar                  |
 | Success Card       | `resources/js/components/overtime/PostSubmissionSuccessCard.vue`                      | Celebratory confirmation card with SPKL status & stats         |
-| Controller         | `app/Http/Controllers/Overtime/OvertimeSubmissionController.php`                      | Lean controller handling form rendering, submission, & roster  |
+| Controller         | `app/Http/Controllers/Overtime/OvertimeSubmissionController.php`                      | Handles form rendering, index filters, show, edit, and update  |
 | Action             | `app/Actions/Overtime/SubmitOvertimeAction.php`                                       | Atomic transaction logic, rate snapshotting, queue dispatching |
 | Observer           | `app/Observers/OvertimeItemObserver.php`                                              | Guards hourly_rate_snapshot, total_cost_snapshot, & npk        |
 | Form Request       | `app/Http/Requests/Overtime/StoreOvertimeSubmissionRequest.php`                       | Validates min hours (0.5), CapEx projects, & employee limits   |
+| Update Request     | `app/Http/Requests/Overtime/UpdateOvertimeSubmissionRequest.php`                      | Authorizes section access & validates re-edit payload (E03-03) |
 | Models             | `App\Models\OvertimeSubmission`, `App\Models\OvertimeItem`, `App\Models\SpklDocument` | Eloquent entities enforcing schema constraints & immutability  |
 
 ## Flow Explanation
@@ -69,15 +71,27 @@ erDiagram
 5. **Atomic transaction & immutable snapshots**: `SubmitOvertimeAction` executes within a database transaction, generates a human-readable submission code (`OT-YYYYMMDD-SEC-0001`), creates a linked `SpklDocument` in `PENDING` status, resolves the worker's labor rate (falling back to parent department default rate when null), computes total cost with `bcmul()` high-precision IDR arithmetic, and permanently writes `hourly_rate_snapshot` and `total_cost_snapshot`. Model observer `OvertimeItemObserver` rejects any retroactive updates to snapshot values.
 6. **Async dispatch**: `RunAnomalyDetectionJob` is dispatched asynchronously per line item.
 7. **Response**: The application displays the celebratory `PostSubmissionSuccessCard` with the generated code, crew count, total hours, and `SPKL: Belum Dilampirkan (Non-blocking BR-05)` notice.
+8. **History, Filter & Inspection (E03-03)**:
+    - Shift supervisors can inspect their section's submissions via **Riwayat Pengajuan** (`/overtime/submissions`).
+    - Multi-criteria filter toolbar: Date range (`date_from`, `date_to`), Status (`SUBMITTED`, `PARTIALLY_APPROVED`, `APPROVED`, `REJECTED`), Section, and SPKL status (`PENDING`, `ATTACHED`, `VERIFIED`, `OVERDUE`).
+    - Server-side pagination displays 20 records per page.
+    - Clicking **Detail** opens `SubmissionDetailModal` displaying read-only line items, snapshot hourly rates, total costs in ISUZU Red, CapEx project pills, and SPKL container countdown banner without navigating away or losing scroll position.
+9. **Guarded Re-edit Workflow (E03-03)**:
+    - If a submission is in `SUBMITTED` or `DRAFT` status, the supervisor can click **Edit** to enter full re-edit mode on `resources/js/pages/overtime/Create.vue`.
+    - `SubmitOvertimeAction@update` re-runs with fresh rate snapshotting within an atomic transaction.
+    - If a submission has been `APPROVED` or `PARTIALLY_APPROVED` by a Manager, editing is strictly prohibited with an HTTP 422 guard at both Request, Action, and Controller layers, and the UI replaces the Edit button with a locked indicator.
 
 ## API Endpoints & Routes
 
-| Method | URI                                    | Controller Action                     | Purpose                                        | Auth / Middleware                        |
-| ------ | -------------------------------------- | ------------------------------------- | ---------------------------------------------- | ---------------------------------------- |
-| GET    | `/overtime/submissions/create`         | `OvertimeSubmissionController@create` | Render timesheet form with active roster       | `auth`, `role:admin,manager,team_leader` |
-| POST   | `/overtime/submissions`                | `OvertimeSubmissionController@store`  | Atomic batch submission                        | `auth`, `role:admin,manager,team_leader` |
-| GET    | `/overtime/submissions`                | `OvertimeSubmissionController@index`  | Submission history listing                     | `auth`, `role:admin,manager,team_leader` |
-| GET    | `/overtime/submissions/roster/{secId}` | `OvertimeSubmissionController@roster` | JSON endpoint returning section workers & burn | `auth`, `role:admin,manager,team_leader` |
+| Method | URI                                       | Controller Action                     | Purpose                                        | Auth / Middleware                        |
+| ------ | ----------------------------------------- | ------------------------------------- | ---------------------------------------------- | ---------------------------------------- |
+| GET    | `/overtime/submissions/create`            | `OvertimeSubmissionController@create` | Render timesheet form with active roster       | `auth`, `role:admin,manager,team_leader` |
+| POST   | `/overtime/submissions`                   | `OvertimeSubmissionController@store`  | Atomic batch submission                        | `auth`, `role:admin,manager,team_leader` |
+| GET    | `/overtime/submissions`                   | `OvertimeSubmissionController@index`  | Submission history listing with filters        | `auth`, `role:admin,manager,team_leader` |
+| GET    | `/overtime/submissions/{submission}`      | `OvertimeSubmissionController@show`   | Fetch eager-loaded submission detail (JSON)    | `auth`, `role:admin,manager,team_leader` |
+| GET    | `/overtime/submissions/{submission}/edit` | `OvertimeSubmissionController@edit`   | Render timesheet in edit mode (guarded)        | `auth`, `role:admin,manager,team_leader` |
+| PUT    | `/overtime/submissions/{submission}`      | `OvertimeSubmissionController@update` | Save edited submission with fresh snapshot     | `auth`, `role:admin,manager,team_leader` |
+| GET    | `/overtime/submissions/roster/{secId}`    | `OvertimeSubmissionController@roster` | JSON endpoint returning section workers & burn | `auth`, `role:admin,manager,team_leader` |
 
 ## Decisions & Trade-offs
 

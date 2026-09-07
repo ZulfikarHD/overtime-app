@@ -116,4 +116,39 @@ For each employee row in the timesheet:
     - **Total Jam**: Cumulative overtime hours for that shift.
     - **Estimasi Biaya**: Permanently locked financial snapshot calculated at the moment of submission using standard IDR currency formatting (`Rp`). Even if base wage rates or department default rates are adjusted in subsequent months or fiscal years, historical submission records permanently maintain their original cost snapshot.
     - **Status Persetujuan**: Current managerial review state (`Menunggu Review`, `Disetujui Sebagian`, `Disetujui`, `Ditolak`).
-    - **Dokumen SPKL**: SPKL attachment status (`Terlampir` or `Belum Dilampirkan`).
+    - **Dokumen SPKL**: SPKL attachment status (`Terlampir`, `Terverifikasi`, `Belum Dilampirkan`, or `⚠️ Terlambat`).
+3. **Filtering Submissions**:
+    - Use the **Quick Status Pills** (`Semua Status`, `Menunggu Review`, `Disetujui Sebagian`, `Disetujui`, `Ditolak`) for rapid 1-click filtering.
+    - Select date ranges with **Dari Tanggal** and **Sampai Tanggal**.
+    - Filter by specific **Seksi** (for multi-section managers and admins) or **Dokumen SPKL** status.
+    - Click **Terapkan** to filter or **Reset Filter** to clear.
+4. **Pagination**:
+    - The table displays 20 submissions per page. Use the previous, next, and page number buttons at the bottom to browse through records without losing your filter criteria or scroll position.
+
+---
+
+## 8. Inspecting Submission Details (Read-Only Modal)
+
+1. Click the **Detail** button or the **Kode Pengajuan** badge on any row in the history table.
+2. A centered detail modal will appear displaying:
+    - **Header & Status**: Submission code, department, section, operational date, and approval status badge.
+    - **SPKL Document Status Banner**: Shows whether the SPKL document is attached, verified, or pending with its due date deadline.
+    - **Batch Notes**: Displays any notes entered during shift handover.
+    - **Employee Breakdown Table**: Detailed list of crew members with their individual hours across Production, TPM, CapEx (with sky-blue project pill), and Others, alongside their hourly rate snapshot and total line item cost snapshot.
+    - **Summary Strip**: Total crew count, total batch hours, and total estimated cost in ISUZU Red (`#cc0000`).
+3. Click **Tutup** to dismiss the modal, or click **Edit Pengajuan** if the submission is eligible for editing.
+
+---
+
+## 9. Re-Editing a Submission (Guarded Workflow)
+
+1. **Eligibility**:
+    - You can only edit submissions that are still in **Menunggu Review (SUBMITTED)** or **Draf (DRAFT)** status.
+2. **Editing Process**:
+    - Click the yellow **Edit** button in the action column or inside the detail modal.
+    - You will be returned to the timesheet entry form pre-populated with all previous data, displaying an amber banner: `Mode Edit Pengajuan: OT-...`.
+    - Modify the operational date, batch notes, add/remove crew members, or adjust overtime hours.
+    - Click **Simpan Perubahan (Save Changes)**. The system will atomically re-save the batch, re-calculate and re-snapshot all labor rates and financial totals, and redirect you back to the history hub.
+3. **Managerial Lock Protection**:
+    - If a submission has already been **Disetujui (APPROVED)** or **Disetujui Sebagian (PARTIALLY_APPROVED)** by a Department Manager, it is permanently locked.
+    - The Edit button is replaced by a disabled lock indicator (`🔒 Terkunci`), and backend security guards strictly reject any modification requests with an HTTP 422 error.

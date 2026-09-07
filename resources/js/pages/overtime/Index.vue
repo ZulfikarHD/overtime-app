@@ -1,14 +1,22 @@
 <script setup lang="ts">
-import { Head, Link } from '@inertiajs/vue3';
+import { Head, Link, router } from '@inertiajs/vue3';
 import {
+    AlertTriangle,
     Calendar,
-    CheckCircle2,
-    Clock,
+    ChevronLeft,
+    ChevronRight,
+    Eye,
     FileText,
+    Filter,
     ListPlus,
+    Lock,
+    Pencil,
     Plus,
+    RotateCcw,
     Search,
 } from '@lucide/vue';
+import { computed, ref, watch } from 'vue';
+import SubmissionDetailModal from '@/components/overtime/SubmissionDetailModal.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -17,6 +25,7 @@ import { formatDateIndo, formatRupiah } from '@/lib/formatters';
 import { dashboard } from '@/routes';
 import {
     create as createSubmissionRoute,
+    edit as editSubmissionRoute,
     index as indexSubmissionRoute,
 } from '@/routes/overtime/submissions';
 
@@ -48,29 +57,143 @@ interface SubmissionRecord {
         | 'REJECTED';
     total_hours_cached: string | number;
     total_cost_cached?: string | number | null;
+    submission_notes?: string | null;
     section?: { id: number; name: string; code: string } | null;
     department?: { id: number; name: string; code: string } | null;
     submitted_by?: { id: number; name: string; npk: string } | null;
-    spkl_document?: { id: number; status: string; due_date: string } | null;
+    spkl_document?: {
+        id: number;
+        status: string;
+        due_date: string;
+        spkl_number?: string | null;
+    } | null;
+}
+
+interface PaginationLink {
+    url: string | null;
+    label: string;
+    active: boolean;
 }
 
 interface PaginatedSubmissions {
     data: SubmissionRecord[];
     current_page: number;
     last_page: number;
+    per_page: number;
     total: number;
+    from?: number | null;
+    to?: number | null;
+    links: PaginationLink[];
+    prev_page_url?: string | null;
+    next_page_url?: string | null;
 }
 
-defineProps<{
+interface SectionOption {
+    id: number;
+    department_id: number;
+    code: string;
+    name: string;
+}
+
+const props = defineProps<{
     submissions: PaginatedSubmissions;
+    available_sections?: SectionOption[];
     filters: {
         status?: string;
+        section_id?: string | number;
+        spkl_status?: string;
         date_from?: string;
         date_to?: string;
     };
+    detail_id?: number | null;
 }>();
 
 const { __ } = useTrans();
+
+// Filter states
+const selectedStatus = ref(props.filters.status ?? '');
+const selectedSection = ref(
+    props.filters.section_id ? String(props.filters.section_id) : '',
+);
+const selectedSpkl = ref(props.filters.spkl_status ?? '');
+const dateFrom = ref(props.filters.date_from ?? '');
+const dateTo = ref(props.filters.date_to ?? '');
+
+// Modal state
+const selectedDetailId = ref<number | null>(props.detail_id ?? null);
+const isDetailModalOpen = ref(Boolean(props.detail_id));
+
+watch(
+    () => props.detail_id,
+    (newId) => {
+        if (newId) {
+            selectedDetailId.value = newId;
+            isDetailModalOpen.value = true;
+        }
+    },
+);
+
+function openDetailModal(submissionId: number) {
+    selectedDetailId.value = submissionId;
+    isDetailModalOpen.value = true;
+}
+
+function applyFilters() {
+    const params: Record<string, string> = {};
+
+    if (selectedStatus.value && selectedStatus.value !== 'ALL') {
+        params.status = selectedStatus.value;
+    }
+    if (selectedSection.value) {
+        params.section_id = selectedSection.value;
+    }
+    if (selectedSpkl.value && selectedSpkl.value !== 'ALL') {
+        params.spkl_status = selectedSpkl.value;
+    }
+    if (dateFrom.value) {
+        params.date_from = dateFrom.value;
+    }
+    if (dateTo.value) {
+        params.date_to = dateTo.value;
+    }
+
+    router.get(indexSubmissionRoute.url(), params, {
+        preserveState: true,
+        preserveScroll: true,
+    });
+}
+
+function setStatusFilter(status: string) {
+    selectedStatus.value = status;
+    applyFilters();
+}
+
+function resetFilters() {
+    selectedStatus.value = '';
+    selectedSection.value = '';
+    selectedSpkl.value = '';
+    dateFrom.value = '';
+    dateTo.value = '';
+
+    router.get(
+        indexSubmissionRoute.url(),
+        {},
+        {
+            preserveState: true,
+            preserveScroll: true,
+        },
+    );
+}
+
+function handlePagination(url: string | null) {
+    if (!url) {
+        return;
+    }
+    router.visit(url, {
+        preserveState: true,
+        preserveScroll: true,
+    });
+}
 
 function getStatusBadge(status: string) {
     switch (status) {
@@ -89,6 +212,11 @@ function getStatusBadge(status: string) {
                 label: __('Ditolak'),
                 class: 'bg-red-50 text-red-700 border-red-200 dark:bg-red-950 dark:text-red-300',
             };
+        case 'DRAFT':
+            return {
+                label: __('Draf'),
+                class: 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300',
+            };
         default:
             return {
                 label: __('Menunggu Review'),
@@ -96,6 +224,32 @@ function getStatusBadge(status: string) {
             };
     }
 }
+
+function isSpklOverdue(dueDateStr?: string | null): boolean {
+    if (!dueDateStr) {
+        return false;
+    }
+    const today = new Date().toISOString().slice(0, 10);
+    return dueDateStr < today;
+}
+
+const statusFilterOptions = computed(() => [
+    { value: '', label: __('Semua Status') },
+    { value: 'SUBMITTED', label: __('🟡 Menunggu Review') },
+    { value: 'PARTIALLY_APPROVED', label: __('🟠 Disetujui Sebagian') },
+    { value: 'APPROVED', label: __('🟢 Disetujui') },
+    { value: 'REJECTED', label: __('🔴 Ditolak') },
+]);
+
+const hasActiveFilters = computed(() => {
+    return (
+        selectedStatus.value !== '' ||
+        selectedSection.value !== '' ||
+        selectedSpkl.value !== '' ||
+        dateFrom.value !== '' ||
+        dateTo.value !== ''
+    );
+});
 </script>
 
 <template>
@@ -135,6 +289,155 @@ function getStatusBadge(status: string) {
             </Link>
         </div>
 
+        <!-- Filter & Search Toolbar Card -->
+        <Card
+            class="border-slate-200 bg-white shadow-xs dark:border-slate-800 dark:bg-slate-900"
+            data-test="history-filter-card"
+        >
+            <CardContent class="space-y-3 p-4">
+                <!-- Status Quick Pills -->
+                <div
+                    class="flex flex-wrap items-center gap-1.5 border-b border-slate-100 pb-3 dark:border-slate-800"
+                >
+                    <span class="mr-2 text-xs font-semibold text-slate-500">
+                        {{ __('Status:') }}
+                    </span>
+                    <button
+                        v-for="opt in statusFilterOptions"
+                        :key="opt.value"
+                        type="button"
+                        @click="setStatusFilter(opt.value)"
+                        :class="
+                            selectedStatus === opt.value
+                                ? 'bg-slate-900 font-bold text-white shadow-xs dark:bg-white dark:text-slate-900'
+                                : 'bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
+                        "
+                        class="rounded-full px-3 py-1 text-xs transition-colors"
+                        :data-test="`filter-status-${opt.value || 'all'}`"
+                    >
+                        {{ opt.label }}
+                    </button>
+                </div>
+
+                <!-- Secondary Filters: Date Range, Section, SPKL -->
+                <div
+                    class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5 lg:items-end"
+                >
+                    <!-- Date From -->
+                    <div>
+                        <label
+                            class="block text-[11px] font-semibold text-slate-600 dark:text-slate-400"
+                        >
+                            {{ __('Dari Tanggal') }}
+                        </label>
+                        <input
+                            type="date"
+                            v-model="dateFrom"
+                            @change="applyFilters"
+                            class="mt-1 h-8 w-full rounded-md border border-slate-300 bg-white px-2.5 font-mono text-xs text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                            data-test="filter-date-from"
+                        />
+                    </div>
+
+                    <!-- Date To -->
+                    <div>
+                        <label
+                            class="block text-[11px] font-semibold text-slate-600 dark:text-slate-400"
+                        >
+                            {{ __('Sampai Tanggal') }}
+                        </label>
+                        <input
+                            type="date"
+                            v-model="dateTo"
+                            @change="applyFilters"
+                            class="mt-1 h-8 w-full rounded-md border border-slate-300 bg-white px-2.5 font-mono text-xs text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                            data-test="filter-date-to"
+                        />
+                    </div>
+
+                    <!-- Section Filter (if multiple sections) -->
+                    <div>
+                        <label
+                            class="block text-[11px] font-semibold text-slate-600 dark:text-slate-400"
+                        >
+                            {{ __('Seksi') }}
+                        </label>
+                        <select
+                            v-model="selectedSection"
+                            @change="applyFilters"
+                            class="mt-1 h-8 w-full rounded-md border border-slate-300 bg-white px-2 text-xs text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                            data-test="filter-section-select"
+                        >
+                            <option value="">{{ __('Semua Seksi') }}</option>
+                            <option
+                                v-for="sec in available_sections"
+                                :key="sec.id"
+                                :value="String(sec.id)"
+                            >
+                                {{ sec.code }} - {{ sec.name }}
+                            </option>
+                        </select>
+                    </div>
+
+                    <!-- SPKL Status Filter -->
+                    <div>
+                        <label
+                            class="block text-[11px] font-semibold text-slate-600 dark:text-slate-400"
+                        >
+                            {{ __('Dokumen SPKL') }}
+                        </label>
+                        <select
+                            v-model="selectedSpkl"
+                            @change="applyFilters"
+                            class="mt-1 h-8 w-full rounded-md border border-slate-300 bg-white px-2 text-xs text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                            data-test="filter-spkl-select"
+                        >
+                            <option value="">{{ __('Semua SPKL') }}</option>
+                            <option value="PENDING">
+                                {{ __('Belum Dilampirkan') }}
+                            </option>
+                            <option value="ATTACHED">
+                                {{ __('Terlampir') }}
+                            </option>
+                            <option value="VERIFIED">
+                                {{ __('Terverifikasi') }}
+                            </option>
+                            <option value="OVERDUE">
+                                {{ __('⚠️ Terlambat') }}
+                            </option>
+                        </select>
+                    </div>
+
+                    <!-- Action Buttons: Apply & Reset -->
+                    <div class="flex items-center gap-2">
+                        <Button
+                            type="button"
+                            size="sm"
+                            @click="applyFilters"
+                            class="h-8 flex-1 bg-slate-900 text-xs font-semibold text-white hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900"
+                            data-test="btn-apply-filters"
+                        >
+                            <Filter class="mr-1.5 size-3.5" />
+                            <span>{{ __('Terapkan') }}</span>
+                        </Button>
+
+                        <Button
+                            v-if="hasActiveFilters"
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            @click="resetFilters"
+                            class="h-8 px-2.5 text-xs text-slate-500 hover:text-red-600"
+                            :title="__('Reset Filter')"
+                            data-test="btn-reset-filters"
+                        >
+                            <RotateCcw class="size-3.5" />
+                        </Button>
+                    </div>
+                </div>
+            </CardContent>
+        </Card>
+
         <!-- Submissions Table Card -->
         <Card
             class="border-slate-200 bg-white shadow-xs dark:border-slate-800 dark:bg-slate-900"
@@ -142,35 +445,61 @@ function getStatusBadge(status: string) {
             <CardHeader
                 class="flex flex-row items-center justify-between border-b border-slate-200 px-4 py-3 dark:border-slate-800"
             >
-                <CardTitle
-                    class="text-sm font-bold text-slate-900 dark:text-white"
-                >
-                    {{ __('Daftar Batch Pengajuan Lembur') }}
-                </CardTitle>
-                <Badge variant="outline" class="font-mono text-xs">
-                    {{ submissions.total }} {{ __('Pengajuan') }}
-                </Badge>
+                <div class="flex items-center gap-2">
+                    <CardTitle
+                        class="text-sm font-bold text-slate-900 dark:text-white"
+                    >
+                        {{ __('Daftar Batch Pengajuan Lembur') }}
+                    </CardTitle>
+                    <Badge variant="outline" class="font-mono text-xs">
+                        {{ submissions.total }} {{ __('Pengajuan') }}
+                    </Badge>
+                </div>
             </CardHeader>
 
             <CardContent class="p-0">
                 <div
                     v-if="submissions.data.length === 0"
-                    class="flex flex-col items-center justify-center p-8 text-center"
+                    class="flex flex-col items-center justify-center p-12 text-center"
                     data-test="empty-history-state"
                 >
-                    <FileText class="size-8 text-slate-400" />
+                    <FileText
+                        class="size-10 text-slate-300 dark:text-slate-600"
+                    />
                     <p
-                        class="mt-2 text-sm font-semibold text-slate-900 dark:text-white"
+                        class="mt-3 text-sm font-bold text-slate-900 dark:text-white"
                     >
                         {{ __('Belum Ada Pengajuan Lembur') }}
                     </p>
-                    <p class="text-xs text-slate-500">
+                    <p class="mt-1 max-w-sm text-xs text-slate-500">
                         {{
-                            __(
-                                'Mulai dengan membuat pengajuan lembur pertama untuk seksi Anda.',
-                            )
+                            hasActiveFilters
+                                ? __(
+                                      'Tidak ada pengajuan yang cocok dengan kriteria filter saat ini.',
+                                  )
+                                : __(
+                                      'Mulai dengan membuat pengajuan lembur pertama untuk seksi Anda.',
+                                  )
                         }}
                     </p>
+                    <div class="mt-4 flex items-center gap-2">
+                        <Button
+                            v-if="hasActiveFilters"
+                            variant="outline"
+                            size="sm"
+                            @click="resetFilters"
+                            class="text-xs"
+                        >
+                            {{ __('Bersihkan Filter') }}
+                        </Button>
+                        <Link
+                            :href="createSubmissionRoute()"
+                            class="inline-flex items-center rounded-md bg-[#cc0000] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#b30000]"
+                        >
+                            <Plus class="mr-1 size-3.5" />
+                            <span>{{ __('Input Lembur Sekarang') }}</span>
+                        </Link>
+                    </div>
                 </div>
 
                 <div v-else class="overflow-x-auto">
@@ -193,6 +522,7 @@ function getStatusBadge(status: string) {
                                     {{ __('Status Persetujuan') }}
                                 </th>
                                 <th class="p-3">{{ __('Dokumen SPKL') }}</th>
+                                <th class="p-3 text-right">{{ __('Aksi') }}</th>
                             </tr>
                         </thead>
                         <tbody
@@ -204,13 +534,19 @@ function getStatusBadge(status: string) {
                                 class="transition-colors hover:bg-slate-50/70 dark:hover:bg-slate-800/50"
                                 :data-test="`submission-row-${sub.id}`"
                             >
+                                <!-- Kode Pengajuan -->
                                 <td class="p-3">
-                                    <span
-                                        class="rounded bg-slate-100 px-2 py-0.5 font-mono text-xs font-bold text-slate-800 dark:bg-slate-800 dark:text-slate-200"
+                                    <button
+                                        type="button"
+                                        @click="openDetailModal(sub.id)"
+                                        class="cursor-pointer rounded bg-slate-100 px-2 py-0.5 font-mono text-xs font-bold text-slate-800 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+                                        :data-test="`code-link-${sub.id}`"
                                     >
                                         {{ sub.submission_code }}
-                                    </span>
+                                    </button>
                                 </td>
+
+                                <!-- Tanggal & Hari -->
                                 <td class="p-3">
                                     <div
                                         class="font-medium text-slate-900 dark:text-white"
@@ -230,11 +566,15 @@ function getStatusBadge(status: string) {
                                         {{ sub.day_type }}
                                     </span>
                                 </td>
+
+                                <!-- Seksi -->
                                 <td
                                     class="p-3 text-slate-700 dark:text-slate-300"
                                 >
                                     {{ sub.section?.name ?? '-' }}
                                 </td>
+
+                                <!-- Diajukan Oleh -->
                                 <td
                                     class="p-3 text-slate-700 dark:text-slate-300"
                                 >
@@ -247,6 +587,8 @@ function getStatusBadge(status: string) {
                                         {{ sub.submitted_by?.npk ?? '' }}
                                     </div>
                                 </td>
+
+                                <!-- Total Jam -->
                                 <td
                                     class="p-3 text-right font-mono font-bold text-slate-900 tabular-nums dark:text-white"
                                 >
@@ -257,6 +599,8 @@ function getStatusBadge(status: string) {
                                     }}
                                     jam
                                 </td>
+
+                                <!-- Estimasi Biaya -->
                                 <td
                                     class="p-3 text-right font-mono font-bold text-[#cc0000] tabular-nums dark:text-red-400"
                                     :data-test="`submission-cost-${sub.id}`"
@@ -267,16 +611,21 @@ function getStatusBadge(status: string) {
                                         )
                                     }}
                                 </td>
+
+                                <!-- Status Persetujuan -->
                                 <td class="p-3">
                                     <span
                                         class="inline-flex items-center gap-1 rounded border px-2 py-0.5 text-[10px] font-semibold"
                                         :class="
                                             getStatusBadge(sub.status).class
                                         "
+                                        :data-test="`submission-status-${sub.id}`"
                                     >
                                         {{ getStatusBadge(sub.status).label }}
                                     </span>
                                 </td>
+
+                                <!-- Dokumen SPKL -->
                                 <td class="p-3">
                                     <span
                                         v-if="
@@ -287,7 +636,23 @@ function getStatusBadge(status: string) {
                                         "
                                         class="inline-flex items-center gap-1 rounded border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300"
                                     >
-                                        📎 {{ __('Terlampir') }}
+                                        📎
+                                        {{
+                                            sub.spkl_document?.status ===
+                                            'VERIFIED'
+                                                ? __('Terverifikasi')
+                                                : __('Terlampir')
+                                        }}
+                                    </span>
+                                    <span
+                                        v-else-if="
+                                            isSpklOverdue(
+                                                sub.spkl_document?.due_date,
+                                            )
+                                        "
+                                        class="inline-flex items-center gap-1 rounded border border-red-200 bg-red-50 px-2 py-0.5 text-[10px] font-bold text-red-700 dark:bg-red-950 dark:text-red-300"
+                                    >
+                                        ⚠️ {{ __('SPKL Terlambat') }}
                                     </span>
                                     <span
                                         v-else
@@ -296,11 +661,155 @@ function getStatusBadge(status: string) {
                                         ⏳ {{ __('Belum Dilampirkan') }}
                                     </span>
                                 </td>
+
+                                <!-- Aksi (Detail & Edit) -->
+                                <td class="p-3 text-right">
+                                    <div
+                                        class="inline-flex items-center justify-end gap-1.5"
+                                    >
+                                        <!-- Detail Button -->
+                                        <button
+                                            type="button"
+                                            @click="openDetailModal(sub.id)"
+                                            class="inline-flex h-7 items-center gap-1 rounded border border-slate-300 bg-white px-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+                                            :data-test="`btn-detail-${sub.id}`"
+                                        >
+                                            <Eye
+                                                class="size-3.5 text-slate-400"
+                                            />
+                                            <span>{{ __('Detail') }}</span>
+                                        </button>
+
+                                        <!-- Edit Button (Enabled only if SUBMITTED or DRAFT) -->
+                                        <Link
+                                            v-if="
+                                                sub.status === 'SUBMITTED' ||
+                                                sub.status === 'DRAFT'
+                                            "
+                                            :href="
+                                                editSubmissionRoute.url(sub.id)
+                                            "
+                                            class="inline-flex h-7 items-center gap-1 rounded border border-amber-300 bg-amber-50 px-2 text-xs font-semibold text-amber-800 hover:bg-amber-100 dark:border-amber-800 dark:bg-amber-950/60 dark:text-amber-300"
+                                            :data-test="`btn-edit-${sub.id}`"
+                                        >
+                                            <Pencil
+                                                class="size-3 text-amber-600"
+                                            />
+                                            <span>{{ __('Edit') }}</span>
+                                        </Link>
+
+                                        <!-- Locked Indicator if APPROVED or PARTIALLY_APPROVED -->
+                                        <span
+                                            v-else
+                                            class="dark:bg-slate-850 inline-flex h-7 cursor-not-allowed items-center gap-1 rounded border border-slate-200 bg-slate-100 px-2 text-[11px] font-medium text-slate-400 dark:border-slate-800 dark:text-slate-500"
+                                            :title="
+                                                __(
+                                                    'Pengajuan sudah diproses oleh Manajer dan terkunci permanen.',
+                                                )
+                                            "
+                                            :data-test="`btn-locked-${sub.id}`"
+                                        >
+                                            <Lock
+                                                class="size-3 text-slate-400"
+                                            />
+                                            <span>{{ __('Terkunci') }}</span>
+                                        </span>
+                                    </div>
+                                </td>
                             </tr>
                         </tbody>
                     </table>
                 </div>
+
+                <!-- Server-Side Pagination Bar -->
+                <div
+                    v-if="submissions.total > 0"
+                    class="flex flex-col items-center justify-between gap-3 border-t border-slate-200 p-4 sm:flex-row dark:border-slate-800"
+                    data-test="pagination-bar"
+                >
+                    <div class="text-xs text-slate-500">
+                        {{
+                            __(
+                                'Menampilkan :from sampai :to dari :total pengajuan',
+                                {
+                                    from: submissions.from ?? 1,
+                                    to:
+                                        submissions.to ??
+                                        submissions.data.length,
+                                    total: submissions.total,
+                                },
+                            )
+                        }}
+                    </div>
+
+                    <div
+                        v-if="submissions.last_page > 1"
+                        class="flex items-center gap-1"
+                    >
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            class="size-8 p-0"
+                            :disabled="!submissions.prev_page_url"
+                            @click="
+                                handlePagination(
+                                    submissions.prev_page_url ?? null,
+                                )
+                            "
+                            data-test="btn-pagination-prev"
+                        >
+                            <ChevronLeft class="size-4" />
+                        </Button>
+
+                        <template
+                            v-for="(link, idx) in submissions.links.slice(
+                                1,
+                                -1,
+                            )"
+                            :key="idx"
+                        >
+                            <Button
+                                type="button"
+                                size="sm"
+                                :variant="link.active ? 'default' : 'outline'"
+                                class="h-8 min-w-8 px-2 text-xs"
+                                :class="
+                                    link.active
+                                        ? 'bg-[#cc0000] text-white hover:bg-[#b30000]'
+                                        : ''
+                                "
+                                :disabled="!link.url"
+                                @click="handlePagination(link.url)"
+                            >
+                                <span v-html="link.label" />
+                            </Button>
+                        </template>
+
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            class="size-8 p-0"
+                            :disabled="!submissions.next_page_url"
+                            @click="
+                                handlePagination(
+                                    submissions.next_page_url ?? null,
+                                )
+                            "
+                            data-test="btn-pagination-next"
+                        >
+                            <ChevronRight class="size-4" />
+                        </Button>
+                    </div>
+                </div>
             </CardContent>
         </Card>
+
+        <!-- Read-Only Detail Modal Component -->
+        <SubmissionDetailModal
+            v-model:open="isDetailModalOpen"
+            :submission-id="selectedDetailId"
+        />
     </div>
 </template>

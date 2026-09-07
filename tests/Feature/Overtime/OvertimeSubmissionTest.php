@@ -4,12 +4,36 @@ use App\Jobs\RunAnomalyDetectionJob;
 use App\Models\CapexProject;
 use App\Models\Department;
 use App\Models\Employee;
+use App\Models\OperationalCalendar;
 use App\Models\OvertimeItem;
 use App\Models\OvertimeSubmission;
 use App\Models\Section;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Queue;
 use Inertia\Testing\AssertableInertia as Assert;
+
+function createTestSubmission(array $attributes = []): OvertimeSubmission
+{
+    $date = Carbon::parse($attributes['operational_date'] ?? '2026-09-08')->format('Y-m-d');
+    $calendar = OperationalCalendar::whereDate('calendar_date', $date)->first();
+    if (! $calendar) {
+        OperationalCalendar::create([
+            'calendar_date' => $date,
+            'day_type' => $attributes['day_type'] ?? 'HKN',
+            'is_holiday' => false,
+        ]);
+    }
+
+    return OvertimeSubmission::create(array_merge([
+        'submission_code' => 'OT-'.str_replace('-', '', (string) $date).'-TEST-'.uniqid(),
+        'submission_date' => $date,
+        'operational_date' => $date,
+        'day_type' => 'HKN',
+        'status' => 'SUBMITTED',
+        'total_hours_cached' => 0.0,
+    ], $attributes));
+}
 
 test('guest is redirected to login when accessing overtime submission routes', function () {
     $this->get(route('overtime.submissions.create'))->assertRedirect(route('login'));
@@ -415,4 +439,325 @@ test('history endpoint displays paginated overtime submissions with total_cost_c
             ->where('submissions.data.0.total_cost_cached', fn ($val) => (float) $val === 100000.00)
             ->has('filters')
         );
+});
+
+test('history endpoint can filter by date range, status, section, and spkl status', function () {
+    $dept = Department::factory()->create();
+    $section1 = Section::factory()->create(['department_id' => $dept->id]);
+    $section2 = Section::factory()->create(['department_id' => $dept->id]);
+
+    $manager = User::factory()->manager($dept->id)->create();
+    $emp1 = Employee::factory()->forDepartmentAndSection($dept, $section1)->create();
+    $emp2 = Employee::factory()->forDepartmentAndSection($dept, $section2)->create();
+
+    // Submission 1: Section 1, 2026-09-01, SUBMITTED
+    $sub1 = createTestSubmission([
+        'submission_code' => 'OT-20260901-SEC1-001',
+        'submission_date' => '2026-09-01',
+        'operational_date' => '2026-09-01',
+        'day_type' => 'HKN',
+        'department_id' => $dept->id,
+        'section_id' => $section1->id,
+        'submitted_by_user_id' => $manager->id,
+        'status' => 'SUBMITTED',
+        'total_hours_cached' => 4.0,
+    ]);
+    $sub1->spklDocument()->create([
+        'status' => 'PENDING',
+        'due_date' => '2026-09-04',
+    ]);
+
+    // Submission 2: Section 2, 2026-09-05, APPROVED
+    $sub2 = createTestSubmission([
+        'submission_code' => 'OT-20260905-SEC2-001',
+        'submission_date' => '2026-09-05',
+        'operational_date' => '2026-09-05',
+        'day_type' => 'HKN',
+        'department_id' => $dept->id,
+        'section_id' => $section2->id,
+        'submitted_by_user_id' => $manager->id,
+        'status' => 'APPROVED',
+        'total_hours_cached' => 6.0,
+    ]);
+    $sub2->spklDocument()->create([
+        'status' => 'ATTACHED',
+        'due_date' => '2026-09-08',
+    ]);
+
+    // Filter by status APPROVED
+    $this->actingAs($manager)
+        ->get(route('overtime.submissions.index', ['status' => 'APPROVED']))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('submissions.data', 1)
+            ->where('submissions.data.0.id', $sub2->id)
+        );
+
+    // Filter by date range (2026-09-01 to 2026-09-03)
+    $this->actingAs($manager)
+        ->get(route('overtime.submissions.index', ['date_from' => '2026-09-01', 'date_to' => '2026-09-03']))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('submissions.data', 1)
+            ->where('submissions.data.0.id', $sub1->id)
+        );
+
+    // Filter by section_id
+    $this->actingAs($manager)
+        ->get(route('overtime.submissions.index', ['section_id' => $section2->id]))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('submissions.data', 1)
+            ->where('submissions.data.0.id', $sub2->id)
+        );
+
+    // Filter by SPKL status ATTACHED
+    $this->actingAs($manager)
+        ->get(route('overtime.submissions.index', ['spkl_status' => 'ATTACHED']))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('submissions.data', 1)
+            ->where('submissions.data.0.id', $sub2->id)
+        );
+});
+
+test('submission show endpoint returns eagerly loaded json for modal inspection', function () {
+    $dept = Department::factory()->create();
+    $section = Section::factory()->create(['department_id' => $dept->id]);
+    $teamLeader = User::factory()->teamLeader($section->id, $dept->id)->create();
+    $emp = Employee::factory()->forDepartmentAndSection($dept, $section)->create(['hourly_rate' => 30000.00]);
+
+    $submission = createTestSubmission([
+        'submission_code' => 'OT-20260908-SEC-001',
+        'submission_date' => '2026-09-08',
+        'operational_date' => '2026-09-08',
+        'day_type' => 'HKN',
+        'department_id' => $dept->id,
+        'section_id' => $section->id,
+        'submitted_by_user_id' => $teamLeader->id,
+        'status' => 'SUBMITTED',
+        'total_hours_cached' => 2.0,
+    ]);
+
+    $submission->items()->create([
+        'employee_id' => $emp->id,
+        'npk_snapshot' => $emp->npk,
+        'hours_production' => 2.0,
+        'hourly_rate_snapshot' => 30000.00,
+        'total_cost_snapshot' => 60000.00,
+        'status' => 'PENDING',
+        'lock_version' => 1,
+    ]);
+
+    $submission->spklDocument()->create([
+        'status' => 'PENDING',
+        'due_date' => '2026-09-11',
+    ]);
+
+    $response = $this->actingAs($teamLeader)
+        ->getJson(route('overtime.submissions.show', $submission->id))
+        ->assertOk();
+
+    $response->assertJsonPath('submission.id', $submission->id);
+    $response->assertJsonPath('submission.submission_code', 'OT-20260908-SEC-001');
+    $response->assertJsonCount(1, 'submission.items');
+    $response->assertJsonPath('submission.items.0.npk_snapshot', $emp->npk);
+});
+
+test('user cannot access show or edit for submission in an unauthorized section', function () {
+    $dept1 = Department::factory()->create();
+    $sec1 = Section::factory()->create(['department_id' => $dept1->id]);
+
+    $dept2 = Department::factory()->create();
+    $sec2 = Section::factory()->create(['department_id' => $dept2->id]);
+
+    $teamLeaderSec1 = User::factory()->teamLeader($sec1->id, $dept1->id)->create();
+
+    $submissionSec2 = createTestSubmission([
+        'submission_code' => 'OT-20260908-SEC2-001',
+        'submission_date' => '2026-09-08',
+        'operational_date' => '2026-09-08',
+        'day_type' => 'HKN',
+        'department_id' => $dept2->id,
+        'section_id' => $sec2->id,
+        'submitted_by_user_id' => User::factory()->create()->id,
+        'status' => 'SUBMITTED',
+        'total_hours_cached' => 2.0,
+    ]);
+
+    $this->actingAs($teamLeaderSec1)
+        ->get(route('overtime.submissions.show', $submissionSec2->id))
+        ->assertForbidden();
+
+    $this->actingAs($teamLeaderSec1)
+        ->get(route('overtime.submissions.edit', $submissionSec2->id))
+        ->assertForbidden();
+});
+
+test('team leader can view edit page for draft or submitted overtime submission', function () {
+    $dept = Department::factory()->create(['default_hourly_rate' => 30000.00]);
+    $section = Section::factory()->create(['department_id' => $dept->id]);
+    $teamLeader = User::factory()->teamLeader($section->id, $dept->id)->create();
+    $emp = Employee::factory()->forDepartmentAndSection($dept, $section)->create();
+
+    $submission = createTestSubmission([
+        'submission_code' => 'OT-20260908-SEC-001',
+        'submission_date' => '2026-09-08',
+        'operational_date' => '2026-09-08',
+        'day_type' => 'HKN',
+        'department_id' => $dept->id,
+        'section_id' => $section->id,
+        'submitted_by_user_id' => $teamLeader->id,
+        'status' => 'SUBMITTED',
+        'total_hours_cached' => 1.5,
+    ]);
+
+    $submission->items()->create([
+        'employee_id' => $emp->id,
+        'npk_snapshot' => $emp->npk,
+        'hours_production' => 1.5,
+        'hourly_rate_snapshot' => 30000.00,
+        'total_cost_snapshot' => 45000.00,
+        'status' => 'PENDING',
+        'lock_version' => 1,
+    ]);
+
+    $this->actingAs($teamLeader)
+        ->get(route('overtime.submissions.edit', $submission->id))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('overtime/Create')
+            ->has('editing_submission')
+            ->where('editing_submission.id', $submission->id)
+            ->where('editing_submission.submission_code', 'OT-20260908-SEC-001')
+            ->has('editing_submission.items', 1)
+        );
+});
+
+test('guarded edit: cannot access edit page or update submission when status is APPROVED or PARTIALLY_APPROVED', function () {
+    $dept = Department::factory()->create(['default_hourly_rate' => 30000.00]);
+    $section = Section::factory()->create(['department_id' => $dept->id]);
+    $teamLeader = User::factory()->teamLeader($section->id, $dept->id)->create();
+    $emp = Employee::factory()->forDepartmentAndSection($dept, $section)->create();
+
+    foreach (['APPROVED', 'PARTIALLY_APPROVED'] as $lockedStatus) {
+        $submission = createTestSubmission([
+            'submission_code' => 'OT-LOCKED-'.$lockedStatus,
+            'submission_date' => '2026-09-08',
+            'operational_date' => '2026-09-08',
+            'day_type' => 'HKN',
+            'department_id' => $dept->id,
+            'section_id' => $section->id,
+            'submitted_by_user_id' => $teamLeader->id,
+            'status' => $lockedStatus,
+            'total_hours_cached' => 2.0,
+        ]);
+
+        $submission->items()->create([
+            'employee_id' => $emp->id,
+            'npk_snapshot' => $emp->npk,
+            'hours_production' => 2.0,
+            'hourly_rate_snapshot' => 30000.00,
+            'total_cost_snapshot' => 60000.00,
+            'status' => 'APPROVED',
+            'lock_version' => 1,
+        ]);
+
+        // Attempt GET edit
+        $this->actingAs($teamLeader)
+            ->get(route('overtime.submissions.edit', $submission->id))
+            ->assertStatus(422);
+
+        // Attempt PUT update
+        $this->actingAs($teamLeader)
+            ->put(route('overtime.submissions.update', $submission->id), [
+                'operational_date' => '2026-09-08',
+                'department_id' => $dept->id,
+                'section_id' => $section->id,
+                'items' => [
+                    ['employee_id' => $emp->id, 'hours_production' => 3.0],
+                ],
+            ])
+            ->assertStatus(422);
+    }
+});
+
+test('team leader can update submitted overtime with fresh rate snapshots and atomic transaction', function () {
+    Queue::fake();
+
+    $dept = Department::factory()->create(['default_hourly_rate' => 30000.00]);
+    $section = Section::factory()->create(['department_id' => $dept->id]);
+    $teamLeader = User::factory()->teamLeader($section->id, $dept->id)->create();
+
+    $emp1 = Employee::factory()->forDepartmentAndSection($dept, $section)->create([
+        'hourly_rate' => 40000.00,
+    ]);
+    $emp2 = Employee::factory()->forDepartmentAndSection($dept, $section)->create([
+        'hourly_rate' => 50000.00,
+    ]);
+
+    $submission = createTestSubmission([
+        'submission_code' => 'OT-20260908-SEC-099',
+        'submission_date' => '2026-09-08',
+        'operational_date' => '2026-09-08',
+        'day_type' => 'HKN',
+        'department_id' => $dept->id,
+        'section_id' => $section->id,
+        'submitted_by_user_id' => $teamLeader->id,
+        'status' => 'SUBMITTED',
+        'total_hours_cached' => 1.0,
+    ]);
+
+    $submission->items()->create([
+        'employee_id' => $emp1->id,
+        'npk_snapshot' => $emp1->npk,
+        'hours_production' => 1.0,
+        'hourly_rate_snapshot' => 40000.00,
+        'total_cost_snapshot' => 40000.00,
+        'status' => 'PENDING',
+        'lock_version' => 1,
+    ]);
+
+    $submission->spklDocument()->create([
+        'status' => 'PENDING',
+        'due_date' => '2026-09-11',
+    ]);
+
+    // Update with emp2 having 2.5 hours
+    $updatePayload = [
+        'operational_date' => '2026-09-09',
+        'day_type' => 'HKN',
+        'department_id' => $dept->id,
+        'section_id' => $section->id,
+        'submission_notes' => 'Catatan revisi pengajuan lembur',
+        'items' => [
+            [
+                'employee_id' => $emp2->id,
+                'hours_production' => 2.5,
+                'hours_tpm' => 0.0,
+                'hours_project' => 0.0,
+                'hours_others' => 0.0,
+                'task_description' => 'Overtime die trial tooling',
+            ],
+        ],
+    ];
+
+    $response = $this->actingAs($teamLeader)
+        ->put(route('overtime.submissions.update', $submission->id), $updatePayload)
+        ->assertRedirect(route('overtime.submissions.index'));
+
+    $submission->refresh();
+    expect($submission->operational_date->format('Y-m-d'))->toBe('2026-09-09');
+    expect($submission->submission_notes)->toBe('Catatan revisi pengajuan lembur');
+    expect((float) $submission->total_hours_cached)->toBe(2.5);
+
+    // Old item removed, new item created with emp2 snapshot
+    expect($submission->items()->count())->toBe(1);
+    $item = $submission->items()->first();
+    expect($item->employee_id)->toBe($emp2->id);
+    expect($item->npk_snapshot)->toBe($emp2->npk);
+    expect((float) $item->hourly_rate_snapshot)->toBe(50000.00);
+    expect((float) $item->total_cost_snapshot)->toBe(125000.00); // 2.5 * 50000
+
+    Queue::assertPushed(RunAnomalyDetectionJob::class);
 });
