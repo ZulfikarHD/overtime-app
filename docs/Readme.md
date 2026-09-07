@@ -20,6 +20,7 @@ The architectural blueprint unifies business requirements, relational database d
     - Role-Based Access Control (RBAC) matrix
     - Core calculation cheatsheet (`CALC-01` to `CALC-08`)
     - Asynchronous Redis job queues & ML cold-start circuit breaker
+- **[ISUZU OT-CapEx Design System & UI/UX Style Guide](./style-guide.html)** (Interactive HTML Style Guide: ISUZU Red palette, typography, high-density manufacturing components, and UX guardrails)
 
 ---
 

@@ -1,0 +1,2467 @@
+<!doctype html>
+<html lang="id" class="light">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>ISUZU OT-CapEx · Design System & UI/UX Style Guide</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400..700;1,400..700&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
+            rel="stylesheet"
+        />
+        <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+        <style type="text/tailwindcss">
+            @theme {
+                --font-sans:
+                    'Instrument Sans', ui-sans-serif, system-ui, sans-serif;
+                --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+
+                /* ISUZU Corporate Red Spectrum */
+                --color-isuzu-50: #fef2f2;
+                --color-isuzu-100: #fee2e2;
+                --color-isuzu-200: #fecaca;
+                --color-isuzu-300: #fca5a5;
+                --color-isuzu-400: #f87171;
+                --color-isuzu-500: #ef4444;
+                --color-isuzu-600: #dc2626;
+                --color-isuzu-primary: #cc0000;
+                --color-isuzu-700: #b91c1c;
+                --color-isuzu-800: #990000;
+                --color-isuzu-900: #7f1d1d;
+                --color-isuzu-950: #450a0a;
+
+                /* Industrial Neutrals */
+                --color-slate-850: #131b2a;
+                --color-slate-925: #0b111c;
+                --color-slate-950: #070b12;
+
+                /* Functional Semantics */
+                --color-capex: #0284c7;
+                --color-capex-light: #e0f2fe;
+                --color-burn-safe: #10b981;
+                --color-burn-warning: #f59e0b;
+                --color-burn-critical: #ef4444;
+            }
+
+            @layer base {
+                :root {
+                    --bg-base: #f8fafc;
+                    --bg-surface: #ffffff;
+                    --bg-surface-elevated: #ffffff;
+                    --border-subtle: #e2e8f0;
+                    --border-strong: #cbd5e1;
+                    --text-primary: #0f172a;
+                    --text-secondary: #475569;
+                    --text-muted: #64748b;
+                    --primary: #cc0000;
+                    --primary-hover: #b30000;
+                    --primary-active: #990000;
+                    --primary-ring: rgba(204, 0, 0, 0.25);
+                }
+
+                .dark {
+                    --bg-base: #070b12;
+                    --bg-surface: #0f172a;
+                    --bg-surface-elevated: #162238;
+                    --border-subtle: #1e293b;
+                    --border-strong: #334155;
+                    --text-primary: #f8fafc;
+                    --text-secondary: #cbd5e1;
+                    --text-muted: #94a3b8;
+                    --primary: #e60000;
+                    --primary-hover: #ff1a1a;
+                    --primary-active: #cc0000;
+                    --primary-ring: rgba(230, 0, 0, 0.35);
+                }
+
+                body {
+                    font-family: var(--font-sans);
+                    background-color: var(--bg-base);
+                    color: var(--text-primary);
+                    letter-spacing: -0.011em;
+                }
+
+                .font-tabular {
+                    font-family: var(--font-mono);
+                    font-variant-numeric: tabular-nums;
+                }
+            }
+        </style>
+        <style>
+            /* Smooth transitions & custom scrollbar */
+            * {
+                scroll-behavior: smooth;
+            }
+            ::-webkit-scrollbar {
+                width: 8px;
+                height: 8px;
+            }
+            ::-webkit-scrollbar-track {
+                background: rgba(0, 0, 0, 0.03);
+            }
+            .dark ::-webkit-scrollbar-track {
+                background: rgba(255, 255, 255, 0.02);
+            }
+            ::-webkit-scrollbar-thumb {
+                background: #cbd5e1;
+                border-radius: 4px;
+            }
+            .dark ::-webkit-scrollbar-thumb {
+                background: #334155;
+                border-radius: 4px;
+            }
+            ::-webkit-scrollbar-thumb:hover {
+                background: #94a3b8;
+            }
+            .toast-active {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        </style>
+    </head>
+    <body class="min-h-screen transition-colors duration-200">
+        <!-- Toast Notification Overlay -->
+        <div
+            id="toast"
+            class="pointer-events-none fixed right-6 bottom-6 z-50 flex translate-y-16 transform items-center gap-3 rounded-xl border border-slate-700/50 bg-slate-900 px-4 py-3 text-white opacity-0 shadow-2xl transition-all duration-300 dark:border-slate-200 dark:bg-white dark:text-slate-900"
+        >
+            <div id="toast-icon" class="text-emerald-400 dark:text-emerald-600">
+                <svg
+                    class="h-5 w-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                >
+                    <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M5 13l4 4L19 7"
+                    ></path>
+                </svg>
+            </div>
+            <div id="toast-text" class="text-xs font-medium">
+                Nilai disalin ke clipboard!
+            </div>
+        </div>
+
+        <!-- Top Global App Bar / Brand Header -->
+        <header
+            class="sticky top-0 z-40 w-full border-b border-slate-200 bg-white/90 backdrop-blur-md transition-colors dark:border-slate-800 dark:bg-slate-950/90"
+        >
+            <div
+                class="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8"
+            >
+                <div class="flex items-center gap-4">
+                    <!-- ISUZU Logo Badge -->
+                    <div class="flex items-center gap-3">
+                        <div
+                            class="flex h-9 items-center justify-center rounded-md bg-[#cc0000] px-3 text-sm font-bold tracking-widest text-white shadow-sm select-none"
+                        >
+                            ISUZU
+                        </div>
+                        <div
+                            class="h-5 w-px bg-slate-300 dark:bg-slate-700"
+                        ></div>
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <span
+                                    class="text-sm font-semibold tracking-tight text-slate-900 dark:text-white"
+                                    >OT-CapEx System</span
+                                >
+                                <span
+                                    class="hidden items-center rounded border border-red-200 bg-red-100 px-1.5 py-0.5 text-[10px] font-semibold text-[#cc0000] sm:inline-flex dark:border-red-900 dark:bg-red-950/80 dark:text-red-300"
+                                    >v1.2 Karawang Plant</span
+                                >
+                            </div>
+                            <p
+                                class="text-[11px] text-slate-500 dark:text-slate-400"
+                            >
+                                Design System & UI/UX Style Guide
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Action Controls -->
+                <div class="flex items-center gap-3">
+                    <span
+                        class="hidden items-center gap-1.5 rounded-full border border-slate-200 bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600 md:inline-flex dark:border-slate-700 dark:bg-slate-800/80 dark:text-slate-300"
+                    >
+                        <span
+                            class="size-2 animate-pulse rounded-full bg-emerald-500"
+                        ></span>
+                        Standard WIB (Asia/Jakarta) · Rp (IDR)
+                    </span>
+
+                    <!-- Theme Mode Toggle -->
+                    <button
+                        id="themeToggle"
+                        class="inline-flex size-9 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white"
+                        title="Toggle Light / Dark Mode"
+                    >
+                        <!-- Sun Icon -->
+                        <svg
+                            id="sunIcon"
+                            class="hidden size-4.5 dark:block"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"
+                            ></path>
+                        </svg>
+                        <!-- Moon Icon -->
+                        <svg
+                            id="moonIcon"
+                            class="block size-4.5 dark:hidden"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"
+                            ></path>
+                        </svg>
+                    </button>
+
+                    <!-- Copy App.css Button -->
+                    <button
+                        onclick="copyCssTheme()"
+                        class="hidden items-center gap-1.5 rounded-lg bg-[#cc0000] px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition-all hover:bg-[#b30000] active:scale-95 sm:inline-flex"
+                    >
+                        <svg
+                            class="size-3.5"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                            ></path>
+                        </svg>
+                        Salin Token CSS
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content Container with Sidebar Layout -->
+        <div class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 gap-8 lg:grid-cols-12">
+                <!-- Sticky Sidebar Navigation -->
+                <aside class="hidden lg:col-span-3 lg:block">
+                    <div class="sticky top-24 space-y-6">
+                        <div
+                            class="rounded-xl border border-slate-200 bg-white p-4 shadow-xs dark:border-slate-800 dark:bg-slate-900"
+                        >
+                            <h3
+                                class="mb-3 text-xs font-bold tracking-wider text-slate-400 uppercase dark:text-slate-500"
+                            >
+                                Daftar Modul Style Guide
+                            </h3>
+                            <nav class="space-y-1 text-sm font-medium">
+                                <a
+                                    href="#brand"
+                                    class="flex items-center gap-2.5 rounded-lg px-3 py-2 text-slate-700 transition-colors hover:bg-red-50 hover:text-[#cc0000] dark:text-slate-200 dark:hover:bg-red-950/40 dark:hover:text-red-300"
+                                >
+                                    <span
+                                        class="size-2 rounded-full bg-[#cc0000]"
+                                    ></span>
+                                    <span>1. Filosofi Brand & Identitas</span>
+                                </a>
+                                <a
+                                    href="#colors"
+                                    class="flex items-center gap-2.5 rounded-lg px-3 py-2 text-slate-700 transition-colors hover:bg-red-50 hover:text-[#cc0000] dark:text-slate-200 dark:hover:bg-red-950/40 dark:hover:text-red-300"
+                                >
+                                    <span
+                                        class="size-2 rounded-full bg-slate-400"
+                                    ></span>
+                                    <span>2. Palet Warna & Token Semantik</span>
+                                </a>
+                                <a
+                                    href="#typography"
+                                    class="flex items-center gap-2.5 rounded-lg px-3 py-2 text-slate-700 transition-colors hover:bg-red-50 hover:text-[#cc0000] dark:text-slate-200 dark:hover:bg-red-950/40 dark:hover:text-red-300"
+                                >
+                                    <span
+                                        class="size-2 rounded-full bg-slate-400"
+                                    ></span>
+                                    <span>3. Tipografi & Tabular Angka</span>
+                                </a>
+                                <a
+                                    href="#layout"
+                                    class="flex items-center gap-2.5 rounded-lg px-3 py-2 text-slate-700 transition-colors hover:bg-red-50 hover:text-[#cc0000] dark:text-slate-200 dark:hover:bg-red-950/40 dark:hover:text-red-300"
+                                >
+                                    <span
+                                        class="size-2 rounded-full bg-slate-400"
+                                    ></span>
+                                    <span>4. Spasi, Radius & Elevasi</span>
+                                </a>
+                                <a
+                                    href="#components"
+                                    class="flex items-center gap-2.5 rounded-lg px-3 py-2 text-slate-700 transition-colors hover:bg-red-50 hover:text-[#cc0000] dark:text-slate-200 dark:hover:bg-red-950/40 dark:hover:text-red-300"
+                                >
+                                    <span
+                                        class="size-2 rounded-full bg-slate-400"
+                                    ></span>
+                                    <span>5. Galeri Komponen Interaktif</span>
+                                </a>
+                                <a
+                                    href="#manufacturing"
+                                    class="flex items-center gap-2.5 rounded-lg px-3 py-2 text-slate-700 transition-colors hover:bg-red-50 hover:text-[#cc0000] dark:text-slate-200 dark:hover:bg-red-950/40 dark:hover:text-red-300"
+                                >
+                                    <span
+                                        class="size-2 rounded-full bg-blue-500"
+                                    ></span>
+                                    <span>6. Modul Pabrik & CapEx vs OpEx</span>
+                                </a>
+                                <a
+                                    href="#ux-guardrails"
+                                    class="flex items-center gap-2.5 rounded-lg px-3 py-2 text-slate-700 transition-colors hover:bg-red-50 hover:text-[#cc0000] dark:text-slate-200 dark:hover:bg-red-950/40 dark:hover:text-red-300"
+                                >
+                                    <span
+                                        class="size-2 rounded-full bg-amber-500"
+                                    ></span>
+                                    <span>7. Panduan UX Ergonomi Pabrik</span>
+                                </a>
+                                <a
+                                    href="#code-integration"
+                                    class="flex items-center gap-2.5 rounded-lg px-3 py-2 text-slate-700 transition-colors hover:bg-red-50 hover:text-[#cc0000] dark:text-slate-200 dark:hover:bg-red-950/40 dark:hover:text-red-300"
+                                >
+                                    <span
+                                        class="size-2 rounded-full bg-emerald-500"
+                                    ></span>
+                                    <span>8. Implementasi Tailwind v4</span>
+                                </a>
+                            </nav>
+                        </div>
+
+                        <!-- Plant Badge Quick Info -->
+                        <div
+                            class="space-y-2 rounded-xl border border-slate-200 bg-slate-50/60 p-4 text-xs dark:border-slate-800 dark:bg-slate-900/60"
+                        >
+                            <div
+                                class="flex items-center justify-between text-slate-500"
+                            >
+                                <span>Fasilitas:</span>
+                                <span
+                                    class="font-semibold text-slate-800 dark:text-slate-200"
+                                    >Karawang Assembly</span
+                                >
+                            </div>
+                            <div
+                                class="flex items-center justify-between text-slate-500"
+                            >
+                                <span>Sistem Shift:</span>
+                                <span
+                                    class="font-semibold text-slate-800 dark:text-slate-200"
+                                    >3 Shift / 24 Jam</span
+                                >
+                            </div>
+                            <div
+                                class="flex items-center justify-between text-slate-500"
+                            >
+                                <span>Ambang Depnaker:</span>
+                                <span
+                                    class="font-semibold text-red-600 dark:text-red-400"
+                                    >Maks 14 Jam/Minggu</span
+                                >
+                            </div>
+                        </div>
+                    </div>
+                </aside>
+
+                <!-- Main Content Area -->
+                <main class="space-y-16 lg:col-span-9">
+                    <!-- HERO SECTION -->
+                    <section
+                        class="relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-8 shadow-xs sm:p-10 dark:border-slate-800 dark:bg-slate-900"
+                    >
+                        <!-- Subtle Isuzu Red Accent stripe at top -->
+                        <div
+                            class="absolute top-0 right-0 left-0 h-1.5 bg-[#cc0000]"
+                        ></div>
+
+                        <div class="max-w-3xl space-y-4">
+                            <div
+                                class="inline-flex items-center gap-2 rounded-full border border-red-200 bg-red-50 px-3 py-1 text-xs font-semibold text-[#cc0000] dark:border-red-900/60 dark:bg-red-950/60 dark:text-red-400"
+                            >
+                                <span
+                                    class="size-1.5 rounded-full bg-[#cc0000]"
+                                ></span>
+                                Official Design Language System · ISUZU Motors
+                            </div>
+                            <h1
+                                class="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl dark:text-white"
+                            >
+                                Clean Industrial Precision.
+                            </h1>
+                            <p
+                                class="text-base leading-relaxed text-slate-600 sm:text-lg dark:text-slate-300"
+                            >
+                                Panduan standar desain antarmuka sistem
+                                manajemen lembur (Overtime) dan kapitalisasi
+                                tenaga kerja (CapEx) untuk lini perakitan pabrik
+                                otomotif ISUZU. Diformulasikan khusus untuk
+                                ergonomi operator, kecepatan handover shift,
+                                serta transparansi audit keuangan presisi
+                                tinggi.
+                            </p>
+                            <div class="flex flex-wrap gap-3 pt-2">
+                                <a
+                                    href="#components"
+                                    class="inline-flex items-center gap-2 rounded-lg bg-[#cc0000] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-[#b30000]"
+                                >
+                                    <span>Jelajahi Komponen</span>
+                                    <svg
+                                        class="size-4"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <path
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                            stroke-width="2"
+                                            d="M19 9l-7 7-7-7"
+                                        ></path>
+                                    </svg>
+                                </a>
+                                <a
+                                    href="#colors"
+                                    class="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+                                >
+                                    <span>Spektrum ISUZU Red</span>
+                                </a>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- SECTION 1: FILOSOFI BRAND & IDENTITAS -->
+                    <section id="brand" class="space-y-6">
+                        <div
+                            class="border-b border-slate-200 pb-4 dark:border-slate-800"
+                        >
+                            <span
+                                class="text-xs font-bold tracking-wider text-[#cc0000] uppercase"
+                                >01. Brand & Identity</span
+                            >
+                            <h2
+                                class="mt-1 text-2xl font-bold text-slate-900 dark:text-white"
+                            >
+                                Filosofi & Karakter Visual ISUZU
+                            </h2>
+                            <p
+                                class="text-sm text-slate-500 dark:text-slate-400"
+                            >
+                                Prinsip dasar pembentukan antarmuka yang tahan
+                                banting di lingkungan manufaktur otomotif.
+                            </p>
+                        </div>
+
+                        <div class="grid grid-cols-1 gap-6 md:grid-cols-3">
+                            <!-- Card 1: Monozukuri -->
+                            <div
+                                class="space-y-3 rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900"
+                            >
+                                <div
+                                    class="flex size-10 items-center justify-center rounded-lg bg-red-50 text-lg font-bold text-[#cc0000] dark:bg-red-950/60"
+                                >
+                                    物
+                                </div>
+                                <h3
+                                    class="text-base font-bold text-slate-900 dark:text-white"
+                                >
+                                    Presisi Monozukuri
+                                </h3>
+                                <p
+                                    class="text-xs leading-relaxed text-slate-600 dark:text-slate-400"
+                                >
+                                    Keanggunan fungsional khas manufaktur
+                                    Jepang. Tiap tombol, border, dan font
+                                    didesain tanpa ornamen berlebih. Visual
+                                    harus tajam, tegas, dan berbobot teknikal.
+                                </p>
+                            </div>
+
+                            <!-- Card 2: Handover Speed -->
+                            <div
+                                class="space-y-3 rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900"
+                            >
+                                <div
+                                    class="flex size-10 items-center justify-center rounded-lg bg-amber-50 text-lg font-bold text-amber-600 dark:bg-amber-950/60"
+                                >
+                                    ⚡
+                                </div>
+                                <h3
+                                    class="text-base font-bold text-slate-900 dark:text-white"
+                                >
+                                    Kecepatan Pergantian Shift
+                                </h3>
+                                <p
+                                    class="text-xs leading-relaxed text-slate-600 dark:text-slate-400"
+                                >
+                                    Team Leader dan Foreman hanya memiliki waktu
+                                    10-15 menit di akhir shift. UI harus
+                                    memungkinkan pengisian lembur massal (batch)
+                                    dalam kurang dari 3 ketukan.
+                                </p>
+                            </div>
+
+                            <!-- Card 3: Audit Compliance -->
+                            <div
+                                class="space-y-3 rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900"
+                            >
+                                <div
+                                    class="flex size-10 items-center justify-center rounded-lg bg-blue-50 text-lg font-bold text-blue-600 dark:bg-blue-950/60"
+                                >
+                                    📋
+                                </div>
+                                <h3
+                                    class="text-base font-bold text-slate-900 dark:text-white"
+                                >
+                                    Ketegasan Audit & Regulasi
+                                </h3>
+                                <p
+                                    class="text-xs leading-relaxed text-slate-600 dark:text-slate-400"
+                                >
+                                    Segregasi tegas antara lembur operasional
+                                    biasa (OpEx) dan proyek aset mesin (CapEx),
+                                    serta kepatuhan ketat batas lembur Perppu
+                                    Cipta Kerja/Depnaker.
+                                </p>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- SECTION 2: WARNA & TOKEN SEMANTIK -->
+                    <section id="colors" class="space-y-6">
+                        <div
+                            class="border-b border-slate-200 pb-4 dark:border-slate-800"
+                        >
+                            <span
+                                class="text-xs font-bold tracking-wider text-[#cc0000] uppercase"
+                                >02. Color Architecture</span
+                            >
+                            <h2
+                                class="mt-1 text-2xl font-bold text-slate-900 dark:text-white"
+                            >
+                                Sistem Warna & Token Semantik
+                            </h2>
+                            <p
+                                class="text-sm text-slate-500 dark:text-slate-400"
+                            >
+                                Klik pada kotak warna mana saja untuk menyalin
+                                kode Hex atau nilai CSS ke clipboard.
+                            </p>
+                        </div>
+
+                        <!-- ISUZU RED CORE SPECTRUM -->
+                        <div class="space-y-4">
+                            <div class="flex items-center justify-between">
+                                <h3
+                                    class="flex items-center gap-2 text-base font-bold text-slate-900 dark:text-white"
+                                >
+                                    <span
+                                        class="size-3 rounded-full bg-[#cc0000]"
+                                    ></span>
+                                    Primary: Spektrum ISUZU Corporate Red
+                                </h3>
+                                <span class="font-mono text-xs text-slate-400"
+                                    >Pantone 186 C / HSL: 0° 100% 40%</span
+                                >
+                            </div>
+
+                            <div
+                                class="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-6"
+                            >
+                                <!-- 50 -->
+                                <div
+                                    onclick="
+                                        copyToClipboard(
+                                            '#fef2f2',
+                                            'ISUZU Red 50',
+                                        )
+                                    "
+                                    class="group cursor-pointer rounded-xl border border-slate-200 bg-white p-3 transition-all hover:border-red-400 dark:border-slate-800 dark:bg-slate-900"
+                                >
+                                    <div
+                                        class="flex h-14 items-center justify-center rounded-lg border border-red-100 bg-[#fef2f2] text-xs font-bold text-red-900"
+                                    >
+                                        50
+                                    </div>
+                                    <div
+                                        class="mt-2 text-xs font-medium text-slate-800 dark:text-slate-200"
+                                    >
+                                        Red 50
+                                    </div>
+                                    <div
+                                        class="font-mono text-[11px] text-slate-400"
+                                    >
+                                        #FEF2F2
+                                    </div>
+                                </div>
+                                <!-- 100 -->
+                                <div
+                                    onclick="
+                                        copyToClipboard(
+                                            '#fee2e2',
+                                            'ISUZU Red 100',
+                                        )
+                                    "
+                                    class="group cursor-pointer rounded-xl border border-slate-200 bg-white p-3 transition-all hover:border-red-400 dark:border-slate-800 dark:bg-slate-900"
+                                >
+                                    <div
+                                        class="flex h-14 items-center justify-center rounded-lg bg-[#fee2e2] text-xs font-bold text-red-900"
+                                    >
+                                        100
+                                    </div>
+                                    <div
+                                        class="mt-2 text-xs font-medium text-slate-800 dark:text-slate-200"
+                                    >
+                                        Red 100
+                                    </div>
+                                    <div
+                                        class="font-mono text-[11px] text-slate-400"
+                                    >
+                                        #FEE2E2
+                                    </div>
+                                </div>
+                                <!-- 300 -->
+                                <div
+                                    onclick="
+                                        copyToClipboard(
+                                            '#fca5a5',
+                                            'ISUZU Red 300',
+                                        )
+                                    "
+                                    class="group cursor-pointer rounded-xl border border-slate-200 bg-white p-3 transition-all hover:border-red-400 dark:border-slate-800 dark:bg-slate-900"
+                                >
+                                    <div
+                                        class="flex h-14 items-center justify-center rounded-lg bg-[#fca5a5] text-xs font-bold text-red-950"
+                                    >
+                                        300
+                                    </div>
+                                    <div
+                                        class="mt-2 text-xs font-medium text-slate-800 dark:text-slate-200"
+                                    >
+                                        Red 300
+                                    </div>
+                                    <div
+                                        class="font-mono text-[11px] text-slate-400"
+                                    >
+                                        #FCA5A5
+                                    </div>
+                                </div>
+                                <!-- 500 -->
+                                <div
+                                    onclick="
+                                        copyToClipboard(
+                                            '#ef4444',
+                                            'ISUZU Red 500',
+                                        )
+                                    "
+                                    class="group cursor-pointer rounded-xl border border-slate-200 bg-white p-3 transition-all hover:border-red-400 dark:border-slate-800 dark:bg-slate-900"
+                                >
+                                    <div
+                                        class="flex h-14 items-center justify-center rounded-lg bg-[#ef4444] text-xs font-bold text-white"
+                                    >
+                                        500
+                                    </div>
+                                    <div
+                                        class="mt-2 text-xs font-medium text-slate-800 dark:text-slate-200"
+                                    >
+                                        Red 500
+                                    </div>
+                                    <div
+                                        class="font-mono text-[11px] text-slate-400"
+                                    >
+                                        #EF4444
+                                    </div>
+                                </div>
+                                <!-- CORE PRIMARY (#CC0000) -->
+                                <div
+                                    onclick="
+                                        copyToClipboard(
+                                            '#cc0000',
+                                            'ISUZU Brand Red (Primary)',
+                                        )
+                                    "
+                                    class="group relative scale-[1.02] cursor-pointer overflow-hidden rounded-xl border-2 border-[#cc0000] bg-white p-3 shadow-md transition-all dark:bg-slate-900"
+                                >
+                                    <div
+                                        class="absolute top-1 right-1 rounded bg-white px-1.5 py-0.5 text-[9px] font-black tracking-widest text-[#cc0000] uppercase"
+                                    >
+                                        Brand
+                                    </div>
+                                    <div
+                                        class="flex h-14 items-center justify-center rounded-lg bg-[#cc0000] text-xs font-black tracking-wider text-white"
+                                    >
+                                        PRIMARY
+                                    </div>
+                                    <div
+                                        class="mt-2 text-xs font-bold text-[#cc0000]"
+                                    >
+                                        ISUZU Red
+                                    </div>
+                                    <div
+                                        class="font-mono text-[11px] text-slate-600 dark:text-slate-300"
+                                    >
+                                        #CC0000
+                                    </div>
+                                </div>
+                                <!-- 800 (Hover State) -->
+                                <div
+                                    onclick="
+                                        copyToClipboard(
+                                            '#990000',
+                                            'ISUZU Red 800 (Hover)',
+                                        )
+                                    "
+                                    class="group cursor-pointer rounded-xl border border-slate-200 bg-white p-3 transition-all hover:border-red-400 dark:border-slate-800 dark:bg-slate-900"
+                                >
+                                    <div
+                                        class="flex h-14 items-center justify-center rounded-lg bg-[#990000] text-xs font-bold text-white"
+                                    >
+                                        800
+                                    </div>
+                                    <div
+                                        class="mt-2 text-xs font-medium text-slate-800 dark:text-slate-200"
+                                    >
+                                        Red 800 (Hover)
+                                    </div>
+                                    <div
+                                        class="font-mono text-[11px] text-slate-400"
+                                    >
+                                        #990000
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- INDUSTRIAL NEUTRALS (SLATE / ZINC) -->
+                        <div class="space-y-4">
+                            <div class="flex items-center justify-between">
+                                <h3
+                                    class="flex items-center gap-2 text-base font-bold text-slate-900 dark:text-white"
+                                >
+                                    <span
+                                        class="size-3 rounded-full bg-slate-700"
+                                    ></span>
+                                    Netral Manufaktur (Permukaan Bersih & Anti
+                                    Silau)
+                                </h3>
+                                <span class="text-xs text-slate-400"
+                                    >Slate / Zinc Spectrum</span
+                                >
+                            </div>
+
+                            <div
+                                class="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-6"
+                            >
+                                <div
+                                    onclick="
+                                        copyToClipboard(
+                                            '#ffffff',
+                                            'Surface Light',
+                                        )
+                                    "
+                                    class="cursor-pointer rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900"
+                                >
+                                    <div
+                                        class="h-10 rounded-lg border border-slate-200 bg-white"
+                                    ></div>
+                                    <div
+                                        class="mt-2 text-xs font-medium text-slate-800 dark:text-slate-200"
+                                    >
+                                        White (#FFF)
+                                    </div>
+                                    <div class="text-[10px] text-slate-400">
+                                        Card & Panel Base
+                                    </div>
+                                </div>
+                                <div
+                                    onclick="
+                                        copyToClipboard(
+                                            '#f8fafc',
+                                            'Background Base Light',
+                                        )
+                                    "
+                                    class="cursor-pointer rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900"
+                                >
+                                    <div
+                                        class="h-10 rounded-lg border border-slate-200 bg-[#f8fafc]"
+                                    ></div>
+                                    <div
+                                        class="mt-2 text-xs font-medium text-slate-800 dark:text-slate-200"
+                                    >
+                                        Slate 50
+                                    </div>
+                                    <div class="text-[10px] text-slate-400">
+                                        #F8FAFC App Canvas
+                                    </div>
+                                </div>
+                                <div
+                                    onclick="
+                                        copyToClipboard(
+                                            '#e2e8f0',
+                                            'Border Subtle',
+                                        )
+                                    "
+                                    class="cursor-pointer rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900"
+                                >
+                                    <div
+                                        class="h-10 rounded-lg bg-[#e2e8f0]"
+                                    ></div>
+                                    <div
+                                        class="mt-2 text-xs font-medium text-slate-800 dark:text-slate-200"
+                                    >
+                                        Slate 200
+                                    </div>
+                                    <div class="text-[10px] text-slate-400">
+                                        #E2E8F0 Garis Tabel
+                                    </div>
+                                </div>
+                                <div
+                                    onclick="
+                                        copyToClipboard('#475569', 'Muted Text')
+                                    "
+                                    class="cursor-pointer rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900"
+                                >
+                                    <div
+                                        class="h-10 rounded-lg bg-[#475569]"
+                                    ></div>
+                                    <div
+                                        class="mt-2 text-xs font-medium text-slate-800 dark:text-slate-200"
+                                    >
+                                        Slate 600
+                                    </div>
+                                    <div class="text-[10px] text-slate-400">
+                                        #475569 Label & Keterangan
+                                    </div>
+                                </div>
+                                <div
+                                    onclick="
+                                        copyToClipboard(
+                                            '#0f172a',
+                                            'Surface Dark',
+                                        )
+                                    "
+                                    class="cursor-pointer rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900"
+                                >
+                                    <div
+                                        class="h-10 rounded-lg bg-[#0f172a]"
+                                    ></div>
+                                    <div
+                                        class="mt-2 text-xs font-medium text-slate-800 dark:text-slate-200"
+                                    >
+                                        Slate 900
+                                    </div>
+                                    <div class="text-[10px] text-slate-400">
+                                        #0F172A Dark Surface
+                                    </div>
+                                </div>
+                                <div
+                                    onclick="
+                                        copyToClipboard(
+                                            '#070b12',
+                                            'Background Canvas Dark',
+                                        )
+                                    "
+                                    class="cursor-pointer rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900"
+                                >
+                                    <div
+                                        class="h-10 rounded-lg border border-slate-800 bg-[#070b12]"
+                                    ></div>
+                                    <div
+                                        class="mt-2 text-xs font-medium text-slate-800 dark:text-slate-200"
+                                    >
+                                        Slate 950
+                                    </div>
+                                    <div class="text-[10px] text-slate-400">
+                                        #070B12 Deep Dark Canvas
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- SEMANTIC STATUS & BURN INDEX PALETTE -->
+                        <div class="space-y-4">
+                            <div class="flex items-center justify-between">
+                                <h3
+                                    class="flex items-center gap-2 text-base font-bold text-slate-900 dark:text-white"
+                                >
+                                    <span
+                                        class="size-3 rounded-full bg-emerald-500"
+                                    ></span>
+                                    Status Operasional Pabrik & Burn Index
+                                    Keuangan
+                                </h3>
+                            </div>
+
+                            <div
+                                class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4"
+                            >
+                                <!-- Safe Zone -->
+                                <div
+                                    class="space-y-2 rounded-xl border border-emerald-200 bg-emerald-50/50 p-4 dark:border-emerald-900/60 dark:bg-emerald-950/20"
+                                >
+                                    <div
+                                        class="flex items-center justify-between"
+                                    >
+                                        <span
+                                            class="text-xs font-bold text-emerald-800 dark:text-emerald-300"
+                                            >Burn Index &lt; 0.85</span
+                                        >
+                                        <span
+                                            class="rounded bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-300"
+                                            >AMAN (SAFE)</span
+                                        >
+                                    </div>
+                                    <div
+                                        class="h-2 rounded-full bg-emerald-500"
+                                    ></div>
+                                    <p
+                                        class="text-xs text-emerald-900 dark:text-emerald-200"
+                                    >
+                                        Konsumsi jam lembur sesuai anggaran
+                                        bulanan. SPKL terbit & disetujui tanpa
+                                        deviasi.
+                                    </p>
+                                </div>
+
+                                <!-- Caution Zone -->
+                                <div
+                                    class="space-y-2 rounded-xl border border-amber-200 bg-amber-50/50 p-4 dark:border-amber-900/60 dark:bg-amber-950/20"
+                                >
+                                    <div
+                                        class="flex items-center justify-between"
+                                    >
+                                        <span
+                                            class="text-xs font-bold text-amber-800 dark:text-amber-300"
+                                            >Burn Index 0.85 – 1.00</span
+                                        >
+                                        <span
+                                            class="rounded bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-800 dark:bg-amber-900/60 dark:text-amber-300"
+                                            >WASPADA (CAUTION)</span
+                                        >
+                                    </div>
+                                    <div
+                                        class="h-2 rounded-full bg-amber-500"
+                                    ></div>
+                                    <p
+                                        class="text-xs text-amber-900 dark:text-amber-200"
+                                    >
+                                        Laju konsumsi jam mendekati batas plafon
+                                        seksi. Perlu verifikasi Manager Seksi.
+                                    </p>
+                                </div>
+
+                                <!-- Critical Zone -->
+                                <div
+                                    class="space-y-2 rounded-xl border border-red-200 bg-red-50/50 p-4 dark:border-red-900/60 dark:bg-red-950/20"
+                                >
+                                    <div
+                                        class="flex items-center justify-between"
+                                    >
+                                        <span
+                                            class="text-xs font-bold text-red-800 dark:text-red-300"
+                                            >Burn Index &gt; 1.00</span
+                                        >
+                                        <span
+                                            class="rounded bg-red-100 px-2 py-0.5 text-[10px] font-bold text-red-800 dark:bg-red-900/60 dark:text-red-300"
+                                            >KRITIS (DEFISIT)</span
+                                        >
+                                    </div>
+                                    <div
+                                        class="h-2 rounded-full bg-[#cc0000]"
+                                    ></div>
+                                    <p
+                                        class="text-xs text-red-900 dark:text-red-200"
+                                    >
+                                        Anggaran habis / defisit jam lembur.
+                                        Membutuhkan otorisasi General Manager
+                                        Pabrik.
+                                    </p>
+                                </div>
+
+                                <!-- CapEx Specific Blue -->
+                                <div
+                                    class="space-y-2 rounded-xl border border-sky-200 bg-sky-50/50 p-4 dark:border-sky-900/60 dark:bg-sky-950/20"
+                                >
+                                    <div
+                                        class="flex items-center justify-between"
+                                    >
+                                        <span
+                                            class="text-xs font-bold text-sky-800 dark:text-sky-300"
+                                            >CapEx Labor Project</span
+                                        >
+                                        <span
+                                            class="rounded bg-sky-100 px-2 py-0.5 text-[10px] font-bold text-sky-800 dark:bg-sky-900/60 dark:text-sky-300"
+                                            >KAPITALISASI</span
+                                        >
+                                    </div>
+                                    <div
+                                        class="h-2 rounded-full bg-sky-600"
+                                    ></div>
+                                    <p
+                                        class="text-xs text-sky-900 dark:text-sky-200"
+                                    >
+                                        Lembur dikapitalisasi ke nomor aktiva
+                                        tetap (mesin/jig). Terpisah total dari
+                                        beban OpEx rutin.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- SECTION 3: TIPOGRAFI & TABULAR -->
+                    <section id="typography" class="space-y-6">
+                        <div
+                            class="border-b border-slate-200 pb-4 dark:border-slate-800"
+                        >
+                            <span
+                                class="text-xs font-bold tracking-wider text-[#cc0000] uppercase"
+                                >03. Typography</span
+                            >
+                            <h2
+                                class="mt-1 text-2xl font-bold text-slate-900 dark:text-white"
+                            >
+                                Hierarki Tipografi & Tabular Angka
+                            </h2>
+                            <p
+                                class="text-sm text-slate-500 dark:text-slate-400"
+                            >
+                                Kombinasi font Instrument Sans untuk keterbacaan
+                                instruksi kerja dan JetBrains Mono untuk presisi
+                                data audit.
+                            </p>
+                        </div>
+
+                        <div
+                            class="space-y-8 rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900"
+                        >
+                            <!-- Type Specimen Rows -->
+                            <div
+                                class="space-y-6 divide-y divide-slate-100 dark:divide-slate-800"
+                            >
+                                <!-- Display -->
+                                <div
+                                    class="flex flex-col justify-between gap-4 pt-4 md:flex-row md:items-baseline"
+                                >
+                                    <div
+                                        class="w-48 font-mono text-xs text-slate-400"
+                                    >
+                                        Display / 36px Bold
+                                    </div>
+                                    <div
+                                        class="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl dark:text-white"
+                                    >
+                                        Ringkasan Lembur Pabrik Karawang
+                                    </div>
+                                </div>
+
+                                <!-- H1 -->
+                                <div
+                                    class="flex flex-col justify-between gap-4 pt-4 md:flex-row md:items-baseline"
+                                >
+                                    <div
+                                        class="w-48 font-mono text-xs text-slate-400"
+                                    >
+                                        Heading 1 / 28px Semibold
+                                    </div>
+                                    <div
+                                        class="text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl dark:text-white"
+                                    >
+                                        Verifikasi SPKL Shift 2 — Press & Body
+                                    </div>
+                                </div>
+
+                                <!-- H2 -->
+                                <div
+                                    class="flex flex-col justify-between gap-4 pt-4 md:flex-row md:items-baseline"
+                                >
+                                    <div
+                                        class="w-48 font-mono text-xs text-slate-400"
+                                    >
+                                        Heading 2 / 22px Semibold
+                                    </div>
+                                    <div
+                                        class="text-xl font-semibold text-slate-900 dark:text-white"
+                                    >
+                                        Rincian Alokasi Tenaga Kerja CapEx
+                                        Proyek
+                                    </div>
+                                </div>
+
+                                <!-- H3 -->
+                                <div
+                                    class="flex flex-col justify-between gap-4 pt-4 md:flex-row md:items-baseline"
+                                >
+                                    <div
+                                        class="w-48 font-mono text-xs text-slate-400"
+                                    >
+                                        Heading 3 / 16px Medium
+                                    </div>
+                                    <div
+                                        class="text-base font-medium text-slate-800 dark:text-slate-200"
+                                    >
+                                        Daftar Anggota Regu & Nomor Induk
+                                        Karyawan (NIK)
+                                    </div>
+                                </div>
+
+                                <!-- Body Regular -->
+                                <div
+                                    class="flex flex-col justify-between gap-4 pt-4 md:flex-row md:items-baseline"
+                                >
+                                    <div
+                                        class="w-48 font-mono text-xs text-slate-400"
+                                    >
+                                        Body / 14px Regular
+                                    </div>
+                                    <div
+                                        class="max-w-xl text-sm leading-relaxed text-slate-600 dark:text-slate-300"
+                                    >
+                                        Pengajuan lembur harus mematuhi masa
+                                        tenggang fisik 48 jam (grace period).
+                                        Dokumen SPKL fisik bertanda tangan basah
+                                        wajib diunggah sebelum tutup buku
+                                        payroll bulanan.
+                                    </div>
+                                </div>
+
+                                <!-- Tabular Numerals (Crucial for Manufacturing Finance) -->
+                                <div
+                                    class="flex flex-col justify-between gap-4 pt-4 md:flex-row md:items-baseline"
+                                >
+                                    <div
+                                        class="w-48 font-mono text-xs text-slate-400"
+                                    >
+                                        Tabular Mono / Monospace
+                                    </div>
+                                    <div class="space-y-2">
+                                        <div
+                                            class="font-tabular flex items-center gap-4 text-sm font-semibold text-slate-900 dark:text-white"
+                                        >
+                                            <span
+                                                class="w-28 font-normal text-slate-400"
+                                                >NIK: ISZ-88219</span
+                                            >
+                                            <span
+                                                class="w-24 text-red-600 dark:text-red-400"
+                                                >03:45:00</span
+                                            >
+                                            <span
+                                                class="w-36 text-emerald-600 dark:text-emerald-400"
+                                                >Rp 1.485.500</span
+                                            >
+                                            <span
+                                                class="rounded bg-slate-100 px-2 py-0.5 text-xs text-slate-600 dark:bg-slate-800 dark:text-slate-300"
+                                                >WIB UTC+7</span
+                                            >
+                                        </div>
+                                        <p class="text-xs text-slate-400">
+                                            Karakter monospaced menjaga
+                                            kelurusan kolom nominal rupiah dan
+                                            jam tanpa pergeseran horizontal saat
+                                            angka berubah.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- SECTION 4: SPASI, RADIUS & ELEVASI -->
+                    <section id="layout" class="space-y-6">
+                        <div
+                            class="border-b border-slate-200 pb-4 dark:border-slate-800"
+                        >
+                            <span
+                                class="text-xs font-bold tracking-wider text-[#cc0000] uppercase"
+                                >04. Spatial Grid & Geometry</span
+                            >
+                            <h2
+                                class="mt-1 text-2xl font-bold text-slate-900 dark:text-white"
+                            >
+                                Sistem Grid Spasi, Radius & Elevasi
+                            </h2>
+                            <p
+                                class="text-sm text-slate-500 dark:text-slate-400"
+                            >
+                                Geometri tegas dan proporsional untuk perangkat
+                                tablet plant floor maupun monitor desktop staf.
+                            </p>
+                        </div>
+
+                        <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
+                            <!-- Radius Specimen -->
+                            <div
+                                class="space-y-4 rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900"
+                            >
+                                <h3
+                                    class="text-sm font-bold text-slate-900 dark:text-white"
+                                >
+                                    Corner Radius Tokens
+                                </h3>
+                                <div class="grid grid-cols-4 gap-3 text-center">
+                                    <div
+                                        class="rounded-sm border border-slate-200 bg-slate-100 p-3 dark:border-slate-700 dark:bg-slate-800"
+                                    >
+                                        <span
+                                            class="font-mono text-xs font-bold"
+                                            >4px</span
+                                        >
+                                        <p
+                                            class="mt-1 text-[10px] text-slate-400"
+                                        >
+                                            sm (badge)
+                                        </p>
+                                    </div>
+                                    <div
+                                        class="rounded-md border border-slate-200 bg-slate-100 p-3 dark:border-slate-700 dark:bg-slate-800"
+                                    >
+                                        <span
+                                            class="font-mono text-xs font-bold"
+                                            >6px</span
+                                        >
+                                        <p
+                                            class="mt-1 text-[10px] text-slate-400"
+                                        >
+                                            md (button)
+                                        </p>
+                                    </div>
+                                    <div
+                                        class="rounded-lg border border-slate-200 bg-slate-100 p-3 dark:border-slate-700 dark:bg-slate-800"
+                                    >
+                                        <span
+                                            class="font-mono text-xs font-bold"
+                                            >8px</span
+                                        >
+                                        <p
+                                            class="mt-1 text-[10px] text-slate-400"
+                                        >
+                                            lg (card)
+                                        </p>
+                                    </div>
+                                    <div
+                                        class="rounded-full border border-slate-200 bg-slate-100 p-3 dark:border-slate-700 dark:bg-slate-800"
+                                    >
+                                        <span
+                                            class="font-mono text-xs font-bold"
+                                            >Full</span
+                                        >
+                                        <p
+                                            class="mt-1 text-[10px] text-slate-400"
+                                        >
+                                            pill (status)
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Elevation Specimen -->
+                            <div
+                                class="space-y-4 rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900"
+                            >
+                                <h3
+                                    class="text-sm font-bold text-slate-900 dark:text-white"
+                                >
+                                    Industrial Elevation (Bayangan Halus)
+                                </h3>
+                                <div class="grid grid-cols-3 gap-3 text-center">
+                                    <div
+                                        class="dark:bg-slate-850 rounded-lg border border-slate-200 bg-white p-3 shadow-xs dark:border-slate-700"
+                                    >
+                                        <span class="text-xs font-medium"
+                                            >Flat / xs</span
+                                        >
+                                        <p class="text-[10px] text-slate-400">
+                                            Tabel Cell
+                                        </p>
+                                    </div>
+                                    <div
+                                        class="dark:bg-slate-850 rounded-lg border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-700"
+                                    >
+                                        <span class="text-xs font-medium"
+                                            >Raised / sm</span
+                                        >
+                                        <p class="text-[10px] text-slate-400">
+                                            Card Base
+                                        </p>
+                                    </div>
+                                    <div
+                                        class="dark:bg-slate-850 rounded-lg border border-slate-200 bg-white p-3 shadow-md dark:border-slate-700"
+                                    >
+                                        <span class="text-xs font-medium"
+                                            >Floating / md</span
+                                        >
+                                        <p class="text-[10px] text-slate-400">
+                                            Modal / Popover
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- SECTION 5: GALERI KOMPONEN INTERAKTIF -->
+                    <section id="components" class="space-y-8">
+                        <div
+                            class="border-b border-slate-200 pb-4 dark:border-slate-800"
+                        >
+                            <span
+                                class="text-xs font-bold tracking-wider text-[#cc0000] uppercase"
+                                >05. Component Library</span
+                            >
+                            <h2
+                                class="mt-1 text-2xl font-bold text-slate-900 dark:text-white"
+                            >
+                                Galeri Komponen UI Interaktif
+                            </h2>
+                            <p
+                                class="text-sm text-slate-500 dark:text-slate-400"
+                            >
+                                Komponen siap pakai yang dapat langsung diuji
+                                interaksinya pada peramban ini.
+                            </p>
+                        </div>
+
+                        <!-- 1. BUTTONS -->
+                        <div
+                            class="space-y-4 rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900"
+                        >
+                            <div class="flex items-center justify-between">
+                                <h3
+                                    class="text-sm font-bold text-slate-900 dark:text-white"
+                                >
+                                    Variasi Tombol Aksi (Buttons)
+                                </h3>
+                                <span class="text-xs text-slate-400"
+                                    >Reka UI + Tailwind</span
+                                >
+                            </div>
+
+                            <div class="flex flex-wrap items-center gap-3">
+                                <!-- Primary ISUZU Red -->
+                                <button
+                                    onclick="
+                                        triggerSampleAction(
+                                            'Tombol Primer ISUZU Red ditekan!',
+                                        )
+                                    "
+                                    class="cursor-pointer rounded-md bg-[#cc0000] px-4 py-2 text-sm font-medium text-white shadow-xs transition-all hover:bg-[#b30000] focus:ring-2 focus:ring-red-400 focus:outline-none active:scale-95"
+                                >
+                                    Ajukan Lembur Shift
+                                </button>
+
+                                <!-- Secondary Outline -->
+                                <button
+                                    onclick="
+                                        triggerSampleAction(
+                                            'Tombol Sekunder ditekan!',
+                                        )
+                                    "
+                                    class="cursor-pointer rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-xs transition-all hover:bg-slate-50 active:scale-95 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+                                >
+                                    Simpan Draf
+                                </button>
+
+                                <!-- CapEx Action Button -->
+                                <button
+                                    onclick="
+                                        triggerSampleAction(
+                                            'Alokasi CapEx dipilih!',
+                                        )
+                                    "
+                                    class="cursor-pointer rounded-md bg-sky-600 px-4 py-2 text-sm font-medium text-white shadow-xs transition-all hover:bg-sky-700 active:scale-95"
+                                >
+                                    + Alokasi CapEx
+                                </button>
+
+                                <!-- Destructive Button -->
+                                <button
+                                    onclick="
+                                        triggerSampleAction(
+                                            'Aksi Batalkan dijalankan!',
+                                        )
+                                    "
+                                    class="cursor-pointer rounded-md border border-red-200 bg-red-50 px-4 py-2 text-sm font-medium text-red-600 transition-all hover:bg-red-100 active:scale-95 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-400 dark:hover:bg-red-900/60"
+                                >
+                                    Batalkan Pengajuan
+                                </button>
+
+                                <!-- Loading State Button -->
+                                <button
+                                    class="inline-flex cursor-not-allowed items-center gap-2 rounded-md bg-slate-200 px-4 py-2 text-sm font-medium text-slate-500 dark:bg-slate-800"
+                                    disabled
+                                >
+                                    <svg
+                                        class="size-4 animate-spin text-slate-500"
+                                        fill="none"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <circle
+                                            class="opacity-25"
+                                            cx="12"
+                                            cy="12"
+                                            r="10"
+                                            stroke="currentColor"
+                                            stroke-width="4"
+                                        ></circle>
+                                        <path
+                                            class="opacity-75"
+                                            fill="currentColor"
+                                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                        ></path>
+                                    </svg>
+                                    <span>Menyinkronkan...</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 2. STATUS BADGES & PILLS -->
+                        <div
+                            class="space-y-4 rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900"
+                        >
+                            <div class="flex items-center justify-between">
+                                <h3
+                                    class="text-sm font-bold text-slate-900 dark:text-white"
+                                >
+                                    Lencana Status Dokumen SPKL & Kategori Biaya
+                                </h3>
+                                <span class="text-xs text-slate-400"
+                                    >Pills / Badges</span
+                                >
+                            </div>
+
+                            <div class="flex flex-wrap items-center gap-2.5">
+                                <span
+                                    class="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
+                                >
+                                    <span
+                                        class="size-1.5 rounded-full bg-slate-400"
+                                    ></span>
+                                    Draf Belum Dikirim
+                                </span>
+
+                                <span
+                                    class="inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700 dark:border-amber-800 dark:bg-amber-950/60 dark:text-amber-300"
+                                >
+                                    <span
+                                        class="size-1.5 animate-pulse rounded-full bg-amber-500"
+                                    ></span>
+                                    Menunggu Fisik SPKL (Sisa 36 Jam)
+                                </span>
+
+                                <span
+                                    class="inline-flex items-center gap-1.5 rounded-full border border-blue-200 bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700 dark:border-blue-800 dark:bg-blue-950/60 dark:text-blue-300"
+                                >
+                                    <span
+                                        class="size-1.5 rounded-full bg-blue-500"
+                                    ></span>
+                                    Terverifikasi Foreman
+                                </span>
+
+                                <span
+                                    class="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300"
+                                >
+                                    <span
+                                        class="size-1.5 rounded-full bg-emerald-500"
+                                    ></span>
+                                    Disetujui Manager Seksi
+                                </span>
+
+                                <span
+                                    class="inline-flex items-center gap-1.5 rounded-full border border-red-200 bg-red-50 px-2.5 py-1 text-xs font-semibold text-[#cc0000] dark:border-red-800 dark:bg-red-950/60 dark:text-red-300"
+                                >
+                                    <span
+                                        class="size-1.5 rounded-full bg-[#cc0000]"
+                                    ></span>
+                                    Ditolak / Koreksi Wajib
+                                </span>
+
+                                <span
+                                    class="inline-flex items-center gap-1.5 rounded-full border border-sky-300 bg-sky-100 px-2.5 py-1 text-xs font-bold text-sky-800 dark:border-sky-700 dark:bg-sky-900/60 dark:text-sky-200"
+                                >
+                                    <svg
+                                        class="size-3 text-sky-600"
+                                        fill="currentColor"
+                                        viewBox="0 0 20 20"
+                                    >
+                                        <path
+                                            d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4z"
+                                        ></path>
+                                        <path
+                                            fill-rule="evenodd"
+                                            d="M18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z"
+                                            clip-rule="evenodd"
+                                        ></path>
+                                    </svg>
+                                    CapEx Labor Asset
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- 3. INPUT FORM WORKFLOW OPERASIONAL -->
+                        <div
+                            class="space-y-6 rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900"
+                        >
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <h3
+                                        class="text-sm font-bold text-slate-900 dark:text-white"
+                                    >
+                                        Formulir Input Pengajuan Shift Lembur
+                                    </h3>
+                                    <p
+                                        class="text-xs text-slate-500 dark:text-slate-400"
+                                    >
+                                        Simulasi interaktif entri jam dan
+                                        pencarian operator.
+                                    </p>
+                                </div>
+                                <span
+                                    class="rounded bg-slate-100 px-2 py-0.5 font-mono text-[11px] text-slate-600 dark:bg-slate-800 dark:text-slate-300"
+                                    >Live Prototype</span
+                                >
+                            </div>
+
+                            <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
+                                <!-- NIK Selector -->
+                                <div class="space-y-1.5">
+                                    <label
+                                        class="text-xs font-medium text-slate-700 dark:text-slate-300"
+                                        >Cari NIK / Nama Operator</label
+                                    >
+                                    <div class="relative">
+                                        <input
+                                            type="text"
+                                            value="ISZ-4091 · Budi Santoso"
+                                            class="h-9 w-full rounded-md border border-slate-300 bg-white px-3 text-xs font-medium text-slate-900 focus:border-[#cc0000] focus:ring-1 focus:ring-[#cc0000] focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                                        />
+                                        <span
+                                            class="absolute top-2.5 right-2.5 font-mono text-xs text-slate-400"
+                                            >Welder II</span
+                                        >
+                                    </div>
+                                </div>
+
+                                <!-- Shift Picker -->
+                                <div class="space-y-1.5">
+                                    <label
+                                        class="text-xs font-medium text-slate-700 dark:text-slate-300"
+                                        >Pilihan Shift & Tanggal</label
+                                    >
+                                    <select
+                                        class="h-9 w-full rounded-md border border-slate-300 bg-white px-3 text-xs font-medium text-slate-900 focus:border-[#cc0000] focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                                    >
+                                        <option>
+                                            Shift 2 (15:00 - 23:00) · Hari Kerja
+                                            Normal
+                                        </option>
+                                        <option>
+                                            Shift 1 (07:00 - 15:00) · Pagi
+                                        </option>
+                                        <option>
+                                            Shift 3 (23:00 - 07:00) · Malam
+                                        </option>
+                                        <option>
+                                            Hari Libur Resmi / Akhir Pekan
+                                        </option>
+                                    </select>
+                                </div>
+
+                                <!-- Overtime Hour Stepper -->
+                                <div class="space-y-1.5">
+                                    <label
+                                        class="text-xs font-medium text-slate-700 dark:text-slate-300"
+                                        >Durasi Jam Lembur</label
+                                    >
+                                    <div class="flex items-center gap-1">
+                                        <button
+                                            onclick="adjustHours(-0.5)"
+                                            class="size-9 cursor-pointer rounded-md border border-slate-300 bg-slate-50 font-bold text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+                                        >
+                                            -
+                                        </button>
+                                        <input
+                                            id="sampleHoursInput"
+                                            type="text"
+                                            readonly
+                                            value="2.5 Jam"
+                                            class="font-tabular h-9 flex-1 rounded-md border border-slate-300 bg-white text-center text-sm font-bold text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                                        />
+                                        <button
+                                            onclick="adjustHours(0.5)"
+                                            class="size-9 cursor-pointer rounded-md border border-slate-300 bg-slate-50 font-bold text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+                                        >
+                                            +
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- CapEx / OpEx Switcher -->
+                            <div
+                                class="dark:bg-slate-850 flex flex-col items-start justify-between gap-4 rounded-lg border border-slate-200 bg-slate-50/70 p-4 sm:flex-row sm:items-center dark:border-slate-800"
+                            >
+                                <div class="space-y-0.5">
+                                    <div
+                                        class="flex items-center gap-2 text-xs font-bold text-slate-900 dark:text-white"
+                                    >
+                                        <span
+                                            >Alokasi Finansial CapEx (Asset
+                                            Capitalization)</span
+                                        >
+                                        <span
+                                            class="rounded bg-sky-100 px-1.5 py-0.5 text-[10px] font-bold text-sky-800 dark:bg-sky-900/60 dark:text-sky-300"
+                                            >Audit Compliant</span
+                                        >
+                                    </div>
+                                    <p
+                                        class="text-[11px] text-slate-500 dark:text-slate-400"
+                                    >
+                                        Aktifkan jika lembur dialokasikan untuk
+                                        pembuatan/modifikasi jig mesin pabrik.
+                                    </p>
+                                </div>
+                                <label
+                                    class="relative inline-flex cursor-pointer items-center"
+                                >
+                                    <input
+                                        type="checkbox"
+                                        id="capexToggle"
+                                        onchange="toggleCapexInput()"
+                                        class="peer sr-only"
+                                        checked
+                                    />
+                                    <div
+                                        class="peer h-6 w-11 rounded-full bg-slate-300 peer-checked:bg-sky-600 peer-focus:outline-none after:absolute after:top-[2px] after:left-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-slate-300 after:bg-white after:transition-all after:content-[''] peer-checked:after:translate-x-full peer-checked:after:border-white dark:border-slate-600 dark:bg-slate-700"
+                                    ></div>
+                                </label>
+                            </div>
+
+                            <!-- CapEx Code Container (Collapsible) -->
+                            <div
+                                id="capexDetails"
+                                class="space-y-2 rounded-lg border border-sky-200 bg-sky-50/40 p-4 dark:border-sky-900/50 dark:bg-sky-950/20"
+                            >
+                                <div class="flex items-center justify-between">
+                                    <label
+                                        class="text-xs font-bold text-sky-900 dark:text-sky-300"
+                                        >Nomor Proyek Aktiva Tetap (Asset CIP
+                                        Code)</label
+                                    >
+                                    <span
+                                        class="font-mono text-[10px] text-sky-700 dark:text-sky-400"
+                                        >Ref: PSAK 16 / Tax Audit</span
+                                    >
+                                </div>
+                                <input
+                                    type="text"
+                                    value="CIP-2026-ELF-WELD-042 (Modifikasi Jig Robotik Line 2)"
+                                    class="h-9 w-full rounded-md border border-sky-300 bg-white px-3 font-mono text-xs font-medium text-slate-900 dark:border-sky-800 dark:bg-slate-800 dark:text-white"
+                                />
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- SECTION 6: MODUL PABRIK & DATA DENSITY TIMESHEET -->
+                    <section id="manufacturing" class="space-y-6">
+                        <div
+                            class="border-b border-slate-200 pb-4 dark:border-slate-800"
+                        >
+                            <span
+                                class="text-xs font-bold tracking-wider text-[#cc0000] uppercase"
+                                >06. Manufacturing Timesheet</span
+                            >
+                            <h2
+                                class="mt-1 text-2xl font-bold text-slate-900 dark:text-white"
+                            >
+                                Tabel Timesheet Lembur Kepadatan Tinggi
+                            </h2>
+                            <p
+                                class="text-sm text-slate-500 dark:text-slate-400"
+                            >
+                                Tampilan data ringkas untuk verifikasi puluhan
+                                operator sekaligus tanpa kelelahan mata (anti
+                                fatigue design).
+                            </p>
+                        </div>
+
+                        <!-- KPI STAT CARDS ROW -->
+                        <div
+                            class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4"
+                        >
+                            <!-- Total Jam -->
+                            <div
+                                class="rounded-xl border border-slate-200 bg-white p-4 shadow-xs dark:border-slate-800 dark:bg-slate-900"
+                            >
+                                <div class="text-xs text-slate-500">
+                                    Total Lembur Hari Ini
+                                </div>
+                                <div
+                                    class="mt-1 flex items-baseline justify-between"
+                                >
+                                    <span
+                                        class="font-tabular text-2xl font-bold text-slate-900 dark:text-white"
+                                        >142.5
+                                        <span
+                                            class="text-xs font-normal text-slate-500"
+                                            >Jam</span
+                                        ></span
+                                    >
+                                    <span
+                                        class="text-xs font-semibold text-emerald-600 dark:text-emerald-400"
+                                        >+8.2% vs kemarin</span
+                                    >
+                                </div>
+                                <div class="mt-2 text-[11px] text-slate-400">
+                                    38 Operator terdaftar
+                                </div>
+                            </div>
+
+                            <!-- Burn Index -->
+                            <div
+                                class="rounded-xl border border-slate-200 bg-white p-4 shadow-xs dark:border-slate-800 dark:bg-slate-900"
+                            >
+                                <div class="text-xs text-slate-500">
+                                    Burn Index Seksi (BBI)
+                                </div>
+                                <div
+                                    class="mt-1 flex items-baseline justify-between"
+                                >
+                                    <span
+                                        class="font-tabular text-2xl font-bold text-[#cc0000]"
+                                        >0.78
+                                        <span
+                                            class="text-xs font-normal text-slate-500"
+                                            >/ 1.00</span
+                                        ></span
+                                    >
+                                    <span
+                                        class="rounded bg-emerald-100 px-1.5 py-0.5 text-[10px] font-bold text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300"
+                                        >Zona Aman</span
+                                    >
+                                </div>
+                                <div
+                                    class="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800"
+                                >
+                                    <div
+                                        class="h-full rounded-full bg-emerald-500"
+                                        style="width: 78%"
+                                    ></div>
+                                </div>
+                            </div>
+
+                            <!-- Dokumen SPKL Tertunda -->
+                            <div
+                                class="rounded-xl border border-slate-200 bg-white p-4 shadow-xs dark:border-slate-800 dark:bg-slate-900"
+                            >
+                                <div class="text-xs text-slate-500">
+                                    Sisa Unggah Berkas SPKL
+                                </div>
+                                <div
+                                    class="mt-1 flex items-baseline justify-between"
+                                >
+                                    <span
+                                        class="font-tabular text-2xl font-bold text-amber-600 dark:text-amber-400"
+                                        >4
+                                        <span
+                                            class="text-xs font-normal text-slate-500"
+                                            >Berkas</span
+                                        ></span
+                                    >
+                                    <span
+                                        class="text-xs font-semibold text-amber-600 dark:text-amber-400"
+                                        >Masa Tenggang</span
+                                    >
+                                </div>
+                                <div class="mt-2 text-[11px] text-slate-400">
+                                    Non-blocking workflow aktif
+                                </div>
+                            </div>
+
+                            <!-- CapEx Total Ratio -->
+                            <div
+                                class="rounded-xl border border-slate-200 bg-white p-4 shadow-xs dark:border-slate-800 dark:bg-slate-900"
+                            >
+                                <div class="text-xs text-slate-500">
+                                    Tenaga Kerja CapEx
+                                </div>
+                                <div
+                                    class="mt-1 flex items-baseline justify-between"
+                                >
+                                    <span
+                                        class="font-tabular text-2xl font-bold text-sky-600 dark:text-sky-400"
+                                        >32.4%</span
+                                    >
+                                    <span
+                                        class="font-mono text-xs font-semibold text-slate-600 dark:text-slate-300"
+                                        >Rp 42.8M</span
+                                    >
+                                </div>
+                                <div class="mt-2 text-[11px] text-slate-400">
+                                    Dikapitalisasi ke 2 Proyek
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- THE HIGH-DENSITY TABLE -->
+                        <div
+                            class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xs dark:border-slate-800 dark:bg-slate-900"
+                        >
+                            <div
+                                class="flex flex-col items-start justify-between gap-3 border-b border-slate-200 px-5 py-4 sm:flex-row sm:items-center dark:border-slate-800"
+                            >
+                                <div>
+                                    <h3
+                                        class="text-sm font-bold text-slate-900 dark:text-white"
+                                    >
+                                        Lini Produksi: Body & Welding Plant 1
+                                    </h3>
+                                    <p
+                                        class="text-xs text-slate-500 dark:text-slate-400"
+                                    >
+                                        Tanggal Operasional: 07 September 2026 ·
+                                        Shift 2 (15:00 - 23:00 WIB)
+                                    </p>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <button
+                                        onclick="
+                                            triggerSampleAction(
+                                                'Ekspor CSV dijalankan!',
+                                            )
+                                        "
+                                        class="rounded-md border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+                                    >
+                                        Unduh CSV
+                                    </button>
+                                    <button
+                                        onclick="
+                                            triggerSampleAction(
+                                                'Batch Approval berhasil dikirim!',
+                                            )
+                                        "
+                                        class="rounded-md bg-[#cc0000] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#b30000]"
+                                    >
+                                        Setujui Terpilih (Batch)
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="overflow-x-auto">
+                                <table
+                                    class="w-full border-collapse text-left text-xs"
+                                >
+                                    <thead>
+                                        <tr
+                                            class="dark:bg-slate-850 border-b border-slate-200 bg-slate-50 text-[11px] font-semibold tracking-wider text-slate-500 uppercase dark:border-slate-800"
+                                        >
+                                            <th class="w-10 p-3 text-center">
+                                                <input
+                                                    type="checkbox"
+                                                    checked
+                                                    class="rounded border-slate-300 text-[#cc0000] focus:ring-[#cc0000]"
+                                                />
+                                            </th>
+                                            <th class="p-3">
+                                                NIK & Nama Operator
+                                            </th>
+                                            <th class="p-3">Seksi / Pos</th>
+                                            <th class="p-3 text-right">
+                                                Jam Lembur
+                                            </th>
+                                            <th class="p-3">Kategori Beban</th>
+                                            <th class="p-3">Status SPKL</th>
+                                            <th class="p-3 text-right">Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody
+                                        class="divide-y divide-slate-100 dark:divide-slate-800"
+                                    >
+                                        <!-- Row 1 -->
+                                        <tr
+                                            class="transition-colors hover:bg-slate-50/70 dark:hover:bg-slate-800/50"
+                                        >
+                                            <td class="p-3 text-center">
+                                                <input
+                                                    type="checkbox"
+                                                    checked
+                                                    class="rounded border-slate-300 text-[#cc0000]"
+                                                />
+                                            </td>
+                                            <td class="p-3">
+                                                <div
+                                                    class="font-bold text-slate-900 dark:text-white"
+                                                >
+                                                    Budi Santoso
+                                                </div>
+                                                <div
+                                                    class="font-mono text-[10px] text-slate-400"
+                                                >
+                                                    ISZ-4091 · Foreman 2
+                                                </div>
+                                            </td>
+                                            <td
+                                                class="p-3 text-slate-600 dark:text-slate-300"
+                                            >
+                                                Welding Body Sub-Assy
+                                            </td>
+                                            <td
+                                                class="font-tabular p-3 text-right font-bold text-slate-900 dark:text-white"
+                                            >
+                                                2.5 Jam
+                                            </td>
+                                            <td class="p-3">
+                                                <span
+                                                    class="inline-flex items-center rounded bg-sky-100 px-2 py-0.5 text-[10px] font-bold text-sky-800 dark:bg-sky-950 dark:text-sky-300"
+                                                >
+                                                    CapEx · Jig ELF 2026
+                                                </span>
+                                            </td>
+                                            <td class="p-3">
+                                                <span
+                                                    class="inline-flex items-center gap-1 rounded border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-300"
+                                                >
+                                                    <span
+                                                        class="size-1 rounded-full bg-emerald-500"
+                                                    ></span>
+                                                    Disetujui SPV
+                                                </span>
+                                            </td>
+                                            <td class="p-3 text-right">
+                                                <button
+                                                    onclick="
+                                                        triggerSampleAction(
+                                                            'Lihat SPKL Budi Santoso',
+                                                        )
+                                                    "
+                                                    class="cursor-pointer font-semibold text-[#cc0000] hover:underline dark:text-red-400"
+                                                >
+                                                    Lihat SPKL
+                                                </button>
+                                            </td>
+                                        </tr>
+
+                                        <!-- Row 2 -->
+                                        <tr
+                                            class="transition-colors hover:bg-slate-50/70 dark:hover:bg-slate-800/50"
+                                        >
+                                            <td class="p-3 text-center">
+                                                <input
+                                                    type="checkbox"
+                                                    checked
+                                                    class="rounded border-slate-300 text-[#cc0000]"
+                                                />
+                                            </td>
+                                            <td class="p-3">
+                                                <div
+                                                    class="font-bold text-slate-900 dark:text-white"
+                                                >
+                                                    Ahmad Fauzi
+                                                </div>
+                                                <div
+                                                    class="font-mono text-[10px] text-slate-400"
+                                                >
+                                                    ISZ-5118 · Operator II
+                                                </div>
+                                            </td>
+                                            <td
+                                                class="p-3 text-slate-600 dark:text-slate-300"
+                                            >
+                                                Press Stamping Panel
+                                            </td>
+                                            <td
+                                                class="font-tabular p-3 text-right font-bold text-slate-900 dark:text-white"
+                                            >
+                                                3.0 Jam
+                                            </td>
+                                            <td class="p-3">
+                                                <span
+                                                    class="inline-flex items-center rounded bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-300"
+                                                >
+                                                    OpEx · Produksi Rutin
+                                                </span>
+                                            </td>
+                                            <td class="p-3">
+                                                <span
+                                                    class="inline-flex items-center gap-1 rounded border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-700 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-300"
+                                                >
+                                                    <span
+                                                        class="size-1 animate-pulse rounded-full bg-amber-500"
+                                                    ></span>
+                                                    Fisik Belum Diunggah
+                                                </span>
+                                            </td>
+                                            <td class="p-3 text-right">
+                                                <button
+                                                    onclick="
+                                                        triggerSampleAction(
+                                                            'Unggah Dokumen Ahmad Fauzi',
+                                                        )
+                                                    "
+                                                    class="cursor-pointer font-semibold text-amber-600 hover:underline dark:text-amber-400"
+                                                >
+                                                    Unggah PDF
+                                                </button>
+                                            </td>
+                                        </tr>
+
+                                        <!-- Row 3 -->
+                                        <tr
+                                            class="transition-colors hover:bg-slate-50/70 dark:hover:bg-slate-800/50"
+                                        >
+                                            <td class="p-3 text-center">
+                                                <input
+                                                    type="checkbox"
+                                                    class="rounded border-slate-300 text-[#cc0000]"
+                                                />
+                                            </td>
+                                            <td class="p-3">
+                                                <div
+                                                    class="font-bold text-slate-900 dark:text-white"
+                                                >
+                                                    Hendra Wijaya
+                                                </div>
+                                                <div
+                                                    class="font-mono text-[10px] text-slate-400"
+                                                >
+                                                    ISZ-3320 · Maintenance
+                                                </div>
+                                            </td>
+                                            <td
+                                                class="p-3 text-slate-600 dark:text-slate-300"
+                                            >
+                                                Preventive Tooling
+                                            </td>
+                                            <td
+                                                class="font-tabular p-3 text-right font-bold text-red-600 dark:text-red-400"
+                                            >
+                                                4.5 Jam ⚠️
+                                            </td>
+                                            <td class="p-3">
+                                                <span
+                                                    class="inline-flex items-center rounded bg-sky-100 px-2 py-0.5 text-[10px] font-bold text-sky-800 dark:bg-sky-950 dark:text-sky-300"
+                                                >
+                                                    CapEx · Overhaul Die #3
+                                                </span>
+                                            </td>
+                                            <td class="p-3">
+                                                <span
+                                                    class="inline-flex items-center gap-1 rounded border border-red-200 bg-red-50 px-2 py-0.5 text-[10px] font-semibold text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300"
+                                                >
+                                                    <span
+                                                        class="size-1 rounded-full bg-[#cc0000]"
+                                                    ></span>
+                                                    Menunggu Review GM
+                                                </span>
+                                            </td>
+                                            <td class="p-3 text-right">
+                                                <button
+                                                    onclick="
+                                                        triggerSampleAction(
+                                                            'Otorisasi Khusus Hendra Wijaya',
+                                                        )
+                                                    "
+                                                    class="cursor-pointer font-semibold text-[#cc0000] hover:underline"
+                                                >
+                                                    Otorisasi
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- SECTION 7: PANDUAN UX ERGONOMI PABRIK -->
+                    <section id="ux-guardrails" class="space-y-6">
+                        <div
+                            class="border-b border-slate-200 pb-4 dark:border-slate-800"
+                        >
+                            <span
+                                class="text-xs font-bold tracking-wider text-[#cc0000] uppercase"
+                                >07. Ergonomic Guardrails</span
+                            >
+                            <h2
+                                class="mt-1 text-2xl font-bold text-slate-900 dark:text-white"
+                            >
+                                Panduan UX & Ergonomi Manufaktur Indonesia
+                            </h2>
+                            <p
+                                class="text-sm text-slate-500 dark:text-slate-400"
+                            >
+                                Standar desain yang wajib dipatuhi untuk
+                                menjamin sistem ramah pengguna bagi staf pabrik.
+                            </p>
+                        </div>
+
+                        <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
+                            <!-- Rule 1: 3-Click Rule -->
+                            <div
+                                class="space-y-2 rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900"
+                            >
+                                <div
+                                    class="flex items-center gap-2 text-xs font-bold text-[#cc0000]"
+                                >
+                                    <span
+                                        class="size-2 rounded-full bg-[#cc0000]"
+                                    ></span>
+                                    AMBANG BATAS KESABARAN (PATIENCE THRESHOLD)
+                                </div>
+                                <h3
+                                    class="text-sm font-bold text-slate-900 dark:text-white"
+                                >
+                                    Maksimal 3 Ketukan per Pengajuan
+                                </h3>
+                                <p
+                                    class="text-xs leading-relaxed text-slate-600 dark:text-slate-400"
+                                >
+                                    Staf lini tidak memiliki kesabaran untuk
+                                    pengisian form multi-halaman. Pengajuan
+                                    lembur harian wajib diselesaikan maksimal
+                                    dalam 3 langkah:
+                                    <strong
+                                        >Pilih Regu &rarr; Atur Jam &rarr; Klik
+                                        Kirim</strong
+                                    >.
+                                </p>
+                            </div>
+
+                            <!-- Rule 2: Non-Blocking SPKL -->
+                            <div
+                                class="space-y-2 rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900"
+                            >
+                                <div
+                                    class="flex items-center gap-2 text-xs font-bold text-amber-600"
+                                >
+                                    <span
+                                        class="size-2 rounded-full bg-amber-500"
+                                    ></span>
+                                    ASYNCHRONOUS NON-BLOCKING SPKL
+                                </div>
+                                <h3
+                                    class="text-sm font-bold text-slate-900 dark:text-white"
+                                >
+                                    Lembur Berjalan Dahulu, Dokumen Menyusul
+                                </h3>
+                                <p
+                                    class="text-xs leading-relaxed text-slate-600 dark:text-slate-400"
+                                >
+                                    Produksi tidak boleh terhenti hanya karena
+                                    lembaran fisik SPKL belum sempat dipindai
+                                    atau ditandatangani. Sistem memberikan
+                                    tenggang waktu (grace period) 48 jam sebelum
+                                    status dikunci ke payroll.
+                                </p>
+                            </div>
+
+                            <!-- Rule 3: Single Root & Wayfinder -->
+                            <div
+                                class="space-y-2 rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900"
+                            >
+                                <div
+                                    class="flex items-center gap-2 text-xs font-bold text-blue-600"
+                                >
+                                    <span
+                                        class="size-2 rounded-full bg-blue-500"
+                                    ></span>
+                                    STANDAR ROUTING WAYFINDER
+                                </div>
+                                <h3
+                                    class="text-sm font-bold text-slate-900 dark:text-white"
+                                >
+                                    Tanpa Ziggy &mdash; Strictly Wayfinder
+                                </h3>
+                                <p
+                                    class="text-xs leading-relaxed text-slate-600 dark:text-slate-400"
+                                >
+                                    Seluruh navigasi frontend wajib menggunakan
+                                    Laravel Wayfinder dengan type safety (<code
+                                        >@/actions/...</code
+                                    >
+                                    atau <code>@/routes/...</code>). Dilarang
+                                    memakai pemanggilan route legacy ziggy.
+                                </p>
+                            </div>
+
+                            <!-- Rule 4: Trust Signals & Anti-Modal Stacking -->
+                            <div
+                                class="space-y-2 rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900"
+                            >
+                                <div
+                                    class="flex items-center gap-2 text-xs font-bold text-emerald-600"
+                                >
+                                    <span
+                                        class="size-2 rounded-full bg-emerald-500"
+                                    ></span>
+                                    ANTI MODAL STACKING
+                                </div>
+                                <h3
+                                    class="text-sm font-bold text-slate-900 dark:text-white"
+                                >
+                                    Maksimal 1 Kedalaman Modal / Sheet
+                                </h3>
+                                <p
+                                    class="text-xs leading-relaxed text-slate-600 dark:text-slate-400"
+                                >
+                                    Dilarang membuka modal di dalam modal. Form
+                                    rincian panjang wajib menggunakan slide-in
+                                    Drawer / Sheet kanan, bukan dialog pop-up
+                                    yang menutupi konteks lini produksi.
+                                </p>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- SECTION 8: IMPLEMENTASI TAILWIND V4 & CSS TOKENS -->
+                    <section id="code-integration" class="space-y-6">
+                        <div
+                            class="border-b border-slate-200 pb-4 dark:border-slate-800"
+                        >
+                            <span
+                                class="text-xs font-bold tracking-wider text-[#cc0000] uppercase"
+                                >08. Code Integration</span
+                            >
+                            <h2
+                                class="mt-1 text-2xl font-bold text-slate-900 dark:text-white"
+                            >
+                                Konfigurasi Token CSS untuk `app.css`
+                            </h2>
+                            <p
+                                class="text-sm text-slate-500 dark:text-slate-400"
+                            >
+                                Kode siap disalin ke file
+                                `resources/css/app.css` untuk menerapkan gaya
+                                ISUZU Red secara permanen ke aplikasi Laravel +
+                                Vue ini.
+                            </p>
+                        </div>
+
+                        <div
+                            class="relative overflow-hidden rounded-xl border border-slate-800 bg-slate-950 p-5"
+                        >
+                            <button
+                                onclick="copyCssTheme()"
+                                class="absolute top-4 right-4 flex cursor-pointer items-center gap-1.5 rounded-lg bg-[#cc0000] px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-[#b30000]"
+                            >
+                                <svg
+                                    class="size-3.5"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        stroke-width="2"
+                                        d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                                    ></path>
+                                </svg>
+                                Salin Token
+                            </button>
+                            <pre
+                                class="overflow-x-auto font-mono text-xs leading-relaxed text-slate-300"
+                            ><code>/* Salin blok ini ke dalam resources/css/app.css */
+:root {
+    /* ISUZU Corporate Primary Red */
+    --primary: #cc0000;
+    --primary-foreground: #ffffff;
+    --ring: rgba(204, 0, 0, 0.4);
+
+    /* Clean Manufacturing Neutrals */
+    --background: #f8fafc;
+    --foreground: #0f172a;
+    --card: #ffffff;
+    --card-foreground: #0f172a;
+    --border: #e2e8f0;
+    --input: #cbd5e1;
+
+    /* CapEx & Burn Index Semantics */
+    --color-capex: #0284c7;
+    --color-burn-safe: #10b981;
+    --color-burn-warning: #f59e0b;
+    --color-burn-critical: #cc0000;
+
+    --radius: 0.5rem;
+}
+
+.dark {
+    /* High Contrast Dark Mode for Night Shifts */
+    --primary: #e60000;
+    --primary-foreground: #ffffff;
+    --ring: rgba(230, 0, 0, 0.5);
+
+    --background: #070b12;
+    --foreground: #f8fafc;
+    --card: #0f172a;
+    --card-foreground: #f8fafc;
+    --border: #1e293b;
+    --input: #334155;
+}</code></pre>
+                        </div>
+                    </section>
+
+                    <!-- FOOTER -->
+                    <footer
+                        class="flex flex-col items-center justify-between gap-4 border-t border-slate-200 pt-8 text-xs text-slate-400 sm:flex-row dark:border-slate-800"
+                    >
+                        <div>
+                            <span class="font-bold text-[#cc0000]">ISUZU</span>
+                            Overtime & CapEx Labor Management System · Karawang
+                            Plant
+                        </div>
+                        <div>
+                            Lead Developer:
+                            <span
+                                class="font-semibold text-slate-600 dark:text-slate-300"
+                                >Zulfikar Hidayatullah</span
+                            >
+                            (+62 857-1583-8733)
+                        </div>
+                    </footer>
+                </main>
+            </div>
+        </div>
+
+        <!-- JAVASCRIPT CONTROLLERS -->
+        <script>
+            // 1. Dark Mode / Light Mode Toggle
+            const themeToggle = document.getElementById('themeToggle');
+            const htmlElement = document.documentElement;
+
+            function setTheme(theme) {
+                if (theme === 'dark') {
+                    htmlElement.classList.add('dark');
+                    htmlElement.classList.remove('light');
+                    localStorage.setItem('theme', 'dark');
+                } else {
+                    htmlElement.classList.remove('dark');
+                    htmlElement.classList.add('light');
+                    localStorage.setItem('theme', 'light');
+                }
+            }
+
+            // Initialize theme
+            const savedTheme =
+                localStorage.getItem('theme') ||
+                (window.matchMedia('(prefers-color-scheme: dark)').matches
+                    ? 'dark'
+                    : 'light');
+            setTheme(savedTheme);
+
+            themeToggle.addEventListener('click', () => {
+                const isDark = htmlElement.classList.contains('dark');
+                setTheme(isDark ? 'light' : 'dark');
+                showToast(
+                    isDark
+                        ? 'Beralih ke Mode Terang (Siang)'
+                        : 'Beralih ke Mode Gelap (Shift Malam)',
+                );
+            });
+
+            // 2. Toast Notification Function
+            let toastTimeout;
+            function showToast(message) {
+                const toast = document.getElementById('toast');
+                const toastText = document.getElementById('toast-text');
+                toastText.textContent = message;
+
+                toast.classList.add('toast-active');
+
+                clearTimeout(toastTimeout);
+                toastTimeout = setTimeout(() => {
+                    toast.classList.remove('toast-active');
+                }, 2500);
+            }
+
+            // 3. Copy to Clipboard
+            function copyToClipboard(text, label) {
+                navigator.clipboard
+                    .writeText(text)
+                    .then(() => {
+                        showToast(`Kode ${label} (${text}) disalin!`);
+                    })
+                    .catch(() => {
+                        showToast(`Gagal menyalin: ${text}`);
+                    });
+            }
+
+            function copyCssTheme() {
+                const cssText = `:root {
+    --primary: #cc0000;
+    --primary-foreground: #ffffff;
+    --ring: rgba(204, 0, 0, 0.4);
+    --background: #f8fafc;
+    --foreground: #0f172a;
+    --card: #ffffff;
+    --border: #e2e8f0;
+}
+.dark {
+    --primary: #e60000;
+    --primary-foreground: #ffffff;
+    --background: #070b12;
+    --foreground: #f8fafc;
+    --card: #0f172a;
+    --border: #1e293b;
+}`;
+                navigator.clipboard.writeText(cssText).then(() => {
+                    showToast('CSS Tokens berhasil disalin ke clipboard!');
+                });
+            }
+
+            // 4. Sample Action Trigger
+            function triggerSampleAction(name) {
+                showToast(`Aksi: ${name}`);
+            }
+
+            // 5. Stepper Logic
+            let currentHours = 2.5;
+            function adjustHours(delta) {
+                currentHours = Math.max(
+                    0.5,
+                    Math.min(8.0, currentHours + delta),
+                );
+                document.getElementById('sampleHoursInput').value =
+                    `${currentHours.toFixed(1)} Jam`;
+                showToast(
+                    `Durasi lembur diubah ke ${currentHours.toFixed(1)} Jam`,
+                );
+            }
+
+            // 6. CapEx Toggle
+            function toggleCapexInput() {
+                const checkbox = document.getElementById('capexToggle');
+                const details = document.getElementById('capexDetails');
+                if (checkbox.checked) {
+                    details.style.display = 'block';
+                    showToast(
+                        'Mode CapEx Aktif: Biaya dikapitalisasi ke nomor aktiva.',
+                    );
+                } else {
+                    details.style.display = 'none';
+                    showToast(
+                        'Mode OpEx Aktif: Biaya lembur rutin operasional.',
+                    );
+                }
+            }
+        </script>
+    </body>
+</html>

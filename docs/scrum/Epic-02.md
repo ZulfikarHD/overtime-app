@@ -37,28 +37,28 @@ Key real-world constraints:
 
 #### Acceptance Criteria
 
-- [ ] Admin can create a Department with: `code` (unique, e.g. `PROD`), `name`, `cost_center_code`, `default_hourly_rate` (Rp), `is_active`
-- [ ] Admin can create a Section nested under a Department with: `code` (unique), `name`, `is_active`
-- [ ] Department `code` and Section `code` are unique across the entire table — enforced at both DB and application layer
-- [ ] Editing a Department/Section updates `name` and `default_hourly_rate` only — `code` is immutable after creation
-- [ ] Deactivation (`is_active = false`) soft-disables the record; it remains visible in admin but hidden from timesheet entry forms
-- [ ] Deleting a Department/Section with linked employees or submissions is **blocked** (returns validation error, not a DB exception)
-- [ ] Section list is always displayed nested under its parent Department
-- [ ] Department `default_hourly_rate` is displayed formatted as `Rp 1.234,56` (Indonesian number format)
-- [ ] `pnpm lint && pnpm build` passes
+- [x] Admin can create a Department with: `code` (unique, e.g. `PROD`), `name`, `cost_center_code`, `default_hourly_rate` (Rp), `is_active`
+- [x] Admin can create a Section nested under a Department with: `code` (unique), `name`, `is_active`
+- [x] Department `code` and Section `code` are unique across the entire table — enforced at both DB and application layer
+- [x] Editing a Department/Section updates `name` and `default_hourly_rate` only — `code` is immutable after creation
+- [x] Deactivation (`is_active = false`) soft-disables the record; it remains visible in admin but hidden from timesheet entry forms
+- [x] Deleting a Department/Section with linked employees or submissions is **blocked** (returns validation error, not a DB exception)
+- [x] Section list is always displayed nested under its parent Department
+- [x] Department `default_hourly_rate` is displayed formatted as `Rp 1.234,56` (Indonesian number format)
+- [x] `pnpm lint && pnpm build` passes
 
 #### Technical Tasks
 
-- [ ] `php artisan make:controller Admin/DepartmentController --resource`
-- [ ] `php artisan make:controller Admin/SectionController --resource`
-- [ ] `php artisan make:request StoreDepartmentRequest` (validate unique `code`, numeric `default_hourly_rate`)
-- [ ] `php artisan make:request StoreSectionRequest` (validate `department_id` exists, unique `code`)
-- [ ] Create `resources/js/Pages/Admin/Departments/Index.vue` — table with nested sections
-- [ ] Create `resources/js/Pages/Admin/Departments/Form.vue` — create/edit modal or page
-- [ ] Create `resources/js/Pages/Admin/Sections/Form.vue`
-- [ ] Register routes in `routes/web.php` with `->middleware(['auth', 'role:admin'])`
-- [ ] Protect delete with check: `if ($department->employees()->exists() || $department->overtimeSubmissions()->exists()) abort(422)`
-- [ ] Format `default_hourly_rate` as Rupiah in Vue: use `Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' })`
+- [x] `php artisan make:controller Admin/DepartmentController --resource`
+- [x] `php artisan make:controller Admin/SectionController --resource`
+- [x] `php artisan make:request StoreDepartmentRequest` (validate unique `code`, numeric `default_hourly_rate`)
+- [x] `php artisan make:request StoreSectionRequest` (validate `department_id` exists, unique `code`)
+- [x] Create `resources/js/Pages/Admin/Departments/Index.vue` — table with nested sections
+- [x] Create `resources/js/Pages/Admin/Departments/Form.vue` — create/edit modal or page
+- [x] Create `resources/js/Pages/Admin/Sections/Form.vue`
+- [x] Register routes in `routes/web.php` with `->middleware(['auth', 'role:admin'])`
+- [x] Protect delete with check: `if ($department->employees()->exists() || $department->overtimeSubmissions()->exists()) abort(422)`
+- [x] Format `default_hourly_rate` as Rupiah in Vue: use `Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' })`
 
 ---
 
@@ -73,27 +73,27 @@ Key real-world constraints:
 
 #### Acceptance Criteria
 
-- [ ] Admin can create an Employee with: `npk` (unique, max 20 chars), `full_name`, `department_id`, `section_id`, `job_position`, `hourly_rate` (Rp), `is_active`
-- [ ] **NPK is read-only after creation** — the edit form does not show a writable NPK field (BR-03)
-- [ ] `section_id` dropdown is dynamically filtered based on selected `department_id` (no cross-department section assignment)
-- [ ] Employee `hourly_rate` is nullable — if null, the system uses the parent Department's `default_hourly_rate` during cost snapshotting
-- [ ] Admin can deactivate an employee (`is_active = false`); deactivated employees do not appear in the Team Leader's roster
-- [ ] Admin can search employees by `npk`, `full_name`, or `section`
-- [ ] Admin can bulk-import employees via CSV upload (columns: `npk`, `full_name`, `department_code`, `section_code`, `job_position`, `hourly_rate`)
-- [ ] CSV import validates: unique NPK, valid department/section codes, numeric hourly rate
-- [ ] CSV import shows a preview + error report before committing
-- [ ] Pagination: 25 employees per page with server-side search
+- [x] Admin can create an Employee with: `npk` (unique, max 20 chars), `full_name`, `department_id`, `section_id`, `job_position`, `hourly_rate` (Rp), `is_active`
+- [x] **NPK is read-only after creation** — the edit form does not show a writable NPK field (BR-03)
+- [x] `section_id` dropdown is dynamically filtered based on selected `department_id` (no cross-department section assignment)
+- [x] Employee `hourly_rate` is nullable — if null, the system uses the parent Department's `default_hourly_rate` during cost snapshotting
+- [x] Admin can deactivate an employee (`is_active = false`); deactivated employees do not appear in the Team Leader's roster
+- [x] Admin can search employees by `npk`, `full_name`, or `section`
+- [x] Admin can bulk-import employees via CSV upload (columns: `npk`, `full_name`, `department_code`, `section_code`, `job_position`, `hourly_rate`)
+- [x] CSV import validates: unique NPK, valid department/section codes, numeric hourly rate
+- [x] CSV import shows a preview + error report before committing
+- [x] Pagination: 25 employees per page with server-side search
 
 #### Technical Tasks
 
-- [ ] `php artisan make:controller Admin/EmployeeController --resource`
-- [ ] `php artisan make:request StoreEmployeeRequest` + `UpdateEmployeeRequest` (NPK excluded from update fillable)
-- [ ] `php artisan make:job ImportEmployeesFromCsvJob`
-- [ ] `EmployeeService::importFromCsv(UploadedFile $file): array` — returns `['imported' => N, 'errors' => [...]]`
-- [ ] Create `resources/js/Pages/Admin/Employees/Index.vue` (paginated table, search bar)
-- [ ] Create `resources/js/Pages/Admin/Employees/Form.vue` (create/edit, dynamic section dropdown)
-- [ ] Create `resources/js/Pages/Admin/Employees/CsvImport.vue` (upload + preview table)
-- [ ] Reactive section list: `watch(form.department_id, async (id) => { sections.value = await fetchSections(id) })`
+- [x] `php artisan make:controller Admin/EmployeeController --resource`
+- [x] `php artisan make:request StoreEmployeeRequest` + `UpdateEmployeeRequest` (NPK excluded from update fillable)
+- [x] `php artisan make:job ImportEmployeesFromCsvJob`
+- [x] `EmployeeService::importFromCsv(UploadedFile $file): array` — returns `['imported' => N, 'errors' => [...]]`
+- [x] Create `resources/js/Pages/Admin/Employees/Index.vue` (paginated table, search bar)
+- [x] Create `resources/js/Pages/Admin/Employees/Form.vue` (create/edit, dynamic section dropdown)
+- [x] Create `resources/js/Pages/Admin/Employees/CsvImport.vue` (upload + preview table)
+- [x] Reactive section list: `watch(form.department_id, async (id) => { sections.value = await fetchSections(id) })`
 
 ---
 
@@ -160,7 +160,7 @@ Key real-world constraints:
 - [x] `PolicyThresholdService::getForDepartment(int $departmentId): PolicyThreshold` — implements fallback logic
 - [x] Create `resources/js/pages/admin/Administration.vue` (tab=policies) — unified Administration Hub with plant default + dept overrides
 - [x] Create `resources/js/components/admin/PolicyThresholdSheet.vue` — slide-in right drawer form
-- [ ] Inject `PolicyThresholdService` into `SubmitOvertimeAction` (wired in Epic-03)
+- [x] Inject `PolicyThresholdService` into `SubmitOvertimeAction` (wired in Epic-03)
 
 ---
 
@@ -175,24 +175,24 @@ Key real-world constraints:
 
 #### Acceptance Criteria
 
-- [ ] Admin can create a user with: `name`, `email` (unique), `password`, `role` (admin/manager/team_leader/user), `department_id` (optional, for scoping)
-- [ ] Admin can deactivate a user (`is_active = false`) — deactivated users cannot log in (middleware check)
-- [ ] Admin can trigger a password reset link email for any user
-- [ ] Admin can change a user's role (the change takes effect on next login/session)
-- [ ] Admin cannot delete their own account (guard against accidental self-lockout)
-- [ ] User list shows: name, email, role badge, department, last login, status
-- [ ] Role-change audit: when Admin changes a user's role, it is logged to `overtime_item_audits` (or a `user_audits` table if preferred) with `actor_user_id`, `previous_role`, `new_role`
+- [x] Admin can create a user with: `name`, `email` (unique), `password`, `role` (admin/manager/team_leader/user), `department_id` (optional, for scoping)
+- [x] Admin can deactivate a user (`is_active = false`) — deactivated users cannot log in (middleware check)
+- [x] Admin can trigger a password reset link email for any user
+- [x] Admin can change a user's role (the change takes effect on next login/session)
+- [x] Admin cannot delete their own account (guard against accidental self-lockout)
+- [x] User list shows: name, email, role badge, department, last login, status
+- [x] Role-change audit: when Admin changes a user's role, it is logged to `overtime_item_audits` (or a `user_audits` table if preferred) with `actor_user_id`, `previous_role`, `new_role`
 
 #### Technical Tasks
 
-- [ ] `php artisan make:controller Admin/UserController --resource`
-- [ ] Update `users` table: add `is_active` boolean, `department_id` FK, `last_login_at` timestamp
-- [ ] Update `AuthenticatedSessionController` to stamp `last_login_at` and check `is_active`
-- [ ] `php artisan make:request StoreUserRequest` + `UpdateUserRequest`
-- [ ] Create `resources/js/Pages/Admin/Users/Index.vue` — paginated table with role filter
-- [ ] Create `resources/js/Pages/Admin/Users/Form.vue` — create/edit with role dropdown
-- [ ] Send password reset via `Password::sendResetLink($email)`
-- [ ] Guard self-delete: `if ($userToDelete->id === auth()->id()) abort(422, 'Cannot delete your own account.')`
+- [x] `php artisan make:controller Admin/UserController --resource`
+- [x] Update `users` table: add `is_active` boolean, `department_id` FK, `last_login_at` timestamp
+- [x] Update `AuthenticatedSessionController` to stamp `last_login_at` and check `is_active`
+- [x] `php artisan make:request StoreUserRequest` + `UpdateUserRequest`
+- [x] Create `resources/js/Pages/Admin/Users/Index.vue` — paginated table with role filter
+- [x] Create `resources/js/Pages/Admin/Users/Form.vue` — create/edit with role dropdown
+- [x] Send password reset via `Password::sendResetLink($email)`
+- [x] Guard self-delete: `if ($userToDelete->id === auth()->id()) abort(422, 'Cannot delete your own account.')`
 
 ---
 
@@ -207,25 +207,25 @@ Key real-world constraints:
 
 #### Acceptance Criteria
 
-- [ ] Each user can toggle: `theme` (Light / Dark / Auto)
-- [ ] Each user can toggle notification preferences:
+- [x] Each user can toggle: `theme` (Light / Dark / Auto)
+- [x] Each user can toggle notification preferences:
     - SPKL pending reminders (on/off)
     - Budget threshold alerts (on/off)
     - Approval status notifications (on/off)
-- [ ] Preferences are persisted per user in `user_preferences` table or `users.preferences JSON` column
-- [ ] Theme preference is applied immediately via CSS class on `<html>` or `<body>` (no page reload)
-- [ ] Date format shown as `DD/MM/YYYY` (Indonesian standard) throughout the app — not configurable per user but confirmed as global standard
-- [ ] Number format shown as Indonesian: `1.234,56` — enforced globally
+- [x] Preferences are persisted per user in `user_preferences` table or `users.preferences JSON` column
+- [x] Theme preference is applied immediately via CSS class on `<html>` or `<body>` (no page reload)
+- [x] Date format shown as `DD/MM/YYYY` (Indonesian standard) throughout the app — not configurable per user but confirmed as global standard
+- [x] Number format shown as Indonesian: `1.234,56` — enforced globally
 
 #### Technical Tasks
 
-- [ ] `php artisan make:migration add_preferences_to_users_table` (add `preferences JSON NULL`)
-- [ ] `UserPreferencesController::update()` — PATCH `/user/preferences`
-- [ ] Create `resources/js/Pages/Settings/Preferences.vue`
-- [ ] Vue composable `useTheme()` — reads `preferences.theme`, applies `dark` class to `<html>`
-- [ ] Pass `auth.user.preferences` via Inertia shared props in `HandleInertiaRequests`
-- [ ] Global date formatter utility: `formatDate(date: string): string` using `dd/MM/yyyy` pattern
-- [ ] Global currency formatter utility: `formatRupiah(amount: number): string` using `Intl.NumberFormat('id-ID')`
+- [x] `php artisan make:migration add_preferences_to_users_table` (add `preferences JSON NULL`)
+- [x] `UserPreferencesController::update()` — PATCH `/user/preferences`
+- [x] Create `resources/js/Pages/Settings/Preferences.vue`
+- [x] Vue composable `useTheme()` — reads `preferences.theme`, applies `dark` class to `<html>`
+- [x] Pass `auth.user.preferences` via Inertia shared props in `HandleInertiaRequests`
+- [x] Global date formatter utility: `formatDate(date: string): string` using `dd/MM/yyyy` pattern
+- [x] Global currency formatter utility: `formatRupiah(amount: number): string` using `Intl.NumberFormat('id-ID')`
 
 ---
 
@@ -240,23 +240,23 @@ Key real-world constraints:
 
 #### Acceptance Criteria
 
-- [ ] Admin and Manager can create/update an `overtime_budget` record per Section per fiscal month
-- [ ] Required fields: `department_id`, `section_id` (optional for dept-level), `fiscal_year`, `fiscal_month`, `planned_hours`
-- [ ] Optional 5-week breakdown: `week1_planned_hours` through `week5_planned_hours` (defaults to `planned_hours / 4.3` if not specified)
-- [ ] Sum of weekly planned hours should equal `planned_hours` — system warns (not blocks) if they diverge
-- [ ] Budget records are unique per `(department_id, section_id, fiscal_year, fiscal_month)` — upsert behavior
-- [ ] Manager can only set budgets for their own department
-- [ ] If no budget is set for a section/month, the Burn Index dashboard shows `"Budget Not Configured"` rather than crashing or showing 0%
-- [ ] Bulk import: Admin can upload a CSV with columns `section_code`, `fiscal_year`, `fiscal_month`, `planned_hours`
+- [x] Admin and Manager can create/update an `overtime_budget` record per Section per fiscal month
+- [x] Required fields: `department_id`, `section_id` (optional for dept-level), `fiscal_year`, `fiscal_month`, `planned_hours`
+- [x] Optional 5-week breakdown: `week1_planned_hours` through `week5_planned_hours` (defaults to `planned_hours / 4.3` if not specified)
+- [x] Sum of weekly planned hours should equal `planned_hours` — system warns (not blocks) if they diverge
+- [x] Budget records are unique per `(department_id, section_id, fiscal_year, fiscal_month)` — upsert behavior
+- [x] Manager can only set budgets for their own department
+- [x] If no budget is set for a section/month, the Burn Index dashboard shows `"Budget Not Configured"` rather than crashing or showing 0%
+- [x] Bulk import: Admin can upload a CSV with columns `section_code`, `fiscal_year`, `fiscal_month`, `planned_hours`
 
 #### Technical Tasks
 
-- [ ] `php artisan make:controller OvertimeBudgetController --resource`
-- [ ] `php artisan make:request StoreOvertimeBudgetRequest`
-- [ ] Upsert logic: `OvertimeBudget::updateOrCreate(['department_id' => ..., 'section_id' => ..., 'fiscal_year' => ..., 'fiscal_month' => ...], [...])`
-- [ ] Create `resources/js/Pages/Admin/OvertimeBudgets/Index.vue` — filterable by dept/section/month
-- [ ] Create `resources/js/Pages/Admin/OvertimeBudgets/Form.vue` — month picker, section selector, weekly breakdown inputs
-- [ ] Warn on week breakdown sum mismatch: reactive Vue `computed` property comparing sum to `planned_hours`
+- [x] `php artisan make:controller OvertimeBudgetController --resource`
+- [x] `php artisan make:request StoreOvertimeBudgetRequest`
+- [x] Upsert logic: `OvertimeBudget::updateOrCreate(['department_id' => ..., 'section_id' => ..., 'fiscal_year' => ..., 'fiscal_month' => ...], [...])`
+- [x] Create `resources/js/Pages/Admin/OvertimeBudgets/Index.vue` — filterable by dept/section/month
+- [x] Create `resources/js/Pages/Admin/OvertimeBudgets/Form.vue` — month picker, section selector, weekly breakdown inputs
+- [x] Warn on week breakdown sum mismatch: reactive Vue `computed` property comparing sum to `planned_hours`
 
 ---
 
@@ -285,12 +285,12 @@ Key real-world constraints:
 
 ## Definition of Done — Epic-02
 
-- [ ] Admin can create/edit/deactivate Departments, Sections, Employees, and Users
-- [ ] Employee NPK cannot be changed after creation (enforced at controller and request level)
-- [ ] Operational Calendar seeded for current + next year; Admin can override dates
-- [ ] Policy Thresholds configurable per department with plant-wide fallback
-- [ ] Overtime Budget plans creatable per section per month
-- [ ] User preferences (theme, notifications) persist across sessions
-- [ ] `pnpm lint` passes
-- [ ] `pnpm build` succeeds
-- [ ] All new routes registered with named Wayfinder-compatible names
+- [x] Admin can create/edit/deactivate Departments, Sections, Employees, and Users
+- [x] Employee NPK cannot be changed after creation (enforced at controller and request level)
+- [x] Operational Calendar seeded for current + next year; Admin can override dates
+- [x] Policy Thresholds configurable per department with plant-wide fallback
+- [x] Overtime Budget plans creatable per section per month
+- [x] User preferences (theme, notifications) persist across sessions
+- [x] `pnpm lint` passes
+- [x] `pnpm build` succeeds
+- [x] All new routes registered with named Wayfinder-compatible names
