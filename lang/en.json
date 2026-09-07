@@ -688,5 +688,16 @@
     "Verifikasi SPKL": "Verify SPKL",
     "Ganti Berkas": "Replace File",
     "Ganti File": "Replace File",
-    "No. Fisik:": "Physical No.:"
+    "No. Fisik:": "Physical No.:",
+    "Notifikasi": "Notifications",
+    "Tandai Semua Dibaca": "Mark All as Read",
+    "Memuat notifikasi...": "Loading notifications...",
+    "Tidak ada notifikasi baru": "No new notifications",
+    "Semua dokumen SPKL dan jadwal lembur telah terpantau.": "All SPKL documents and overtime schedules are on track.",
+    "Lewat :days hari": ":days days overdue",
+    "Jatuh Tempo Besok": "Due Tomorrow",
+    "Lampirkan": "Attach",
+    "Tandai sudah dibaca": "Mark as read",
+    "Pengingat SPKL": "SPKL Reminder",
+    "SPKL Terlambat": "SPKL Overdue"
 }

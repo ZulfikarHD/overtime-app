@@ -20,6 +20,7 @@ declare module '@inertiajs/core' {
             name: string;
             auth: Auth;
             sidebarOpen: boolean;
+            unread_notifications_count?: number;
             flash?: {
                 success?: string | null;
                 error?: string | null;

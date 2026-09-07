@@ -3,6 +3,7 @@ import { usePage } from '@inertiajs/vue3';
 import { Clock } from '@lucide/vue';
 import { computed } from 'vue';
 import Breadcrumbs from '@/components/Breadcrumbs.vue';
+import NotificationBell from '@/components/NotificationBell.vue';
 import RoleBadge from '@/components/RoleBadge.vue';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { useShiftInfo } from '@/composables/useShiftInfo';
@@ -45,6 +46,9 @@ const user = computed(() => page.props.auth?.user as User | undefined);
                 />
                 <span>{{ currentShift.badgeText }}</span>
             </div>
+
+            <!-- Topbar Notification Bell (E03-05) -->
+            <NotificationBell />
 
             <!-- Live WIB Clock -->
             <div

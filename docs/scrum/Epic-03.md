@@ -190,24 +190,24 @@ This is the primary daily workflow of the application. Every workday, Team Leade
 
 #### Acceptance Criteria
 
-- [ ] A scheduled job runs **daily at 08:00 WIB** to check for `spkl_documents` where `status = 'PENDING'` and `due_date <= today`
-- [ ] For each overdue SPKL: the submitting Team Leader receives a **system notification** (in-app) listing the overdue submissions
-- [ ] If `due_date` is 1 day away (tomorrow): a **pre-due warning** notification is sent (configurable: on/off in user preferences)
-- [ ] Notification content: submission code, section, date, overdue days
-- [ ] Notifications respect user preference `notifications.spkl_reminders` (on/off from Epic-02 story E02-06)
-- [ ] Reminders do **not** block the Team Leader from entering new submissions
+- [x] A scheduled job runs **daily at 08:00 WIB** to check for `spkl_documents` where `status = 'PENDING'` and `due_date <= today`
+- [x] For each overdue SPKL: the submitting Team Leader receives a **system notification** (in-app) listing the overdue submissions
+- [x] If `due_date` is 1 day away (tomorrow): a **pre-due warning** notification is sent (configurable: on/off in user preferences)
+- [x] Notification content: submission code, section, date, overdue days
+- [x] Notifications respect user preference `notifications.spkl_reminders` (on/off from Epic-02 story E02-06)
+- [x] Reminders do **not** block the Team Leader from entering new submissions
 
 #### Technical Tasks
 
-- [ ] Implement `SendSpklReminderJob` (scaffolded in Epic-01)
-- [ ] `php artisan make:command DispatchSpklRemindersCommand` — dispatches the job
-- [ ] Register in `app/Console/Kernel.php` or `bootstrap/app.php` schedule: `$schedule->command('overtime:spkl-reminders')->dailyAt('08:00')->timezone('Asia/Jakarta')`
-- [ ] `php artisan make:notification SpklOverdueNotification` (database channel for in-app)
-- [ ] `php artisan make:migration create_notifications_table` — or use Laravel's built-in `php artisan notifications:table`
-- [ ] Create `resources/js/Components/NotificationBell.vue` — shows unread count in nav
-- [ ] `GET /notifications` endpoint returning unread notifications for the auth user
-- [ ] `PATCH /notifications/{id}/read` endpoint to mark as read
-- [ ] Query: `SpklDocument::where('status', 'PENDING')->where('due_date', '<=', today)->with('overtimeSubmission.submittedBy')->get()`
+- [x] Implement `SendSpklReminderJob` (scaffolded in Epic-01)
+- [x] `php artisan make:command DispatchSpklRemindersCommand` — dispatches the job
+- [x] Register in `app/Console/Kernel.php` or `bootstrap/app.php` schedule: `$schedule->command('overtime:spkl-reminders')->dailyAt('08:00')->timezone('Asia/Jakarta')`
+- [x] `php artisan make:notification SpklOverdueNotification` (database channel for in-app)
+- [x] `php artisan make:migration create_notifications_table` — or use Laravel's built-in `php artisan notifications:table`
+- [x] Create `resources/js/Components/NotificationBell.vue` — shows unread count in nav
+- [x] `GET /notifications` endpoint returning unread notifications for the auth user
+- [x] `PATCH /notifications/{id}/read` endpoint to mark as read
+- [x] Query: `SpklDocument::where('status', 'PENDING')->where('due_date', '<=', today)->with('overtimeSubmission.submittedBy')->get()`
 
 ---
 
@@ -287,7 +287,7 @@ This is the primary daily workflow of the application. Every workday, Team Leade
 - [x] Submission fails atomically if any employee row fails validation
 - [x] `hourly_rate_snapshot` and `total_cost_snapshot` are written on creation and verified as immutable
 - [x] SPKL document can be attached post-shift without modifying submission status
-- [ ] SPKL reminder job runs on schedule at 08:00 WIB and creates in-app notifications
+- [x] SPKL reminder job runs on schedule at 08:00 WIB and creates in-app notifications
 - [ ] Policy soft warnings shown on form — do not block submission
 - [x] `pnpm lint` passes
 - [x] `pnpm build` succeeds

@@ -43,6 +43,7 @@ Technical specifications and decision records for the engineering implementation
     - [ADR-011: User Lifecycle and Role-Change Audit Logging](./dev-docs/decisions/011-user-lifecycle-and-role-change-audit-logging.md)
     - [ADR-012: User Preferences and Display Standards](./dev-docs/decisions/012-user-preferences-and-display-standards.md)
     - [ADR-013: Overtime Budget Planning and CSV Import](./dev-docs/decisions/013-overtime-budget-planning-and-csv-import.md)
+    - [ADR-014: Automated SPKL Document Reminders and In-App Notifications](./dev-docs/decisions/014-automated-spkl-reminders-and-in-app-notifications.md)
 - **Technical Feature Design Specifications:**
     - [Authentication & Role-Based Access Control](./dev-docs/features/authentication-rbac.md)
     - [Database Schema Migrations (Full DDL)](./dev-docs/features/database-schema-migrations.md)
@@ -59,6 +60,7 @@ Technical specifications and decision records for the engineering implementation
     - [Database Seeding & Demo Data](./dev-docs/features/database-seeding-demo-data.md)
     - [Daily Overtime Entry & SPKL Workflow](./dev-docs/features/daily-overtime-spkl.md)
     - [SPKL Flexible Post-Shift Attachment & Lifecycle Workflow](./dev-docs/features/spkl-document-workflow.md)
+    - [SPKL Pending Reminder & In-App Notifications](./dev-docs/features/spkl-pending-reminder-notifications.md)
     - [Verification & Granular Approval Lifecycle](./dev-docs/features/verification-approval.md)
     - [Budget Management & Burn Index Dashboard](./dev-docs/features/budget-burn-index.md)
     - [Individual Employee Reporting & Welfare](./dev-docs/features/employee-welfare-report.md)
@@ -67,6 +69,7 @@ Technical specifications and decision records for the engineering implementation
 - **API Reference Design:**
     - [Calendar Classification & Management API](./dev-docs/api/calendar-endpoints.md)
     - [Overtime Submissions & Approvals API](./dev-docs/api/overtime-submissions.md)
+    - [In-App Notifications API](./dev-docs/api/notifications.md)
     - [Analytics, Burn Index & Machine Learning API](./dev-docs/api/analytics-reports.md)
 
 ---
@@ -106,6 +109,7 @@ Plain-language operating guides for factory supervisors, team leaders, and opera
     - [Overtime Budget Planning Guide](./user-docs/guides/overtime-budget-planning.md)
     - [Daily Overtime Submission Guide](./user-docs/guides/daily-overtime-submission.md)
     - [SPKL Document Attachment Guide](./user-docs/guides/spkl-document-attachment.md)
+    - [SPKL Pending Reminders & Notifications Guide](./user-docs/guides/spkl-pending-reminders.md)
 
 ---
 

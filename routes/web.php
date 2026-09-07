@@ -12,6 +12,7 @@ use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Api\CalendarController;
 use App\Http\Controllers\Budgets\OvertimeBudgetController;
 use App\Http\Controllers\Budgets\OvertimeBudgetImportController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\Overtime\OvertimeSubmissionController;
 use App\Http\Controllers\Overtime\SpklDocumentController;
 use Illuminate\Support\Facades\Route;
@@ -106,6 +107,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::middleware(['role:admin,team_leader'])->prefix('team-leader')->name('team-leader.')->group(function () {
         Route::get('/overview', fn () => response()->json(['status' => 'team-leader-access-granted']))->name('overview');
+    });
+
+    // In-App Notifications (E03-05)
+    Route::prefix('notifications')->name('notifications.')->group(function () {
+        Route::get('/', [NotificationController::class, 'index'])->name('index');
+        Route::patch('/read-all', [NotificationController::class, 'markAllAsRead'])->name('read-all');
+        Route::patch('/{id}/read', [NotificationController::class, 'markAsRead'])->name('read');
     });
 });
 

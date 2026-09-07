@@ -22,6 +22,7 @@ Step-by-step instructions for everyday plant operations:
 | **[Overtime Budget Planning](./guides/overtime-budget-planning.md)**                  | Admins & Managers       | Planning section monthly overtime hours, 5-week breakdown, estimating costs in Rupiah, and two-stage CSV import.        |
 | **[Daily Overtime Submission](./guides/daily-overtime-submission.md)**                | Team Leaders & Admins   | Submitting daily shift overtime batches, roster auto-filling, CapEx tracking, live Rupiah costs, and non-blocking SPKL. |
 | **[SPKL Document Attachment](./guides/spkl-document-attachment.md)**                  | Team Leaders & Managers | Post-shift photo/PDF upload, physical SPKL registration numbers, manager verification, and download access.             |
+| **[SPKL Pending Reminders & Notifications](./guides/spkl-pending-reminders.md)**      | Team Leaders & Admins   | In-app notification bell alerts, 1-click SPKL attachment drawer resolution, and reminder preference management.         |
 
 ---
 

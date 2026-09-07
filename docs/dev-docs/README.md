@@ -33,6 +33,7 @@ Deep-dive technical documentation detailing architecture flows, data models, key
 | **[Database Seeding & Demo Data](./features/database-seeding-demo-data.md)**                               | [Epic-01](../../scrum/Epic-01.md) | Modular database seeders for automotive plant master data, shifts, employees, thresholds, and budgets.                                             |
 | **[Daily Overtime Entry & SPKL Workflow](./features/daily-overtime-spkl.md)**                              | [Epic-03](../../scrum/Epic-03.md) | Shift-end overtime capture, atomic roster validation, and non-blocking SPKL document state machine.                                                |
 | **[SPKL Flexible Post-Shift Attachment & Lifecycle Workflow](./features/spkl-document-workflow.md)**       | [Epic-03](../../scrum/Epic-03.md) | Post-shift photo/PDF upload, private disk isolation, file replacement, manager verification, and temporary signed URLs.                            |
+| **[SPKL Pending Reminder & In-App Notifications](./features/spkl-pending-reminder-notifications.md)**      | [Epic-03](../../scrum/Epic-03.md) | Automated daily 08:00 WIB reminder job, in-app notifications, topbar notification bell, and 1-click SPKL attachment drawer flow.                   |
 | **[Verification & Granular Approval Lifecycle](./features/verification-approval.md)**                      | [Epic-04](../../scrum/Epic-04.md) | Item-level partial approval/rejection queue, optimistic locking (`lock_version`), and immutable audit logging.                                     |
 | **[Budget Management & Burn Index Dashboard](./features/budget-burn-index.md)**                            | [Epic-05](../../scrum/Epic-05.md) | Analytical dashboard, Chart.js Burn Index gauges/burndown lines, and asynchronous monthly rollups.                                                 |
 | **[Individual Employee Reporting & Welfare](./features/employee-welfare-report.md)**                       | [Epic-06](../../scrum/Epic-06.md) | Personal employee dossiers, welfare fatigue soft limits, and peer variance benchmarking.                                                           |
@@ -47,6 +48,7 @@ HTTP request, query parameter, and payload specifications:
 
 - **[Calendar API Endpoints](./api/calendar-endpoints.md)** — Day classification endpoint (`GET /api/calendar/{date}`) for timesheet auto-calculation and admin batch management.
 - **[Overtime Submissions & Approvals API](./api/overtime-submissions.md)** — Timesheet batch submissions, SPKL document uploads, and item-level approval/rejection payloads.
+- **[In-App Notifications API](./api/notifications.md)** — Fetch unread notifications, mark individual notifications as read, and bulk mark all as read.
 - **[Analytics, Burn Index & Machine Learning API](./api/analytics-reports.md)** — Monthly burn snapshot queries, employee dossier endpoints, and ML predictive horizons.
 
 ---
@@ -68,6 +70,7 @@ Durable technical decisions and trade-offs:
 - **[ADR-011: User Lifecycle and Role-Change Audit Logging](./decisions/011-user-lifecycle-and-role-change-audit-logging.md)**
 - **[ADR-012: User Preferences and Display Standards Architecture](./decisions/012-user-preferences-and-display-standards.md)**
 - **[ADR-013: Overtime Budget Planning and Two-Stage CSV Import Architecture](./decisions/013-overtime-budget-planning-and-csv-import.md)**
+- **[ADR-014: Automated SPKL Document Reminders and In-App Notifications Architecture](./decisions/014-automated-spkl-reminders-and-in-app-notifications.md)**
 
 ---
 
