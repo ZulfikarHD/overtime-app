@@ -172,6 +172,7 @@ class OvertimeSubmissionController extends Controller
 
         $query = OvertimeSubmission::query()
             ->with(['section:id,name,code', 'department:id,name,code', 'submittedBy:id,name,npk', 'spklDocument'])
+            ->withSum('items as total_cost_cached', 'total_cost_snapshot')
             ->latest('operational_date');
 
         if ($user->isTeamLeader() && $user->section_id) {

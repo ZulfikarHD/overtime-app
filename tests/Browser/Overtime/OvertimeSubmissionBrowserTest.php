@@ -162,3 +162,61 @@ test('form retains entered rows upon validation failure (zero data loss)', funct
         ->assertSee('Supriadi Kusuma')
         ->assertSee('BR-01');
 });
+
+test('financial cost snapshot is displayed and remains immutable across employee wage updates', function () {
+    $dept = Department::factory()->create([
+        'code' => 'DEPT_BRW_SNAP',
+        'name' => 'Engine Assembly Plant',
+        'default_hourly_rate' => 30000.00,
+        'is_active' => true,
+    ]);
+
+    $section = Section::factory()->create([
+        'department_id' => $dept->id,
+        'code' => 'SEC_BRW_CYL',
+        'name' => 'Cylinder Block Line',
+        'is_active' => true,
+    ]);
+
+    User::factory()->teamLeader($section->id, $dept->id)->create([
+        'email' => 'tl.engine@factory.com',
+        'password' => 'password',
+    ]);
+
+    $emp = Employee::factory()->forDepartmentAndSection($dept, $section)->create([
+        'npk' => 'EMP-88001',
+        'full_name' => 'Bambang Trihatmodjo',
+        'hourly_rate' => 40000.00,
+        'is_active' => true,
+    ]);
+
+    visit('/login')
+        ->fill('email', 'tl.engine@factory.com')
+        ->fill('password', 'password')
+        ->click('Log in to System')
+        ->assertPathIs('/dashboard')
+        ->click('Overtime Entry')
+        ->assertPathIs('/overtime/submissions/create')
+        ->click('[data-test="btn-empty-add-all"]')
+        ->assertSee('EMP-88001')
+        ->fill('[data-test="input-prod-'.$emp->id.'"]', '2.5')
+        ->assertSee('2.5')
+        ->assertSee('Rp 100.000')
+        ->click('[data-test="btn-submit-overtime"]')
+        ->assertSee('Overtime Request Submitted Successfully!')
+        ->assertSee('Rp 100.000')
+        // Navigate to history tab
+        ->click('[data-test="btn-view-history"]')
+        ->assertPathIs('/overtime/submissions')
+        ->assertSee('Riwayat Pengajuan')
+        ->assertSee('Rp 100.000');
+
+    // Retroactively update the employee's wage to Rp 80.000 / hr
+    $emp->update(['hourly_rate' => 80000.00]);
+
+    // Refresh history view: historical snapshot MUST strictly remain Rp 100.000 (not Rp 200.000!)
+    visit('/overtime/submissions')
+        ->assertPathIs('/overtime/submissions')
+        ->assertSee('Rp 100.000')
+        ->assertDontSee('Rp 200.000');
+});

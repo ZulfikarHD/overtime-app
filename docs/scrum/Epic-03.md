@@ -283,12 +283,12 @@ This is the primary daily workflow of the application. Every workday, Team Leade
 
 ## Definition of Done — Epic-03
 
-- [ ] Team Leader can submit a full overtime batch and see `submission_code` confirmation
-- [ ] Submission fails atomically if any employee row fails validation
-- [ ] `hourly_rate_snapshot` and `total_cost_snapshot` are written on creation and verified as immutable
+- [x] Team Leader can submit a full overtime batch and see `submission_code` confirmation
+- [x] Submission fails atomically if any employee row fails validation
+- [x] `hourly_rate_snapshot` and `total_cost_snapshot` are written on creation and verified as immutable
 - [ ] SPKL document can be attached post-shift without modifying submission status
 - [ ] SPKL reminder job runs on schedule at 08:00 WIB and creates in-app notifications
 - [ ] Policy soft warnings shown on form — do not block submission
-- [ ] `pnpm lint` passes
-- [ ] `pnpm build` succeeds
-- [ ] `SubmitOvertimeActionTest` unit test suite passes (atomic rollback on validation failure)
+- [x] `pnpm lint` passes
+- [x] `pnpm build` succeeds
+- [x] `SubmitOvertimeActionTest` unit test suite passes (atomic rollback on validation failure)

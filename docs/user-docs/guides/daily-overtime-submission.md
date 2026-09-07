@@ -102,3 +102,18 @@ For each employee row in the timesheet:
     - Summary statistics (crew count, total hours, and locked snapshot cost).
     - **SPKL: Belum Dilampirkan (Non-blocking BR-05)**: The submission is already active and approved for operations; physical paper forms can be scanned and attached within the department grace period.
 2. You can click **Input Lembur Baru** to begin entering another batch or **Riwayat Pengajuan** to view submission history.
+
+---
+
+## 7. Tracking Historical Submissions & Locked Financial Snapshots
+
+1. In the navigation tabs or left sidebar under **Input Lembur** (Overtime Entry), click **Riwayat Pengajuan** (Submission History).
+2. The submission history table displays all batches recorded for your section, including:
+    - **Kode Pengajuan**: System generated identifier (e.g. `OT-20260908-SECBRWCYL-001`).
+    - **Tanggal & Hari**: Shift operational date and HKN/HLR classification badge.
+    - **Seksi**: Operational section.
+    - **Diajukan Oleh**: Submitting supervisor's name and NPK.
+    - **Total Jam**: Cumulative overtime hours for that shift.
+    - **Estimasi Biaya**: Permanently locked financial snapshot calculated at the moment of submission using standard IDR currency formatting (`Rp`). Even if base wage rates or department default rates are adjusted in subsequent months or fiscal years, historical submission records permanently maintain their original cost snapshot.
+    - **Status Persetujuan**: Current managerial review state (`Menunggu Review`, `Disetujui Sebagian`, `Disetujui`, `Ditolak`).
+    - **Dokumen SPKL**: SPKL attachment status (`Terlampir` or `Belum Dilampirkan`).

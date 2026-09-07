@@ -13,7 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useTrans } from '@/composables/useTrans';
-import { formatDateIndo } from '@/lib/formatters';
+import { formatDateIndo, formatRupiah } from '@/lib/formatters';
 import { dashboard } from '@/routes';
 import {
     create as createSubmissionRoute,
@@ -47,6 +47,7 @@ interface SubmissionRecord {
         | 'APPROVED'
         | 'REJECTED';
     total_hours_cached: string | number;
+    total_cost_cached?: string | number | null;
     section?: { id: number; name: string; code: string } | null;
     department?: { id: number; name: string; code: string } | null;
     submitted_by?: { id: number; name: string; npk: string } | null;
@@ -185,6 +186,9 @@ function getStatusBadge(status: string) {
                                 <th class="p-3 text-right">
                                     {{ __('Total Jam') }}
                                 </th>
+                                <th class="p-3 text-right">
+                                    {{ __('Estimasi Biaya') }}
+                                </th>
                                 <th class="p-3">
                                     {{ __('Status Persetujuan') }}
                                 </th>
@@ -252,6 +256,16 @@ function getStatusBadge(status: string) {
                                         )
                                     }}
                                     jam
+                                </td>
+                                <td
+                                    class="p-3 text-right font-mono font-bold text-[#cc0000] tabular-nums dark:text-red-400"
+                                    :data-test="`submission-cost-${sub.id}`"
+                                >
+                                    {{
+                                        formatRupiah(
+                                            Number(sub.total_cost_cached ?? 0),
+                                        )
+                                    }}
                                 </td>
                                 <td class="p-3">
                                     <span

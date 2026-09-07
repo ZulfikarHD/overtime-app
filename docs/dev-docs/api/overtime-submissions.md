@@ -192,4 +192,57 @@
 **Error Responses:**
 
 - `409 Conflict`: If `lock_version` does not match the current database record (concurrent update detected).
+
+---
+
+### 4. GET /overtime/submissions
+
+**Description:** Paginated history list of overtime submissions with aggregated hours and immutable snapshot total cost.
+
+**Authentication:** `auth`, Role: `Team Leader`, `Manager`, `Admin`
+
+**Query Parameters:**
+
+- `status` (string, optional): Filter by submission status (`SUBMITTED`, `PARTIALLY_APPROVED`, `APPROVED`, `REJECTED`).
+- `date_from` (string, optional): Start date filter (`YYYY-MM-DD`).
+- `date_to` (string, optional): End date filter (`YYYY-MM-DD`).
+- `page` (int, optional): Page number (default: 1, 20 records per page).
+
+**Inertia / JSON Response Data:**
+
+```json
+{
+    "submissions": {
+        "current_page": 1,
+        "data": [
+            {
+                "id": 12,
+                "submission_code": "OT-20260908-SECSTP01-001",
+                "operational_date": "2026-09-08",
+                "day_type": "HKN",
+                "status": "SUBMITTED",
+                "total_hours_cached": "8.50",
+                "total_cost_cached": "305000.00",
+                "section": {
+                    "id": 4,
+                    "name": "Press Stamping",
+                    "code": "STP-01"
+                },
+                "submitted_by": {
+                    "id": 2,
+                    "name": "Agus Pratama",
+                    "npk": "EMP-1002"
+                },
+                "spkl_document": {
+                    "id": 12,
+                    "status": "PENDING",
+                    "due_date": "2026-09-10"
+                }
+            }
+        ],
+        "total": 1
+    }
+}
+```
+
 - `422 Unprocessable Entity`: If `decision = "REJECTED"` and `rejection_reason` is empty.

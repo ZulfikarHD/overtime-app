@@ -597,5 +597,7 @@
     "Total jam lembur untuk karyawan ini minimal 0.5 jam sesuai aturan (BR-01).": "Total overtime hours for this employee must be at least 0.5 hours (BR-01).",
     "Jam lembur proyek CapEx untuk :name memerlukan pemilihan Proyek Investasi (BR-08).": "CapEx project overtime for :name requires selecting an active Capital Project (BR-08).",
     "Proyek CapEx wajib dipilih jika jam lembur proyek diisi (BR-08).": "CapEx project selection is required when project hours are entered (BR-08).",
-    "Pengajuan lembur berhasil dikirim: :code": "Overtime submission successfully sent: :code"
+    "Pengajuan lembur berhasil dikirim: :code": "Overtime submission successfully sent: :code",
+    "Estimasi Biaya": "Estimated Cost",
+    "Estimasi biaya dihitung otomatis menggunakan tarif standar karyawan saat pengajuan (Snapshot Biaya Terkunci).": "Estimated cost is calculated automatically using the employee's standard rate at the time of submission (Cost Snapshot Locked)."
 }

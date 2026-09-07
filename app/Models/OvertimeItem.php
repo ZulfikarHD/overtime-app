@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Observers\OvertimeItemObserver;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -32,6 +34,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
+#[ObservedBy([OvertimeItemObserver::class])]
 class OvertimeItem extends Model
 {
     /**
@@ -74,23 +77,6 @@ class OvertimeItem extends Model
             'reviewed_at' => 'datetime',
             'lock_version' => 'integer',
         ];
-    }
-
-    /**
-     * The "booted" method of the model.
-     * Enforces immutability of financial and identity snapshots.
-     */
-    protected static function booted(): void
-    {
-        static::updating(function (OvertimeItem $item) {
-            if ($item->isDirty('hourly_rate_snapshot')) {
-                throw new \RuntimeException('The hourly_rate_snapshot is immutable and cannot be modified.');
-            }
-
-            if ($item->isDirty('npk_snapshot')) {
-                throw new \RuntimeException('The npk_snapshot is immutable and cannot be modified.');
-            }
-        });
     }
 
     /**

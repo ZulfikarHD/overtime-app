@@ -252,7 +252,15 @@ const rcaCategories = [
                         >jam</span
                     >
                 </div>
-                <div class="font-mono text-[10px] text-slate-500 tabular-nums">
+                <div
+                    class="cursor-help font-mono text-[10px] text-slate-500 tabular-nums"
+                    :title="
+                        __(
+                            'Estimasi biaya dihitung otomatis menggunakan tarif standar karyawan saat pengajuan (Snapshot Biaya Terkunci).',
+                        )
+                    "
+                    :data-test="`row-cost-${modelValue.employee_id}`"
+                >
                     {{ formatRupiah(estimatedCost) }}
                 </div>
             </div>

@@ -21,7 +21,7 @@ We enforce **Immutable Financial Rate Snapshotting**:
    $$\text{rate} = \begin{cases} \text{employees.hourly\_rate} & \text{if } > 0 \\ \text{departments.default\_hourly\_rate} & \text{otherwise} \end{cases}$$
 2. The resolved rate is permanently written to `overtime_items.hourly_rate_snapshot`.
 3. Total line cost is permanently calculated and written to `overtime_items.total_cost_snapshot` using high-precision decimal operations (`bcmul`).
-4. These columns are immutable once status transitions to `APPROVED`. Database triggers or policy classes reject retroactive mutations.
+4. These columns are immutable once created. An Eloquent model observer (`OvertimeItemObserver`) strictly rejects any retroactive mutations to `hourly_rate_snapshot`, `total_cost_snapshot`, or `npk_snapshot` by throwing a `RuntimeException`.
 
 ## Consequences
 

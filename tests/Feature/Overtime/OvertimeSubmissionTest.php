@@ -391,17 +391,28 @@ test('section roster endpoint returns active employees and burn indicator for au
         ->assertJsonCount(1, 'employees');
 });
 
-test('history endpoint displays paginated overtime submissions', function () {
-    $dept = Department::factory()->create();
+test('history endpoint displays paginated overtime submissions with total_cost_cached', function () {
+    $dept = Department::factory()->create(['default_hourly_rate' => 30000.00]);
     $section = Section::factory()->create(['department_id' => $dept->id]);
     $teamLeader = User::factory()->teamLeader($section->id, $dept->id)->create();
+    $emp = Employee::factory()->forDepartmentAndSection($dept, $section)->create(['hourly_rate' => 40000.00]);
+
+    $this->actingAs($teamLeader)->post(route('overtime.submissions.store'), [
+        'operational_date' => '2026-09-08',
+        'department_id' => $dept->id,
+        'section_id' => $section->id,
+        'items' => [
+            ['employee_id' => $emp->id, 'hours_production' => 2.5],
+        ],
+    ]);
 
     $this->actingAs($teamLeader)
         ->get(route('overtime.submissions.index'))
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
             ->component('overtime/Index')
-            ->has('submissions.data')
+            ->has('submissions.data', 1)
+            ->where('submissions.data.0.total_cost_cached', fn ($val) => (float) $val === 100000.00)
             ->has('filters')
         );
 });

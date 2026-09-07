@@ -117,14 +117,15 @@ class SubmitOvertimeAction
                 /** @var Employee $employee */
                 $employee = $roster[$itemData['employee_id']];
 
-                $prod = round((float) ($itemData['hours_production'] ?? 0), 2);
-                $tpm = round((float) ($itemData['hours_tpm'] ?? 0), 2);
-                $proj = round((float) ($itemData['hours_project'] ?? 0), 2);
-                $oth = round((float) ($itemData['hours_others'] ?? 0), 2);
-                $lineTotal = $prod + $tpm + $proj + $oth;
+                $prodStr = number_format((float) ($itemData['hours_production'] ?? 0), 2, '.', '');
+                $tpmStr = number_format((float) ($itemData['hours_tpm'] ?? 0), 2, '.', '');
+                $projStr = number_format((float) ($itemData['hours_project'] ?? 0), 2, '.', '');
+                $othStr = number_format((float) ($itemData['hours_others'] ?? 0), 2, '.', '');
+
+                $lineTotalStr = bcadd(bcadd(bcadd($prodStr, $tpmStr, 2), $projStr, 2), $othStr, 2);
 
                 // Validate BR-01: minimum 0.5 hours
-                if ($lineTotal < 0.50) {
+                if (bccomp($lineTotalStr, '0.50', 2) < 0) {
                     throw ValidationException::withMessages([
                         'items' => [__('Total jam lembur untuk :name minimal 0.5 jam sesuai aturan (BR-01).', ['name' => $employee->full_name])],
                     ]);
@@ -132,7 +133,7 @@ class SubmitOvertimeAction
 
                 // Validate BR-08: CapEx project required when hours_project > 0
                 $capexProjectId = null;
-                if ($proj > 0.00) {
+                if (bccomp($projStr, '0.00', 2) > 0) {
                     if (empty($itemData['capex_project_id'])) {
                         throw ValidationException::withMessages([
                             'items' => [__('Jam lembur proyek CapEx untuk :name memerlukan pemilihan Proyek Investasi (BR-08).', ['name' => $employee->full_name])],
@@ -149,22 +150,22 @@ class SubmitOvertimeAction
                     $capexProjectId = $capexProject->id;
                 }
 
-                // Immutable Financial Snapshotting
-                $rateSnapshot = ($employee->hourly_rate !== null && (float) $employee->hourly_rate > 0)
-                    ? (string) $employee->hourly_rate
-                    : (string) ($department->default_hourly_rate ?? 0.00);
+                // Immutable Financial Snapshotting (E03-02)
+                $rateSnapshot = ($employee->hourly_rate !== null)
+                    ? number_format((float) $employee->hourly_rate, 2, '.', '')
+                    : number_format((float) ($department->default_hourly_rate ?? 0.00), 2, '.', '');
 
-                $costSnapshot = bcmul((string) $lineTotal, (string) $rateSnapshot, 2);
+                $costSnapshot = bcmul($lineTotalStr, $rateSnapshot, 2);
 
                 $createdItem = OvertimeItem::create([
                     'overtime_submission_id' => $submission->id,
                     'employee_id' => $employee->id,
                     'npk_snapshot' => $employee->npk,
                     'capex_project_id' => $capexProjectId,
-                    'hours_production' => $prod,
-                    'hours_tpm' => $tpm,
-                    'hours_project' => $proj,
-                    'hours_others' => $oth,
+                    'hours_production' => (float) $prodStr,
+                    'hours_tpm' => (float) $tpmStr,
+                    'hours_project' => (float) $projStr,
+                    'hours_others' => (float) $othStr,
                     'hourly_rate_snapshot' => $rateSnapshot,
                     'total_cost_snapshot' => $costSnapshot,
                     'rca_category' => $itemData['rca_category'] ?? null,
@@ -174,7 +175,7 @@ class SubmitOvertimeAction
                     'lock_version' => 1,
                 ]);
 
-                $totalHoursAccumulator = bcadd($totalHoursAccumulator, (string) $lineTotal, 2);
+                $totalHoursAccumulator = bcadd($totalHoursAccumulator, $lineTotalStr, 2);
 
                 // Dispatch Asynchronous ML Anomaly Detection Scan
                 RunAnomalyDetectionJob::dispatch($createdItem->id);

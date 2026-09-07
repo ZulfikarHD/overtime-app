@@ -54,6 +54,7 @@ erDiagram
 | Success Card       | `resources/js/components/overtime/PostSubmissionSuccessCard.vue`                      | Celebratory confirmation card with SPKL status & stats         |
 | Controller         | `app/Http/Controllers/Overtime/OvertimeSubmissionController.php`                      | Lean controller handling form rendering, submission, & roster  |
 | Action             | `app/Actions/Overtime/SubmitOvertimeAction.php`                                       | Atomic transaction logic, rate snapshotting, queue dispatching |
+| Observer           | `app/Observers/OvertimeItemObserver.php`                                              | Guards hourly_rate_snapshot, total_cost_snapshot, & npk        |
 | Form Request       | `app/Http/Requests/Overtime/StoreOvertimeSubmissionRequest.php`                       | Validates min hours (0.5), CapEx projects, & employee limits   |
 | Models             | `App\Models\OvertimeSubmission`, `App\Models\OvertimeItem`, `App\Models\SpklDocument` | Eloquent entities enforcing schema constraints & immutability  |
 
@@ -65,7 +66,7 @@ erDiagram
 4. **Hour entry & validation**: For each worker, hours are allocated into four decimal buckets: `Production`, `TPM`, `Project (CapEx)`, and `Others`.
     - If `CapEx > 0`, the `CapEx Project` dropdown progressively expands (mandatory per BR-08).
     - Live row total is computed client-side with currency estimation in Rupiah (`formatRupiah`).
-5. **Atomic transaction**: `SubmitOvertimeAction` executes within a database transaction, generates a human-readable submission code (`OT-YYYYMMDD-SEC-0001`), creates a linked `SpklDocument` in `PENDING` status, permanently snapshots `hourly_rate_snapshot` and `total_cost_snapshot` using `bcmul`, and inserts all line items.
+5. **Atomic transaction & immutable snapshots**: `SubmitOvertimeAction` executes within a database transaction, generates a human-readable submission code (`OT-YYYYMMDD-SEC-0001`), creates a linked `SpklDocument` in `PENDING` status, resolves the worker's labor rate (falling back to parent department default rate when null), computes total cost with `bcmul()` high-precision IDR arithmetic, and permanently writes `hourly_rate_snapshot` and `total_cost_snapshot`. Model observer `OvertimeItemObserver` rejects any retroactive updates to snapshot values.
 6. **Async dispatch**: `RunAnomalyDetectionJob` is dispatched asynchronously per line item.
 7. **Response**: The application displays the celebratory `PostSubmissionSuccessCard` with the generated code, crew count, total hours, and `SPKL: Belum Dilampirkan (Non-blocking BR-05)` notice.
 

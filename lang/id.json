@@ -597,5 +597,7 @@
     "Total jam lembur untuk karyawan ini minimal 0.5 jam sesuai aturan (BR-01).": "Total jam lembur untuk karyawan ini minimal 0.5 jam sesuai aturan (BR-01).",
     "Jam lembur proyek CapEx untuk :name memerlukan pemilihan Proyek Investasi (BR-08).": "Jam lembur proyek CapEx untuk :name memerlukan pemilihan Proyek Investasi (BR-08).",
     "Proyek CapEx wajib dipilih jika jam lembur proyek diisi (BR-08).": "Proyek CapEx wajib dipilih jika jam lembur proyek diisi (BR-08).",
-    "Pengajuan lembur berhasil dikirim: :code": "Pengajuan lembur berhasil dikirim: :code"
+    "Pengajuan lembur berhasil dikirim: :code": "Pengajuan lembur berhasil dikirim: :code",
+    "Estimasi Biaya": "Estimasi Biaya",
+    "Estimasi biaya dihitung otomatis menggunakan tarif standar karyawan saat pengajuan (Snapshot Biaya Terkunci).": "Estimasi biaya dihitung otomatis menggunakan tarif standar karyawan saat pengajuan (Snapshot Biaya Terkunci)."
 }

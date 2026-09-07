@@ -219,6 +219,16 @@ function addAllRosterWorkers() {
     }
 }
 
+function onSelectWorker(event: Event) {
+    const target = event.target as HTMLSelectElement;
+    const id = Number(target.value);
+    const w = roster.value.find((x) => x.id === id);
+    if (w) {
+        addEmployeeToTimesheet(w);
+    }
+    target.value = '';
+}
+
 function removeEmployeeFromTimesheet(index: number) {
     form.items.splice(index, 1);
 }
@@ -545,13 +555,7 @@ function submitOvertime() {
 
                     <!-- Dropdown add single worker -->
                     <select
-                        @change="
-                            const target = $event.target as HTMLSelectElement;
-                            const id = Number(target.value);
-                            const w = roster.find((x) => x.id === id);
-                            if (w) addEmployeeToTimesheet(w);
-                            target.value = '';
-                        "
+                        @change="onSelectWorker"
                         class="h-8 rounded-md border border-slate-300 bg-white px-2 text-xs text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
                         data-test="select-add-employee"
                     >
@@ -752,7 +756,12 @@ function submitOvertime() {
                                     {{ __('Estimasi Biaya') }}
                                 </div>
                                 <div
-                                    class="font-mono text-sm font-bold text-[#cc0000] tabular-nums dark:text-red-400"
+                                    class="cursor-help font-mono text-sm font-bold text-[#cc0000] tabular-nums dark:text-red-400"
+                                    :title="
+                                        __(
+                                            'Estimasi biaya dihitung otomatis menggunakan tarif standar karyawan saat pengajuan (Snapshot Biaya Terkunci).',
+                                        )
+                                    "
                                     data-test="footer-estimated-cost"
                                 >
                                     {{ formatRupiah(batchEstimatedCost) }}
