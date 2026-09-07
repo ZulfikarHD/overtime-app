@@ -1,13 +1,16 @@
 <script setup lang="ts">
-import { Link } from '@inertiajs/vue3';
+import { Link, router, usePage } from '@inertiajs/vue3';
 import {
     AlertCircle,
     Calendar,
+    CheckCircle2,
     Clock,
     DollarSign,
+    Download,
     FileText,
     FolderKanban,
     Lock,
+    Paperclip,
     Pencil,
     RefreshCw,
     Users,
@@ -30,6 +33,10 @@ import {
     edit as editRoute,
     show as showRoute,
 } from '@/routes/overtime/submissions';
+import {
+    download as downloadSpklRoute,
+    verify as verifySpklRoute,
+} from '@/routes/overtime/submissions/spkl';
 
 export interface SubmissionItemDetail {
     id: number;
@@ -98,9 +105,58 @@ const props = defineProps<{
 
 const emit = defineEmits<{
     (e: 'update:open', value: boolean): void;
+    (e: 'attachSpkl', value: any): void;
+    (e: 'verified'): void;
 }>();
 
 const { __ } = useTrans();
+const page = usePage();
+
+const canVerifySpkl = computed(() => {
+    const role = (page.props as any).auth?.user?.role;
+    return role === 'admin' || role === 'manager';
+});
+
+const isVerifying = ref(false);
+
+function handleVerifySpkl() {
+    if (!detail.value) {
+        return;
+    }
+    isVerifying.value = true;
+    router.patch(
+        verifySpklRoute.url({ submission: detail.value.id }),
+        {},
+        {
+            preserveScroll: true,
+            onSuccess: () => {
+                isVerifying.value = false;
+                if (detail.value?.spkl_document) {
+                    detail.value.spkl_document.status = 'VERIFIED';
+                }
+                emit('verified');
+            },
+            onError: () => {
+                isVerifying.value = false;
+            },
+        },
+    );
+}
+
+function handleAttachSpkl() {
+    if (!detail.value) {
+        return;
+    }
+    emit('attachSpkl', {
+        id: detail.value.id,
+        submission_code: detail.value.submission_code,
+        operational_date: detail.value.operational_date,
+        section_name: detail.value.section?.name,
+        total_hours: detail.value.total_hours_cached,
+        spkl_document: detail.value.spkl_document,
+    });
+    handleClose();
+}
 
 const detail = ref<SubmissionDetail | null>(props.initialData ?? null);
 const isLoading = ref(false);
@@ -333,7 +389,7 @@ function isSpklOverdue(dueDateStr?: string | null): boolean {
                     <!-- SPKL Status Banner -->
                     <div
                         v-if="detail.spkl_document"
-                        class="flex flex-wrap items-center justify-between gap-2 rounded-lg border p-3 text-xs"
+                        class="flex flex-col gap-3 rounded-lg border p-3 text-xs sm:flex-row sm:items-center sm:justify-between"
                         :class="
                             detail.spkl_document.status === 'ATTACHED' ||
                             detail.spkl_document.status === 'VERIFIED'
@@ -385,15 +441,68 @@ function isSpklOverdue(dueDateStr?: string | null): boolean {
                                         })
                                     }})
                                 </span>
+                                <div
+                                    v-if="detail.spkl_document.spkl_number"
+                                    class="mt-0.5 font-mono text-[11px] font-semibold text-slate-700 dark:text-slate-300"
+                                >
+                                    {{ __('No. Fisik:') }}
+                                    {{ detail.spkl_document.spkl_number }}
+                                </div>
                             </div>
                         </div>
 
-                        <span
-                            v-if="detail.spkl_document.spkl_number"
-                            class="font-mono text-xs font-semibold"
-                        >
-                            No: {{ detail.spkl_document.spkl_number }}
-                        </span>
+                        <!-- SPKL Actions -->
+                        <div class="flex flex-wrap items-center gap-2">
+                            <!-- Download button if file exists -->
+                            <a
+                                v-if="detail.spkl_document.file_name"
+                                :href="
+                                    downloadSpklRoute.url({
+                                        submission: detail.id,
+                                    })
+                                "
+                                target="_blank"
+                                class="inline-flex h-7 items-center gap-1 rounded border border-emerald-300 bg-white px-2 text-xs font-semibold text-emerald-800 hover:bg-emerald-50 dark:border-emerald-800 dark:bg-slate-900 dark:text-emerald-200"
+                                data-test="btn-download-spkl"
+                            >
+                                <Download class="size-3" />
+                                <span>{{ __('Unduh SPKL') }}</span>
+                            </a>
+
+                            <!-- Manager Verify Button -->
+                            <Button
+                                v-if="
+                                    canVerifySpkl &&
+                                    detail.spkl_document.status === 'ATTACHED'
+                                "
+                                type="button"
+                                size="sm"
+                                @click="handleVerifySpkl"
+                                :disabled="isVerifying"
+                                class="h-7 bg-emerald-700 px-2 text-xs font-semibold text-white hover:bg-emerald-800"
+                                data-test="btn-modal-verify-spkl"
+                            >
+                                <CheckCircle2 class="mr-1 size-3" />
+                                <span>{{ __('Verifikasi SPKL') }}</span>
+                            </Button>
+
+                            <!-- Attach / Replace SPKL Button -->
+                            <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                @click="handleAttachSpkl"
+                                class="h-7 border-slate-300 bg-white px-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+                                data-test="btn-modal-attach-spkl"
+                            >
+                                <Paperclip class="mr-1 size-3" />
+                                <span>{{
+                                    detail.spkl_document.status === 'PENDING'
+                                        ? __('Lampirkan SPKL')
+                                        : __('Ganti Berkas')
+                                }}</span>
+                            </Button>
+                        </div>
                     </div>
 
                     <!-- Batch Notes (if provided) -->

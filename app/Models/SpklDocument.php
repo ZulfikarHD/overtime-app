@@ -106,6 +106,21 @@ class SpklDocument extends Model
     public function scopeOverdue(Builder $query): void
     {
         $query->where('status', 'PENDING')
-            ->whereDate('due_date', '<', now()->toDateString());
+            ->whereDate('due_date', '<', Carbon::now('Asia/Jakarta')->toDateString());
+    }
+
+    /**
+     * Determine if the pending SPKL document is past its due date.
+     */
+    public function isDueOverdue(): bool
+    {
+        if ($this->status !== 'PENDING' || ! $this->due_date) {
+            return false;
+        }
+
+        $nowWib = Carbon::now('Asia/Jakarta')->startOfDay();
+        $due = Carbon::parse($this->due_date)->startOfDay();
+
+        return $due->lt($nowWib);
     }
 }

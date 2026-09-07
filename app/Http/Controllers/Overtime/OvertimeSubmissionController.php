@@ -117,6 +117,7 @@ class OvertimeSubmissionController extends Controller
         $submission = $this->submitOvertimeAction->execute($request->validated(), $user->id);
 
         $lastSubmissionData = [
+            'id' => $submission->id,
             'submission_code' => $submission->submission_code,
             'crew_count' => $submission->items->count(),
             'total_hours' => (float) $submission->total_hours_cached,

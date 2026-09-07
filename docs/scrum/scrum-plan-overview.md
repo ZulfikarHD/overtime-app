@@ -19,7 +19,7 @@
 | ----------------------- | ------------------------------------------------- | ----------------- | ----------- | ---------- | ------------------------- |
 | [Epic-01](./Epic-01.md) | Foundation & Infrastructure Setup                 | P0 – Critical     | 55 SP       | Sprint 1   | 🟢 Completed              |
 | [Epic-02](./Epic-02.md) | Master Data & Administration                      | P0 – Critical     | 42 SP       | Sprint 2   | 🟢 Completed              |
-| [Epic-03](./Epic-03.md) | Daily Overtime Entry & SPKL Workflow              | P1 – Must Have    | 47 SP       | Sprint 3   | 🟡 In Progress (18/47 SP) |
+| [Epic-03](./Epic-03.md) | Daily Overtime Entry & SPKL Workflow              | P1 – Must Have    | 47 SP       | Sprint 3   | 🟡 In Progress (34/47 SP) |
 | [Epic-04](./Epic-04.md) | Verification & Approval Lifecycle                 | P1 – Must Have    | 38 SP       | Sprint 4   | 🔴 Not Started            |
 | [Epic-05](./Epic-05.md) | Budget Management & Burn Index Dashboard          | P1 – Must Have    | 45 SP       | Sprint 5   | 🔴 Not Started            |
 | [Epic-06](./Epic-06.md) | Individual Employee Reporting & Welfare           | P2 – Should Have  | 30 SP       | Sprint 6   | 🔴 Not Started            |

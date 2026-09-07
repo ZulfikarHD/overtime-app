@@ -154,28 +154,28 @@ This is the primary daily workflow of the application. Every workday, Team Leade
 
 #### Acceptance Criteria
 
-- [ ] Any submission automatically has a `spkl_documents` record created in `PENDING` status with `due_date = operational_date + grace_period_days`
-- [ ] Team Leader can upload an SPKL file (PDF, JPEG, PNG, max 3 MB) or enter an SPKL reference number string
-- [ ] On upload: file is stored in a **private** disk (not publicly accessible) — not web-server public folder
-- [ ] Serving SPKL files uses **temporary signed URLs** (Laravel `Storage::temporaryUrl()`)
-- [ ] Uploading transitions `spkl_documents.status` from `PENDING` → `ATTACHED`
-- [ ] After uploading, the SPKL badge on the submission list updates immediately to `ATTACHED`
-- [ ] Only one SPKL record per submission (1:1 relationship) — re-upload replaces the previous file
-- [ ] File validation: `mimes:pdf,jpeg,png`, `max:3072` (3 MB in KB)
-- [ ] If `due_date` has passed and status is still `PENDING`, the badge shows `⚠️ SPKL: Terlambat` (overdue warning)
-- [ ] Manager can mark an SPKL as `VERIFIED` after reviewing the document
+- [x] Any submission automatically has a `spkl_documents` record created in `PENDING` status with `due_date = operational_date + grace_period_days`
+- [x] Team Leader can upload an SPKL file (PDF, JPEG, PNG, max 3 MB) or enter an SPKL reference number string
+- [x] On upload: file is stored in a **private** disk (not publicly accessible) — not web-server public folder
+- [x] Serving SPKL files uses **temporary signed URLs** (Laravel `Storage::temporaryUrl()`)
+- [x] Uploading transitions `spkl_documents.status` from `PENDING` → `ATTACHED`
+- [x] After uploading, the SPKL badge on the submission list updates immediately to `ATTACHED`
+- [x] Only one SPKL record per submission (1:1 relationship) — re-upload replaces the previous file
+- [x] File validation: `mimes:pdf,jpeg,png`, `max:3072` (3 MB in KB)
+- [x] If `due_date` has passed and status is still `PENDING`, the badge shows `⚠️ SPKL: Terlambat` (overdue warning)
+- [x] Manager can mark an SPKL as `VERIFIED` after reviewing the document
 
 #### Technical Tasks
 
-- [ ] `php artisan make:controller SpklDocumentController` with `attach()` and `verify()` methods
-- [ ] `AttachSpklDocumentAction` — handles file upload, storage, status transition
-- [ ] Configure Laravel `Storage::disk('spkl-private')` with `local` or `s3` driver (env-configurable)
-- [ ] Route: `POST /overtime/submissions/{submission}/spkl` → `SpklDocumentController@attach`
-- [ ] Route: `PATCH /overtime/submissions/{submission}/spkl/verify` → `SpklDocumentController@verify`
-- [ ] Route: `GET /overtime/submissions/{submission}/spkl/download` → `SpklDocumentController@download` (returns signed URL)
-- [ ] Create `resources/js/Components/Overtime/SpklUploadPanel.vue` — upload form with drag-drop
-- [ ] `SpklDocument::isDueOverdue(): bool` → computed property
-- [ ] Update submission list `show` to include SPKL status and document link
+- [x] `php artisan make:controller SpklDocumentController` with `attach()`, `verify()`, and `download()` methods
+- [x] `AttachSpklDocumentAction` — handles file upload, storage, status transition, and file replacement
+- [x] Configure Laravel `Storage::disk('spkl-private')` with `local` or `s3` driver (env-configurable)
+- [x] Route: `POST /overtime/submissions/{submission}/spkl` → `SpklDocumentController@attach`
+- [x] Route: `PATCH /overtime/submissions/{submission}/spkl/verify` → `SpklDocumentController@verify`
+- [x] Route: `GET /overtime/submissions/{submission}/spkl/download` → `SpklDocumentController@download` (returns signed URL)
+- [x] Create `resources/js/components/overtime/SpklUploadSheet.vue` — upload drawer with drag-drop and countdown banner
+- [x] `SpklDocument::isDueOverdue(): bool` → computed property
+- [x] Update submission list, detail modal, and post-submission success card with SPKL triggers and document links
 
 ---
 
@@ -286,7 +286,7 @@ This is the primary daily workflow of the application. Every workday, Team Leade
 - [x] Team Leader can submit a full overtime batch and see `submission_code` confirmation
 - [x] Submission fails atomically if any employee row fails validation
 - [x] `hourly_rate_snapshot` and `total_cost_snapshot` are written on creation and verified as immutable
-- [ ] SPKL document can be attached post-shift without modifying submission status
+- [x] SPKL document can be attached post-shift without modifying submission status
 - [ ] SPKL reminder job runs on schedule at 08:00 WIB and creates in-app notifications
 - [ ] Policy soft warnings shown on form — do not block submission
 - [x] `pnpm lint` passes

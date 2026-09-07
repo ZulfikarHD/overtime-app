@@ -10,12 +10,16 @@ import {
     Filter,
     ListPlus,
     Lock,
+    Paperclip,
     Pencil,
     Plus,
     RotateCcw,
     Search,
 } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
+import SpklUploadSheet, {
+    type SpklTargetSubmission,
+} from '@/components/overtime/SpklUploadSheet.vue';
 import SubmissionDetailModal from '@/components/overtime/SubmissionDetailModal.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -136,6 +140,39 @@ watch(
 function openDetailModal(submissionId: number) {
     selectedDetailId.value = submissionId;
     isDetailModalOpen.value = true;
+}
+
+const isSpklSheetOpen = ref(false);
+const selectedSpklSubmission = ref<SpklTargetSubmission | null>(null);
+
+function openSpklSheet(sub: SubmissionRecord | SpklTargetSubmission) {
+    const sectionName =
+        'section' in sub && sub.section
+            ? sub.section.name
+            : 'section_name' in sub
+              ? (sub.section_name ?? null)
+              : null;
+
+    const totalHours =
+        'total_hours_cached' in sub
+            ? sub.total_hours_cached
+            : 'total_hours' in sub
+              ? (sub.total_hours ?? null)
+              : null;
+
+    selectedSpklSubmission.value = {
+        id: sub.id,
+        submission_code: sub.submission_code,
+        operational_date: sub.operational_date,
+        section_name: sectionName,
+        total_hours: totalHours,
+        spkl_document: sub.spkl_document,
+    };
+    isSpklSheetOpen.value = true;
+}
+
+function handleSpklSuccess() {
+    router.reload({ only: ['submissions'] });
 }
 
 function applyFilters() {
@@ -680,6 +717,26 @@ const hasActiveFilters = computed(() => {
                                             <span>{{ __('Detail') }}</span>
                                         </button>
 
+                                        <!-- Attach SPKL Button -->
+                                        <button
+                                            type="button"
+                                            @click="openSpklSheet(sub)"
+                                            class="inline-flex h-7 items-center gap-1 rounded border border-slate-300 bg-white px-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+                                            :data-test="`btn-attach-spkl-${sub.id}`"
+                                        >
+                                            <Paperclip
+                                                class="size-3 text-slate-400"
+                                            />
+                                            <span>{{
+                                                sub.spkl_document?.status ===
+                                                    'ATTACHED' ||
+                                                sub.spkl_document?.status ===
+                                                    'VERIFIED'
+                                                    ? __('SPKL')
+                                                    : __('Lampirkan SPKL')
+                                            }}</span>
+                                        </button>
+
                                         <!-- Edit Button (Enabled only if SUBMITTED or DRAFT) -->
                                         <Link
                                             v-if="
@@ -810,6 +867,15 @@ const hasActiveFilters = computed(() => {
         <SubmissionDetailModal
             v-model:open="isDetailModalOpen"
             :submission-id="selectedDetailId"
+            @attach-spkl="openSpklSheet"
+            @verified="handleSpklSuccess"
+        />
+
+        <!-- Slide-in SPKL Upload Sheet Component -->
+        <SpklUploadSheet
+            v-model:open="isSpklSheetOpen"
+            :submission="selectedSpklSubmission"
+            @success="handleSpklSuccess"
         />
     </div>
 </template>

@@ -1,12 +1,20 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3';
-import { CheckCircle2, Clock, FileText, PlusCircle, Users } from '@lucide/vue';
+import {
+    CheckCircle2,
+    Clock,
+    FileText,
+    Paperclip,
+    PlusCircle,
+    Users,
+} from '@lucide/vue';
 import { Button } from '@/components/ui/button';
 import { useTrans } from '@/composables/useTrans';
 import { formatRupiah } from '@/lib/formatters';
 import { index as submissionsIndex } from '@/routes/overtime/submissions';
 
 export interface LastSubmissionSummary {
+    id?: number;
     submission_code: string;
     crew_count: number;
     total_hours: number;
@@ -22,6 +30,7 @@ defineProps<{
 
 const emit = defineEmits<{
     (e: 'dismiss'): void;
+    (e: 'attachSpkl'): void;
 }>();
 
 const { __ } = useTrans();
@@ -66,7 +75,18 @@ const { __ } = useTrans();
             </div>
 
             <!-- Action buttons -->
-            <div class="flex items-center gap-2">
+            <div class="flex flex-wrap items-center gap-2">
+                <Button
+                    v-if="submission.id"
+                    type="button"
+                    size="sm"
+                    @click="emit('attachSpkl')"
+                    class="h-8 bg-[#cc0000] text-xs font-semibold text-white shadow-xs hover:bg-[#b30000] active:scale-95"
+                    data-test="btn-card-attach-spkl"
+                >
+                    <Paperclip class="mr-1.5 size-3.5" />
+                    {{ __('Lampirkan SPKL Sekarang') }}
+                </Button>
                 <Button
                     type="button"
                     variant="outline"
@@ -148,7 +168,7 @@ const { __ } = useTrans();
 
         <!-- Non-Blocking SPKL Banner -->
         <div
-            class="mt-2.5 flex items-center justify-between rounded-md border border-amber-200 bg-amber-50/80 px-3 py-1.5 text-xs text-amber-900 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-300"
+            class="mt-2.5 flex flex-wrap items-center justify-between gap-2 rounded-md border border-amber-200 bg-amber-50/80 px-3 py-1.5 text-xs text-amber-900 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-300"
         >
             <div class="flex items-center gap-2">
                 <span class="text-sm">📎</span>
@@ -165,7 +185,17 @@ const { __ } = useTrans();
                     }}
                 </span>
             </div>
+            <button
+                v-if="submission.id"
+                type="button"
+                @click="emit('attachSpkl')"
+                class="font-bold text-[#cc0000] hover:underline"
+                data-test="link-banner-attach-spkl"
+            >
+                {{ __('Lampirkan SPKL') }} →
+            </button>
             <span
+                v-else
                 class="hidden text-[11px] text-amber-700 sm:inline dark:text-amber-400"
             >
                 {{ __('Dokumen fisik dapat dilampirkan setelah shift.') }}

@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\CalendarController;
 use App\Http\Controllers\Budgets\OvertimeBudgetController;
 use App\Http\Controllers\Budgets\OvertimeBudgetImportController;
 use App\Http\Controllers\Overtime\OvertimeSubmissionController;
+use App\Http\Controllers\Overtime\SpklDocumentController;
 use Illuminate\Support\Facades\Route;
 
 Route::inertia('/', 'Welcome')->name('home');
@@ -94,6 +95,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/submissions/{submission}', [OvertimeSubmissionController::class, 'show'])->name('submissions.show');
         Route::get('/submissions/{submission}/edit', [OvertimeSubmissionController::class, 'edit'])->name('submissions.edit');
         Route::put('/submissions/{submission}', [OvertimeSubmissionController::class, 'update'])->name('submissions.update');
+        Route::post('/submissions/{submission}/spkl', [SpklDocumentController::class, 'attach'])->name('submissions.spkl.attach');
+        Route::patch('/submissions/{submission}/spkl/verify', [SpklDocumentController::class, 'verify'])->name('submissions.spkl.verify');
+        Route::get('/submissions/{submission}/spkl/download', [SpklDocumentController::class, 'download'])->name('submissions.spkl.download');
     });
 
     Route::middleware(['role:admin,manager'])->prefix('manager')->name('manager.')->group(function () {

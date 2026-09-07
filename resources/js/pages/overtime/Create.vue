@@ -25,6 +25,9 @@ import PostSubmissionSuccessCard, {
     type LastSubmissionSummary,
 } from '@/components/overtime/PostSubmissionSuccessCard.vue';
 import SectionBurnIndicator from '@/components/overtime/SectionBurnIndicator.vue';
+import SpklUploadSheet, {
+    type SpklTargetSubmission,
+} from '@/components/overtime/SpklUploadSheet.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -388,6 +391,29 @@ function dismissSuccessCard() {
     showSuccessCard.value = false;
 }
 
+const isSpklSheetOpen = ref(false);
+const spklTargetSubmission = computed<SpklTargetSubmission | null>(() => {
+    if (!successSubmission.value?.id) {
+        return null;
+    }
+    return {
+        id: successSubmission.value.id,
+        submission_code: successSubmission.value.submission_code,
+        operational_date: successSubmission.value.operational_date,
+        section_name: successSubmission.value.section_name,
+        total_hours: successSubmission.value.total_hours,
+        spkl_document: {
+            id: 0,
+            status: 'PENDING',
+            due_date: successSubmission.value.due_date,
+        },
+    };
+});
+
+function handleAttachSpklFromCard() {
+    isSpklSheetOpen.value = true;
+}
+
 // Form submission handler
 function submitOvertime() {
     if (isEditMode.value && props.editing_submission) {
@@ -515,6 +541,7 @@ function submitOvertime() {
             v-if="showSuccessCard && successSubmission"
             :submission="successSubmission"
             @dismiss="dismissSuccessCard"
+            @attach-spkl="handleAttachSpklFromCard"
         />
 
         <!-- General Form Error Banner -->
@@ -945,5 +972,16 @@ function submitOvertime() {
                 </div>
             </div>
         </Card>
+
+        <!-- Slide-in SPKL Upload Sheet -->
+        <SpklUploadSheet
+            v-model:open="isSpklSheetOpen"
+            :submission="spklTargetSubmission"
+            @success="
+                () => {
+                    isSpklSheetOpen = false;
+                }
+            "
+        />
     </div>
 </template>

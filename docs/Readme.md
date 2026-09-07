@@ -58,6 +58,7 @@ Technical specifications and decision records for the engineering implementation
     - [Background Jobs & Redis Queues](./dev-docs/features/background-jobs-queues.md)
     - [Database Seeding & Demo Data](./dev-docs/features/database-seeding-demo-data.md)
     - [Daily Overtime Entry & SPKL Workflow](./dev-docs/features/daily-overtime-spkl.md)
+    - [SPKL Flexible Post-Shift Attachment & Lifecycle Workflow](./dev-docs/features/spkl-document-workflow.md)
     - [Verification & Granular Approval Lifecycle](./dev-docs/features/verification-approval.md)
     - [Budget Management & Burn Index Dashboard](./dev-docs/features/budget-burn-index.md)
     - [Individual Employee Reporting & Welfare](./dev-docs/features/employee-welfare-report.md)
@@ -104,6 +105,7 @@ Plain-language operating guides for factory supervisors, team leaders, and opera
     - [User Preferences & Display Standards Guide](./user-docs/guides/user-preferences-settings.md)
     - [Overtime Budget Planning Guide](./user-docs/guides/overtime-budget-planning.md)
     - [Daily Overtime Submission Guide](./user-docs/guides/daily-overtime-submission.md)
+    - [SPKL Document Attachment Guide](./user-docs/guides/spkl-document-attachment.md)
 
 ---
 

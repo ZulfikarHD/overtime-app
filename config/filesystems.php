@@ -38,6 +38,21 @@ return [
             'report' => false,
         ],
 
+        'spkl-private' => [
+            'driver' => env('SPKL_FILESYSTEM_DISK', 'local'),
+            'root' => storage_path('app/private/spkl_documents'),
+            'url' => rtrim((string) env('APP_URL', 'http://localhost'), '/').'/spkl-storage',
+            'key' => env('AWS_ACCESS_KEY_ID'),
+            'secret' => env('AWS_SECRET_ACCESS_KEY'),
+            'region' => env('AWS_DEFAULT_REGION'),
+            'bucket' => env('SPKL_AWS_BUCKET', env('AWS_BUCKET')),
+            'endpoint' => env('AWS_ENDPOINT'),
+            'use_path_style_endpoint' => env('AWS_USE_PATH_STYLE_ENDPOINT', false),
+            'serve' => true,
+            'throw' => false,
+            'report' => false,
+        ],
+
         'public' => [
             'driver' => 'local',
             'root' => storage_path('app/public'),
