@@ -32,6 +32,7 @@ Deep-dive technical documentation detailing architecture flows, data models, key
 | **[Background Jobs & Redis Queues](./features/background-jobs-queues.md)**                                 | [Epic-01](../../scrum/Epic-01.md) | Asynchronous Redis queue workers, retry backoff configuration, and scaffolded background jobs.                                                     |
 | **[Database Seeding & Demo Data](./features/database-seeding-demo-data.md)**                               | [Epic-01](../../scrum/Epic-01.md) | Modular database seeders for automotive plant master data, shifts, employees, thresholds, and budgets.                                             |
 | **[Daily Overtime Entry & SPKL Workflow](./features/daily-overtime-spkl.md)**                              | [Epic-03](../../scrum/Epic-03.md) | Shift-end overtime capture, atomic roster validation, and non-blocking SPKL document state machine.                                                |
+| **[Overtime Policy Soft Warning Indicators](./features/policy-soft-warning-indicators.md)**                | [Epic-03](../../scrum/Epic-03.md) | Real-time advisory weekly overtime fatigue warning badges, consecutive high workload alert streaks, and manager review indicators.                 |
 | **[SPKL Flexible Post-Shift Attachment & Lifecycle Workflow](./features/spkl-document-workflow.md)**       | [Epic-03](../../scrum/Epic-03.md) | Post-shift photo/PDF upload, private disk isolation, file replacement, manager verification, and temporary signed URLs.                            |
 | **[SPKL Pending Reminder & In-App Notifications](./features/spkl-pending-reminder-notifications.md)**      | [Epic-03](../../scrum/Epic-03.md) | Automated daily 08:00 WIB reminder job, in-app notifications, topbar notification bell, and 1-click SPKL attachment drawer flow.                   |
 | **[Verification & Granular Approval Lifecycle](./features/verification-approval.md)**                      | [Epic-04](../../scrum/Epic-04.md) | Item-level partial approval/rejection queue, optimistic locking (`lock_version`), and immutable audit logging.                                     |
@@ -47,6 +48,7 @@ Deep-dive technical documentation detailing architecture flows, data models, key
 HTTP request, query parameter, and payload specifications:
 
 - **[Calendar API Endpoints](./api/calendar-endpoints.md)** — Day classification endpoint (`GET /api/calendar/{date}`) for timesheet auto-calculation and admin batch management.
+- **[Overtime Policy Check API](./api/overtime-policy-check.md)** — Real-time policy threshold check endpoint (`GET /overtime/policy-check`) returning advisory fatigue warnings.
 - **[Overtime Submissions & Approvals API](./api/overtime-submissions.md)** — Timesheet batch submissions, SPKL document uploads, and item-level approval/rejection payloads.
 - **[In-App Notifications API](./api/notifications.md)** — Fetch unread notifications, mark individual notifications as read, and bulk mark all as read.
 - **[Analytics, Burn Index & Machine Learning API](./api/analytics-reports.md)** — Monthly burn snapshot queries, employee dossier endpoints, and ML predictive horizons.
@@ -71,6 +73,7 @@ Durable technical decisions and trade-offs:
 - **[ADR-012: User Preferences and Display Standards Architecture](./decisions/012-user-preferences-and-display-standards.md)**
 - **[ADR-013: Overtime Budget Planning and Two-Stage CSV Import Architecture](./decisions/013-overtime-budget-planning-and-csv-import.md)**
 - **[ADR-014: Automated SPKL Document Reminders and In-App Notifications Architecture](./decisions/014-automated-spkl-reminders-and-in-app-notifications.md)**
+- **[ADR-015: Advisory Overtime Policy Soft Warning Indicators](./decisions/015-advisory-overtime-policy-soft-warning-indicators.md)**
 
 ---
 

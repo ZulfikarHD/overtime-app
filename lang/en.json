@@ -699,5 +699,12 @@
     "Lampirkan": "Attach",
     "Tandai sudah dibaca": "Mark as read",
     "Pengingat SPKL": "SPKL Reminder",
-    "SPKL Terlambat": "SPKL Overdue"
+    "SPKL Terlambat": "SPKL Overdue",
+    "High Workload: :weeks consecutive weeks over limit": "High Workload: :weeks consecutive weeks over limit",
+    "Weekly limit may be exceeded (:total/:limit hrs)": "Weekly limit may be exceeded (:total/:limit hrs)",
+    "Beban kerja tinggi: :weeks minggu berturut-turut melebihi batas. Bersifat informasi, pengajuan tetap dapat diproses (BR-06).": "High workload: :weeks consecutive weeks over limit. Advisory only, submission can proceed (BR-06).",
+    "Batas mingguan terlampaui (:total/:limit jam) — Bersifat informasi, pengajuan tetap dapat diproses (BR-06).": "Weekly limit exceeded (:total/:limit hrs) — Advisory only, submission can proceed (BR-06).",
+    "Beban kerja tinggi: :weeks minggu berturut-turut melebihi batas. Bersifat informasi (BR-06).": "High workload: :weeks consecutive weeks over limit. Advisory only (BR-06).",
+    "Batas mingguan terlampaui (:total/:limit jam) — Bersifat informasi (BR-06).": "Weekly limit exceeded (:total/:limit hrs) — Advisory only (BR-06).",
+    "Anda tidak memiliki akses ke data karyawan ini.": "You do not have access to this employee's data."
 }

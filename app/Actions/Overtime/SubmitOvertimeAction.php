@@ -10,8 +10,10 @@ use App\Models\OperationalCalendar;
 use App\Models\OvertimeItem;
 use App\Models\OvertimeSubmission;
 use App\Models\Section;
+use App\Services\Policy\OvertimePolicyEvaluator;
 use App\Services\PolicyThresholdService;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -19,6 +21,7 @@ class SubmitOvertimeAction
 {
     public function __construct(
         public PolicyThresholdService $policyThresholdService,
+        public OvertimePolicyEvaluator $policyEvaluator,
     ) {}
 
     /**
@@ -177,6 +180,15 @@ class SubmitOvertimeAction
 
                 $totalHoursAccumulator = bcadd($totalHoursAccumulator, $lineTotalStr, 2);
 
+                // Evaluate policy soft warning (advisory only, BR-06)
+                $policyWarning = $this->policyEvaluator->evaluateEmployee(
+                    employeeId: $employee->id,
+                    additionalHours: 0.0,
+                    date: $operationalDate,
+                );
+                Cache::put("overtime_policy_warning:{$createdItem->id}", $policyWarning->toArray(), now()->addDays(7));
+                $createdItem->setAttribute('policy_warning', $policyWarning->toArray());
+
                 // Dispatch Asynchronous ML Anomaly Detection Scan
                 RunAnomalyDetectionJob::dispatch($createdItem->id);
             }
@@ -317,6 +329,15 @@ class SubmitOvertimeAction
                 ]);
 
                 $totalHoursAccumulator = bcadd($totalHoursAccumulator, $lineTotalStr, 2);
+
+                // Evaluate policy soft warning (advisory only, BR-06)
+                $policyWarning = $this->policyEvaluator->evaluateEmployee(
+                    employeeId: $employee->id,
+                    additionalHours: 0.0,
+                    date: $operationalDate,
+                );
+                Cache::put("overtime_policy_warning:{$createdItem->id}", $policyWarning->toArray(), now()->addDays(7));
+                $createdItem->setAttribute('policy_warning', $policyWarning->toArray());
 
                 RunAnomalyDetectionJob::dispatch($createdItem->id);
             }

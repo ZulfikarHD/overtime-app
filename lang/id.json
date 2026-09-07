@@ -699,5 +699,12 @@
     "Lampirkan": "Lampirkan",
     "Tandai sudah dibaca": "Tandai sudah dibaca",
     "Pengingat SPKL": "Pengingat SPKL",
-    "SPKL Terlambat": "SPKL Terlambat"
+    "SPKL Terlambat": "SPKL Terlambat",
+    "High Workload: :weeks consecutive weeks over limit": "Beban Kerja Tinggi: :weeks minggu berturut-turut melebihi batas",
+    "Weekly limit may be exceeded (:total/:limit hrs)": "Batas mingguan terlampaui (:total/:limit jam)",
+    "Beban kerja tinggi: :weeks minggu berturut-turut melebihi batas. Bersifat informasi, pengajuan tetap dapat diproses (BR-06).": "Beban kerja tinggi: :weeks minggu berturut-turut melebihi batas. Bersifat informasi, pengajuan tetap dapat diproses (BR-06).",
+    "Batas mingguan terlampaui (:total/:limit jam) — Bersifat informasi, pengajuan tetap dapat diproses (BR-06).": "Batas mingguan terlampaui (:total/:limit jam) — Bersifat informasi, pengajuan tetap dapat diproses (BR-06).",
+    "Beban kerja tinggi: :weeks minggu berturut-turut melebihi batas. Bersifat informasi (BR-06).": "Beban kerja tinggi: :weeks minggu berturut-turut melebihi batas. Bersifat informasi (BR-06).",
+    "Batas mingguan terlampaui (:total/:limit jam) — Bersifat informasi (BR-06).": "Batas mingguan terlampaui (:total/:limit jam) — Bersifat informasi (BR-06).",
+    "Anda tidak memiliki akses ke data karyawan ini.": "Anda tidak memiliki akses ke data karyawan ini."
 }

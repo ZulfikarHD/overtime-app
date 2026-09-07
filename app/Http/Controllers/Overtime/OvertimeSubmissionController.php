@@ -14,6 +14,7 @@ use App\Models\OvertimeBudget;
 use App\Models\OvertimeSubmission;
 use App\Models\Section;
 use App\Models\User;
+use App\Services\Policy\OvertimePolicyEvaluator;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -25,6 +26,7 @@ class OvertimeSubmissionController extends Controller
 {
     public function __construct(
         public SubmitOvertimeAction $submitOvertimeAction,
+        public OvertimePolicyEvaluator $policyEvaluator,
     ) {}
 
     /**
@@ -165,6 +167,42 @@ class OvertimeSubmissionController extends Controller
     }
 
     /**
+     * Evaluate soft policy limit warnings for an employee (E03-06).
+     */
+    public function policyCheck(Request $request): JsonResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+
+        $validated = $request->validate([
+            'employee_id' => ['required', 'integer', 'exists:employees,id'],
+            'date' => ['nullable', 'date'],
+            'additional_hours' => ['nullable', 'numeric', 'min:0'],
+            'exclude_submission_id' => ['nullable', 'integer', 'exists:overtime_submissions,id'],
+        ]);
+
+        $employee = Employee::findOrFail((int) $validated['employee_id']);
+
+        if (! $user->canAccessSection($employee->section_id)) {
+            return response()->json([
+                'message' => __('Anda tidak memiliki akses ke data karyawan ini.'),
+            ], 403);
+        }
+
+        $warning = $this->policyEvaluator->evaluateEmployee(
+            employeeId: (int) $validated['employee_id'],
+            additionalHours: (float) ($validated['additional_hours'] ?? 0.0),
+            date: $validated['date'] ?? null,
+            excludeSubmissionId: isset($validated['exclude_submission_id']) ? (int) $validated['exclude_submission_id'] : null,
+        );
+
+        $payload = $warning->toArray();
+        $payload['warning'] = $warning->toArray();
+
+        return response()->json($payload);
+    }
+
+    /**
      * Display a listing of overtime submissions (History Hub).
      */
     public function index(Request $request): Response
@@ -271,6 +309,15 @@ class OvertimeSubmissionController extends Controller
             'section:id,name,code',
             'submittedBy:id,name,npk',
         ]);
+
+        foreach ($submission->items as $item) {
+            $warning = $this->policyEvaluator->evaluateEmployee(
+                employeeId: $item->employee_id,
+                additionalHours: 0.0,
+                date: $submission->operational_date->toDateString(),
+            );
+            $item->setAttribute('policy_warning', $warning->toArray());
+        }
 
         if ($request->wantsJson() || $request->ajax()) {
             return response()->json([

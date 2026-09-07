@@ -8,6 +8,10 @@ import {
 } from '@lucide/vue';
 import { computed, ref } from 'vue';
 import { Button } from '@/components/ui/button';
+import {
+    useOvertimePolicyCheck,
+    type PolicyWarningData,
+} from '@/composables/useOvertimePolicyCheck';
 import { useTrans } from '@/composables/useTrans';
 import { formatRupiah } from '@/lib/formatters';
 
@@ -40,6 +44,9 @@ const props = defineProps<{
     capexProjects: CapexProjectOption[];
     error?: string;
     index: number;
+    operationalDate?: string;
+    submissionId?: number | null;
+    initialPolicyWarning?: PolicyWarningData | null;
 }>();
 
 const emit = defineEmits<{
@@ -63,6 +70,18 @@ const totalHours = computed(() => {
     const oth = Number(props.modelValue.hours_others) || 0;
     return Number((prod + tpm + proj + oth).toFixed(2));
 });
+
+const employeeIdRef = computed(() => props.modelValue.employee_id);
+const operationalDateRef = computed(() => props.operationalDate);
+const submissionIdRef = computed(() => props.submissionId);
+
+const { warning: policyWarning, checkPolicy } = useOvertimePolicyCheck(
+    employeeIdRef,
+    totalHours,
+    operationalDateRef,
+    submissionIdRef,
+    props.initialPolicyWarning,
+);
 
 const effectiveRate = computed(() => {
     const empRate = Number(props.modelValue.hourly_rate);
@@ -154,6 +173,68 @@ const rcaCategories = [
                         >{{ formatRupiah(effectiveRate) }}/jam</span
                     >
                 </div>
+
+                <!-- Policy Soft Warning Badge (E03-06, BR-06) -->
+                <div
+                    v-if="policyWarning && policyWarning.level !== 'none'"
+                    class="mt-1 flex flex-wrap items-center gap-1"
+                >
+                    <!-- Red Badge: High Workload / Consecutive Weeks Alert -->
+                    <span
+                        v-if="policyWarning.level === 'danger'"
+                        class="inline-flex cursor-help items-center gap-1 rounded border border-red-200 bg-red-50 px-1.5 py-0.5 text-[10px] font-semibold text-[#cc0000] dark:border-red-900 dark:bg-red-950/40 dark:text-red-300"
+                        :title="
+                            __(
+                                'Beban kerja tinggi: :weeks minggu berturut-turut melebihi batas. Bersifat informasi, pengajuan tetap dapat diproses (BR-06).',
+                                { weeks: policyWarning.consecutive_weeks },
+                            )
+                        "
+                        :data-test="`policy-warning-badge-${modelValue.employee_id}`"
+                    >
+                        <span>🔴</span>
+                        <span class="font-mono font-bold tabular-nums">{{
+                            __(
+                                'High Workload: :weeks consecutive weeks over limit',
+                                { weeks: policyWarning.consecutive_weeks },
+                            )
+                        }}</span>
+                    </span>
+
+                    <!-- Yellow Badge: Weekly Soft Limit Breach -->
+                    <span
+                        v-else-if="policyWarning.level === 'warning'"
+                        class="inline-flex cursor-help items-center gap-1 rounded border border-amber-300 bg-amber-50 px-1.5 py-0.5 text-[10px] font-semibold text-amber-800 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-300"
+                        :title="
+                            __(
+                                'Batas mingguan terlampaui (:total/:limit jam) — Bersifat informasi, pengajuan tetap dapat diproses (BR-06).',
+                                {
+                                    total: policyWarning.weekly_total.toFixed(
+                                        1,
+                                    ),
+                                    limit: policyWarning.weekly_limit.toFixed(
+                                        1,
+                                    ),
+                                },
+                            )
+                        "
+                        :data-test="`policy-warning-badge-${modelValue.employee_id}`"
+                    >
+                        <span>⚠️</span>
+                        <span class="font-mono tabular-nums">{{
+                            __(
+                                'Weekly limit may be exceeded (:total/:limit hrs)',
+                                {
+                                    total: policyWarning.weekly_total.toFixed(
+                                        1,
+                                    ),
+                                    limit: policyWarning.weekly_limit.toFixed(
+                                        1,
+                                    ),
+                                },
+                            )
+                        }}</span>
+                    </span>
+                </div>
             </div>
 
             <!-- Col 2: Production Hours (2 cols) -->
@@ -168,6 +249,7 @@ const rcaCategories = [
                         inputmode="decimal"
                         :value="modelValue.hours_production || ''"
                         @input="handleHourInput('hours_production', $event)"
+                        @blur="checkPolicy"
                         placeholder="0.0"
                         :name="`items[${index}][hours_production]`"
                         :data-test="`input-prod-${modelValue.employee_id}`"
@@ -188,6 +270,7 @@ const rcaCategories = [
                         inputmode="decimal"
                         :value="modelValue.hours_tpm || ''"
                         @input="handleHourInput('hours_tpm', $event)"
+                        @blur="checkPolicy"
                         placeholder="0.0"
                         :name="`items[${index}][hours_tpm]`"
                         :data-test="`input-tpm-${modelValue.employee_id}`"
@@ -208,6 +291,7 @@ const rcaCategories = [
                         inputmode="decimal"
                         :value="modelValue.hours_project || ''"
                         @input="handleHourInput('hours_project', $event)"
+                        @blur="checkPolicy"
                         placeholder="0.0"
                         :name="`items[${index}][hours_project]`"
                         :data-test="`input-project-${modelValue.employee_id}`"
@@ -228,6 +312,7 @@ const rcaCategories = [
                         inputmode="decimal"
                         :value="modelValue.hours_others || ''"
                         @input="handleHourInput('hours_others', $event)"
+                        @blur="checkPolicy"
                         placeholder="0.0"
                         :name="`items[${index}][hours_others]`"
                         :data-test="`input-others-${modelValue.employee_id}`"

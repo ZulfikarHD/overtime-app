@@ -44,6 +44,7 @@ Technical specifications and decision records for the engineering implementation
     - [ADR-012: User Preferences and Display Standards](./dev-docs/decisions/012-user-preferences-and-display-standards.md)
     - [ADR-013: Overtime Budget Planning and CSV Import](./dev-docs/decisions/013-overtime-budget-planning-and-csv-import.md)
     - [ADR-014: Automated SPKL Document Reminders and In-App Notifications](./dev-docs/decisions/014-automated-spkl-reminders-and-in-app-notifications.md)
+    - [ADR-015: Advisory Overtime Policy Soft Warning Indicators](./dev-docs/decisions/015-advisory-overtime-policy-soft-warning-indicators.md)
 - **Technical Feature Design Specifications:**
     - [Authentication & Role-Based Access Control](./dev-docs/features/authentication-rbac.md)
     - [Database Schema Migrations (Full DDL)](./dev-docs/features/database-schema-migrations.md)
@@ -59,6 +60,7 @@ Technical specifications and decision records for the engineering implementation
     - [Background Jobs & Redis Queues](./dev-docs/features/background-jobs-queues.md)
     - [Database Seeding & Demo Data](./dev-docs/features/database-seeding-demo-data.md)
     - [Daily Overtime Entry & SPKL Workflow](./dev-docs/features/daily-overtime-spkl.md)
+    - [Policy Soft Warning Indicators](./dev-docs/features/policy-soft-warning-indicators.md)
     - [SPKL Flexible Post-Shift Attachment & Lifecycle Workflow](./dev-docs/features/spkl-document-workflow.md)
     - [SPKL Pending Reminder & In-App Notifications](./dev-docs/features/spkl-pending-reminder-notifications.md)
     - [Verification & Granular Approval Lifecycle](./dev-docs/features/verification-approval.md)
@@ -68,6 +70,7 @@ Technical specifications and decision records for the engineering implementation
     - [Supervised Machine Learning Analytics](./dev-docs/features/ml-predictive-analytics.md)
 - **API Reference Design:**
     - [Calendar Classification & Management API](./dev-docs/api/calendar-endpoints.md)
+    - [Overtime Policy Check API](./dev-docs/api/overtime-policy-check.md)
     - [Overtime Submissions & Approvals API](./dev-docs/api/overtime-submissions.md)
     - [In-App Notifications API](./dev-docs/api/notifications.md)
     - [Analytics, Burn Index & Machine Learning API](./dev-docs/api/analytics-reports.md)
@@ -108,6 +111,7 @@ Plain-language operating guides for factory supervisors, team leaders, and opera
     - [User Preferences & Display Standards Guide](./user-docs/guides/user-preferences-settings.md)
     - [Overtime Budget Planning Guide](./user-docs/guides/overtime-budget-planning.md)
     - [Daily Overtime Submission Guide](./user-docs/guides/daily-overtime-submission.md)
+    - [Policy Soft Warning Indicators Guide](./user-docs/guides/policy-soft-warning-indicators.md)
     - [SPKL Document Attachment Guide](./user-docs/guides/spkl-document-attachment.md)
     - [SPKL Pending Reminders & Notifications Guide](./user-docs/guides/spkl-pending-reminders.md)
 

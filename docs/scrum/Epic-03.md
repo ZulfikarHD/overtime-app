@@ -222,23 +222,23 @@ This is the primary daily workflow of the application. Every workday, Team Leade
 
 #### Acceptance Criteria
 
-- [ ] When adding an employee to a timesheet, the system checks their cumulative hours for the current week from approved/submitted records
-- [ ] If current week hours + submitted hours exceed `policy_thresholds.weekly_soft_limit_hours` (default 20 hrs):
+- [x] When adding an employee to a timesheet, the system checks their cumulative hours for the current week from approved/submitted records
+- [x] If current week hours + submitted hours exceed `policy_thresholds.weekly_soft_limit_hours` (default 20 hrs):
     - Display a yellow badge on that employee's row: `⚠️ Weekly limit may be exceeded (22/20 hrs)`
     - Team Leader can still proceed and submit — this is **advisory only** (BR-06)
-- [ ] If an employee has had high workload (> weekly limit) for `consecutive_weeks_alert` consecutive weeks (default 3): display a red badge: `🔴 High Workload: 3 consecutive weeks over limit`
-- [ ] Thresholds are loaded from `PolicyThresholdService::getForDepartment()` — department-specific if exists, else plant-wide default
-- [ ] Warning badges do NOT prevent form submission
-- [ ] Warnings are surfaced to the Manager in the approval queue as well (passed in item data)
+- [x] If an employee has had high workload (> weekly limit) for `consecutive_weeks_alert` consecutive weeks (default 3): display a red badge: `🔴 High Workload: 3 consecutive weeks over limit`
+- [x] Thresholds are loaded from `PolicyThresholdService::getForDepartment()` — department-specific if exists, else plant-wide default
+- [x] Warning badges do NOT prevent form submission
+- [x] Warnings are surfaced to the Manager in the approval queue as well (passed in item data)
 
 #### Technical Tasks
 
-- [ ] `OvertimePolicyEvaluator::evaluateEmployee(int $employeeId, float $additionalHours): PolicyWarning`
-- [ ] `PolicyWarning` DTO: `{ level: 'none'|'warning'|'danger', message: string, weeklyTotal: float, consecutiveWeeks: int }`
-- [ ] Call `OvertimePolicyEvaluator` in `SubmitOvertimeAction` after creating items — store warnings in a cache or embed in response
-- [ ] `GET /overtime/policy-check?employee_id=X&date=Y` — API endpoint returning current policy status for an employee
-- [ ] In `OvertimeItemRow.vue`: call policy check API on blur of any hours field, display badge
-- [ ] Debounce the API call: `useDebounce(totalHours, 500ms)`
+- [x] `OvertimePolicyEvaluator::evaluateEmployee(int $employeeId, float $additionalHours): PolicyWarning`
+- [x] `PolicyWarning` DTO: `{ level: 'none'|'warning'|'danger', message: string, weeklyTotal: float, consecutiveWeeks: int }`
+- [x] Call `OvertimePolicyEvaluator` in `SubmitOvertimeAction` after creating items — store warnings in a cache or embed in response
+- [x] `GET /overtime/policy-check?employee_id=X&date=Y` — API endpoint returning current policy status for an employee
+- [x] In `OvertimeItemRow.vue`: call policy check API on blur of any hours field, display badge
+- [x] Debounce the API call: `useDebounce(totalHours, 500ms)`
 
 ---
 
@@ -288,7 +288,7 @@ This is the primary daily workflow of the application. Every workday, Team Leade
 - [x] `hourly_rate_snapshot` and `total_cost_snapshot` are written on creation and verified as immutable
 - [x] SPKL document can be attached post-shift without modifying submission status
 - [x] SPKL reminder job runs on schedule at 08:00 WIB and creates in-app notifications
-- [ ] Policy soft warnings shown on form — do not block submission
+- [x] Policy soft warnings shown on form — do not block submission
 - [x] `pnpm lint` passes
 - [x] `pnpm build` succeeds
 - [x] `SubmitOvertimeActionTest` unit test suite passes (atomic rollback on validation failure)

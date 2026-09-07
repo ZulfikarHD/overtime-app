@@ -66,6 +66,13 @@ export interface SubmissionItemDetail {
     rca_notes?: string | null;
     task_description?: string | null;
     status: string;
+    policy_warning?: {
+        level: 'none' | 'warning' | 'danger';
+        message: string;
+        weekly_total: number;
+        consecutive_weeks: number;
+        weekly_limit: number;
+    } | null;
 }
 
 export interface SubmissionDetail {
@@ -622,6 +629,101 @@ function isSpklOverdue(dueDateStr?: string | null): boolean {
                                                     "{{
                                                         item.task_description
                                                     }}"
+                                                </span>
+                                            </div>
+
+                                            <!-- Policy advisory badge (E03-06, BR-06) -->
+                                            <div
+                                                v-if="
+                                                    item.policy_warning &&
+                                                    item.policy_warning
+                                                        .level !== 'none'
+                                                "
+                                                class="mt-1 flex flex-wrap items-center gap-1"
+                                            >
+                                                <span
+                                                    v-if="
+                                                        item.policy_warning
+                                                            .level === 'danger'
+                                                    "
+                                                    class="inline-flex items-center gap-1 rounded border border-red-200 bg-red-50 px-1.5 py-0.5 text-[10px] font-semibold text-[#cc0000] dark:border-red-900 dark:bg-red-950/40 dark:text-red-300"
+                                                    :title="
+                                                        __(
+                                                            'Beban kerja tinggi: :weeks minggu berturut-turut melebihi batas. Bersifat informasi (BR-06).',
+                                                            {
+                                                                weeks: item
+                                                                    .policy_warning
+                                                                    .consecutive_weeks,
+                                                            },
+                                                        )
+                                                    "
+                                                    :data-test="`detail-policy-warning-${item.id}`"
+                                                >
+                                                    <span>🔴</span>
+                                                    <span
+                                                        class="font-mono font-bold tabular-nums"
+                                                        >{{
+                                                            __(
+                                                                'High Workload: :weeks consecutive weeks over limit',
+                                                                {
+                                                                    weeks: item
+                                                                        .policy_warning
+                                                                        .consecutive_weeks,
+                                                                },
+                                                            )
+                                                        }}</span
+                                                    >
+                                                </span>
+                                                <span
+                                                    v-else-if="
+                                                        item.policy_warning
+                                                            .level === 'warning'
+                                                    "
+                                                    class="inline-flex items-center gap-1 rounded border border-amber-300 bg-amber-50 px-1.5 py-0.5 text-[10px] font-semibold text-amber-800 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-300"
+                                                    :title="
+                                                        __(
+                                                            'Batas mingguan terlampaui (:total/:limit jam) — Bersifat informasi (BR-06).',
+                                                            {
+                                                                total: Number(
+                                                                    item
+                                                                        .policy_warning
+                                                                        .weekly_total,
+                                                                ).toFixed(1),
+                                                                limit: Number(
+                                                                    item
+                                                                        .policy_warning
+                                                                        .weekly_limit,
+                                                                ).toFixed(1),
+                                                            },
+                                                        )
+                                                    "
+                                                    :data-test="`detail-policy-warning-${item.id}`"
+                                                >
+                                                    <span>⚠️</span>
+                                                    <span
+                                                        class="font-mono tabular-nums"
+                                                        >{{
+                                                            __(
+                                                                'Weekly limit may be exceeded (:total/:limit hrs)',
+                                                                {
+                                                                    total: Number(
+                                                                        item
+                                                                            .policy_warning
+                                                                            .weekly_total,
+                                                                    ).toFixed(
+                                                                        1,
+                                                                    ),
+                                                                    limit: Number(
+                                                                        item
+                                                                            .policy_warning
+                                                                            .weekly_limit,
+                                                                    ).toFixed(
+                                                                        1,
+                                                                    ),
+                                                                },
+                                                            )
+                                                        }}</span
+                                                    >
                                                 </span>
                                             </div>
                                         </td>

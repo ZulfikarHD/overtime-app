@@ -842,6 +842,8 @@ function submitOvertime() {
                         :default-hourly-rate="defaultHourlyRate"
                         :capex-projects="active_capex_projects"
                         :error="getRowError(index)"
+                        :operational-date="form.operational_date"
+                        :submission-id="editing_submission?.id"
                         @remove="removeEmployeeFromTimesheet(index)"
                     />
                 </div>
