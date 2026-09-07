@@ -1,6 +1,12 @@
 <script setup lang="ts">
 import { Link, usePage } from '@inertiajs/vue3';
-import { Calculator, Database, LayoutGrid, ShieldCheck } from '@lucide/vue';
+import {
+    Calculator,
+    ClipboardList,
+    Database,
+    LayoutGrid,
+    ShieldCheck,
+} from '@lucide/vue';
 import { computed } from 'vue';
 import AppLogo from '@/components/AppLogo.vue';
 import NavMain from '@/components/NavMain.vue';
@@ -18,6 +24,7 @@ import { useTrans } from '@/composables/useTrans';
 import { dashboard } from '@/routes';
 import { administration, masterData } from '@/routes/admin';
 import { planning } from '@/routes/budgets';
+import { create as overtimeCreate } from '@/routes/overtime/submissions';
 import type { NavItem, User } from '@/types';
 
 const { __ } = useTrans();
@@ -51,6 +58,14 @@ const mainNavItems = computed<NavItem[]>(() => {
             title: __('Budget Planning'),
             href: planning(),
             icon: Calculator,
+        });
+    }
+
+    if (user.value?.role === 'admin' || user.value?.role === 'team_leader') {
+        items.push({
+            title: __('Input Lembur'),
+            href: overtimeCreate(),
+            icon: ClipboardList,
         });
     }
 

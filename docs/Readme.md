@@ -103,6 +103,7 @@ Plain-language operating guides for factory supervisors, team leaders, and opera
     - [User Account Management Guide](./user-docs/guides/user-account-management.md)
     - [User Preferences & Display Standards Guide](./user-docs/guides/user-preferences-settings.md)
     - [Overtime Budget Planning Guide](./user-docs/guides/overtime-budget-planning.md)
+    - [Daily Overtime Submission Guide](./user-docs/guides/daily-overtime-submission.md)
 
 ---
 

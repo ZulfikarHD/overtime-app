@@ -12,6 +12,7 @@ use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Api\CalendarController;
 use App\Http\Controllers\Budgets\OvertimeBudgetController;
 use App\Http\Controllers\Budgets\OvertimeBudgetImportController;
+use App\Http\Controllers\Overtime\OvertimeSubmissionController;
 use Illuminate\Support\Facades\Route;
 
 Route::inertia('/', 'Welcome')->name('home');
@@ -82,6 +83,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/planning/import/preview', [OvertimeBudgetImportController::class, 'preview'])->name('import.preview');
         Route::post('/planning/import', [OvertimeBudgetImportController::class, 'import'])->name('import');
         Route::get('/planning/template', [OvertimeBudgetImportController::class, 'template'])->name('template');
+    });
+
+    // Overtime Submissions (E03 - Daily Overtime & Timesheets)
+    Route::middleware(['role:admin,manager,team_leader'])->prefix('overtime')->name('overtime.')->group(function () {
+        Route::get('/submissions', [OvertimeSubmissionController::class, 'index'])->name('submissions.index');
+        Route::get('/submissions/create', [OvertimeSubmissionController::class, 'create'])->name('submissions.create');
+        Route::post('/submissions', [OvertimeSubmissionController::class, 'store'])->name('submissions.store');
+        Route::get('/submissions/roster/{section}', [OvertimeSubmissionController::class, 'roster'])->name('submissions.roster');
     });
 
     Route::middleware(['role:admin,manager'])->prefix('manager')->name('manager.')->group(function () {

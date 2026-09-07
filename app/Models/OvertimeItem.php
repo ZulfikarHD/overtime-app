@@ -77,6 +77,23 @@ class OvertimeItem extends Model
     }
 
     /**
+     * The "booted" method of the model.
+     * Enforces immutability of financial and identity snapshots.
+     */
+    protected static function booted(): void
+    {
+        static::updating(function (OvertimeItem $item) {
+            if ($item->isDirty('hourly_rate_snapshot')) {
+                throw new \RuntimeException('The hourly_rate_snapshot is immutable and cannot be modified.');
+            }
+
+            if ($item->isDirty('npk_snapshot')) {
+                throw new \RuntimeException('The npk_snapshot is immutable and cannot be modified.');
+            }
+        });
+    }
+
+    /**
      * @return BelongsTo<OvertimeSubmission, $this>
      */
     public function overtimeSubmission(): BelongsTo

@@ -61,6 +61,7 @@ class HandleInertiaRequests extends Middleware
                 'warning' => $request->session()->get('warning'),
                 'info' => $request->session()->get('info'),
                 'toast' => $request->session()->get('toast'),
+                'last_submission' => $request->session()->get('last_submission'),
             ],
         ];
     }

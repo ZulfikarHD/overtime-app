@@ -198,7 +198,8 @@ class OperationalCalendarService
         $carbonDate = Carbon::parse($date);
         $this->ensureYearSeeded($carbonDate->year);
 
-        $record = OperationalCalendar::find($carbonDate->format('Y-m-d'));
+        $record = OperationalCalendar::find($carbonDate->format('Y-m-d'))
+            ?? OperationalCalendar::whereDate('calendar_date', $carbonDate->format('Y-m-d'))->first();
 
         if (! $record) {
             $isWeekend = $carbonDate->isWeekend();

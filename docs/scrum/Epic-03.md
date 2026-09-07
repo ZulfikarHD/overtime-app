@@ -37,42 +37,42 @@ This is the primary daily workflow of the application. Every workday, Team Leade
 
 #### Acceptance Criteria
 
-- [ ] Team Leader can select: `date` (date picker, defaults to today), `department` (filtered to their own), `section` (filtered to their own)
-- [ ] System automatically classifies the selected date as **HKN** or **HLR** by calling `GET /api/calendar/{date}` and displays a badge: `📅 Hari Kerja Normal` or `🔴 Hari Libur`
-- [ ] Team Leader can override the day classification (HKN ↔ HLR) — override is saved on the submission record's `day_type` field
-- [ ] Employee roster loads automatically based on selected `department` + `section` — only `is_active = true` employees are shown
-- [ ] Team Leader can add employees from the roster to the timesheet (checkboxes or "Add All" button)
-- [ ] For each added employee, input fields for:
+- [x] Team Leader can select: `date` (date picker, defaults to today), `department` (filtered to their own), `section` (filtered to their own)
+- [x] System automatically classifies the selected date as **HKN** or **HLR** by calling `GET /api/calendar/{date}` and displays a badge: `📅 Hari Kerja Normal` or `🔴 Hari Libur`
+- [x] Team Leader can override the day classification (HKN ↔ HLR) — override is saved on the submission record's `day_type` field
+- [x] Employee roster loads automatically based on selected `department` + `section` — only `is_active = true` employees are shown
+- [x] Team Leader can add employees from the roster to the timesheet (checkboxes or "Add All" button)
+- [x] For each added employee, input fields for:
     - `hours_production` (decimal, ≥ 0, step 0.5)
     - `hours_tpm` (decimal, ≥ 0, step 0.5)
     - `hours_project` (decimal, ≥ 0, step 0.5) — when > 0, `capex_project_id` becomes **required**
     - `hours_others` (decimal, ≥ 0, step 0.5)
     - Total hours auto-calculated and displayed live: `Prod + TPM + Project + Others`
-- [ ] `Total Hours` for each employee must be **≥ 0.5** before submission (BR-01)
-- [ ] `hours_project > 0` requires a CapEx Project selection — dropdown shows `ACTIVE` projects only (BR-08)
-- [ ] Optional `rca_category` dropdown with standardized reasons (BR-07)
-- [ ] Optional `task_description` free text
-- [ ] Optional `submission_notes` (header-level note for the entire batch)
-- [ ] Submit button triggers `POST /overtime/submissions` and returns success state
-- [ ] On success: show a success toast, clear the form, display the generated `submission_code` (e.g., `OT-20260906-ASSY1-001`)
-- [ ] On validation error: highlight the specific employee row and field that failed, do NOT clear the form
-- [ ] Section budget burn indicator shown in header: "Section Budget: 85/200 hrs (42.5%)" — soft warning if > 85% (configurable threshold)
+- [x] `Total Hours` for each employee must be **≥ 0.5** before submission (BR-01)
+- [x] `hours_project > 0` requires a CapEx Project selection — dropdown shows `ACTIVE` projects only (BR-08)
+- [x] Optional `rca_category` dropdown with standardized reasons (BR-07)
+- [x] Optional `task_description` free text
+- [x] Optional `submission_notes` (header-level note for the entire batch)
+- [x] Submit button triggers `POST /overtime/submissions` and returns success state
+- [x] On success: show a success toast, clear the form, display the generated `submission_code` (e.g., `OT-20260906-ASSY1-001`)
+- [x] On validation error: highlight the specific employee row and field that failed, do NOT clear the form
+- [x] Section budget burn indicator shown in header: "Section Budget: 85/200 hrs (42.5%)" — soft warning if > 85% (configurable threshold)
 
 #### Technical Tasks
 
-- [ ] `php artisan make:controller OvertimeSubmissionController` with `store()` method
-- [ ] `php artisan make:request StoreOvertimeSubmissionRequest` — validates nested `items[]` array
-- [ ] Implement `SubmitOvertimeAction` exactly as specified in `data-architect-analyst.md` §3.1
-- [ ] Route: `POST /overtime/submissions` → `OvertimeSubmissionController@store` (middleware: `auth`, `role:team_leader,admin`)
-- [ ] Create `resources/js/Pages/Overtime/Create.vue` — the main timesheet form
-- [ ] Vue component: `OvertimeItemRow.vue` — represents one employee's row with all 4 hour inputs
-- [ ] Vue composable: `useCalendarDayType(date: Ref<string>)` — fetches day classification reactively
-- [ ] Vue composable: `useSectionRoster(sectionId: Ref<number>)` — fetches active employees for section
-- [ ] Real-time total calculation: `computed(() => prod + tpm + proj + others)` per row
-- [ ] CapEx project dropdown visibility: `v-if="row.hours_project > 0"`
-- [ ] Hour input validation: HTML5 `min="0" step="0.5"` + Vue validator on form submit
-- [ ] `dispatch(RunAnomalyDetectionJob::class, $createdItem->id)` at the end of each item in `SubmitOvertimeAction`
-- [ ] Section burn indicator: inject current `MonthlyBurnSnapshot` data into the page props
+- [x] `php artisan make:controller OvertimeSubmissionController` with `store()` method
+- [x] `php artisan make:request StoreOvertimeSubmissionRequest` — validates nested `items[]` array
+- [x] Implement `SubmitOvertimeAction` exactly as specified in `data-architect-analyst.md` §3.1
+- [x] Route: `POST /overtime/submissions` → `OvertimeSubmissionController@store` (middleware: `auth`, `role:team_leader,admin`)
+- [x] Create `resources/js/Pages/Overtime/Create.vue` — the main timesheet form
+- [x] Vue component: `OvertimeItemRow.vue` — represents one employee's row with all 4 hour inputs
+- [x] Vue composable: `useCalendarDayType(date: Ref<string>)` — fetches day classification reactively
+- [x] Vue composable: `useSectionRoster(sectionId: Ref<number>)` — fetches active employees for section
+- [x] Real-time total calculation: `computed(() => prod + tpm + proj + others)` per row
+- [x] CapEx project dropdown visibility: `v-if="row.hours_project > 0"`
+- [x] Hour input validation: HTML5 `min="0" step="0.5"` + Vue validator on form submit
+- [x] `dispatch(RunAnomalyDetectionJob::class, $createdItem->id)` at the end of each item in `SubmitOvertimeAction`
+- [x] Section burn indicator: inject current `MonthlyBurnSnapshot` data into the page props
 
 ---
 
@@ -87,20 +87,20 @@ This is the primary daily workflow of the application. Every workday, Team Leade
 
 #### Acceptance Criteria
 
-- [ ] At submission time, `SubmitOvertimeAction` reads `employee.hourly_rate` — if null, reads `department.default_hourly_rate`
-- [ ] `hourly_rate_snapshot` is written to `overtime_items` at creation and **never updated again**
-- [ ] `total_cost_snapshot` = `total_hours × hourly_rate_snapshot`, calculated using `bcmul()` for precision (no floating-point math)
-- [ ] If an employee's rate is later updated in the system, **existing** `overtime_items` records retain their original `hourly_rate_snapshot`
-- [ ] `total_cost_snapshot` is shown in the approval queue as "Est. Cost: Rp X" (formatRupiah utility)
-- [ ] Database-level: `overtime_items.hourly_rate_snapshot` and `total_cost_snapshot` have `NUMERIC(15,2)` type — enforced in migration
+- [x] At submission time, `SubmitOvertimeAction` reads `employee.hourly_rate` — if null, reads `department.default_hourly_rate`
+- [x] `hourly_rate_snapshot` is written to `overtime_items` at creation and **never updated again**
+- [x] `total_cost_snapshot` = `total_hours × hourly_rate_snapshot`, calculated using `bcmul()` for precision (no floating-point math)
+- [x] If an employee's rate is later updated in the system, **existing** `overtime_items` records retain their original `hourly_rate_snapshot`
+- [x] `total_cost_snapshot` is shown in the approval queue as "Est. Cost: Rp X" (formatRupiah utility)
+- [x] Database-level: `overtime_items.hourly_rate_snapshot` and `total_cost_snapshot` have `NUMERIC(15,2)` type — enforced in migration
 
 #### Technical Tasks
 
-- [ ] Implement snapshot logic inside `SubmitOvertimeAction` (already in architecture doc §3.1)
-- [ ] Use `bcmul((string) $lineTotal, (string) $rateSnapshot, 2)` for cost calculation
-- [ ] Add `hourly_rate_snapshot` and `total_cost_snapshot` to `OvertimeItem::$fillable`
-- [ ] Guard against update: In `OvertimeItemObserver` or `updating` Eloquent event, throw exception if `hourly_rate_snapshot` changes on an existing record
-- [ ] Unit test: `SubmitOvertimeActionTest::test_snapshot_does_not_change_after_rate_update()`
+- [x] Implement snapshot logic inside `SubmitOvertimeAction` (already in architecture doc §3.1)
+- [x] Use `bcmul((string) $lineTotal, (string) $rateSnapshot, 2)` for cost calculation
+- [x] Add `hourly_rate_snapshot` and `total_cost_snapshot` to `OvertimeItem::$fillable`
+- [x] Guard against update: In `OvertimeItemObserver` or `updating` Eloquent event, throw exception if `hourly_rate_snapshot` changes on an existing record
+- [x] Unit test: `SubmitOvertimeActionTest::test_snapshot_does_not_change_after_rate_update()`
 
 ---
 

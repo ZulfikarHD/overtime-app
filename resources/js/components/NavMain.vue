@@ -27,7 +27,13 @@ const { isCurrentUrl } = useCurrentUrl();
                     :is-active="isCurrentUrl(item.href)"
                     :tooltip="item.title"
                 >
-                    <Link :href="item.href">
+                    <Link
+                        :href="item.href"
+                        :data-test="
+                            'nav-' +
+                            item.title.toLowerCase().replace(/\s+/g, '-')
+                        "
+                    >
                         <component :is="item.icon" />
                         <span>{{ item.title }}</span>
                     </Link>

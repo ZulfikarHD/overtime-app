@@ -18,17 +18,17 @@
 
 **Description:** Submit an atomic batch of overtime records for a section shift. Automatically initializes the non-blocking SPKL document container.
 
-**Authentication:** `auth`, Role: `Team Leader`, `Admin`
+**Authentication:** `auth`, Role: `Team Leader`, `Admin`, `Manager`
 
 **Request Body:**
 
 ```json
 {
-    "operational_date": "2026-09-06",
+    "operational_date": "2026-09-07",
+    "day_type": "HKN",
     "department_id": 1,
     "section_id": 4,
-    "day_type_override": null,
-    "notes": "Shift 2 catch-up for assembly line 1",
+    "submission_notes": "Shift 2 catch-up for assembly line 1",
     "items": [
         {
             "employee_id": 105,
@@ -44,6 +44,36 @@
     ]
 }
 ```
+
+### 2. GET /overtime/submissions/roster/{sectionId}
+
+**Description:** Fetch active employee roster and current month budget burn indicator for a specific section.
+
+**Authentication:** `auth`, Role: `Team Leader`, `Admin`, `Manager`
+
+**Response (`200 OK`):**
+
+```json
+{
+    "employees": [
+        {
+            "id": 105,
+            "npk": "EMP-60001",
+            "full_name": "Hendro Setiawan",
+            "job_position": "Senior Line Operator",
+            "hourly_rate": "40000.00"
+        }
+    ],
+    "burn_indicator": {
+        "planned_hours": 200.0,
+        "actual_hours": 85.0,
+        "burn_pct": 42.5,
+        "burn_zone": "safe"
+    }
+}
+```
+
+````
 
 **Parameters Validation:**
 
@@ -79,7 +109,7 @@
         }
     }
 }
-```
+````
 
 **Error Responses:**
 

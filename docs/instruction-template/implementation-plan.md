@@ -1,4 +1,4 @@
-# Task: Implement [E02-06 and E02-07] From Scrum Plan, Test, and Document
+# Task: Implement [E03-03] From Scrum Plan, Test, and Document
 
 ## Step 0 — Read the UI/UX Plan (mandatory if it exists)
 
@@ -20,8 +20,8 @@ Example: if the scrum file is `@docs/scrum/Epic-[N].md`, look for `@docs/scrum/E
 
 ## Step 1 — Read the source of truth
 
-1. Open and fully read `[@@docs/scrum/Epic-02.md ]`.
-2. Find the section for **[E02-06 and E02-07]**. Quote or restate its full scope/requirements in your own words before continuing — including acceptance criteria, edge cases, and any explicitly out-of-scope items mentioned in the plan.
+1. Open and fully read `[@docs/scrum/Epic-03.md ]`.
+2. Find the section for **[E03-03]**. Quote or restate its full scope/requirements in your own words before continuing — including acceptance criteria, edge cases, and any explicitly out-of-scope items mentioned in the plan.
 3. Do not rely on memory or assumptions about what this feature is — read the file directly.
 4. If the plan references other features, files, or docs this feature depends on, open and read those too before continuing.
 
@@ -74,7 +74,7 @@ This step exists to confirm the new feature works end-to-end and that it did not
 Structure your final response with these exact headers, in this order:
 
 1. **UX Plan Compliance** (was a UX plan found? which boundaries were applied? any deviations from the UX plan and why?)
-2. **[E02-06 and E02-07] Plan Summary**
+2. **[E03-03] Plan Summary**
 3. **Codebase Survey** (files touched + related features identified)
 4. **Implementation Summary** (what was built, any deviations from plan + why)
 5. **Self Bug-Check Findings** (edge cases checked, issues found and fixed)

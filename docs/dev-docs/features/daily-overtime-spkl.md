@@ -46,36 +46,37 @@ erDiagram
 
 | Layer              | File / Route / Menu                                                                   | Purpose                                                        |
 | ------------------ | ------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
-| Sidebar Menu       | `Input Lembur` (`/overtime/create`)                                                   | Frontline entry point for shift supervisors                    |
-| Page Component     | `resources/js/pages/Overtime/Create.vue`                                              | Reactive Vue 3 timesheet entry table                           |
-| Form Sub-component | `resources/js/components/Overtime/OvertimeItemRow.vue`                                | Row component handling 4 category inputs and live total        |
-| SPKL Modal         | `resources/js/components/Overtime/AttachSpklModal.vue`                                | File upload modal for PDF/JPG SPKL documents                   |
-| Controller         | `app/Http/Controllers/OvertimeSubmissionController.php`                               | Lean controller handling submission and SPKL attachment        |
+| Sidebar Menu       | `Input Lembur` (`/overtime/submissions/create`)                                       | Frontline entry point for shift supervisors                    |
+| Page Component     | `resources/js/pages/overtime/Create.vue`                                              | Reactive Vue 3 timesheet entry table                           |
+| History Page       | `resources/js/pages/overtime/Index.vue`                                               | Overtime submission history & navigation tab                   |
+| Form Sub-component | `resources/js/components/overtime/OvertimeItemRow.vue`                                | Row component handling 4 category inputs and live total        |
+| Burn Indicator     | `resources/js/components/overtime/SectionBurnIndicator.vue`                           | Live section budget burn badge & progress bar                  |
+| Success Card       | `resources/js/components/overtime/PostSubmissionSuccessCard.vue`                      | Celebratory confirmation card with SPKL status & stats         |
+| Controller         | `app/Http/Controllers/Overtime/OvertimeSubmissionController.php`                      | Lean controller handling form rendering, submission, & roster  |
 | Action             | `app/Actions/Overtime/SubmitOvertimeAction.php`                                       | Atomic transaction logic, rate snapshotting, queue dispatching |
-| Action             | `app/Actions/Overtime/AttachSpklDocumentAction.php`                                   | Secure file storage and SPKL status transition to ATTACHED     |
-| Form Request       | `app/Http/Requests/StoreOvertimeSubmissionRequest.php`                                | Validates minimum hours (0.5), CapEx project IDs, and roster   |
-| Models             | `App\Models\OvertimeSubmission`, `App\Models\OvertimeItem`, `App\Models\SpklDocument` | Eloquent entities enforcing schema constraints                 |
+| Form Request       | `app/Http/Requests/Overtime/StoreOvertimeSubmissionRequest.php`                       | Validates min hours (0.5), CapEx projects, & employee limits   |
+| Models             | `App\Models\OvertimeSubmission`, `App\Models\OvertimeItem`, `App\Models\SpklDocument` | Eloquent entities enforcing schema constraints & immutability  |
 
 ## Flow Explanation
 
 1. **User triggers**: The Team Leader clicks **Input Lembur** in the sidebar. The system pre-selects today's date and the supervisor's assigned Department and Section.
-2. **Day classification**: The form reactively queries the calendar date, displaying an automated badge: `📅 Hari Kerja Normal (HKN)` or `🔴 Hari Libur (HLR)`. The supervisor can toggle the classification if operating an exceptional shift.
-3. **Roster loading**: Active employees belonging to that section populate the roster table with immutable NPK identifiers.
+2. **Day classification**: The form reactively queries the calendar date via `useCalendarDayType`, displaying an automated badge: `📅 Hari Kerja Normal (HKN)` or `🔴 Hari Libur (HLR)`. The supervisor can toggle the classification if operating an exceptional shift.
+3. **Roster loading**: Active employees belonging to that section populate the roster table via `useSectionRoster` with immutable NPK identifiers and 1-click **Pilih Semua (Add All)**.
 4. **Hour entry & validation**: For each worker, hours are allocated into four decimal buckets: `Production`, `TPM`, `Project (CapEx)`, and `Others`.
-    - If `Project > 0`, the `CapEx Project` dropdown becomes mandatory.
-    - Live row total is computed client-side and verified server-side.
-5. **Atomic transaction**: `SubmitOvertimeAction` locks the section roster, generates a readable submission code (`OT-YYYYMMDD-SEC-0001`), creates a pending SPKL record, snapshots labor rates, and inserts all child line items.
-6. **Async dispatch**: Redis queue workers are dispatched for statistical anomaly detection and monthly burn snapshot recalculation.
-7. **Response**: Inertia redirects to the submission summary view displaying a success toast notification and an alert badge: `SPKL: Belum Ada Lampiran (Grace Period: 2 Hari)`.
+    - If `CapEx > 0`, the `CapEx Project` dropdown progressively expands (mandatory per BR-08).
+    - Live row total is computed client-side with currency estimation in Rupiah (`formatRupiah`).
+5. **Atomic transaction**: `SubmitOvertimeAction` executes within a database transaction, generates a human-readable submission code (`OT-YYYYMMDD-SEC-0001`), creates a linked `SpklDocument` in `PENDING` status, permanently snapshots `hourly_rate_snapshot` and `total_cost_snapshot` using `bcmul`, and inserts all line items.
+6. **Async dispatch**: `RunAnomalyDetectionJob` is dispatched asynchronously per line item.
+7. **Response**: The application displays the celebratory `PostSubmissionSuccessCard` with the generated code, crew count, total hours, and `SPKL: Belum Dilampirkan (Non-blocking BR-05)` notice.
 
 ## API Endpoints & Routes
 
-| Method | URI                               | Controller Action                         | Purpose                                  | Auth / Middleware                        |
-| ------ | --------------------------------- | ----------------------------------------- | ---------------------------------------- | ---------------------------------------- |
-| GET    | `/overtime/create`                | `OvertimeSubmissionController@create`     | Render timesheet form with active roster | `auth`, `role:team_leader,admin`         |
-| POST   | `/overtime/submissions`           | `OvertimeSubmissionController@store`      | Atomic batch submission                  | `auth`, `role:team_leader,admin`         |
-| GET    | `/overtime/submissions/{code}`    | `OvertimeSubmissionController@show`       | View submission details and line items   | `auth`                                   |
-| POST   | `/overtime/submissions/{id}/spkl` | `OvertimeSubmissionController@attachSpkl` | Upload and link scanned SPKL document    | `auth`, `role:team_leader,manager,admin` |
+| Method | URI                                    | Controller Action                     | Purpose                                        | Auth / Middleware                        |
+| ------ | -------------------------------------- | ------------------------------------- | ---------------------------------------------- | ---------------------------------------- |
+| GET    | `/overtime/submissions/create`         | `OvertimeSubmissionController@create` | Render timesheet form with active roster       | `auth`, `role:admin,manager,team_leader` |
+| POST   | `/overtime/submissions`                | `OvertimeSubmissionController@store`  | Atomic batch submission                        | `auth`, `role:admin,manager,team_leader` |
+| GET    | `/overtime/submissions`                | `OvertimeSubmissionController@index`  | Submission history listing                     | `auth`, `role:admin,manager,team_leader` |
+| GET    | `/overtime/submissions/roster/{secId}` | `OvertimeSubmissionController@roster` | JSON endpoint returning section workers & burn | `auth`, `role:admin,manager,team_leader` |
 
 ## Decisions & Trade-offs
 
