@@ -24,7 +24,7 @@ Step-by-step instructions for everyday plant operations:
 | **[Overtime Policy Soft Warning Indicators](./guides/policy-soft-warning-indicators.md)** | Team Leaders & Managers | Understanding real-time advisory fatigue badges (yellow/red), checking weekly limit thresholds, and non-blocking submission rules. |
 | **[SPKL Document Attachment](./guides/spkl-document-attachment.md)**                      | Team Leaders & Managers | Post-shift photo/PDF upload, physical SPKL registration numbers, manager verification, and download access.                        |
 | **[SPKL Pending Reminders & Notifications](./guides/spkl-pending-reminders.md)**          | Team Leaders & Admins   | In-app notification bell alerts, 1-click SPKL attachment drawer resolution, and reminder preference management.                    |
-| **[Overtime Approvals Queue](./guides/overtime-approvals.md)**                            | Managers & Admins       | Morning standup approval queue, status/SPKL/date filters, expandable employee summaries, and non-blocking SPKL badges.             |
+| **[Overtime Approvals Queue](./guides/overtime-approvals.md)**                            | Managers & Admins       | Morning standup approval queue, item approvals, bulk processing, and CSV/Excel data export.                                        |
 
 ---
 

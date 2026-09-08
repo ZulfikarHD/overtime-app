@@ -106,6 +106,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Overtime Approvals Queue & Decisions (E04-01, E04-02 & E04-03 — Manager & Admin only)
     Route::middleware(['role:admin,manager'])->prefix('overtime')->name('overtime.')->group(function () {
         Route::get('/approvals', [OvertimeApprovalController::class, 'index'])->name('approvals');
+        Route::get('/approvals/export', [OvertimeApprovalController::class, 'export'])->name('approvals.export');
         Route::post('/approvals/bulk', [OvertimeApprovalController::class, 'bulkProcess'])->name('approvals.bulk');
         Route::post('/submissions/{submission}/approve-items', [OvertimeApprovalController::class, 'approveItems'])->name('submissions.approve-items');
     });

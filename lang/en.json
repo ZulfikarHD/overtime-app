@@ -826,5 +826,15 @@
     "Tolak Terpilih": "Bulk Reject",
     "Batal Pilihan": "Clear Selection",
     "Terjadi kesalahan saat memproses persetujuan massal.": "An error occurred while processing bulk approvals.",
-    "Terjadi kesalahan jaringan saat memproses persetujuan massal.": "A network error occurred while processing bulk approvals."
+    "Terjadi kesalahan jaringan saat memproses persetujuan massal.": "A network error occurred while processing bulk approvals.",
+    "Export Data": "Export Data",
+    "Menyiapkan berkas...": "Preparing file...",
+    "Pilih Format Unduhan": "Select Download Format",
+    "Sesuai filter aktif saat ini": "Matching current active filters",
+    "Unduh Format CSV (.csv)": "Download CSV (.csv)",
+    "Format teks untuk integrasi ERP & Payroll": "Raw text format for ERP & Payroll integration",
+    "Unduh Format Excel (.xlsx)": "Download Excel (.xlsx)",
+    "Format spreadsheet laporan keuangan & audit": "Formatted spreadsheet for finance & audit",
+    "Anda tidak memiliki akses untuk mengekspor data departemen lain.": "You do not have permission to export data from other departments.",
+    "Export data lembur :format (:filename) total :count baris.": "Exported overtime data :format (:filename) total :count rows."
 }

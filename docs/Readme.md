@@ -45,6 +45,7 @@ Technical specifications and decision records for the engineering implementation
     - [ADR-013: Overtime Budget Planning and CSV Import](./dev-docs/decisions/013-overtime-budget-planning-and-csv-import.md)
     - [ADR-014: Automated SPKL Document Reminders and In-App Notifications](./dev-docs/decisions/014-automated-spkl-reminders-and-in-app-notifications.md)
     - [ADR-015: Advisory Overtime Policy Soft Warning Indicators](./dev-docs/decisions/015-advisory-overtime-policy-soft-warning-indicators.md)
+    - [ADR-016: Streaming Overtime Export and Audit Logging](./dev-docs/decisions/016-streaming-overtime-export-and-audit-logging.md)
 - **Technical Feature Design Specifications:**
     - [Authentication & Role-Based Access Control](./dev-docs/features/authentication-rbac.md)
     - [Database Schema Migrations (Full DDL)](./dev-docs/features/database-schema-migrations.md)
@@ -63,7 +64,7 @@ Technical specifications and decision records for the engineering implementation
     - [Policy Soft Warning Indicators](./dev-docs/features/policy-soft-warning-indicators.md)
     - [SPKL Flexible Post-Shift Attachment & Lifecycle Workflow](./dev-docs/features/spkl-document-workflow.md)
     - [SPKL Pending Reminder & In-App Notifications](./dev-docs/features/spkl-pending-reminder-notifications.md)
-    - [Verification & Pending Approval Queue (E04-01)](./dev-docs/features/verification-approval.md)
+    - [Verification, Item Approvals, Bulk Decisions & Export (E04-01 to E04-04)](./dev-docs/features/verification-approval.md)
     - [Budget Management & Burn Index Dashboard](./dev-docs/features/budget-burn-index.md)
     - [Individual Employee Reporting & Welfare](./dev-docs/features/employee-welfare-report.md)
     - [CapEx Project Labor Management](./dev-docs/features/capex-project-labor.md)

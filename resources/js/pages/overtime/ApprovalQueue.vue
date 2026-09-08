@@ -21,6 +21,7 @@ import BulkActionResultToast, {
     type BulkActionResult,
 } from '@/components/overtime/BulkActionResultToast.vue';
 import BulkApprovalConfirmModal from '@/components/overtime/BulkApprovalConfirmModal.vue';
+import ExportButton from '@/components/overtime/ExportButton.vue';
 import SubmissionQueueRow, {
     type QueueSubmission,
 } from '@/components/overtime/SubmissionQueueRow.vue';
@@ -103,6 +104,19 @@ const { timeString } = useShiftInfo();
 const page = usePage();
 const user = computed(() => page.props.auth?.user as User | undefined);
 const isAdmin = computed(() => user.value?.role === 'admin');
+
+const currentDepartmentName = computed(() => {
+    if (isAdmin.value) {
+        if (selectedDepartment.value && props.available_departments) {
+            const found = props.available_departments.find(
+                (d) => String(d.id) === selectedDepartment.value,
+            );
+            return found?.name ?? null;
+        }
+        return __('Semua Departemen');
+    }
+    return user.value?.department?.name ?? null;
+});
 
 const selectedStatus = ref(props.filters.status ?? 'SUBMITTED');
 const selectedDepartment = ref(
@@ -473,11 +487,27 @@ function handleApprovalSaved(payload: { message: string }) {
                 </div>
             </div>
 
-            <div
-                class="inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1.5 font-mono text-xs font-medium text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
-                data-test="approval-live-clock"
-            >
-                {{ timeString }} WIB
+            <div class="flex items-center gap-2">
+                <ExportButton
+                    :filters="{
+                        status: selectedStatus,
+                        department_id: selectedDepartment,
+                        section_id: selectedSection,
+                        spkl_status: selectedSpkl,
+                        date_from: dateFrom,
+                        date_to: dateTo,
+                        sort: sortBy,
+                        direction: sortDirection,
+                    }"
+                    :department-name="currentDepartmentName"
+                />
+
+                <div
+                    class="inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1.5 font-mono text-xs font-medium text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
+                    data-test="approval-live-clock"
+                >
+                    {{ timeString }} WIB
+                </div>
             </div>
         </div>
 

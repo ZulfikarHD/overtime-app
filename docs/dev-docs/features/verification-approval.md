@@ -1,4 +1,4 @@
-# Verification, Pending Approval Queue, Item-Level Approvals & Bulk Decisions (E04-01, E04-02 & E04-03)
+# Verification, Pending Approval Queue, Item-Level Approvals, Bulk Decisions & Overtime Export (E04-01, E04-02, E04-03 & E04-04)
 
 ## Overview
 
@@ -7,6 +7,7 @@ The **Approval Queue & Item-Level Decision System** is the Manager/Admin morning
 - **E04-01** provides the consolidated queue at **Persetujuan Lembur** (`/overtime/approvals`) with department scoping, server-side filters/sort/pagination, expandable inline employee summaries, non-blocking SPKL badges, and ML anomaly count pills.
 - **E04-02** delivers the interactive **Approval Modal** (`ApprovalModal.vue` & `ApprovalItemRow.vue`) enabling granular item-level decisions (`APPROVED`, `REJECTED`, `PENDING`), mandatory rejection reasons (min 5 characters per BR-10), optimistic locking (`lock_version` with HTTP 409 conflict handling), immutable audit logging (`OvertimeItemAudit`), Section Monthly Budget Burn indicators, and parent submission status synchronization (`SUBMITTED` → `APPROVED` | `PARTIALLY_APPROVED` | `REJECTED`).
 - **E04-03** introduces high-speed **Bulk Approval & Rejection** directly on the queue table, allowing approvers to select up to 50 submissions via row checkboxes, inspect totals in a floating toolbar, confirm in a centralized modal with mandatory rejection reasoning, process batches with per-submission transaction isolation, and receive feedback via an auto-dismissing result toast.
+- **E04-04** adds the **Streaming Overtime Data Export** (`ExportButton.vue` & `OvertimeExportService`) allowing approvers to download filtered records in CSV and Excel (.xlsx) formats with 19 standardized columns, \(O(1)\) constant-memory streaming via `LazyCollection`, department authority enforcement, and dual audit logging in `export_logs` and `overtime_item_audits`.
 
 ## Architecture Diagram
 
@@ -69,24 +70,28 @@ erDiagram
 
 ## Key Files & UI Mapping
 
-| Layer           | File / Route / Menu                                              | Purpose                                                                          |
-| --------------- | ---------------------------------------------------------------- | -------------------------------------------------------------------------------- |
-| Sidebar Menu    | **Persetujuan Lembur** (`data-test=nav-overtime-approvals`)      | Single Manager/Admin entry; dynamic pending badge                                |
-| Page Component  | `resources/js/pages/overtime/ApprovalQueue.vue`                  | Queue hub: status tabs, filters, pagination, checkboxes, modal & bulk bar        |
-| Row Component   | `resources/js/components/overtime/SubmissionQueueRow.vue`        | Expandable row summary + SPKL/anomaly/status badges + Review button              |
-| Modal Component | `resources/js/components/overtime/ApprovalModal.vue`             | Full review modal: burn bar, SPKL badge, batch actions, conflict banner, totals  |
-| Bulk Modal      | `resources/js/components/overtime/BulkApprovalConfirmModal.vue`  | Two-step bulk action confirmation dialog with summary and rejection reason input |
-| Result Toast    | `resources/js/components/overtime/BulkActionResultToast.vue`     | Floating result banner with processed/skipped counters and collapsible skip log  |
-| Item Row        | `resources/js/components/overtime/ApprovalItemRow.vue`           | Employee item row: hours breakdown, CapEx tag, anomaly badge, decision, reason   |
-| Controller      | `app/Http/Controllers/Overtime/OvertimeApprovalController.php`   | `index()`, `approveItems()`, and `bulkProcess()` endpoints                       |
-| Controller      | `app/Http/Controllers/Overtime/OvertimeSubmissionController.php` | `show()` enhanced with anomaly logs and section burn indicator                   |
-| Action          | `app/Actions/Overtime/ApproveOvertimeItemsAction.php`            | Concurrency locking, status transitions, audit ledger, job dispatch              |
-| Action          | `app/Actions/Overtime/BulkApproveSubmissionsAction.php`          | Bulk batch orchestrator with isolated try-catches and conflict skip aggregation  |
-| Request         | `app/Http/Requests/Overtime/ApproveOvertimeItemsRequest.php`     | Form validation for decisions array, actions, and rejection reasons              |
-| Request         | `app/Http/Requests/Overtime/BulkApprovalRequest.php`             | Form validation for bulk submissions (max 50) and shared rejection reasons       |
-| Exception       | `app/Exceptions/OptimisticLockException.php`                     | HTTP 409 Conflict exception for stale lock versions                              |
-| Route           | `POST /overtime/submissions/{submission}/approve-items`          | Wayfinder: `@/routes/overtime/submissions` → `approveItems()`                    |
-| Route           | `POST /overtime/approvals/bulk`                                  | Wayfinder: `@/routes/overtime/approvals` → `bulk()`                              |
+| Layer           | File / Route / Menu                                              | Purpose                                                                           |
+| --------------- | ---------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| Sidebar Menu    | **Persetujuan Lembur** (`data-test=nav-overtime-approvals`)      | Single Manager/Admin entry; dynamic pending badge                                 |
+| Page Component  | `resources/js/pages/overtime/ApprovalQueue.vue`                  | Queue hub: status tabs, filters, pagination, checkboxes, modal & bulk bar         |
+| Row Component   | `resources/js/components/overtime/SubmissionQueueRow.vue`        | Expandable row summary + SPKL/anomaly/status badges + Review button               |
+| Modal Component | `resources/js/components/overtime/ApprovalModal.vue`             | Full review modal: burn bar, SPKL badge, batch actions, conflict banner, totals   |
+| Bulk Modal      | `resources/js/components/overtime/BulkApprovalConfirmModal.vue`  | Two-step bulk action confirmation dialog with summary and rejection reason input  |
+| Result Toast    | `resources/js/components/overtime/BulkActionResultToast.vue`     | Floating result banner with processed/skipped counters and collapsible skip log   |
+| Item Row        | `resources/js/components/overtime/ApprovalItemRow.vue`           | Employee item row: hours breakdown, CapEx tag, anomaly badge, decision, reason    |
+| Export Button   | `resources/js/components/overtime/ExportButton.vue`              | Header action popover menu: CSV/XLSX download trigger with active filter summary  |
+| Service         | `app/Services/OvertimeExportService.php`                         | LazyCollection cursor streaming, 19-column mapping, native OpenXML XLSX packaging |
+| Model           | `app/Models/ExportLog.php`                                       | Audit trail model tracking export actor, format, counts, and filters              |
+| Controller      | `app/Http/Controllers/Overtime/OvertimeApprovalController.php`   | `index()`, `approveItems()`, `bulkProcess()`, and `export()` endpoints            |
+| Controller      | `app/Http/Controllers/Overtime/OvertimeSubmissionController.php` | `show()` enhanced with anomaly logs and section burn indicator                    |
+| Action          | `app/Actions/Overtime/ApproveOvertimeItemsAction.php`            | Concurrency locking, status transitions, audit ledger, job dispatch               |
+| Action          | `app/Actions/Overtime/BulkApproveSubmissionsAction.php`          | Bulk batch orchestrator with isolated try-catches and conflict skip aggregation   |
+| Request         | `app/Http/Requests/Overtime/ApproveOvertimeItemsRequest.php`     | Form validation for decisions array, actions, and rejection reasons               |
+| Request         | `app/Http/Requests/Overtime/BulkApprovalRequest.php`             | Form validation for bulk submissions (max 50) and shared rejection reasons        |
+| Exception       | `app/Exceptions/OptimisticLockException.php`                     | HTTP 409 Conflict exception for stale lock versions                               |
+| Route           | `POST /overtime/submissions/{submission}/approve-items`          | Wayfinder: `@/routes/overtime/submissions` → `approveItems()`                     |
+| Route           | `POST /overtime/approvals/bulk`                                  | Wayfinder: `@/routes/overtime/approvals` → `bulk()`                               |
+| Route           | `GET /overtime/approvals/export`                                 | Wayfinder: `@/routes/overtime/approvals` → `export()`                             |
 
 ## Flow Explanation
 
@@ -113,12 +118,22 @@ erDiagram
         - If one submission has an `OptimisticLockException` or department mismatch, it rolls back and logs a skip entry without aborting the other submissions in the batch.
         - Each successful submission creates individual `OvertimeItemAudit` records per item and dispatches `RecalculateMonthlyBurnSnapshotJob`.
     - A structured JSON response is returned and displayed in `BulkActionResultToast.vue` with processed vs skipped tallies and a collapsible conflict log.
+9. **Filtered Overtime Data Export (E04-04)**:
+    - Approver clicks the **Export Data** button in the queue header (`ExportButton.vue`).
+    - A popover displays a summary reminder of active filters and two format options:
+        - **Unduh Format CSV (.csv)**: Generates UTF-8 BOM CSV for ERP, payroll, and spreadsheet ingestion.
+        - **Unduh Format Excel (.xlsx)**: Generates a styled OpenXML spreadsheet with bold headings and numeric typing.
+    - Request calls `GET /overtime/approvals/export` with query filters (`format`, `status`, `department_id`, `section_id`, `date_from`, `date_to`, `spkl_status`).
+    - The controller enforces department scoping for Managers (`abort(403)` on foreign department access).
+    - `OvertimeExportService` queries `OvertimeItem` via `LazyCollection` cursor, streaming results row by row into the response.
+    - The export action is synchronously logged in `export_logs` and `overtime_item_audits`.
 
 ## API Endpoints & Routes
 
 | Method | URI                                                | Controller Action                         | Purpose                                       | Auth                         |
 | ------ | -------------------------------------------------- | ----------------------------------------- | --------------------------------------------- | ---------------------------- |
 | GET    | `/overtime/approvals`                              | `OvertimeApprovalController@index`        | Filtered approval queue (Inertia page)        | `auth`, `role:admin,manager` |
+| GET    | `/overtime/approvals/export`                       | `OvertimeApprovalController@export`       | Streamed CSV/XLSX export with audit logging   | `auth`, `role:admin,manager` |
 | GET    | `/overtime/submissions/{submission}`               | `OvertimeSubmissionController@show`       | Submission detail + burn + anomalies (JSON)   | `auth` (authorized scope)    |
 | POST   | `/overtime/submissions/{submission}/approve-items` | `OvertimeApprovalController@approveItems` | Commit item approvals/rejections with locking | `auth`, `role:admin,manager` |
 | POST   | `/overtime/approvals/bulk`                         | `OvertimeApprovalController@bulkProcess`  | Process bulk approvals/rejections (max 50)    | `auth`, `role:admin,manager` |

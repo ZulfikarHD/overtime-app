@@ -12,6 +12,7 @@ use App\Models\Department;
 use App\Models\OvertimeSubmission;
 use App\Models\Section;
 use App\Models\User;
+use App\Services\OvertimeExportService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -19,12 +20,14 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 
 class OvertimeApprovalController extends Controller
 {
     public function __construct(
         public ApproveOvertimeItemsAction $approveOvertimeItemsAction,
         public BulkApproveSubmissionsAction $bulkApproveSubmissionsAction,
+        public OvertimeExportService $exportService,
     ) {}
 
     /**
@@ -282,5 +285,26 @@ class OvertimeApprovalController extends Controller
         ]);
 
         return redirect()->route('overtime.approvals')->with('success', $result['message']);
+    }
+
+    /**
+     * Export filtered overtime records to CSV or Excel (E04-04).
+     */
+    public function export(Request $request): SymfonyResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+
+        // Department authority check: Managers cannot export foreign department records
+        if ($user->isManager() && $request->filled('department_id')) {
+            $reqDeptId = (int) $request->input('department_id');
+            if ($user->department_id !== null && $reqDeptId !== (int) $user->department_id) {
+                abort(403, __('Anda tidak memiliki akses untuk mengekspor data departemen lain.'));
+            }
+        }
+
+        $format = strtolower((string) $request->input('format', 'csv'));
+
+        return $this->exportService->export($request->all(), $user, $format);
     }
 }

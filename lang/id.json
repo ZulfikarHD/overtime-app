@@ -826,5 +826,15 @@
     "Tolak Terpilih": "Tolak Terpilih",
     "Batal Pilihan": "Batal Pilihan",
     "Terjadi kesalahan saat memproses persetujuan massal.": "Terjadi kesalahan saat memproses persetujuan massal.",
-    "Terjadi kesalahan jaringan saat memproses persetujuan massal.": "Terjadi kesalahan jaringan saat memproses persetujuan massal."
+    "Terjadi kesalahan jaringan saat memproses persetujuan massal.": "Terjadi kesalahan jaringan saat memproses persetujuan massal.",
+    "Export Data": "Export Data",
+    "Menyiapkan berkas...": "Menyiapkan berkas...",
+    "Pilih Format Unduhan": "Pilih Format Unduhan",
+    "Sesuai filter aktif saat ini": "Sesuai filter aktif saat ini",
+    "Unduh Format CSV (.csv)": "Unduh Format CSV (.csv)",
+    "Format teks untuk integrasi ERP & Payroll": "Format teks untuk integrasi ERP & Payroll",
+    "Unduh Format Excel (.xlsx)": "Unduh Format Excel (.xlsx)",
+    "Format spreadsheet laporan keuangan & audit": "Format spreadsheet laporan keuangan & audit",
+    "Anda tidak memiliki akses untuk mengekspor data departemen lain.": "Anda tidak memiliki akses untuk mengekspor data departemen lain.",
+    "Export data lembur :format (:filename) total :count baris.": "Export data lembur :format (:filename) total :count baris."
 }

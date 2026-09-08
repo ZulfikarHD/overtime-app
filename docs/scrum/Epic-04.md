@@ -148,6 +148,7 @@ Key invariants from the architecture:
 
 ### Story E04-04: Export to CSV/Excel (Manager/Admin)
 
+**Status:** ✅ Completed  
 **As a** Manager,  
 **I want** to export overtime records to CSV or Excel,  
 **So that** I can share data with HR, finance, or payroll systems for processing and audit.
@@ -157,23 +158,22 @@ Key invariants from the architecture:
 
 #### Acceptance Criteria
 
-- [ ] Export is available on the Approval Queue page with the same filters applied (date range, department, section, status)
-- [ ] CSV format columns: `submission_code`, `operational_date`, `day_type`, `department`, `section`, `npk`, `employee_name`, `hours_production`, `hours_tpm`, `hours_project`, `hours_others`, `total_hours`, `hourly_rate_snapshot`, `total_cost_idr`, `rca_category`, `status`, `rejection_reason`, `capex_project_code`, `spkl_status`
-- [ ] Export is streamed (not loaded into memory) using Laravel's `LazyCollection` for large datasets
-- [ ] Export filename: `overtime-export-{department}-{YYYY-MM}.csv`
-- [ ] Excel export (`.xlsx`) also available using `maatwebsite/excel` or equivalent
-- [ ] Export limited to records the Manager has authority over (scoped by their department)
-- [ ] Export action is logged in the audit trail: `{ action: 'EXPORT', actor_user_id: X, filters: {...} }`
+- [x] Export is available on the Approval Queue page with the same filters applied (date range, department, section, status)
+- [x] CSV format columns: `submission_code`, `operational_date`, `day_type`, `department`, `section`, `npk`, `employee_name`, `hours_production`, `hours_tpm`, `hours_project`, `hours_others`, `total_hours`, `hourly_rate_snapshot`, `total_cost_idr`, `rca_category`, `status`, `rejection_reason`, `capex_project_code`, `spkl_status`
+- [x] Export is streamed (not loaded into memory) using Laravel's `LazyCollection` for large datasets
+- [x] Export filename: `overtime-export-{department}-{YYYY-MM}.csv`
+- [x] Excel export (`.xlsx`) also available using `maatwebsite/excel` or equivalent
+- [x] Export limited to records the Manager has authority over (scoped by their department)
+- [x] Export action is logged in the audit trail: `{ action: 'EXPORT', actor_user_id: X, filters: {...} }`
 
 #### Technical Tasks
 
-- [ ] Install `maatwebsite/excel`: `composer require maatwebsite/excel`
-- [ ] `php artisan make:export OvertimeExport --model=OvertimeItem`
-- [ ] `OvertimeExport` implements `FromQuery`, `WithHeadings`, `WithMapping`
-- [ ] Route: `GET /overtime/approvals/export` → `OvertimeApprovalController@export` (streams response)
-- [ ] Apply same query scopes as the approval queue list
-- [ ] Log export: `OvertimeItemAudit::create(['action' => 'EXPORT', ...])` — or use a dedicated `export_logs` table
-- [ ] Create `resources/js/Components/Overtime/ExportButton.vue` — shows spinner, triggers download
+- [x] Native streaming engine with `LazyCollection` cursor without external bloat
+- [x] `OvertimeExportService` implements query builder, UTF-8 BOM CSV, and native OpenXML XLSX
+- [x] Route: `GET /overtime/approvals/export` → `OvertimeApprovalController@export` (streams response)
+- [x] Apply same query scopes as the approval queue list (department, section, date, status, SPKL)
+- [x] Log export: `OvertimeItemAudit::create(['action' => 'EXPORT', ...])` and dedicated `export_logs` table
+- [x] Create `resources/js/components/overtime/ExportButton.vue` — dropdown popover, shows spinner, triggers download
 
 ---
 
@@ -193,7 +193,7 @@ Key invariants from the architecture:
 - [ ] `overtime_item_audits` records are **insert-only** — no UPDATE or DELETE is permitted on this table (enforced at application layer + DB level if supported)
 - [ ] Admin can view the full audit trail for any overtime item via a detail drawer: chronological list of state changes with timestamps, actor names, and diff between previous and new state
 - [ ] Audit records are written **synchronously inside the transaction** (not via a queued job) to guarantee consistency
-- [ ] Export action (E04-04) is also recorded
+- [x] Export action (E04-04) is also recorded
 
 #### Technical Tasks
 
@@ -273,8 +273,8 @@ Key invariants from the architecture:
 - [x] Manager can open approval queue filtered by their department
 - [x] Item-level approval and rejection work correctly with audit records written
 - [x] Optimistic lock conflict returns user-friendly error (not 500)
-- [ ] Bulk approve/reject works for up to 50 submissions
-- [ ] Export downloads a correct CSV with all specified columns
+- [x] Bulk approve/reject works for up to 50 submissions
+- [x] Export downloads a correct CSV with all specified columns
 - [x] Approved items are locked — Team Leader edit is blocked both in UI and API
 - [x] `pnpm lint` passes
 - [x] `pnpm build` succeeds

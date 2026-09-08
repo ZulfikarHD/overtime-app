@@ -35,7 +35,7 @@ Deep-dive technical documentation detailing architecture flows, data models, key
 | **[Overtime Policy Soft Warning Indicators](./features/policy-soft-warning-indicators.md)**                | [Epic-03](../../scrum/Epic-03.md) | Real-time advisory weekly overtime fatigue warning badges, consecutive high workload alert streaks, and manager review indicators.                 |
 | **[SPKL Flexible Post-Shift Attachment & Lifecycle Workflow](./features/spkl-document-workflow.md)**       | [Epic-03](../../scrum/Epic-03.md) | Post-shift photo/PDF upload, private disk isolation, file replacement, manager verification, and temporary signed URLs.                            |
 | **[SPKL Pending Reminder & In-App Notifications](./features/spkl-pending-reminder-notifications.md)**      | [Epic-03](../../scrum/Epic-03.md) | Automated daily 08:00 WIB reminder job, in-app notifications, topbar notification bell, and 1-click SPKL attachment drawer flow.                   |
-| **[Verification & Pending Approval Queue (E04-01)](./features/verification-approval.md)**                  | [Epic-04](../../scrum/Epic-04.md) | Manager/Admin standup approval queue, department scoping, expandable rows, SPKL/anomaly badges, server-side filters.                               |
+| **[Verification, Item Approvals, Bulk Decisions & Export](./features/verification-approval.md)**           | [Epic-04](../../scrum/Epic-04.md) | Manager/Admin standup approval queue, item-level approvals, bulk processing, and CSV/Excel streaming export.                                       |
 | **[Budget Management & Burn Index Dashboard](./features/budget-burn-index.md)**                            | [Epic-05](../../scrum/Epic-05.md) | Analytical dashboard, Chart.js Burn Index gauges/burndown lines, and asynchronous monthly rollups.                                                 |
 | **[Individual Employee Reporting & Welfare](./features/employee-welfare-report.md)**                       | [Epic-06](../../scrum/Epic-06.md) | Personal employee dossiers, welfare fatigue soft limits, and peer variance benchmarking.                                                           |
 | **[CapEx Project Labor Management](./features/capex-project-labor.md)**                                    | [Epic-07](../../scrum/Epic-07.md) | Fixed asset labor capitalization, project codes, progress vs. burn curves, and statutory audit integrity.                                          |
@@ -74,6 +74,7 @@ Durable technical decisions and trade-offs:
 - **[ADR-013: Overtime Budget Planning and Two-Stage CSV Import Architecture](./decisions/013-overtime-budget-planning-and-csv-import.md)**
 - **[ADR-014: Automated SPKL Document Reminders and In-App Notifications Architecture](./decisions/014-automated-spkl-reminders-and-in-app-notifications.md)**
 - **[ADR-015: Advisory Overtime Policy Soft Warning Indicators](./decisions/015-advisory-overtime-policy-soft-warning-indicators.md)**
+- **[ADR-016: Streaming Overtime Export and Audit Logging](./decisions/016-streaming-overtime-export-and-audit-logging.md)**
 
 ---
 

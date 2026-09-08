@@ -112,6 +112,25 @@ SPKL status is informational only:
 
 Missing SPKL **does not** block you from reviewing operational overtime hours.
 
+### Exporting Overtime Records to CSV or Excel (E04-04)
+
+Department Managers and Plant Administrators can download filtered overtime line items for payroll calculations, finance reporting, or enterprise ERP integration:
+
+1. **Set Active Filters**:
+    - On the queue page, configure your desired **Status**, **Departemen** (for Admin), **Seksi**, **Tanggal (Date Range)**, and **Dokumen SPKL** filters.
+    - The export will strictly reflect the records matching your current active filter selection.
+2. **Open the Export Menu**:
+    - Click the **Export Data** button in the page header (located next to the live WIB clock).
+    - Review the active filter summary shown in the dropdown header (e.g., `Stamping · 2026-08-01 s/d 2026-08-31`).
+3. **Choose Your Desired Format**:
+    - **Unduh Format CSV (.csv)**: Clean UTF-8 text format with standard commas, optimal for ERP and automated payroll ingestion.
+    - **Unduh Format Excel (.xlsx)**: Pre-formatted OpenXML spreadsheet with bold column headers and numeric formatting for finance and audit reports.
+4. **Streaming Download**:
+    - The button displays **Menyiapkan berkas...** with an active spinner while the server streams data.
+    - The file automatically saves with standardized naming: `overtime-export-{department}-{YYYY-MM}.{format}` (e.g. `overtime-export-stamping-2026-09.csv`).
+    - The download includes 19 standardized manufacturing columns including wage rate snapshots, project codes, and SPKL status.
+    - Each export action is logged in the system audit trail.
+
 ## Frequently Asked Questions (FAQ)
 
 **Q: Can I approve some workers and reject others in the same submission?**
@@ -132,6 +151,12 @@ A: The default view shows **Menunggu Review** within the last 7 days. Switch tab
 **Q: What does the sidebar number badge mean?**  
 A: It counts submissions still in `SUBMITTED` or `PARTIALLY_APPROVED` status for your authority scope.
 
+**Q: What columns are included in the CSV and Excel exports?**  
+A: The export includes 19 standardized columns: `submission_code`, `operational_date`, `day_type`, `department`, `section`, `npk`, `employee_name`, `hours_production`, `hours_tpm`, `hours_project`, `hours_others`, `total_hours`, `hourly_rate_snapshot`, `total_cost_idr`, `rca_category`, `status`, `rejection_reason`, `capex_project_code`, and `spkl_status`.
+
+**Q: Can I export records from another department as a Manager?**  
+A: No. Department Managers can only access and export records belonging to their own assigned department. Plant Administrators have full plant-wide export privileges.
+
 ## Troubleshooting
 
 | Issue                                      | Solution                                                                 |
@@ -140,3 +165,5 @@ A: It counts submissions still in `SUBMITTED` or `PARTIALLY_APPROVED` status for
 | Cannot open `/overtime/approvals`          | You are unauthorized for approvals — contact IT Admin                    |
 | SPKL shows overdue but Review is available | Expected — SPKL is non-blocking; continue review and follow up paperwork |
 | Anomaly badge appears                      | Expand the row, inspect flagged workers, prioritize those items          |
+| Export button shows 403 Forbidden          | As a Manager, you cannot request other departments; reset your filters   |
+| Export file is empty (0 data rows)         | Verify your active filters (status, date range, section) match any items |
