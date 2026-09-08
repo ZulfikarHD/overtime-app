@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\CalendarController;
 use App\Http\Controllers\Budgets\OvertimeBudgetController;
 use App\Http\Controllers\Budgets\OvertimeBudgetImportController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\Overtime\OvertimeApprovalController;
 use App\Http\Controllers\Overtime\OvertimeSubmissionController;
 use App\Http\Controllers\Overtime\SpklDocumentController;
 use Illuminate\Support\Facades\Route;
@@ -100,6 +101,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/submissions/{submission}/spkl', [SpklDocumentController::class, 'attach'])->name('submissions.spkl.attach');
         Route::patch('/submissions/{submission}/spkl/verify', [SpklDocumentController::class, 'verify'])->name('submissions.spkl.verify');
         Route::get('/submissions/{submission}/spkl/download', [SpklDocumentController::class, 'download'])->name('submissions.spkl.download');
+    });
+
+    // Overtime Approvals Queue (E04-01 — Manager & Admin only)
+    Route::middleware(['role:admin,manager'])->prefix('overtime')->name('overtime.')->group(function () {
+        Route::get('/approvals', [OvertimeApprovalController::class, 'index'])->name('approvals');
     });
 
     Route::middleware(['role:admin,manager'])->prefix('manager')->name('manager.')->group(function () {

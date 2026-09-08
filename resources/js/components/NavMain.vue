@@ -4,6 +4,7 @@ import {
     SidebarGroup,
     SidebarGroupLabel,
     SidebarMenu,
+    SidebarMenuBadge,
     SidebarMenuButton,
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
@@ -30,14 +31,27 @@ const { isCurrentUrl } = useCurrentUrl();
                     <Link
                         :href="item.href"
                         :data-test="
+                            item.testId ??
                             'nav-' +
-                            item.title.toLowerCase().replace(/\s+/g, '-')
+                                item.title.toLowerCase().replace(/\s+/g, '-')
                         "
                     >
                         <component :is="item.icon" />
                         <span>{{ item.title }}</span>
                     </Link>
                 </SidebarMenuButton>
+                <SidebarMenuBadge
+                    v-if="
+                        item.badge !== null &&
+                        item.badge !== undefined &&
+                        item.badge !== '' &&
+                        Number(item.badge) > 0
+                    "
+                    class="bg-[#cc0000] text-white"
+                    data-test="nav-pending-approvals-badge"
+                >
+                    {{ item.badge }}
+                </SidebarMenuBadge>
             </SidebarMenuItem>
         </SidebarMenu>
     </SidebarGroup>

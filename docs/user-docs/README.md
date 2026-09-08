@@ -24,6 +24,7 @@ Step-by-step instructions for everyday plant operations:
 | **[Overtime Policy Soft Warning Indicators](./guides/policy-soft-warning-indicators.md)** | Team Leaders & Managers | Understanding real-time advisory fatigue badges (yellow/red), checking weekly limit thresholds, and non-blocking submission rules. |
 | **[SPKL Document Attachment](./guides/spkl-document-attachment.md)**                      | Team Leaders & Managers | Post-shift photo/PDF upload, physical SPKL registration numbers, manager verification, and download access.                        |
 | **[SPKL Pending Reminders & Notifications](./guides/spkl-pending-reminders.md)**          | Team Leaders & Admins   | In-app notification bell alerts, 1-click SPKL attachment drawer resolution, and reminder preference management.                    |
+| **[Overtime Approvals Queue](./guides/overtime-approvals.md)**                            | Managers & Admins       | Morning standup approval queue, status/SPKL/date filters, expandable employee summaries, and non-blocking SPKL badges.             |
 
 ---
 
@@ -35,6 +36,7 @@ All navigation in the OT-CapEx system corresponds directly to your assigned side
 - **Master Data**: Consolidated administrative hub for plant departments, sections, employee rosters, and operational calendars (Admin role).
 - **Administration**: Consolidated administrative hub for plant-wide policy thresholds and user accounts (Admin role).
 - **Budget Planning**: Consolidated hub for section-level monthly overtime hour quotas, 5-week distributions, and labor cost estimates (Admin and Manager roles).
+- **Persetujuan Lembur**: Morning approval queue for reviewing Team Leader overtime submissions (Manager and Admin roles).
 - **Settings → Profile / Security / Appearance / Preferences**: Update personal profile details, change password, configure two-factor authentication, or set UI and alert preferences.
 
 ---

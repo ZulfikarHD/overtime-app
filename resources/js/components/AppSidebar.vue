@@ -2,6 +2,7 @@
 import { Link, usePage } from '@inertiajs/vue3';
 import {
     Calculator,
+    ClipboardCheck,
     ClipboardList,
     Database,
     LayoutGrid,
@@ -24,12 +25,16 @@ import { useTrans } from '@/composables/useTrans';
 import { dashboard } from '@/routes';
 import { administration, masterData } from '@/routes/admin';
 import { planning } from '@/routes/budgets';
+import { approvals as overtimeApprovals } from '@/routes/overtime';
 import { create as overtimeCreate } from '@/routes/overtime/submissions';
 import type { NavItem, User } from '@/types';
 
 const { __ } = useTrans();
 const page = usePage();
 const user = computed(() => page.props.auth?.user as User | undefined);
+const pendingApprovalsCount = computed(
+    () => (page.props.pending_approvals_count as number | undefined) ?? 0,
+);
 
 const mainNavItems = computed<NavItem[]>(() => {
     const items: NavItem[] = [
@@ -58,6 +63,13 @@ const mainNavItems = computed<NavItem[]>(() => {
             title: __('Budget Planning'),
             href: planning(),
             icon: Calculator,
+        });
+        items.push({
+            title: __('Persetujuan Lembur'),
+            href: overtimeApprovals(),
+            icon: ClipboardCheck,
+            badge: pendingApprovalsCount.value,
+            testId: 'nav-overtime-approvals',
         });
     }
 

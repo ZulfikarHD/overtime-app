@@ -29,6 +29,7 @@ Key invariants from the architecture:
 
 ### Story E04-01: Pending Approval Queue (Manager/Admin)
 
+**Status:** ✅ Completed  
 **As a** Manager,  
 **I want** to view a filtered queue of all overtime submissions pending my review,  
 **So that** I can efficiently process the morning standup approval workload without missing any submissions.
@@ -38,25 +39,25 @@ Key invariants from the architecture:
 
 #### Acceptance Criteria
 
-- [ ] Manager sees all `SUBMITTED` and `PARTIALLY_APPROVED` submissions for their department(s)
-- [ ] Admin sees submissions across ALL departments
-- [ ] Queue displays per submission: `submission_code`, `operational_date`, day type badge (HKN/HLR), `section`, submitting Team Leader name, `total_hours_cached`, SPKL status badge, `status` badge, item count
-- [ ] Queue is sortable by: date (default desc), section, total hours
-- [ ] Queue is filterable by: department, section, date range, status, SPKL status
-- [ ] Each submission row has a quick-view expand toggle to show a summary of employees and their total hours inline
-- [ ] Visual indicator when SPKL is `PENDING` (orange badge) or overdue (red badge) — but this does NOT block approval
-- [ ] ML Anomaly badge shown on submission row if any items in that submission have anomaly flags: `🤖 1 anomaly flagged`
-- [ ] Pagination: 20 records per page, server-side
+- [x] Manager sees all `SUBMITTED` and `PARTIALLY_APPROVED` submissions for their department(s)
+- [x] Admin sees submissions across ALL departments
+- [x] Queue displays per submission: `submission_code`, `operational_date`, day type badge (HKN/HLR), `section`, submitting Team Leader name, `total_hours_cached`, SPKL status badge, `status` badge, item count
+- [x] Queue is sortable by: date (default desc), section, total hours
+- [x] Queue is filterable by: department, section, date range, status, SPKL status
+- [x] Each submission row has a quick-view expand toggle to show a summary of employees and their total hours inline
+- [x] Visual indicator when SPKL is `PENDING` (orange badge) or overdue (red badge) — but this does NOT block approval
+- [x] ML Anomaly badge shown on submission row if any items in that submission have anomaly flags: `🤖 1 anomaly flagged`
+- [x] Pagination: 20 records per page, server-side
 
 #### Technical Tasks
 
-- [ ] `php artisan make:controller OvertimeApprovalController` with `index()` and `approveItems()` methods
-- [ ] `OvertimeApprovalController@index` query: scoped by Manager's `department_id`, filter params, eager-load items, SPKL doc, anomaly log count
-- [ ] Route: `GET /overtime/approvals` → `OvertimeApprovalController@index`
-- [ ] Create `resources/js/Pages/Overtime/ApprovalQueue.vue` — the main manager approval page
-- [ ] Create `resources/js/Components/Overtime/SubmissionQueueRow.vue` — expandable row component
-- [ ] Server-side filters: `FilterOvertimeSubmissionsAction` or inline query scopes on `OvertimeSubmission`
-- [ ] Anomaly count subquery: `withCount(['items as anomaly_count' => fn($q) => $q->whereHas('anomalyLogs', fn($q2) => $q2->where('is_dismissed', false))])`
+- [x] `php artisan make:controller OvertimeApprovalController` with `index()` method (E04-01); `approveItems()` deferred to E04-02
+- [x] `OvertimeApprovalController@index` query: scoped by Manager's `department_id`, filter params, eager-load items, SPKL doc, anomaly log count
+- [x] Route: `GET /overtime/approvals` → `OvertimeApprovalController@index`
+- [x] Create `resources/js/Pages/Overtime/ApprovalQueue.vue` — the main manager approval page
+- [x] Create `resources/js/Components/Overtime/SubmissionQueueRow.vue` — expandable row component
+- [x] Server-side filters: inline query scopes on `OvertimeSubmission` in controller index
+- [x] Anomaly count subquery: `withCount(['items as anomaly_count' => fn($q) => $q->whereHas('anomalyLogs', fn($q2) => $q2->where('is_dismissed', false))])`
 
 ---
 
@@ -262,12 +263,12 @@ Key invariants from the architecture:
 
 ## Definition of Done — Epic-04
 
-- [ ] Manager can open approval queue filtered by their department
+- [x] Manager can open approval queue filtered by their department
 - [ ] Item-level approval and rejection work correctly with audit records written
 - [ ] Optimistic lock conflict returns user-friendly error (not 500)
 - [ ] Bulk approve/reject works for up to 50 submissions
 - [ ] Export downloads a correct CSV with all specified columns
 - [ ] Approved items are locked — Team Leader edit is blocked both in UI and API
-- [ ] `pnpm lint` passes
-- [ ] `pnpm build` succeeds
+- [x] `pnpm lint` passes
+- [x] `pnpm build` succeeds
 - [ ] `ApproveOvertimeItemsActionTest` suite passes (including lock conflict test)

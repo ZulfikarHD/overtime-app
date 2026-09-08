@@ -13,4 +13,6 @@ export type NavItem = {
     icon?: LucideIcon;
     isActive?: boolean;
     roles?: UserRole[];
+    badge?: string | number | null;
+    testId?: string;
 };

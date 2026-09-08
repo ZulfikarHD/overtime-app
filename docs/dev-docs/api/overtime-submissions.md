@@ -231,6 +231,37 @@
 
 ---
 
+### 7. GET /overtime/approvals
+
+**Description:** Inertia approval queue page for Managers/Admins (E04-01). Returns paginated submissions with filters, expandable item payloads, SPKL docs, and anomaly counts.
+
+**Authentication:** `auth`, Role: `Manager`, `Admin`
+
+**Query Parameters:**
+
+| Param           | Type   | Required | Default            | Description                                  |
+| --------------- | ------ | -------- | ------------------ | -------------------------------------------- |
+| `status`        | string | No       | `SUBMITTED`        | Status tab / alias (`PENDING`, `ALL`, …)     |
+| `department_id` | int    | No       | —                  | Admin-only department filter                 |
+| `section_id`    | int    | No       | —                  | Section filter within authority scope        |
+| `spkl_status`   | string | No       | —                  | `PENDING`, `ATTACHED`, `VERIFIED`, `OVERDUE` |
+| `date_from`     | date   | No       | today−6 days (WIB) | Inclusive operational date start             |
+| `date_to`       | date   | No       | today (WIB)        | Inclusive operational date end               |
+| `sort`          | string | No       | `date`             | `date`, `section`, `total_hours`             |
+| `direction`     | string | No       | `desc`             | `asc` or `desc`                              |
+| `page`          | int    | No       | 1                  | Pagination page (20 per page)                |
+
+**Response 200:** Inertia page `overtime/ApprovalQueue` with `submissions`, `pending_count`, `pending_hours`, filter option lists, and `filters`.
+
+**Error Responses:**
+
+| Code | Description                                |
+| ---- | ------------------------------------------ |
+| 401  | Unauthenticated                            |
+| 403  | Forbidden for Team Leader / Operator roles |
+
+---
+
 ### 3. POST /overtime/approvals/bulk-review
 
 **Description:** Execute granular item-level approvals or rejections for multiple workers across submissions.

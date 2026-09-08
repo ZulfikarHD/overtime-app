@@ -21,6 +21,7 @@ declare module '@inertiajs/core' {
             auth: Auth;
             sidebarOpen: boolean;
             unread_notifications_count?: number;
+            pending_approvals_count?: number;
             flash?: {
                 success?: string | null;
                 error?: string | null;

@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\OvertimeSubmission;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
@@ -56,6 +57,7 @@ class HandleInertiaRequests extends Middleware
             'translations' => $this->getTranslations(),
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
             'unread_notifications_count' => $user ? $user->unreadNotifications()->count() : 0,
+            'pending_approvals_count' => $this->pendingApprovalsCount($user),
             'flash' => [
                 'success' => $request->session()->get('success'),
                 'error' => $request->session()->get('error'),
@@ -65,6 +67,25 @@ class HandleInertiaRequests extends Middleware
                 'last_submission' => $request->session()->get('last_submission'),
             ],
         ];
+    }
+
+    /**
+     * Count pending overtime submissions awaiting Manager/Admin review.
+     */
+    protected function pendingApprovalsCount(?User $user): int
+    {
+        if (! $user || (! $user->isAdmin() && ! $user->isManager())) {
+            return 0;
+        }
+
+        $query = OvertimeSubmission::query()
+            ->whereIn('status', ['SUBMITTED', 'PARTIALLY_APPROVED']);
+
+        if ($user->isManager() && $user->department_id) {
+            $query->where('department_id', $user->department_id);
+        }
+
+        return $query->count();
     }
 
     /**

@@ -63,7 +63,7 @@ Technical specifications and decision records for the engineering implementation
     - [Policy Soft Warning Indicators](./dev-docs/features/policy-soft-warning-indicators.md)
     - [SPKL Flexible Post-Shift Attachment & Lifecycle Workflow](./dev-docs/features/spkl-document-workflow.md)
     - [SPKL Pending Reminder & In-App Notifications](./dev-docs/features/spkl-pending-reminder-notifications.md)
-    - [Verification & Granular Approval Lifecycle](./dev-docs/features/verification-approval.md)
+    - [Verification & Pending Approval Queue (E04-01)](./dev-docs/features/verification-approval.md)
     - [Budget Management & Burn Index Dashboard](./dev-docs/features/budget-burn-index.md)
     - [Individual Employee Reporting & Welfare](./dev-docs/features/employee-welfare-report.md)
     - [CapEx Project Labor Management](./dev-docs/features/capex-project-labor.md)
@@ -114,6 +114,7 @@ Plain-language operating guides for factory supervisors, team leaders, and opera
     - [Policy Soft Warning Indicators Guide](./user-docs/guides/policy-soft-warning-indicators.md)
     - [SPKL Document Attachment Guide](./user-docs/guides/spkl-document-attachment.md)
     - [SPKL Pending Reminders & Notifications Guide](./user-docs/guides/spkl-pending-reminders.md)
+    - [Overtime Approvals Queue Guide](./user-docs/guides/overtime-approvals.md)
 
 ---
 
