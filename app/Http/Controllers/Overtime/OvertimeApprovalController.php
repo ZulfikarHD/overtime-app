@@ -2,12 +2,19 @@
 
 namespace App\Http\Controllers\Overtime;
 
+use App\Actions\Overtime\ApproveOvertimeItemsAction;
+use App\Actions\Overtime\BulkApproveSubmissionsAction;
+use App\Exceptions\OptimisticLockException;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Overtime\ApproveOvertimeItemsRequest;
+use App\Http\Requests\Overtime\BulkApprovalRequest;
 use App\Models\Department;
 use App\Models\OvertimeSubmission;
 use App\Models\Section;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Inertia\Inertia;
@@ -15,6 +22,11 @@ use Inertia\Response;
 
 class OvertimeApprovalController extends Controller
 {
+    public function __construct(
+        public ApproveOvertimeItemsAction $approveOvertimeItemsAction,
+        public BulkApproveSubmissionsAction $bulkApproveSubmissionsAction,
+    ) {}
+
     /**
      * Display the pending approval queue for Managers and Admins (E04-01).
      */
@@ -177,5 +189,98 @@ class OvertimeApprovalController extends Controller
                 'direction' => $direction,
             ],
         ]);
+    }
+
+    /**
+     * Process item-level approvals or rejections for a submission (E04-02).
+     */
+    public function approveItems(ApproveOvertimeItemsRequest $request, OvertimeSubmission $submission): JsonResponse|RedirectResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+
+        // Department-level authority check for Managers
+        if ($user->isManager() && $user->department_id !== null && $submission->department_id !== $user->department_id) {
+            abort(403, __('Anda tidak memiliki akses persetujuan untuk departemen pengajuan ini.'));
+        }
+
+        /** @var array<int, array{item_id: int, action: string, rejection_reason?: string|null, lock_version?: int|null}> $decisions */
+        $decisions = $request->validated('decisions');
+
+        try {
+            $updatedSubmission = $this->approveOvertimeItemsAction->execute(
+                $submission->id,
+                $decisions,
+                $user->id
+            );
+        } catch (OptimisticLockException $e) {
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'message' => $e->getMessage(),
+                    'conflict' => true,
+                ], 409);
+            }
+
+            return back()->withErrors([
+                'conflict' => $e->getMessage(),
+            ]);
+        }
+
+        $approvedCount = collect($decisions)->filter(fn ($d) => strtoupper($d['action']) === 'APPROVED')->count();
+        $rejectedCount = collect($decisions)->filter(fn ($d) => strtoupper($d['action']) === 'REJECTED')->count();
+
+        $successMessage = __('Persetujuan lembur :code berhasil disimpan (:approved disetujui, :rejected ditolak)', [
+            'code' => $updatedSubmission->submission_code,
+            'approved' => $approvedCount,
+            'rejected' => $rejectedCount,
+        ]);
+
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'message' => $successMessage,
+                'submission' => $updatedSubmission,
+                'approved_count' => $approvedCount,
+                'rejected_count' => $rejectedCount,
+            ]);
+        }
+
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'message' => $successMessage,
+        ]);
+
+        return redirect()->route('overtime.approvals')->with('success', $successMessage);
+    }
+
+    /**
+     * Process bulk approvals or rejections for multiple submissions (E04-03).
+     */
+    public function bulkProcess(BulkApprovalRequest $request): JsonResponse|RedirectResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+
+        /** @var list<int> $submissionIds */
+        $submissionIds = $request->validated('submission_ids');
+        $action = (string) $request->validated('action');
+        $rejectionReason = $request->filled('rejection_reason') ? (string) $request->validated('rejection_reason') : null;
+
+        $result = $this->bulkApproveSubmissionsAction->execute(
+            $submissionIds,
+            $action,
+            $rejectionReason,
+            $user
+        );
+
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json($result);
+        }
+
+        Inertia::flash('toast', [
+            'type' => $result['skipped_submissions_count'] > 0 ? 'warning' : 'success',
+            'message' => $result['message'],
+        ]);
+
+        return redirect()->route('overtime.approvals')->with('success', $result['message']);
     }
 }

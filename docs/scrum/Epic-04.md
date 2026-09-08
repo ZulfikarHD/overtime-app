@@ -63,6 +63,7 @@ Key invariants from the architecture:
 
 ### Story E04-02: Item-Level Approval/Rejection Modal (Manager/Admin)
 
+**Status:** ✅ Completed  
 **As a** Manager,  
 **I want** to review each employee's line item in a submission and approve or reject them individually,  
 **So that** I can approve valid overtime while rejecting specific entries that are miscategorized, over-budget, or otherwise non-compliant.
@@ -72,8 +73,8 @@ Key invariants from the architecture:
 
 #### Acceptance Criteria
 
-- [ ] Clicking "Review" on a submission opens a detailed **Approval Modal**
-- [ ] Modal displays for each employee item:
+- [x] Clicking "Review" on a submission opens a detailed **Approval Modal**
+- [x] Modal displays for each employee item:
     - Employee name + NPK (read-only snapshot)
     - Day type (HKN/HLR)
     - Hours breakdown: Production, TPM, Project (CapEx), Others
@@ -84,32 +85,38 @@ Key invariants from the architecture:
     - Individual policy warning badges (if applicable)
     - ML anomaly flag and reason (if flagged — see Epic-08)
     - Current `status` badge
-- [ ] Each item has individual radio or toggle: `✅ Approve` / `❌ Reject`
-- [ ] Rejecting an item makes `rejection_reason` text field **mandatory** (BR-10)
-- [ ] "Approve All" button sets all items to Approved
-- [ ] "Reject All" button opens a shared rejection reason field for all items
-- [ ] Confirming the decision calls `POST /overtime/submissions/{id}/approve-items`
-- [ ] On success: modal closes, queue row status updates reactively, success toast shown
-- [ ] On optimistic lock conflict: error message: "Record was modified by another reviewer. Please reload."
-- [ ] Approved items display as locked in the Team Leader's submission history
+- [x] Each item has individual radio or toggle: `✅ Approve` / `❌ Reject` (plus Pending)
+- [x] Rejecting an item makes `rejection_reason` text field **mandatory** (BR-10, min 5 chars)
+- [x] "Approve All" button sets all items to Approved
+- [x] "Reject All" button opens a shared rejection reason field for all items
+- [x] Confirming the decision calls `POST /overtime/submissions/{id}/approve-items`
+- [x] On success: modal closes, queue row status updates reactively, success toast shown
+- [x] On optimistic lock conflict: amber banner + "Muat Ulang Data Terbaru" (HTTP 409, not 500)
+- [x] Approved / partially approved submissions remain locked against Team Leader edit (`abort(422)` on update/edit)
 
 #### Technical Tasks
 
-- [ ] `ApproveOvertimeItemsAction` — implement exactly as in `data-architect-analyst.md` §3.2 (with `lockForUpdate()` + `lock_version` check)
-- [ ] Route: `POST /overtime/submissions/{id}/approve-items` → `OvertimeApprovalController@approveItems`
-- [ ] `BulkApprovalRequest` — validates `decisions[]` array: each has `item_id`, `action` (APPROVED/REJECTED), optional `rejection_reason`, optional `lock_version`
-- [ ] `OvertimeItemAudit` records written inside `ApproveOvertimeItemsAction` for each item
-- [ ] Dispatch `RecalculateMonthlyBurnSnapshotJob` after all items processed
-- [ ] Create `resources/js/Components/Overtime/ApprovalModal.vue` — itemized review modal
-- [ ] Create `resources/js/Components/Overtime/ApprovalItemRow.vue` — individual item row with decision controls
-- [ ] Reactive decision state: `const decisions = reactive({})` keyed by `item_id`
-- [ ] Rejection reason validation: Vue `watch` on `decision[id]` — if `REJECTED`, require non-empty `rejection_reason`
-- [ ] Optimistic lock: send current `lock_version` in payload, handle `409 Conflict` response
+- [x] `ApproveOvertimeItemsAction` — implement exactly as in `data-architect-analyst.md` §3.2 (with `lockForUpdate()` + `lock_version` check)
+- [x] Route: `POST /overtime/submissions/{id}/approve-items` → `OvertimeApprovalController@approveItems`
+- [x] `ApproveOvertimeItemsRequest` — validates `decisions[]` array: each has `item_id`, `action` (APPROVED/REJECTED), optional `rejection_reason`, optional `lock_version`
+- [x] `OptimisticLockException` — maps lock collisions to HTTP 409 with Indonesian message
+- [x] `OvertimeItemAudit` records written inside `ApproveOvertimeItemsAction` for each item
+- [x] Dispatch `RecalculateMonthlyBurnSnapshotJob` after all items processed
+- [x] Enhance `OvertimeSubmissionController@show` — anomaly logs + section `burn_indicator` for modal
+- [x] Create `resources/js/components/overtime/ApprovalModal.vue` — itemized review modal
+- [x] Create `resources/js/components/overtime/ApprovalItemRow.vue` — individual item row with decision controls
+- [x] Reactive decision state: `const decisions = reactive({})` keyed by `item_id`
+- [x] Rejection reason validation: computed `canSubmit` — if `REJECTED`, require `rejection_reason` ≥ 5 chars
+- [x] Optimistic lock: send current `lock_version` in payload, handle `409 Conflict` response
+- [x] Feature tests: `tests/Feature/Overtime/ApproveOvertimeItemsActionTest.php`
+- [x] Browser tests: `tests/Browser/Overtime/ApprovalModalBrowserTest.php`
+- [x] Docs: `docs/dev-docs/features/verification-approval.md` + `docs/user-docs/guides/overtime-approvals.md`
 
 ---
 
 ### Story E04-03: Bulk Approval & Rejection (Manager/Admin)
 
+**Status:** ✅ Completed  
 **As a** Manager,  
 **I want** to bulk-approve or bulk-reject multiple submissions at once,  
 **So that** I can efficiently clear a backlog of pending approvals during busy production periods.
@@ -119,23 +126,23 @@ Key invariants from the architecture:
 
 #### Acceptance Criteria
 
-- [ ] Manager can select multiple submissions via checkboxes in the queue list
-- [ ] "Bulk Approve" button: approves **all items in all selected submissions** in a single transaction
-- [ ] "Bulk Reject" button: rejects all items in all selected submissions — requires a single shared rejection reason
-- [ ] Confirmation dialog before bulk action: "You are about to approve 45 items across 3 submissions. Confirm?"
-- [ ] Partial failure handling: if one item fails (e.g., lock conflict), the transaction rolls back for that submission but continues for others — summary report shown
-- [ ] Max bulk selection: 50 submissions per bulk action (prevent timeout)
-- [ ] Each bulk action creates individual `OvertimeItemAudit` records per item (not a single grouped record)
-- [ ] After bulk action: queue refreshes, toast summary: "38/45 items approved (7 skipped due to conflicts)"
+- [x] Manager can select multiple submissions via checkboxes in the queue list
+- [x] "Bulk Approve" button: approves **all items in all selected submissions** in a single transaction
+- [x] "Bulk Reject" button: rejects all items in all selected submissions — requires a single shared rejection reason
+- [x] Confirmation dialog before bulk action: "You are about to approve 45 items across 3 submissions. Confirm?"
+- [x] Partial failure handling: if one item fails (e.g., lock conflict), the transaction rolls back for that submission but continues for others — summary report shown
+- [x] Max bulk selection: 50 submissions per bulk action (prevent timeout)
+- [x] Each bulk action creates individual `OvertimeItemAudit` records per item (not a single grouped record)
+- [x] After bulk action: queue refreshes, toast summary: "38/45 items approved (7 skipped due to conflicts)"
 
 #### Technical Tasks
 
-- [ ] `BulkApproveSubmissionsAction` — loops over submission IDs, calls `ApproveOvertimeItemsAction` per submission in separate try-catch
-- [ ] Route: `POST /overtime/approvals/bulk` → `OvertimeApprovalController@bulkProcess`
-- [ ] `BulkApprovalRequest` — validates `submission_ids[]` max 50, `action`, `rejection_reason` (required if action=REJECT)
-- [ ] Checkbox state in `ApprovalQueue.vue`: `const selectedIds = ref<number[]>([])`
-- [ ] "Select All on Page" checkbox — toggles all 20 visible rows
-- [ ] Result summary component: `BulkActionResultToast.vue` — shows success/skip counts
+- [x] `BulkApproveSubmissionsAction` — loops over submission IDs, calls `ApproveOvertimeItemsAction` per submission in separate try-catch
+- [x] Route: `POST /overtime/approvals/bulk` → `OvertimeApprovalController@bulkProcess`
+- [x] `BulkApprovalRequest` — validates `submission_ids[]` max 50, `action`, `rejection_reason` (required if action=REJECT)
+- [x] Checkbox state in `ApprovalQueue.vue`: `const selectedIds = ref<number[]>([])`
+- [x] "Select All on Page" checkbox — toggles all 20 visible rows
+- [x] Result summary component: `BulkActionResultToast.vue` — shows success/skip counts
 
 ---
 
@@ -241,12 +248,12 @@ Key invariants from the architecture:
 
 ## Key Business Rules Implemented in This Epic
 
-| Rule                                    | Implementation                                                                            |
-| --------------------------------------- | ----------------------------------------------------------------------------------------- |
-| BR-09: Burn Index governance            | Triggered indirectly — `RecalculateMonthlyBurnSnapshotJob` dispatched after each approval |
-| BR-10: Item-level approval independence | Each `overtime_items` row has independent `status`, reviewed independently                |
-| Rejection reason mandatory              | `BulkApprovalRequest` validates `rejection_reason` required when `action = REJECTED`      |
-| Immutability after approval             | Gate check in controller + UI hide pattern                                                |
+| Rule                                    | Implementation                                                                                |
+| --------------------------------------- | --------------------------------------------------------------------------------------------- |
+| BR-09: Burn Index governance            | Triggered indirectly — `RecalculateMonthlyBurnSnapshotJob` dispatched after each approval     |
+| BR-10: Item-level approval independence | Each `overtime_items` row has independent `status`, reviewed independently                    |
+| Rejection reason mandatory              | `ApproveOvertimeItemsRequest` + action validate `rejection_reason` (≥5 chars) when `REJECTED` |
+| Immutability after approval             | Gate check in controller + UI hide pattern                                                    |
 
 ---
 
@@ -264,11 +271,12 @@ Key invariants from the architecture:
 ## Definition of Done — Epic-04
 
 - [x] Manager can open approval queue filtered by their department
-- [ ] Item-level approval and rejection work correctly with audit records written
-- [ ] Optimistic lock conflict returns user-friendly error (not 500)
+- [x] Item-level approval and rejection work correctly with audit records written
+- [x] Optimistic lock conflict returns user-friendly error (not 500)
 - [ ] Bulk approve/reject works for up to 50 submissions
 - [ ] Export downloads a correct CSV with all specified columns
-- [ ] Approved items are locked — Team Leader edit is blocked both in UI and API
+- [x] Approved items are locked — Team Leader edit is blocked both in UI and API
 - [x] `pnpm lint` passes
 - [x] `pnpm build` succeeds
-- [ ] `ApproveOvertimeItemsActionTest` suite passes (including lock conflict test)
+- [x] `ApproveOvertimeItemsActionTest` suite passes (including lock conflict test)
+- [x] `ApprovalModalBrowserTest` Pest Playwright suite passes

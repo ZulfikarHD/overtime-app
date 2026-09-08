@@ -304,6 +304,7 @@ class OvertimeSubmissionController extends Controller
         $submission->load([
             'items.employee:id,npk,full_name,job_position,hourly_rate',
             'items.capexProject:id,project_code,name',
+            'items.anomalyLogs' => fn ($q) => $q->where('is_dismissed', false),
             'spklDocument',
             'department:id,name,code',
             'section:id,name,code',
@@ -322,6 +323,7 @@ class OvertimeSubmissionController extends Controller
         if ($request->wantsJson() || $request->ajax()) {
             return response()->json([
                 'submission' => $submission,
+                'burn_indicator' => $this->getSectionBurnIndicator($submission->section_id),
             ]);
         }
 

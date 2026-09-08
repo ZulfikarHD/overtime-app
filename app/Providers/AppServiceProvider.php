@@ -22,7 +22,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        if (! function_exists('bcadd')) {
+            require_once __DIR__.'/../Support/bcmath_polyfill.php';
+        }
     }
 
     /**

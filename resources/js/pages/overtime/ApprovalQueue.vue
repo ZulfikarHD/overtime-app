@@ -2,14 +2,25 @@
 import { Head, router, usePage } from '@inertiajs/vue3';
 import {
     Calendar,
+    CheckCheck,
+    CheckCircle2,
     ChevronLeft,
     ChevronRight,
     ClipboardCheck,
+    Clock,
     Filter,
     RotateCcw,
+    Users,
+    X,
+    XCircle,
 } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
 import Heading from '@/components/Heading.vue';
+import ApprovalModal from '@/components/overtime/ApprovalModal.vue';
+import BulkActionResultToast, {
+    type BulkActionResult,
+} from '@/components/overtime/BulkActionResultToast.vue';
+import BulkApprovalConfirmModal from '@/components/overtime/BulkApprovalConfirmModal.vue';
 import SubmissionQueueRow, {
     type QueueSubmission,
 } from '@/components/overtime/SubmissionQueueRow.vue';
@@ -19,6 +30,7 @@ import { useShiftInfo } from '@/composables/useShiftInfo';
 import { useTrans } from '@/composables/useTrans';
 import { dashboard } from '@/routes';
 import { approvals as approvalsRoute } from '@/routes/overtime';
+import { bulk as bulkRoute } from '@/routes/overtime/approvals';
 import type { User } from '@/types';
 
 defineOptions({
@@ -280,8 +292,141 @@ function toggleSelectAll() {
     }
 }
 
-function handleReview(_id: number) {
-    // E04-02 will open ApprovalModal here.
+// Bulk Actions State (E04-03)
+const isBulkConfirmModalOpen = ref(false);
+const bulkActionType = ref<'APPROVED' | 'REJECTED'>('APPROVED');
+const isBulkProcessing = ref(false);
+const bulkResult = ref<BulkActionResult | null>(null);
+
+const selectedSubmissions = computed(() => {
+    return props.submissions.data.filter((s) =>
+        selectedIds.value.includes(s.id),
+    );
+});
+
+const selectedSubmissionsHours = computed(() => {
+    return selectedSubmissions.value.reduce((sum, s) => {
+        const h =
+            typeof s.total_hours_cached === 'string'
+                ? parseFloat(s.total_hours_cached)
+                : Number(s.total_hours_cached || 0);
+        return sum + (Number.isNaN(h) ? 0 : h);
+    }, 0);
+});
+
+const selectedSubmissionsHeadcount = computed(() => {
+    return selectedSubmissions.value.reduce((sum, s) => {
+        return sum + (s.items_count ?? s.items?.length ?? 0);
+    }, 0);
+});
+
+function triggerBulkApprove() {
+    if (selectedIds.value.length === 0) {
+        return;
+    }
+    bulkActionType.value = 'APPROVED';
+    isBulkConfirmModalOpen.value = true;
+}
+
+function triggerBulkReject() {
+    if (selectedIds.value.length === 0) {
+        return;
+    }
+    bulkActionType.value = 'REJECTED';
+    isBulkConfirmModalOpen.value = true;
+}
+
+function clearSelection() {
+    selectedIds.value = [];
+}
+
+async function handleBulkConfirm(payload: {
+    action: 'APPROVED' | 'REJECTED';
+    rejection_reason?: string;
+}) {
+    if (selectedIds.value.length === 0) {
+        return;
+    }
+
+    isBulkProcessing.value = true;
+    const csrfToken =
+        document
+            .querySelector('meta[name="csrf-token"]')
+            ?.getAttribute('content') || '';
+
+    try {
+        const url = bulkRoute.url();
+        const res = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Accept: 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRF-TOKEN': csrfToken,
+            },
+            body: JSON.stringify({
+                submission_ids: selectedIds.value,
+                action: payload.action,
+                rejection_reason: payload.rejection_reason,
+            }),
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+            toastMessage.value =
+                data.message ||
+                __('Terjadi kesalahan saat memproses persetujuan massal.');
+            return;
+        }
+
+        isBulkConfirmModalOpen.value = false;
+        selectedIds.value = [];
+        bulkResult.value = data as BulkActionResult;
+
+        router.reload({
+            only: ['submissions', 'pending_count', 'pending_hours'],
+        });
+    } catch (err: any) {
+        console.error('Error executing bulk approvals:', err);
+        toastMessage.value = __(
+            'Terjadi kesalahan jaringan saat memproses persetujuan massal.',
+        );
+    } finally {
+        isBulkProcessing.value = false;
+    }
+}
+
+const isApprovalModalOpen = ref(false);
+const selectedSubmissionId = ref<number | null>(null);
+const toastMessage = ref<string | null>(null);
+
+const selectedSubmissionData = computed(() => {
+    if (!selectedSubmissionId.value) {
+        return null;
+    }
+    return (
+        props.submissions.data.find(
+            (s) => s.id === selectedSubmissionId.value,
+        ) ?? null
+    );
+});
+
+function handleReview(id: number) {
+    selectedSubmissionId.value = id;
+    isApprovalModalOpen.value = true;
+}
+
+function handleApprovalSaved(payload: { message: string }) {
+    toastMessage.value = payload.message;
+    router.reload({
+        only: ['submissions', 'pending_count', 'pending_hours'],
+    });
+    setTimeout(() => {
+        if (toastMessage.value === payload.message) {
+            toastMessage.value = null;
+        }
+    }, 10000);
 }
 </script>
 
@@ -334,6 +479,27 @@ function handleReview(_id: number) {
             >
                 {{ timeString }} WIB
             </div>
+        </div>
+
+        <!-- Success Toast Banner -->
+        <div
+            v-if="toastMessage"
+            class="flex items-center justify-between rounded-lg border border-emerald-300 bg-emerald-50 p-3 text-xs font-semibold text-emerald-800 shadow-xs dark:border-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-200"
+            data-test="approval-success-toast"
+        >
+            <div class="flex items-center gap-2">
+                <CheckCircle2
+                    class="size-4 text-emerald-600 dark:text-emerald-400"
+                />
+                <span>{{ toastMessage }}</span>
+            </div>
+            <button
+                type="button"
+                class="text-emerald-600 hover:text-emerald-800 dark:text-emerald-400"
+                @click="toastMessage = null"
+            >
+                <X class="size-4" />
+            </button>
         </div>
 
         <!-- Status Tabs -->
@@ -556,7 +722,7 @@ function handleReview(_id: number) {
             <CardContent class="p-0">
                 <div class="overflow-x-auto">
                     <table
-                        class="w-full min-w-[960px] text-left text-xs"
+                        class="w-full min-w-240 text-left text-xs"
                         data-test="approval-queue-table"
                     >
                         <thead>
@@ -674,5 +840,114 @@ function handleReview(_id: number) {
                 </div>
             </CardContent>
         </Card>
+
+        <!-- E04-02: Item-Level Approval Modal -->
+        <ApprovalModal
+            v-model:open="isApprovalModalOpen"
+            :submission-id="selectedSubmissionId"
+            :initial-data="selectedSubmissionData as any"
+            @saved="handleApprovalSaved"
+        />
+
+        <!-- E04-03: Floating Bulk Action Bar -->
+        <transition
+            enter-active-class="transition-all duration-300 ease-out"
+            enter-from-class="opacity-0 translate-y-8"
+            enter-to-class="opacity-100 translate-y-0"
+            leave-active-class="transition-all duration-200 ease-in"
+            leave-from-class="opacity-100 translate-y-0"
+            leave-to-class="opacity-0 translate-y-8"
+        >
+            <div
+                v-if="selectedIds.length > 0"
+                class="fixed bottom-6 left-1/2 z-40 flex w-[calc(100%-2rem)] max-w-xl -translate-x-1/2 items-center gap-3 rounded-xl border border-slate-700 bg-slate-900/95 px-4 py-3 text-white shadow-2xl backdrop-blur-md sm:w-auto dark:border-slate-600 dark:bg-slate-800/95"
+                data-test="floating-bulk-bar"
+            >
+                <div
+                    class="flex items-center gap-2 border-r border-slate-700 pr-2"
+                >
+                    <span
+                        class="flex size-6 items-center justify-center rounded-full bg-[#cc0000] font-mono text-xs font-bold text-white tabular-nums"
+                        data-test="bulk-selected-count"
+                    >
+                        {{ selectedIds.length }}
+                    </span>
+                    <span
+                        class="hidden text-xs font-semibold text-slate-200 sm:inline"
+                    >
+                        {{ __('Pengajuan Dipilih') }}
+                    </span>
+                </div>
+
+                <div
+                    class="flex items-center gap-3 font-mono text-xs text-slate-300 tabular-nums"
+                >
+                    <span
+                        class="inline-flex items-center gap-1"
+                        data-test="bulk-headcount-stat"
+                    >
+                        <Users class="size-3.5 text-slate-400" />
+                        {{ selectedSubmissionsHeadcount }} {{ __('Karyawan') }}
+                    </span>
+                    <span
+                        class="inline-flex items-center gap-1"
+                        data-test="bulk-hours-stat"
+                    >
+                        <Clock class="size-3.5 text-slate-400" />
+                        {{ selectedSubmissionsHours.toFixed(1) }}
+                        {{ __('Jam') }}
+                    </span>
+                </div>
+
+                <div class="flex items-center gap-2 pl-2">
+                    <Button
+                        type="button"
+                        size="sm"
+                        class="h-8 bg-[#cc0000] px-3 text-xs text-white hover:bg-[#b30000]"
+                        data-test="btn-bulk-approve"
+                        @click="triggerBulkApprove"
+                    >
+                        <CheckCheck class="mr-1.5 size-3.5" />
+                        {{ __('Setujui Terpilih') }}
+                    </Button>
+                    <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        class="h-8 bg-red-600 px-3 text-xs text-white hover:bg-red-700"
+                        data-test="btn-bulk-reject"
+                        @click="triggerBulkReject"
+                    >
+                        <XCircle class="mr-1.5 size-3.5" />
+                        {{ __('Tolak Terpilih') }}
+                    </Button>
+                    <button
+                        type="button"
+                        class="p-1 text-xs text-slate-400 hover:text-white"
+                        :title="__('Batal Pilihan')"
+                        data-test="btn-bulk-clear"
+                        @click="clearSelection"
+                    >
+                        <X class="size-4" />
+                    </button>
+                </div>
+            </div>
+        </transition>
+
+        <!-- E04-03: Bulk Action Result Toast -->
+        <BulkActionResultToast
+            v-if="bulkResult"
+            :result="bulkResult"
+            @close="bulkResult = null"
+        />
+
+        <!-- E04-03: Bulk Action Confirmation Modal -->
+        <BulkApprovalConfirmModal
+            v-model:open="isBulkConfirmModalOpen"
+            :action="bulkActionType"
+            :selected-submissions="selectedSubmissions"
+            :is-processing="isBulkProcessing"
+            @confirm="handleBulkConfirm"
+        />
     </div>
 </template>
