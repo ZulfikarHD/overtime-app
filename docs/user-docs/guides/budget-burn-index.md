@@ -1,0 +1,107 @@
+# Burn Index & Budget Dashboard
+
+## What is the Burn Index Dashboard?
+
+The **Burn Index Dashboard** is your operational command center for tracking section-level overtime hours, monitoring monthly budget consumption in real time, and identifying overtime fatigue risks before quota overruns occur.
+
+Every section is tracked using the **Burn Index (%)**, calculated as:
+
+$$\text{Burn Index (\%)} = \left(\frac{\text{Actual Approved Overtime Hours}}{\text{Planned Budget Hours}}\right) \times 100$$
+
+Sections are color-coded and classified into the 4-quadrant **Budget Control Matrix** to give managers instant clarity during daily morning standups.
+
+---
+
+## Who Has Access?
+
+| Role                    | Access Level      | What You Can See                                                                                           |
+| ----------------------- | ----------------- | ---------------------------------------------------------------------------------------------------------- |
+| **Plant Administrator** | Full Access       | Can view all departments, switch between departments, trigger recalculations, and configure budgets.       |
+| **Department Manager**  | Department Access | Automatically scoped to all sections within their assigned department. Can trigger instant recalculations. |
+| **Team Leader**         | Section Access    | Can view their assigned section card to monitor team burn rate.                                            |
+| **Operator / User**     | Restricted        | No access. Operators should check with their Team Leader.                                                  |
+
+---
+
+## How to Use the Dashboard
+
+### 1. Navigating to the Dashboard
+
+1. Log in to the system with your plant email or NPK.
+2. In the left navigation sidebar, click **Burn Index**.
+3. The dashboard opens displaying your department's sections for the current fiscal month and year.
+
+### 2. Reading the Department Macro KPI Summary
+
+At the top of the page, four summary cards provide a quick snapshot of department health:
+
+- **Total Jam Departemen (Total Department Hours)**: Shows total cumulative actual overtime hours versus total planned budget hours, along with the remaining quota balance.
+- **Indeks Burn Departemen (Department Burn Index %)**: Aggregate percentage consumption for the entire department with an operational status badge (**Aman**, **Terkendali**, **Peringatan**, or **Defisit**).
+- **Matriks Kontrol Anggaran (Budget Control Matrix Zone)**: Aggregate quadrant status across all sections.
+- **Status Risiko Seksi (Section Risk Status)**: Counter showing how many sections are currently in **Defisit** (danger), **Peringatan** (warning), or **Aman** (safe).
+
+### 3. Filtering by Period and Department
+
+- **Department Selector**: Plant Administrators can switch between departments using the dropdown at the top right. For Managers, this indicator shows their locked assigned department.
+- **Month Picker**: Select any fiscal month (January to December) to review historical burn rates or plan ahead.
+- **Year Picker**: Switch between fiscal years (e.g., 2025, 2026, 2027).
+
+### 4. Reading Section Burn Cards
+
+Each section within the department is represented by an analytical card featuring:
+
+1. **Section Header**: Section code and name with department badge.
+2. **Burn Index %**: Prominently displayed in large font with color coding:
+    - **Green (< 85%)**: Safe / Under Budget.
+    - **Blue (85–100%)**: On Track / Caution.
+    - **Amber (101–115%)**: Warning / Accelerated Burn.
+    - **Red (> 115%)**: Critical Deficit / Over Budget.
+3. **Quota vs Actuals**: Realized hours versus planned quota (e.g., `142.5 / 200.0 jam`) and remaining quota balance.
+4. **Budget Control Matrix Zone**:
+    - `Zona 1: Sangat Baik (Aman)`: Healthy consumption well within planned boundaries.
+    - `Zona 2: Baik (Terkendali)`: Normal high-volume production on track with quota.
+    - `Zona 3: Peringatan (Burn Cepat)`: Unusually rapid burn relative to the calendar date.
+    - `Zona 4: Defisit (Melebihi Anggaran)`: Actual hours have exceeded budget limits.
+5. **Burn Velocity & Projected Total**:
+    - **Kecepatan Burn**: Average hours burned per operational week (`jam/mgg`).
+    - **Proyeksi Akhir**: Forecasted month-end total hours based on current pace.
+    - **Trajectory Badge**: Indicates whether the section is `→ Aman (On Pace)`, `↗ Waspada (Trending Over)`, or `↑ Kritis (Will Overrun)`.
+6. **CapEx vs OpEx Mini Split Bar**: Shows the breakdown between routine production overtime (OpEx) and capitalized project hours (CapEx).
+
+### 5. Handling Unconfigured Budgets
+
+If a section has not yet configured its monthly quota in **Budget Planning**:
+
+- The section card displays an **Anggaran Belum Dikonfigurasi** (Budget Not Configured) message.
+- A direct shortcut link **Atur Anggaran di Planning →** allows managers to immediately jump to **Budget Planning** and allocate hours without seeing zero-division or NaN errors.
+
+### 6. Auto-Refresh and Manual Refresh
+
+- **Automatic Refresh**: The dashboard automatically checks for updated numbers every 60 seconds without reloading the page.
+- **Manual Refresh**: Click the **Segarkan (Refresh)** button with the circular arrow icon in the top toolbar to fetch the latest approval figures immediately.
+
+---
+
+## Frequently Asked Questions (FAQ)
+
+### Why is a section card showing in red if we still have days left in the month?
+
+A card turns red when the section's cumulative approved overtime hours exceed 115% of its monthly planned budget, or when hours have been recorded for a section that has no allocated budget.
+
+### Do pending overtime submissions affect the Burn Index?
+
+No. The Burn Index only tallies **Approved** overtime items. Submissions currently in draft or pending review in **Persetujuan Lembur** do not count toward actuals until a Manager or Admin approves them.
+
+### When does the snapshot recalculate?
+
+Snapshots recalculate automatically in the background whenever an overtime submission batch is approved. Managers can also click **Segarkan** to force an instant synchronization.
+
+---
+
+## Troubleshooting
+
+| Issue                                                               | Cause                                                                | Solution                                                                                                        |
+| ------------------------------------------------------------------- | -------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| Section card displays "Anggaran Belum Dikonfigurasi"                | No budget was allocated in Budget Planning for this fiscal month.    | Click **Atur Anggaran di Planning →** or navigate to **Budget Planning** from the sidebar to set planned hours. |
+| Newly approved overtime is not showing immediately on the dashboard | Background snapshot rollup job is processing in the queue.           | Click the **Segarkan** button in the top toolbar to refresh data.                                               |
+| Manager cannot view other plant departments                         | Role-based data scoping locks Managers to their assigned department. | Only users with the **Plant Administrator** role can switch between multiple departments.                       |

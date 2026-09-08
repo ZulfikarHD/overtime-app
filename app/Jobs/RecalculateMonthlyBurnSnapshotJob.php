@@ -2,10 +2,12 @@
 
 namespace App\Jobs;
 
+use App\Services\Analytics\MonthlySnapshotService;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Carbon;
 
 class RecalculateMonthlyBurnSnapshotJob implements ShouldQueue
 {
@@ -35,9 +37,18 @@ class RecalculateMonthlyBurnSnapshotJob implements ShouldQueue
     /**
      * Execute the job.
      */
-    public function handle(): void
+    public function handle(?MonthlySnapshotService $snapshotService = null): void
     {
-        // Scaffolded in Epic E01-06.
-        // Asynchronous snapshot rollup and threshold evaluations will be implemented in Epic-04 & Epic-05.
+        $snapshotService ??= app(MonthlySnapshotService::class);
+
+        $now = Carbon::now('Asia/Jakarta');
+        $year = $this->fiscalYear ?? (int) $now->format('Y');
+        $month = $this->fiscalMonth ?? (int) $now->format('n');
+
+        if ($this->sectionId !== null) {
+            $snapshotService->recalculate($this->sectionId, $year, $month);
+        } else {
+            $snapshotService->recalculateAll($year, $month);
+        }
     }
 }

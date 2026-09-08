@@ -34,12 +34,13 @@ This epic builds the analytical dashboard that answers that question in real tim
 **So that** I can immediately see which sections are on track, which are warning, and which are in deficit — before it's too late to intervene.
 
 **Story Points:** 13  
-**Priority:** Must Have
+**Priority:** Must Have  
+**Status:** 🟢 Completed (Sprint 5)
 
 #### Acceptance Criteria
 
-- [ ] Dashboard shows one card per section within the Manager's department (Team Leader sees their own section only)
-- [ ] Each section card displays:
+- [x] Dashboard shows one card per section within the Manager's department (Team Leader sees their own section only)
+- [x] Each section card displays:
     - Section name + department
     - Planned budget hours vs actual hours (e.g., "142 / 200 hrs")
     - Remaining budget hours
@@ -52,25 +53,25 @@ This epic builds the analytical dashboard that answers that question in real tim
     - Burn Velocity (hrs/week)
     - Projected period-end total hours
     - CapEx hours | OpEx hours split bar
-- [ ] Data is sourced from `monthly_burn_snapshots` — NOT from live aggregation on `overtime_items`
-- [ ] If no budget is configured for a section: show `"Budget Not Configured"` card state instead of crashing
-- [ ] Cards are filterable by: fiscal year + month (month picker, defaults to current month)
-- [ ] Dashboard auto-refreshes if a new approval is processed (via server-sent events or polling every 60s)
-- [ ] "Last Recalculated" timestamp shown per card
+- [x] Data is sourced from `monthly_burn_snapshots` — NOT from live aggregation on `overtime_items`
+- [x] If no budget is configured for a section: show `"Budget Not Configured"` card state instead of crashing
+- [x] Cards are filterable by: fiscal year + month (month picker, defaults to current month)
+- [x] Dashboard auto-refreshes if a new approval is processed (via server-sent events or polling every 60s)
+- [x] "Last Recalculated" timestamp shown per card
 
 #### Technical Tasks
 
-- [ ] `DashboardBurnIndexController@index` — returns `monthly_burn_snapshots` for user's scope
-- [ ] `MonthlySnapshotService::getOrRecalculate(int $sectionId, int $year, int $month): MonthlyBurnSnapshot`
-- [ ] Route: `GET /dashboard/burn-index` → `DashboardBurnIndexController@index`
-- [ ] `BurnIndexCalculatorService::calculateSectionMetrics()` — implement exactly as in `data-architect-analyst.md` §3.3
-- [ ] `RecalculateMonthlyBurnSnapshotJob` — calls `BurnIndexCalculatorService` and upserts `monthly_burn_snapshots`
-- [ ] Create `resources/js/Pages/Dashboard/BurnIndex.vue` — grid of section cards
-- [ ] Create `resources/js/Components/Dashboard/BurnIndexCard.vue` — individual section card with Burn Index ring/dial
-- [ ] Create `resources/js/Components/Dashboard/CapexOpexSplitBar.vue` — horizontal split bar component
-- [ ] Month picker: Vue `<MonthPicker>` component that triggers page reload/Inertia visit with new params
-- [ ] Color logic: Vue `computed(() => burnIndex < 85 ? 'green' : burnIndex <= 100 ? 'blue' : burnIndex <= 115 ? 'orange' : 'red')`
-- [ ] 60s polling: `setInterval(() => router.reload({ only: ['snapshots'] }), 60000)` — Inertia partial reload
+- [x] `DashboardBurnIndexController@index` — returns `monthly_burn_snapshots` for user's scope
+- [x] `MonthlySnapshotService::getOrRecalculate(int $sectionId, int $year, int $month): MonthlyBurnSnapshot`
+- [x] Route: `GET /dashboard/burn-index` → `DashboardBurnIndexController@index`
+- [x] `BurnIndexCalculatorService::calculateSectionMetrics()` — implement exactly as in `data-architect-analyst.md` §3.3
+- [x] `RecalculateMonthlyBurnSnapshotJob` — calls `BurnIndexCalculatorService` and upserts `monthly_burn_snapshots`
+- [x] Create `resources/js/Pages/Dashboard/BurnIndex.vue` — grid of section cards
+- [x] Create `resources/js/Components/Dashboard/BurnIndexCard.vue` — individual section card with Burn Index ring/dial
+- [x] Create `resources/js/Components/Dashboard/CapexOpexSplitBar.vue` — horizontal split bar component
+- [x] Month picker: Vue `<MonthPicker>` component that triggers page reload/Inertia visit with new params
+- [x] Color logic: Vue `computed(() => burnIndex < 85 ? 'green' : burnIndex <= 100 ? 'blue' : burnIndex <= 115 ? 'orange' : 'red')`
+- [x] 60s polling: `setInterval(() => router.reload({ only: ['snapshots'] }), 60000)` — Inertia partial reload
 
 ---
 

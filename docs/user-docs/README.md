@@ -20,6 +20,7 @@ Step-by-step instructions for everyday plant operations:
 | **[User Account Management](./guides/user-account-management.md)**                        | Plant Administrators    | Provisioning system logins, assigning operational roles, setting department scopes, and resetting passwords.                                         |
 | **[User Preferences & Display Standards](./guides/user-preferences-settings.md)**         | All Plant Personnel     | Customizing theme modes (Light/Dark/System), configuring alert notification toggles, and viewing plant standards.                                    |
 | **[Overtime Budget Planning](./guides/overtime-budget-planning.md)**                      | Admins & Managers       | Planning section monthly overtime hours, 5-week breakdown, estimating costs in Rupiah, and two-stage CSV import.                                     |
+| **[Burn Index & Budget Dashboard](./guides/budget-burn-index.md)**                        | Managers, Admins & TL   | Real-time section overtime burn monitoring, 4-quadrant Budget Control Matrix, burn velocity, and CapEx/OpEx labor split.                             |
 | **[Daily Overtime Submission](./guides/daily-overtime-submission.md)**                    | Team Leaders & Admins   | Submitting daily shift overtime batches, roster auto-filling, CapEx tracking, live Rupiah costs, and non-blocking SPKL.                              |
 | **[Overtime Policy Soft Warning Indicators](./guides/policy-soft-warning-indicators.md)** | Team Leaders & Managers | Understanding real-time advisory fatigue badges (yellow/red), checking weekly limit thresholds, and non-blocking submission rules.                   |
 | **[SPKL Document Attachment](./guides/spkl-document-attachment.md)**                      | Team Leaders & Managers | Post-shift photo/PDF upload, physical SPKL registration numbers, manager verification, and download access.                                          |
@@ -33,6 +34,7 @@ Step-by-step instructions for everyday plant operations:
 All navigation in the OT-CapEx system corresponds directly to your assigned sidebar items:
 
 - **Dashboard**: High-level shift summary, operational clock, and role capability status.
+- **Burn Index**: Operational health command center for real-time section burn rates, budget control matrix zones, and velocity (Admin and Manager roles).
 - **Master Data**: Consolidated administrative hub for plant departments, sections, employee rosters, and operational calendars (Admin role).
 - **Administration**: Consolidated administrative hub for plant-wide policy thresholds and user accounts (Admin role).
 - **Budget Planning**: Consolidated hub for section-level monthly overtime hour quotas, 5-week distributions, and labor cost estimates (Admin and Manager roles).

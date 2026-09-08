@@ -5,6 +5,7 @@ import {
     ClipboardCheck,
     ClipboardList,
     Database,
+    Flame,
     LayoutGrid,
     ShieldCheck,
 } from '@lucide/vue';
@@ -25,6 +26,7 @@ import { useTrans } from '@/composables/useTrans';
 import { dashboard } from '@/routes';
 import { administration, masterData } from '@/routes/admin';
 import { planning } from '@/routes/budgets';
+import { burnIndex } from '@/routes/dashboard';
 import { approvals as overtimeApprovals } from '@/routes/overtime';
 import { create as overtimeCreate } from '@/routes/overtime/submissions';
 import type { NavItem, User } from '@/types';
@@ -59,6 +61,12 @@ const mainNavItems = computed<NavItem[]>(() => {
     }
 
     if (user.value?.role === 'admin' || user.value?.role === 'manager') {
+        items.push({
+            title: __('Burn Index'),
+            href: burnIndex(),
+            icon: Flame,
+            testId: 'nav-burn-index',
+        });
         items.push({
             title: __('Budget Planning'),
             href: planning(),

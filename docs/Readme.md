@@ -113,6 +113,7 @@ Plain-language operating guides for factory supervisors, team leaders, and opera
     - [User Account Management Guide](./user-docs/guides/user-account-management.md)
     - [User Preferences & Display Standards Guide](./user-docs/guides/user-preferences-settings.md)
     - [Overtime Budget Planning Guide](./user-docs/guides/overtime-budget-planning.md)
+    - [Burn Index & Budget Dashboard Guide](./user-docs/guides/budget-burn-index.md)
     - [Daily Overtime Submission Guide](./user-docs/guides/daily-overtime-submission.md)
     - [Policy Soft Warning Indicators Guide](./user-docs/guides/policy-soft-warning-indicators.md)
     - [SPKL Document Attachment Guide](./user-docs/guides/spkl-document-attachment.md)
