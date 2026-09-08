@@ -17,6 +17,7 @@ import ApprovalItemRow, {
     type ApprovalItemData,
     type ItemDecision,
 } from '@/components/overtime/ApprovalItemRow.vue';
+import AuditTrailDrawer from '@/components/overtime/AuditTrailDrawer.vue';
 import SectionBurnIndicator from '@/components/overtime/SectionBurnIndicator.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -103,6 +104,14 @@ const formError = ref<string | null>(null);
 
 const sharedRejectionReason = ref('');
 const showSharedRejectionPrompt = ref(false);
+
+const selectedAuditItemId = ref<number | null>(null);
+const isAuditDrawerOpen = ref(false);
+
+function handleOpenAudit(itemId: number) {
+    selectedAuditItemId.value = itemId;
+    isAuditDrawerOpen.value = true;
+}
 
 const decisions = reactive<Record<number, ItemDecision>>({});
 
@@ -407,433 +416,468 @@ function getStatusBadge(status: string) {
 </script>
 
 <template>
-    <Dialog :open="open" @update:open="emit('update:open', $event)">
-        <DialogContent
-            class="flex max-h-[92vh] w-full max-w-5xl flex-col p-0 sm:max-w-5xl"
-            data-test="approval-modal"
-        >
-            <DialogTitle class="sr-only">
-                {{ __('Persetujuan Lembur Karyawan') }}
-            </DialogTitle>
-            <DialogDescription class="sr-only">
-                {{
-                    __(
-                        'Rincian jam lembur dan keputusan persetujuan per item karyawan.',
-                    )
-                }}
-            </DialogDescription>
-
-            <!-- Modal Header -->
-            <DialogHeader
-                class="border-b border-slate-200 p-4 pb-3 sm:p-5 sm:pb-4 dark:border-slate-800"
+    <div>
+        <Dialog :open="open" @update:open="emit('update:open', $event)">
+            <DialogContent
+                class="flex max-h-[92vh] w-full max-w-5xl flex-col p-0 sm:max-w-5xl"
+                data-test="approval-modal"
             >
-                <div class="flex flex-wrap items-start justify-between gap-3">
-                    <div class="space-y-1">
-                        <div class="flex flex-wrap items-center gap-2">
-                            <span
-                                class="rounded bg-slate-100 px-2.5 py-1 font-mono text-xs font-bold text-slate-800 dark:bg-slate-800 dark:text-slate-200"
-                                data-test="approval-modal-code"
-                            >
-                                {{
-                                    submission?.submission_code ?? 'Loading...'
-                                }}
-                            </span>
+                <DialogTitle class="sr-only">
+                    {{ __('Persetujuan Lembur Karyawan') }}
+                </DialogTitle>
+                <DialogDescription class="sr-only">
+                    {{
+                        __(
+                            'Rincian jam lembur dan keputusan persetujuan per item karyawan.',
+                        )
+                    }}
+                </DialogDescription>
 
-                            <Badge
-                                v-if="submission"
-                                :class="getStatusBadge(submission.status).class"
-                                class="text-[11px]"
-                                data-test="approval-modal-status"
-                            >
-                                {{ getStatusBadge(submission.status).label }}
-                            </Badge>
-
-                            <Badge
-                                v-if="submission"
-                                variant="outline"
-                                :class="
-                                    submission.day_type === 'HKN'
-                                        ? 'dark:bg-slate-850 bg-slate-50 text-slate-700 dark:text-slate-300'
-                                        : 'bg-red-50 text-[#cc0000] dark:bg-red-950 dark:text-red-300'
-                                "
-                                class="text-[10px] font-bold"
-                            >
-                                {{ submission.day_type }}
-                            </Badge>
-                        </div>
-
-                        <!-- Section & Submitter Subtitle -->
-                        <div
-                            v-if="submission"
-                            class="flex flex-wrap items-center gap-x-4 gap-y-1 pt-1 text-xs text-slate-500 dark:text-slate-400"
-                        >
-                            <span class="flex items-center gap-1">
-                                <Calendar class="size-3.5" />
-                                {{
-                                    formatDateIndo(submission.operational_date)
-                                }}
-                            </span>
-                            <span
-                                class="font-medium text-slate-700 dark:text-slate-300"
-                            >
-                                {{ submission.section?.name ?? '-' }} ({{
-                                    submission.department?.name ?? '-'
-                                }})
-                            </span>
-                            <span class="flex items-center gap-1">
-                                <UserIcon class="size-3.5" />
-                                {{ submission.submitted_by?.name ?? '-' }}
-                                <span class="font-mono text-slate-400"
-                                    >({{ submission.submitted_by?.npk }})</span
-                                >
-                            </span>
-                        </div>
-                    </div>
-
-                    <!-- SPKL Status Badge & Link -->
-                    <div class="flex items-center gap-2">
-                        <div
-                            v-if="submission?.spkl_document"
-                            class="flex items-center gap-1.5"
-                        >
-                            <span
-                                class="inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-medium"
-                                :class="
-                                    submission.spkl_document.status ===
-                                        'ATTACHED' ||
-                                    submission.spkl_document.status ===
-                                        'VERIFIED'
-                                        ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-300'
-                                        : 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-300'
-                                "
-                                data-test="modal-spkl-badge"
-                            >
-                                <FileText class="size-3" />
-                                SPKL: {{ submission.spkl_document.status }}
-                            </span>
-
-                            <Button
-                                v-if="
-                                    submission.spkl_document.file_name ||
-                                    submission.spkl_document.status ===
-                                        'ATTACHED' ||
-                                    submission.spkl_document.status ===
-                                        'VERIFIED'
-                                "
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                class="h-7 text-xs"
-                                data-test="btn-download-spkl"
-                                @click="handleDownloadSpkl"
-                            >
-                                <Download class="mr-1 size-3" />
-                                {{ __('Unduh SPKL') }}
-                            </Button>
-                        </div>
-
-                        <span
-                            class="hidden text-[11px] text-slate-400 sm:inline"
-                            :title="
-                                __(
-                                    'Sesuai BR-05: SPKL pending tidak menghambat persetujuan lembur operasional.',
-                                )
-                            "
-                        >
-                            {{ __('SPKL Non-blocking (BR-05)') }}
-                        </span>
-                    </div>
-                </div>
-
-                <!-- Section Monthly Burn Indicator in Modal Header -->
-                <div class="mt-3" data-test="modal-burn-indicator">
-                    <SectionBurnIndicator :burn="burnIndicator" />
-                </div>
-            </DialogHeader>
-
-            <!-- Dialog Body -->
-            <div class="flex-1 overflow-y-auto p-4 sm:p-5">
-                <!-- Loading State -->
-                <div
-                    v-if="isLoading"
-                    class="flex flex-col items-center justify-center py-12 text-slate-500"
+                <!-- Modal Header -->
+                <DialogHeader
+                    class="border-b border-slate-200 p-4 pb-3 sm:p-5 sm:pb-4 dark:border-slate-800"
                 >
-                    <RefreshCw class="size-8 animate-spin text-[#cc0000]" />
-                    <p class="mt-2 text-xs font-medium">
-                        {{ __('Memuat rincian data karyawan...') }}
-                    </p>
-                </div>
-
-                <!-- Error Alert -->
-                <div
-                    v-else-if="fetchError"
-                    class="rounded-lg border border-red-200 bg-red-50 p-4 text-xs text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300"
-                >
-                    <div class="flex items-center gap-2 font-bold">
-                        <AlertCircle class="size-4" />
-                        <span>{{ __('Gagal Memuat Data') }}</span>
-                    </div>
-                    <p class="mt-1">{{ fetchError }}</p>
-                    <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        class="mt-3 text-xs"
-                        @click="submissionId && loadSubmission(submissionId)"
-                    >
-                        {{ __('Coba Lagi') }}
-                    </Button>
-                </div>
-
-                <!-- Main Review Content -->
-                <div v-else-if="submission" class="space-y-4">
-                    <!-- Optimistic Concurrency Conflict Banner (409) -->
                     <div
-                        v-if="conflictError"
-                        class="rounded-lg border border-amber-300 bg-amber-50 p-4 text-xs text-amber-900 shadow-xs dark:border-amber-800 dark:bg-amber-950/50 dark:text-amber-200"
-                        data-test="conflict-banner"
+                        class="flex flex-wrap items-start justify-between gap-3"
                     >
-                        <div class="flex items-start gap-2.5">
-                            <AlertTriangle
-                                class="mt-0.5 size-5 shrink-0 text-amber-600 dark:text-amber-400"
-                            />
-                            <div class="flex-1 space-y-1">
-                                <h5
-                                    class="font-bold text-amber-900 dark:text-amber-100"
+                        <div class="space-y-1">
+                            <div class="flex flex-wrap items-center gap-2">
+                                <span
+                                    class="rounded bg-slate-100 px-2.5 py-1 font-mono text-xs font-bold text-slate-800 dark:bg-slate-800 dark:text-slate-200"
+                                    data-test="approval-modal-code"
                                 >
                                     {{
-                                        __(
-                                            'Konflik Pembaruan Data (409 Conflict)',
+                                        submission?.submission_code ??
+                                        'Loading...'
+                                    }}
+                                </span>
+
+                                <Badge
+                                    v-if="submission"
+                                    :class="
+                                        getStatusBadge(submission.status).class
+                                    "
+                                    class="text-[11px]"
+                                    data-test="approval-modal-status"
+                                >
+                                    {{
+                                        getStatusBadge(submission.status).label
+                                    }}
+                                </Badge>
+
+                                <Badge
+                                    v-if="submission"
+                                    variant="outline"
+                                    :class="
+                                        submission.day_type === 'HKN'
+                                            ? 'dark:bg-slate-850 bg-slate-50 text-slate-700 dark:text-slate-300'
+                                            : 'bg-red-50 text-[#cc0000] dark:bg-red-950 dark:text-red-300'
+                                    "
+                                    class="text-[10px] font-bold"
+                                >
+                                    {{ submission.day_type }}
+                                </Badge>
+                            </div>
+
+                            <!-- Section & Submitter Subtitle -->
+                            <div
+                                v-if="submission"
+                                class="flex flex-wrap items-center gap-x-4 gap-y-1 pt-1 text-xs text-slate-500 dark:text-slate-400"
+                            >
+                                <span class="flex items-center gap-1">
+                                    <Calendar class="size-3.5" />
+                                    {{
+                                        formatDateIndo(
+                                            submission.operational_date,
                                         )
                                     }}
-                                </h5>
-                                <p>{{ conflictError }}</p>
-                                <div class="pt-2">
-                                    <Button
-                                        type="button"
-                                        size="sm"
-                                        class="bg-amber-600 text-white hover:bg-amber-700 dark:bg-amber-700"
-                                        data-test="btn-reload-conflict"
-                                        @click="loadSubmission(submission.id)"
+                                </span>
+                                <span
+                                    class="font-medium text-slate-700 dark:text-slate-300"
+                                >
+                                    {{ submission.section?.name ?? '-' }} ({{
+                                        submission.department?.name ?? '-'
+                                    }})
+                                </span>
+                                <span class="flex items-center gap-1">
+                                    <UserIcon class="size-3.5" />
+                                    {{ submission.submitted_by?.name ?? '-' }}
+                                    <span class="font-mono text-slate-400"
+                                        >({{
+                                            submission.submitted_by?.npk
+                                        }})</span
                                     >
-                                        <RefreshCw class="mr-1.5 size-3.5" />
-                                        {{ __('Muat Ulang Data Terbaru') }}
-                                    </Button>
-                                </div>
+                                </span>
                             </div>
                         </div>
-                    </div>
 
-                    <!-- Validation / General Form Error Alert -->
-                    <div
-                        v-if="formError"
-                        class="rounded-lg border border-red-300 bg-red-50 p-3 text-xs text-red-800 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300"
-                        data-test="form-error-banner"
-                    >
-                        <div class="flex items-center gap-2 font-bold">
-                            <AlertCircle class="size-4 shrink-0 text-red-600" />
-                            <span>{{ formError }}</span>
-                        </div>
-                    </div>
-
-                    <!-- Batch Decision Toolbar -->
-                    <div
-                        class="dark:bg-slate-850 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-slate-200 bg-slate-50/70 p-3 dark:border-slate-800"
-                        data-test="batch-controls"
-                    >
-                        <div class="text-xs text-slate-600 dark:text-slate-400">
-                            <span
-                                class="font-semibold text-slate-800 dark:text-slate-200"
-                            >
-                                {{ __('Tindakan Cepat Standup:') }}
-                            </span>
-                            {{
-                                __(
-                                    'Terapkan keputusan serentak untuk seluruh item.',
-                                )
-                            }}
-                        </div>
-
+                        <!-- SPKL Status Badge & Link -->
                         <div class="flex items-center gap-2">
-                            <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                class="h-8 border-emerald-300 text-xs text-emerald-700 hover:bg-emerald-50 dark:border-emerald-800 dark:text-emerald-300 dark:hover:bg-emerald-950/50"
-                                data-test="btn-approve-all"
-                                @click="approveAll"
+                            <div
+                                v-if="submission?.spkl_document"
+                                class="flex items-center gap-1.5"
                             >
-                                <CheckCheck class="mr-1.5 size-3.5" />
-                                {{ __('Setujui Semua (Approve All)') }}
-                            </Button>
+                                <span
+                                    class="inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-medium"
+                                    :class="
+                                        submission.spkl_document.status ===
+                                            'ATTACHED' ||
+                                        submission.spkl_document.status ===
+                                            'VERIFIED'
+                                            ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-300'
+                                            : 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-300'
+                                    "
+                                    data-test="modal-spkl-badge"
+                                >
+                                    <FileText class="size-3" />
+                                    SPKL: {{ submission.spkl_document.status }}
+                                </span>
 
-                            <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                class="h-8 border-red-300 text-xs text-red-700 hover:bg-red-50 dark:border-red-800 dark:text-red-300 dark:hover:bg-red-950/50"
-                                data-test="btn-reject-all"
-                                @click="rejectAll"
+                                <Button
+                                    v-if="
+                                        submission.spkl_document.file_name ||
+                                        submission.spkl_document.status ===
+                                            'ATTACHED' ||
+                                        submission.spkl_document.status ===
+                                            'VERIFIED'
+                                    "
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    class="h-7 text-xs"
+                                    data-test="btn-download-spkl"
+                                    @click="handleDownloadSpkl"
+                                >
+                                    <Download class="mr-1 size-3" />
+                                    {{ __('Unduh SPKL') }}
+                                </Button>
+                            </div>
+
+                            <span
+                                class="hidden text-[11px] text-slate-400 sm:inline"
+                                :title="
+                                    __(
+                                        'Sesuai BR-05: SPKL pending tidak menghambat persetujuan lembur operasional.',
+                                    )
+                                "
                             >
-                                <XCircle class="mr-1.5 size-3.5" />
-                                {{ __('Tolak Semua (Reject All)') }}
-                            </Button>
+                                {{ __('SPKL Non-blocking (BR-05)') }}
+                            </span>
                         </div>
                     </div>
 
-                    <!-- Shared Rejection Reason Prompt (when Reject All triggered) -->
+                    <!-- Section Monthly Burn Indicator in Modal Header -->
+                    <div class="mt-3" data-test="modal-burn-indicator">
+                        <SectionBurnIndicator :burn="burnIndicator" />
+                    </div>
+                </DialogHeader>
+
+                <!-- Dialog Body -->
+                <div class="flex-1 overflow-y-auto p-4 sm:p-5">
+                    <!-- Loading State -->
                     <div
-                        v-if="showSharedRejectionPrompt"
-                        class="space-y-2 rounded-lg border border-red-200 bg-red-50/50 p-3 text-xs dark:border-red-900/60 dark:bg-red-950/30"
-                        data-test="shared-rejection-prompt"
+                        v-if="isLoading"
+                        class="flex flex-col items-center justify-center py-12 text-slate-500"
                     >
-                        <div class="flex items-center justify-between">
-                            <span
-                                class="font-bold text-red-900 dark:text-red-200"
-                            >
-                                {{
-                                    __(
-                                        'Alasan Penolakan Serentak (Wajib Diisi)',
-                                    )
-                                }}
-                            </span>
-                            <button
-                                type="button"
-                                class="text-slate-400 hover:text-slate-600"
-                                @click="showSharedRejectionPrompt = false"
-                            >
-                                <X class="size-3.5" />
-                            </button>
-                        </div>
-                        <div class="flex gap-2">
-                            <input
-                                v-model="sharedRejectionReason"
-                                type="text"
-                                :placeholder="
-                                    __(
-                                        'Contoh: Target shift terpenuhi, lembur tidak dialokasikan atau salah kategori.',
-                                    )
-                                "
-                                class="h-8 flex-1 rounded-md border border-red-300 bg-white px-2.5 text-xs text-slate-900 focus:border-red-500 focus:ring-1 focus:ring-red-500 focus:outline-hidden dark:border-red-800 dark:bg-slate-900 dark:text-white"
-                                data-test="input-shared-rejection"
-                                @input="applySharedRejection"
-                            />
-                            <Button
-                                type="button"
-                                size="sm"
-                                class="h-8 bg-red-600 text-xs text-white hover:bg-red-700"
-                                :disabled="
-                                    sharedRejectionReason.trim().length < 5
-                                "
-                                data-test="btn-apply-shared-rejection"
-                                @click="applySharedRejection"
-                            >
-                                {{ __('Terapkan') }}
-                            </Button>
-                        </div>
-                        <p class="text-[11px] text-slate-500">
-                            {{
-                                __(
-                                    'Alasan ini akan otomatis disalin ke setiap item karyawan yang ditolak.',
-                                )
-                            }}
+                        <RefreshCw class="size-8 animate-spin text-[#cc0000]" />
+                        <p class="mt-2 text-xs font-medium">
+                            {{ __('Memuat rincian data karyawan...') }}
                         </p>
                     </div>
 
-                    <!-- Scrollable Employee Item Rows -->
-                    <div class="space-y-2.5" data-test="approval-items-list">
-                        <ApprovalItemRow
-                            v-for="item in itemsList"
-                            :key="item.id"
-                            :item="item"
-                            :decision="
-                                decisions[item.id] || {
-                                    item_id: item.id,
-                                    action: 'PENDING',
-                                    rejection_reason: '',
-                                    lock_version: item.lock_version ?? 1,
-                                }
+                    <!-- Error Alert -->
+                    <div
+                        v-else-if="fetchError"
+                        class="rounded-lg border border-red-200 bg-red-50 p-4 text-xs text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300"
+                    >
+                        <div class="flex items-center gap-2 font-bold">
+                            <AlertCircle class="size-4" />
+                            <span>{{ __('Gagal Memuat Data') }}</span>
+                        </div>
+                        <p class="mt-1">{{ fetchError }}</p>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            class="mt-3 text-xs"
+                            @click="
+                                submissionId && loadSubmission(submissionId)
                             "
-                            :disabled="isSaving"
-                            @update:decision="decisions[item.id] = $event"
-                        />
+                        >
+                            {{ __('Coba Lagi') }}
+                        </Button>
+                    </div>
+
+                    <!-- Main Review Content -->
+                    <div v-else-if="submission" class="space-y-4">
+                        <!-- Optimistic Concurrency Conflict Banner (409) -->
+                        <div
+                            v-if="conflictError"
+                            class="rounded-lg border border-amber-300 bg-amber-50 p-4 text-xs text-amber-900 shadow-xs dark:border-amber-800 dark:bg-amber-950/50 dark:text-amber-200"
+                            data-test="conflict-banner"
+                        >
+                            <div class="flex items-start gap-2.5">
+                                <AlertTriangle
+                                    class="mt-0.5 size-5 shrink-0 text-amber-600 dark:text-amber-400"
+                                />
+                                <div class="flex-1 space-y-1">
+                                    <h5
+                                        class="font-bold text-amber-900 dark:text-amber-100"
+                                    >
+                                        {{
+                                            __(
+                                                'Konflik Pembaruan Data (409 Conflict)',
+                                            )
+                                        }}
+                                    </h5>
+                                    <p>{{ conflictError }}</p>
+                                    <div class="pt-2">
+                                        <Button
+                                            type="button"
+                                            size="sm"
+                                            class="bg-amber-600 text-white hover:bg-amber-700 dark:bg-amber-700"
+                                            data-test="btn-reload-conflict"
+                                            @click="
+                                                loadSubmission(submission.id)
+                                            "
+                                        >
+                                            <RefreshCw
+                                                class="mr-1.5 size-3.5"
+                                            />
+                                            {{ __('Muat Ulang Data Terbaru') }}
+                                        </Button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Validation / General Form Error Alert -->
+                        <div
+                            v-if="formError"
+                            class="rounded-lg border border-red-300 bg-red-50 p-3 text-xs text-red-800 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300"
+                            data-test="form-error-banner"
+                        >
+                            <div class="flex items-center gap-2 font-bold">
+                                <AlertCircle
+                                    class="size-4 shrink-0 text-red-600"
+                                />
+                                <span>{{ formError }}</span>
+                            </div>
+                        </div>
+
+                        <!-- Batch Decision Toolbar -->
+                        <div
+                            class="dark:bg-slate-850 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-slate-200 bg-slate-50/70 p-3 dark:border-slate-800"
+                            data-test="batch-controls"
+                        >
+                            <div
+                                class="text-xs text-slate-600 dark:text-slate-400"
+                            >
+                                <span
+                                    class="font-semibold text-slate-800 dark:text-slate-200"
+                                >
+                                    {{ __('Tindakan Cepat Standup:') }}
+                                </span>
+                                {{
+                                    __(
+                                        'Terapkan keputusan serentak untuk seluruh item.',
+                                    )
+                                }}
+                            </div>
+
+                            <div class="flex items-center gap-2">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    class="h-8 border-emerald-300 text-xs text-emerald-700 hover:bg-emerald-50 dark:border-emerald-800 dark:text-emerald-300 dark:hover:bg-emerald-950/50"
+                                    data-test="btn-approve-all"
+                                    @click="approveAll"
+                                >
+                                    <CheckCheck class="mr-1.5 size-3.5" />
+                                    {{ __('Setujui Semua (Approve All)') }}
+                                </Button>
+
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    class="h-8 border-red-300 text-xs text-red-700 hover:bg-red-50 dark:border-red-800 dark:text-red-300 dark:hover:bg-red-950/50"
+                                    data-test="btn-reject-all"
+                                    @click="rejectAll"
+                                >
+                                    <XCircle class="mr-1.5 size-3.5" />
+                                    {{ __('Tolak Semua (Reject All)') }}
+                                </Button>
+                            </div>
+                        </div>
+
+                        <!-- Shared Rejection Reason Prompt (when Reject All triggered) -->
+                        <div
+                            v-if="showSharedRejectionPrompt"
+                            class="space-y-2 rounded-lg border border-red-200 bg-red-50/50 p-3 text-xs dark:border-red-900/60 dark:bg-red-950/30"
+                            data-test="shared-rejection-prompt"
+                        >
+                            <div class="flex items-center justify-between">
+                                <span
+                                    class="font-bold text-red-900 dark:text-red-200"
+                                >
+                                    {{
+                                        __(
+                                            'Alasan Penolakan Serentak (Wajib Diisi)',
+                                        )
+                                    }}
+                                </span>
+                                <button
+                                    type="button"
+                                    class="text-slate-400 hover:text-slate-600"
+                                    @click="showSharedRejectionPrompt = false"
+                                >
+                                    <X class="size-3.5" />
+                                </button>
+                            </div>
+                            <div class="flex gap-2">
+                                <input
+                                    v-model="sharedRejectionReason"
+                                    type="text"
+                                    :placeholder="
+                                        __(
+                                            'Contoh: Target shift terpenuhi, lembur tidak dialokasikan atau salah kategori.',
+                                        )
+                                    "
+                                    class="h-8 flex-1 rounded-md border border-red-300 bg-white px-2.5 text-xs text-slate-900 focus:border-red-500 focus:ring-1 focus:ring-red-500 focus:outline-hidden dark:border-red-800 dark:bg-slate-900 dark:text-white"
+                                    data-test="input-shared-rejection"
+                                    @input="applySharedRejection"
+                                />
+                                <Button
+                                    type="button"
+                                    size="sm"
+                                    class="h-8 bg-red-600 text-xs text-white hover:bg-red-700"
+                                    :disabled="
+                                        sharedRejectionReason.trim().length < 5
+                                    "
+                                    data-test="btn-apply-shared-rejection"
+                                    @click="applySharedRejection"
+                                >
+                                    {{ __('Terapkan') }}
+                                </Button>
+                            </div>
+                            <p class="text-[11px] text-slate-500">
+                                {{
+                                    __(
+                                        'Alasan ini akan otomatis disalin ke setiap item karyawan yang ditolak.',
+                                    )
+                                }}
+                            </p>
+                        </div>
+
+                        <!-- Scrollable Employee Item Rows -->
+                        <div
+                            class="space-y-2.5"
+                            data-test="approval-items-list"
+                        >
+                            <ApprovalItemRow
+                                v-for="item in itemsList"
+                                :key="item.id"
+                                :item="item"
+                                :decision="
+                                    decisions[item.id] || {
+                                        item_id: item.id,
+                                        action: 'PENDING',
+                                        rejection_reason: '',
+                                        lock_version: item.lock_version ?? 1,
+                                    }
+                                "
+                                :disabled="isSaving"
+                                @update:decision="decisions[item.id] = $event"
+                                @open-audit="handleOpenAudit"
+                            />
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <!-- Modal Footer -->
-            <DialogFooter
-                class="flex flex-col-reverse items-center justify-between gap-3 border-t border-slate-200 bg-slate-50/70 p-4 sm:flex-row sm:p-5 dark:border-slate-800 dark:bg-slate-900"
-            >
-                <!-- Counters & Cost Preview -->
-                <div class="flex flex-wrap items-center gap-3 text-xs">
-                    <span
-                        class="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-2.5 py-1 font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
-                        data-test="counter-approved"
-                    >
-                        <span class="size-2 rounded-full bg-emerald-500" />
-                        {{ approvedCount }} {{ __('Disetujui') }}
-                    </span>
+                <!-- Modal Footer -->
+                <DialogFooter
+                    class="flex flex-col-reverse items-center justify-between gap-3 border-t border-slate-200 bg-slate-50/70 p-4 sm:flex-row sm:p-5 dark:border-slate-800 dark:bg-slate-900"
+                >
+                    <!-- Counters & Cost Preview -->
+                    <div class="flex flex-wrap items-center gap-3 text-xs">
+                        <span
+                            class="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-2.5 py-1 font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+                            data-test="counter-approved"
+                        >
+                            <span class="size-2 rounded-full bg-emerald-500" />
+                            {{ approvedCount }} {{ __('Disetujui') }}
+                        </span>
 
-                    <span
-                        class="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-2.5 py-1 font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
-                        data-test="counter-rejected"
-                    >
-                        <span class="size-2 rounded-full bg-red-500" />
-                        {{ rejectedCount }} {{ __('Ditolak') }}
-                    </span>
+                        <span
+                            class="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-2.5 py-1 font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+                            data-test="counter-rejected"
+                        >
+                            <span class="size-2 rounded-full bg-red-500" />
+                            {{ rejectedCount }} {{ __('Ditolak') }}
+                        </span>
 
-                    <span
-                        v-if="pendingCount > 0"
-                        class="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-2.5 py-1 font-medium text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400"
-                        data-test="counter-pending"
-                    >
-                        <span class="size-2 rounded-full bg-slate-400" />
-                        {{ pendingCount }} {{ __('Pending') }}
-                    </span>
+                        <span
+                            v-if="pendingCount > 0"
+                            class="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-2.5 py-1 font-medium text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400"
+                            data-test="counter-pending"
+                        >
+                            <span class="size-2 rounded-full bg-slate-400" />
+                            {{ pendingCount }} {{ __('Pending') }}
+                        </span>
 
-                    <span
-                        class="font-mono text-xs font-bold text-slate-800 tabular-nums dark:text-slate-200"
-                        data-test="approved-cost-preview"
-                    >
-                        {{ __('Total Biaya Disetujui:') }}
-                        <span class="text-emerald-600 dark:text-emerald-400">{{
-                            formatRupiah(approvedCost)
-                        }}</span>
-                    </span>
-                </div>
+                        <span
+                            class="font-mono text-xs font-bold text-slate-800 tabular-nums dark:text-slate-200"
+                            data-test="approved-cost-preview"
+                        >
+                            {{ __('Total Biaya Disetujui:') }}
+                            <span
+                                class="text-emerald-600 dark:text-emerald-400"
+                                >{{ formatRupiah(approvedCost) }}</span
+                            >
+                        </span>
+                    </div>
 
-                <!-- Action Buttons -->
-                <div class="flex items-center gap-2">
-                    <Button
-                        type="button"
-                        variant="outline"
-                        :disabled="isSaving"
-                        data-test="btn-cancel-modal"
-                        @click="handleClose"
-                    >
-                        {{ __('Batal') }}
-                    </Button>
+                    <!-- Action Buttons -->
+                    <div class="flex items-center gap-2">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            :disabled="isSaving"
+                            data-test="btn-cancel-modal"
+                            @click="handleClose"
+                        >
+                            {{ __('Batal') }}
+                        </Button>
 
-                    <Button
-                        type="button"
-                        :disabled="!canSubmit"
-                        class="bg-[#cc0000] text-white shadow-xs transition-all hover:bg-[#b30000] active:scale-95 disabled:opacity-50"
-                        data-test="btn-save-decisions"
-                        @click="saveDecisions"
-                    >
-                        <RefreshCw
-                            v-if="isSaving"
-                            class="mr-1.5 size-3.5 animate-spin"
-                        />
-                        {{
-                            isSaving
-                                ? __('Menyimpan...')
-                                : __('Simpan Keputusan')
-                        }}
-                    </Button>
-                </div>
-            </DialogFooter>
-        </DialogContent>
-    </Dialog>
+                        <Button
+                            type="button"
+                            :disabled="!canSubmit"
+                            class="bg-[#cc0000] text-white shadow-xs transition-all hover:bg-[#b30000] active:scale-95 disabled:opacity-50"
+                            data-test="btn-save-decisions"
+                            @click="saveDecisions"
+                        >
+                            <RefreshCw
+                                v-if="isSaving"
+                                class="mr-1.5 size-3.5 animate-spin"
+                            />
+                            {{
+                                isSaving
+                                    ? __('Menyimpan...')
+                                    : __('Simpan Keputusan')
+                            }}
+                        </Button>
+                    </div>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+
+        <!-- E04-05: Item Audit Trail Drawer -->
+        <AuditTrailDrawer
+            :open="isAuditDrawerOpen"
+            :item-id="selectedAuditItemId"
+            @update:open="isAuditDrawerOpen = $event"
+        />
+    </div>
 </template>

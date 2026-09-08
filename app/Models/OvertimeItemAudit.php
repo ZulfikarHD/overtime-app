@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Observers\OvertimeItemAuditObserver;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -18,6 +20,7 @@ use Illuminate\Support\Carbon;
  * @property string|null $ip_address
  * @property Carbon|null $created_at
  */
+#[ObservedBy([OvertimeItemAuditObserver::class])]
 class OvertimeItemAudit extends Model
 {
     /**

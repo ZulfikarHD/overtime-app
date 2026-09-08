@@ -75,6 +75,7 @@ Durable technical decisions and trade-offs:
 - **[ADR-014: Automated SPKL Document Reminders and In-App Notifications Architecture](./decisions/014-automated-spkl-reminders-and-in-app-notifications.md)**
 - **[ADR-015: Advisory Overtime Policy Soft Warning Indicators](./decisions/015-advisory-overtime-policy-soft-warning-indicators.md)**
 - **[ADR-016: Streaming Overtime Export and Audit Logging](./decisions/016-streaming-overtime-export-and-audit-logging.md)**
+- **[ADR-017: Immutable Overtime Item Audit Ledger and Lifecycle History](./decisions/017-immutable-overtime-item-audit-ledger.md)**
 
 ---
 

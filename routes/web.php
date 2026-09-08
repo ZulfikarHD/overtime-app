@@ -14,6 +14,7 @@ use App\Http\Controllers\Budgets\OvertimeBudgetController;
 use App\Http\Controllers\Budgets\OvertimeBudgetImportController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\Overtime\OvertimeApprovalController;
+use App\Http\Controllers\Overtime\OvertimeItemAuditController;
 use App\Http\Controllers\Overtime\OvertimeSubmissionController;
 use App\Http\Controllers\Overtime\SpklDocumentController;
 use Illuminate\Support\Facades\Route;
@@ -109,6 +110,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/approvals/export', [OvertimeApprovalController::class, 'export'])->name('approvals.export');
         Route::post('/approvals/bulk', [OvertimeApprovalController::class, 'bulkProcess'])->name('approvals.bulk');
         Route::post('/submissions/{submission}/approve-items', [OvertimeApprovalController::class, 'approveItems'])->name('submissions.approve-items');
+        Route::get('/items/{item}/audit', [OvertimeItemAuditController::class, 'index'])->name('items.audit');
     });
 
     Route::middleware(['role:admin,manager'])->prefix('manager')->name('manager.')->group(function () {

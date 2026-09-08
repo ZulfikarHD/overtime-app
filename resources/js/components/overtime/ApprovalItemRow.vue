@@ -1,7 +1,16 @@
 <script setup lang="ts">
-import { AlertTriangle, Bot, Check, Clock, FolderKanban, X } from '@lucide/vue';
+import {
+    AlertTriangle,
+    Bot,
+    Check,
+    Clock,
+    FolderKanban,
+    History,
+    X,
+} from '@lucide/vue';
 import { computed } from 'vue';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { useTrans } from '@/composables/useTrans';
 import { formatRupiah } from '@/lib/formatters';
 
@@ -66,6 +75,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
     (e: 'update:decision', value: ItemDecision): void;
+    (e: 'openAudit', value: number): void;
 }>();
 
 const { __ } = useTrans();
@@ -189,8 +199,21 @@ function updateRejectionReason(event: Event) {
                 </div>
             </div>
 
-            <!-- Decision Segmented Control -->
-            <div class="flex items-center gap-1.5">
+            <!-- Actions & Decision Segmented Control -->
+            <div class="flex items-center gap-2">
+                <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    class="h-7 px-2 text-xs text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white"
+                    :data-test="`btn-audit-trail-${item.id}`"
+                    :title="__('Lihat Riwayat Perubahan Item')"
+                    @click="emit('openAudit', item.id)"
+                >
+                    <History class="mr-1 size-3.5 text-[#cc0000]" />
+                    <span>{{ __('Riwayat') }}</span>
+                </Button>
+
                 <div
                     class="inline-flex rounded-lg border border-slate-200 bg-slate-100 p-0.5 dark:border-slate-700 dark:bg-slate-800"
                     data-test="decision-control"

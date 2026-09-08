@@ -8,6 +8,7 @@ use App\Models\Department;
 use App\Models\Employee;
 use App\Models\OperationalCalendar;
 use App\Models\OvertimeItem;
+use App\Models\OvertimeItemAudit;
 use App\Models\OvertimeSubmission;
 use App\Models\Section;
 use App\Services\Policy\OvertimePolicyEvaluator;
@@ -180,6 +181,18 @@ class SubmitOvertimeAction
 
                 $totalHoursAccumulator = bcadd($totalHoursAccumulator, $lineTotalStr, 2);
 
+                // Synchronous Initial Audit Ledger Entry (E04-05)
+                OvertimeItemAudit::create([
+                    'overtime_item_id' => $createdItem->id,
+                    'action' => 'SUBMITTED',
+                    'actor_user_id' => $userId,
+                    'previous_state' => null,
+                    'new_state' => $createdItem->toArray(),
+                    'notes' => 'Pengajuan lembur diserahkan.',
+                    'ip_address' => request()?->ip(),
+                    'created_at' => Carbon::now('Asia/Jakarta'),
+                ]);
+
                 // Evaluate policy soft warning (advisory only, BR-06)
                 $policyWarning = $this->policyEvaluator->evaluateEmployee(
                     employeeId: $employee->id,
@@ -214,7 +227,7 @@ class SubmitOvertimeAction
             abort(422, __('Pengajuan yang sudah disetujui atau disetujui sebagian terkunci dan tidak dapat diedit.'));
         }
 
-        return DB::transaction(function () use ($submission, $data) {
+        return DB::transaction(function () use ($submission, $data, $userId) {
             $operationalDate = Carbon::parse($data['operational_date'])->format('Y-m-d');
 
             // 1. Resolve Day Classification (HKN vs HLR)
@@ -329,6 +342,18 @@ class SubmitOvertimeAction
                 ]);
 
                 $totalHoursAccumulator = bcadd($totalHoursAccumulator, $lineTotalStr, 2);
+
+                // Synchronous Initial Audit Ledger Entry (E04-05)
+                OvertimeItemAudit::create([
+                    'overtime_item_id' => $createdItem->id,
+                    'action' => 'SUBMITTED',
+                    'actor_user_id' => $userId,
+                    'previous_state' => null,
+                    'new_state' => $createdItem->toArray(),
+                    'notes' => 'Pengajuan lembur diperbarui dan diserahkan.',
+                    'ip_address' => request()?->ip(),
+                    'created_at' => Carbon::now('Asia/Jakarta'),
+                ]);
 
                 // Evaluate policy soft warning (advisory only, BR-06)
                 $policyWarning = $this->policyEvaluator->evaluateEmployee(

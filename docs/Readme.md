@@ -46,6 +46,7 @@ Technical specifications and decision records for the engineering implementation
     - [ADR-014: Automated SPKL Document Reminders and In-App Notifications](./dev-docs/decisions/014-automated-spkl-reminders-and-in-app-notifications.md)
     - [ADR-015: Advisory Overtime Policy Soft Warning Indicators](./dev-docs/decisions/015-advisory-overtime-policy-soft-warning-indicators.md)
     - [ADR-016: Streaming Overtime Export and Audit Logging](./dev-docs/decisions/016-streaming-overtime-export-and-audit-logging.md)
+    - [ADR-017: Immutable Overtime Item Audit Ledger and Lifecycle History](./dev-docs/decisions/017-immutable-overtime-item-audit-ledger.md)
 - **Technical Feature Design Specifications:**
     - [Authentication & Role-Based Access Control](./dev-docs/features/authentication-rbac.md)
     - [Database Schema Migrations (Full DDL)](./dev-docs/features/database-schema-migrations.md)

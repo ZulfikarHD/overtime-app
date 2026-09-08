@@ -131,7 +131,32 @@ Department Managers and Plant Administrators can download filtered overtime line
     - The download includes 19 standardized manufacturing columns including wage rate snapshots, project codes, and SPKL status.
     - Each export action is logged in the system audit trail.
 
+### Inspecting Item Change History (Audit Trail Drawer) (E04-05)
+
+When auditing overtime decisions or verifying who submitted, approved, or rejected a specific employee's overtime request:
+
+1. **Locate the Worker Row**:
+    - Inside the **Item-Level Approval Modal**, find the employee you wish to inspect.
+2. **Click the "Riwayat" Button**:
+    - Click **🕒 Riwayat** located in the top-right of the employee's card next to the decision buttons.
+3. **Inspect the Slide-in Drawer (`AuditTrailDrawer`)**:
+    - The drawer smoothly slides in from the right without closing your approval modal.
+    - **Header**: Shows the employee's NPK, full name, submission code, and current approval status.
+    - **Timeline Nodes**: Displays every state transition in reverse chronological order (newest on top):
+        - **WIB Timestamp**: Exact date and time the action occurred.
+        - **Actor Details**: Full name, NPK, and role pill of the person who took action (e.g. `Budi Santoso (NPK 1042) - Manager` or `Sistem Otomatis`).
+        - **Action Badge**: Color-coded action pills (`Diajukan` [blue], `Disetujui` [green], `Ditolak` [red], `Buka Kunci Admin` [amber], `Ekspor Data` [purple]).
+        - **Notes / Reason**: Approval note or mandatory rejection reason.
+        - **State Diffing**: Clearly highlights fields that changed from the previous state (e.g. `Status: Menunggu Review → Disetujui`).
+4. **Technical Metadata & IP Address**:
+    - Click **Detail Teknis & Metadata** to expand and review the recording IP address and raw snapshot payload.
+5. **Dismissing the Drawer**:
+    - Click **Tutup** (`X`) or click outside the drawer. The drawer closes smoothly, returning you directly to your active approval modal.
+
 ## Frequently Asked Questions (FAQ)
+
+**Q: Can I modify or delete an audit record?**  
+A: No. Audit records are part of a permanent, tamper-proof immutable ledger. Once recorded, entries cannot be edited or deleted by anyone, including administrators.
 
 **Q: Can I approve some workers and reject others in the same submission?**
 A: Yes! When you approve some and reject others, the submission status automatically updates to **Disetujui Sebagian** (Partially Approved).

@@ -179,6 +179,7 @@ Key invariants from the architecture:
 
 ### Story E04-05: Immutable Audit Trail (Full Lifecycle)
 
+**Status:** ✅ Completed  
 **As an** Auditor / Admin,  
 **I want** a complete, tamper-proof log of every state change to every overtime item,  
 **So that** any dispute over hours, approvals, or cost allocations can be traced to the exact user action and timestamp.
@@ -188,21 +189,21 @@ Key invariants from the architecture:
 
 #### Acceptance Criteria
 
-- [ ] Every state change to `overtime_items` (`SUBMITTED → APPROVED`, `SUBMITTED → REJECTED`, re-review) writes a row to `overtime_item_audits`
-- [ ] Each audit record contains: `overtime_item_id`, `action`, `actor_user_id`, `previous_state` (JSON), `new_state` (JSON), `notes`, `ip_address`, `created_at`
-- [ ] `overtime_item_audits` records are **insert-only** — no UPDATE or DELETE is permitted on this table (enforced at application layer + DB level if supported)
-- [ ] Admin can view the full audit trail for any overtime item via a detail drawer: chronological list of state changes with timestamps, actor names, and diff between previous and new state
-- [ ] Audit records are written **synchronously inside the transaction** (not via a queued job) to guarantee consistency
+- [x] Every state change to `overtime_items` (`SUBMITTED → APPROVED`, `SUBMITTED → REJECTED`, re-review) writes a row to `overtime_item_audits`
+- [x] Each audit record contains: `overtime_item_id`, `action`, `actor_user_id`, `previous_state` (JSON), `new_state` (JSON), `notes`, `ip_address`, `created_at`
+- [x] `overtime_item_audits` records are **insert-only** — no UPDATE or DELETE is permitted on this table (enforced at application layer via `OvertimeItemAuditObserver` + DB level if supported)
+- [x] Admin and Managers can view the full audit trail for any overtime item via a detail drawer: chronological list of state changes with timestamps, actor names, and diff between previous and new state
+- [x] Audit records are written **synchronously inside the transaction** (not via a queued job) to guarantee consistency
 - [x] Export action (E04-04) is also recorded
 
 #### Technical Tasks
 
-- [ ] `OvertimeItemAudit::create(...)` called inside `ApproveOvertimeItemsAction` — already in architecture spec
-- [ ] `OvertimeItemObserver::creating()` — if someone attempts to update an existing audit record, throw exception
-- [ ] Create `resources/js/Components/Overtime/AuditTrailDrawer.vue` — shows timeline of audit events
-- [ ] Route: `GET /overtime/items/{id}/audit` → `OvertimeItemAuditController@index`
-- [ ] Diff display: show which fields changed between `previous_state` and `new_state` JSON
-- [ ] Lock DB-level: `GRANT INSERT ON overtime_item_audits TO app_user; REVOKE UPDATE, DELETE ON overtime_item_audits FROM app_user;` (document in deployment guide)
+- [x] `OvertimeItemAudit::create(...)` called inside `ApproveOvertimeItemsAction` and `SubmitOvertimeAction` synchronously inside transactions
+- [x] `OvertimeItemAuditObserver::updating()` and `deleting()` — if someone attempts to update or delete an existing audit record, throw `RuntimeException`
+- [x] Create `resources/js/components/overtime/AuditTrailDrawer.vue` — shows timeline of audit events, actor badge, and visual state diffing
+- [x] Route: `GET /overtime/items/{item}/audit` → `OvertimeItemAuditController@index` with role & department scoping
+- [x] Diff display: show which fields changed between `previous_state` and `new_state` JSON translated to friendly plant terms
+- [x] Lock DB-level: `GRANT INSERT ON overtime_item_audits TO app_user; REVOKE UPDATE, DELETE ON overtime_item_audits FROM app_user;` (documented in ADR-017)
 
 ---
 
@@ -279,4 +280,6 @@ Key invariants from the architecture:
 - [x] `pnpm lint` passes
 - [x] `pnpm build` succeeds
 - [x] `ApproveOvertimeItemsActionTest` suite passes (including lock conflict test)
+- [x] `OvertimeItemAuditTest` suite passes (insert-only immutability, role/dept scoping, lifecycle records)
 - [x] `ApprovalModalBrowserTest` Pest Playwright suite passes
+- [x] `AuditTrailDrawerBrowserTest` Pest Playwright suite passes (full drawer timeline, actor badge, state diff, metadata toggle)

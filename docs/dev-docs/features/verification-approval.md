@@ -1,4 +1,4 @@
-# Verification, Pending Approval Queue, Item-Level Approvals, Bulk Decisions & Overtime Export (E04-01, E04-02, E04-03 & E04-04)
+# Verification, Pending Approval Queue, Item-Level Approvals, Bulk Decisions, Overtime Export & Immutable Audit Trail (E04-01, E04-02, E04-03, E04-04 & E04-05)
 
 ## Overview
 
@@ -8,6 +8,7 @@ The **Approval Queue & Item-Level Decision System** is the Manager/Admin morning
 - **E04-02** delivers the interactive **Approval Modal** (`ApprovalModal.vue` & `ApprovalItemRow.vue`) enabling granular item-level decisions (`APPROVED`, `REJECTED`, `PENDING`), mandatory rejection reasons (min 5 characters per BR-10), optimistic locking (`lock_version` with HTTP 409 conflict handling), immutable audit logging (`OvertimeItemAudit`), Section Monthly Budget Burn indicators, and parent submission status synchronization (`SUBMITTED` → `APPROVED` | `PARTIALLY_APPROVED` | `REJECTED`).
 - **E04-03** introduces high-speed **Bulk Approval & Rejection** directly on the queue table, allowing approvers to select up to 50 submissions via row checkboxes, inspect totals in a floating toolbar, confirm in a centralized modal with mandatory rejection reasoning, process batches with per-submission transaction isolation, and receive feedback via an auto-dismissing result toast.
 - **E04-04** adds the **Streaming Overtime Data Export** (`ExportButton.vue` & `OvertimeExportService`) allowing approvers to download filtered records in CSV and Excel (.xlsx) formats with 19 standardized columns, \(O(1)\) constant-memory streaming via `LazyCollection`, department authority enforcement, and dual audit logging in `export_logs` and `overtime_item_audits`.
+- **E04-05** implements the **Immutable Audit Trail (Full Lifecycle)** featuring insert-only immutability enforced by `OvertimeItemAuditObserver`, initial synchronous `SUBMITTED` audit logging in `SubmitOvertimeAction`, a scoped audit history API (`GET /overtime/items/{item}/audit`), and an interactive slide-in drawer (`AuditTrailDrawer.vue`) with visual state diffing and WIB timestamps.
 
 ## Architecture Diagram
 
@@ -70,28 +71,34 @@ erDiagram
 
 ## Key Files & UI Mapping
 
-| Layer           | File / Route / Menu                                              | Purpose                                                                           |
-| --------------- | ---------------------------------------------------------------- | --------------------------------------------------------------------------------- |
-| Sidebar Menu    | **Persetujuan Lembur** (`data-test=nav-overtime-approvals`)      | Single Manager/Admin entry; dynamic pending badge                                 |
-| Page Component  | `resources/js/pages/overtime/ApprovalQueue.vue`                  | Queue hub: status tabs, filters, pagination, checkboxes, modal & bulk bar         |
-| Row Component   | `resources/js/components/overtime/SubmissionQueueRow.vue`        | Expandable row summary + SPKL/anomaly/status badges + Review button               |
-| Modal Component | `resources/js/components/overtime/ApprovalModal.vue`             | Full review modal: burn bar, SPKL badge, batch actions, conflict banner, totals   |
-| Bulk Modal      | `resources/js/components/overtime/BulkApprovalConfirmModal.vue`  | Two-step bulk action confirmation dialog with summary and rejection reason input  |
-| Result Toast    | `resources/js/components/overtime/BulkActionResultToast.vue`     | Floating result banner with processed/skipped counters and collapsible skip log   |
-| Item Row        | `resources/js/components/overtime/ApprovalItemRow.vue`           | Employee item row: hours breakdown, CapEx tag, anomaly badge, decision, reason    |
-| Export Button   | `resources/js/components/overtime/ExportButton.vue`              | Header action popover menu: CSV/XLSX download trigger with active filter summary  |
-| Service         | `app/Services/OvertimeExportService.php`                         | LazyCollection cursor streaming, 19-column mapping, native OpenXML XLSX packaging |
-| Model           | `app/Models/ExportLog.php`                                       | Audit trail model tracking export actor, format, counts, and filters              |
-| Controller      | `app/Http/Controllers/Overtime/OvertimeApprovalController.php`   | `index()`, `approveItems()`, `bulkProcess()`, and `export()` endpoints            |
-| Controller      | `app/Http/Controllers/Overtime/OvertimeSubmissionController.php` | `show()` enhanced with anomaly logs and section burn indicator                    |
-| Action          | `app/Actions/Overtime/ApproveOvertimeItemsAction.php`            | Concurrency locking, status transitions, audit ledger, job dispatch               |
-| Action          | `app/Actions/Overtime/BulkApproveSubmissionsAction.php`          | Bulk batch orchestrator with isolated try-catches and conflict skip aggregation   |
-| Request         | `app/Http/Requests/Overtime/ApproveOvertimeItemsRequest.php`     | Form validation for decisions array, actions, and rejection reasons               |
-| Request         | `app/Http/Requests/Overtime/BulkApprovalRequest.php`             | Form validation for bulk submissions (max 50) and shared rejection reasons        |
-| Exception       | `app/Exceptions/OptimisticLockException.php`                     | HTTP 409 Conflict exception for stale lock versions                               |
-| Route           | `POST /overtime/submissions/{submission}/approve-items`          | Wayfinder: `@/routes/overtime/submissions` → `approveItems()`                     |
-| Route           | `POST /overtime/approvals/bulk`                                  | Wayfinder: `@/routes/overtime/approvals` → `bulk()`                               |
-| Route           | `GET /overtime/approvals/export`                                 | Wayfinder: `@/routes/overtime/approvals` → `export()`                             |
+| Layer           | File / Route / Menu                                              | Purpose                                                                                        |
+| --------------- | ---------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| Sidebar Menu    | **Persetujuan Lembur** (`data-test=nav-overtime-approvals`)      | Single Manager/Admin entry; dynamic pending badge                                              |
+| Page Component  | `resources/js/pages/overtime/ApprovalQueue.vue`                  | Queue hub: status tabs, filters, pagination, checkboxes, modal & bulk bar                      |
+| Row Component   | `resources/js/components/overtime/SubmissionQueueRow.vue`        | Expandable row summary + SPKL/anomaly/status badges + Review button                            |
+| Modal Component | `resources/js/components/overtime/ApprovalModal.vue`             | Full review modal: burn bar, SPKL badge, batch actions, conflict banner, totals                |
+| Bulk Modal      | `resources/js/components/overtime/BulkApprovalConfirmModal.vue`  | Two-step bulk action confirmation dialog with summary and rejection reason input               |
+| Result Toast    | `resources/js/components/overtime/BulkActionResultToast.vue`     | Floating result banner with processed/skipped counters and collapsible skip log                |
+| Item Row        | `resources/js/components/overtime/ApprovalItemRow.vue`           | Employee item row: hours breakdown, CapEx tag, anomaly badge, decision, reason, Riwayat button |
+| Audit Drawer    | `resources/js/components/overtime/AuditTrailDrawer.vue`          | Slide-in right sheet: chronological timeline, actor badge, state diffing, and metadata         |
+| Export Button   | `resources/js/components/overtime/ExportButton.vue`              | Header action popover menu: CSV/XLSX download trigger with active filter summary               |
+| Service         | `app/Services/OvertimeExportService.php`                         | LazyCollection cursor streaming, 19-column mapping, native OpenXML XLSX packaging              |
+| Model           | `app/Models/ExportLog.php`                                       | Audit trail model tracking export actor, format, counts, and filters                           |
+| Model           | `app/Models/OvertimeItemAudit.php`                               | Immutable audit ledger model with observed insert-only enforcement                             |
+| Observer        | `app/Observers/OvertimeItemAuditObserver.php`                    | Strict immutability guard: throws RuntimeException on updating/deleting                        |
+| Controller      | `app/Http/Controllers/Overtime/OvertimeApprovalController.php`   | `index()`, `approveItems()`, `bulkProcess()`, and `export()` endpoints                         |
+| Controller      | `app/Http/Controllers/Overtime/OvertimeItemAuditController.php`  | `index()`: scoped chronological audit trail JSON endpoint                                      |
+| Controller      | `app/Http/Controllers/Overtime/OvertimeSubmissionController.php` | `show()` enhanced with anomaly logs and section burn indicator                                 |
+| Action          | `app/Actions/Overtime/ApproveOvertimeItemsAction.php`            | Concurrency locking, status transitions, audit ledger, job dispatch                            |
+| Action          | `app/Actions/Overtime/SubmitOvertimeAction.php`                  | Synchronous initial `SUBMITTED` audit creation during item insertion                           |
+| Action          | `app/Actions/Overtime/BulkApproveSubmissionsAction.php`          | Bulk batch orchestrator with isolated try-catches and conflict skip aggregation                |
+| Request         | `app/Http/Requests/Overtime/ApproveOvertimeItemsRequest.php`     | Form validation for decisions array, actions, and rejection reasons                            |
+| Request         | `app/Http/Requests/Overtime/BulkApprovalRequest.php`             | Form validation for bulk submissions (max 50) and shared rejection reasons                     |
+| Exception       | `app/Exceptions/OptimisticLockException.php`                     | HTTP 409 Conflict exception for stale lock versions                                            |
+| Route           | `POST /overtime/submissions/{submission}/approve-items`          | Wayfinder: `@/routes/overtime/submissions` → `approveItems()`                                  |
+| Route           | `POST /overtime/approvals/bulk`                                  | Wayfinder: `@/routes/overtime/approvals` → `bulk()`                                            |
+| Route           | `GET /overtime/approvals/export`                                 | Wayfinder: `@/routes/overtime/approvals` → `export()`                                          |
+| Route           | `GET /overtime/items/{item}/audit`                               | Wayfinder: `@/routes/overtime/items` → `audit()`                                               |
 
 ## Flow Explanation
 
@@ -127,6 +134,18 @@ erDiagram
     - The controller enforces department scoping for Managers (`abort(403)` on foreign department access).
     - `OvertimeExportService` queries `OvertimeItem` via `LazyCollection` cursor, streaming results row by row into the response.
     - The export action is synchronously logged in `export_logs` and `overtime_item_audits`.
+10. **Inspecting Item Audit Trail (E04-05)**:
+    - Approver clicks **🕒 Riwayat** on any employee row inside `ApprovalModal.vue`.
+    - `AuditTrailDrawer.vue` slides in from the right, fetching `GET /overtime/items/{item}/audit`.
+    - The controller enforces role and department scoping (blocking cross-department snooping with 403).
+    - The drawer displays the complete chronological timeline from initial submission through all reviews:
+        - Actor NPK, name, and role.
+        - WIB timestamp with relative human-readable labeling.
+        - Action badge (`SUBMITTED`, `APPROVED`, `REJECTED`, `ADMIN_UNLOCK`, `EXPORT`).
+        - Rejection reason or approval notes.
+        - Visual state diffing showing changed fields (`Status`, `Estimasi Biaya`, `Lock Version`, etc.).
+        - Collapsible metadata body for IP address verification.
+        - Closing the drawer returns smoothly to the active `ApprovalModal`.
 
 ## API Endpoints & Routes
 
@@ -137,6 +156,7 @@ erDiagram
 | GET    | `/overtime/submissions/{submission}`               | `OvertimeSubmissionController@show`       | Submission detail + burn + anomalies (JSON)   | `auth` (authorized scope)    |
 | POST   | `/overtime/submissions/{submission}/approve-items` | `OvertimeApprovalController@approveItems` | Commit item approvals/rejections with locking | `auth`, `role:admin,manager` |
 | POST   | `/overtime/approvals/bulk`                         | `OvertimeApprovalController@bulkProcess`  | Process bulk approvals/rejections (max 50)    | `auth`, `role:admin,manager` |
+| GET    | `/overtime/items/{item}/audit`                     | `OvertimeItemAuditController@index`       | Chronological audit history for single item   | `auth`, `role:admin,manager` |
 
 ### POST /overtime/approvals/bulk Payload
 
@@ -235,4 +255,6 @@ Or for bulk rejection:
 - [Epic-04 UX Plan](../../scrum/Epic-04-ux-plan.md)
 - [Daily Overtime Entry & SPKL Workflow](./daily-overtime-spkl.md)
 - [ADR-003: Non-Blocking SPKL Document Workflow](../decisions/003-non-blocking-spkl-document-workflow.md)
+- [ADR-016: Streaming Overtime Export and Audit Logging](../decisions/016-streaming-overtime-export-and-audit-logging.md)
+- [ADR-017: Immutable Overtime Item Audit Ledger and Lifecycle History](../decisions/017-immutable-overtime-item-audit-ledger.md)
 - [User Guide: Overtime Approvals Queue](../../user-docs/guides/overtime-approvals.md)

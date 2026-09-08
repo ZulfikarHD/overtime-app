@@ -88,6 +88,16 @@ class OvertimeItem extends Model
     }
 
     /**
+     * Alias for overtimeSubmission relationship.
+     *
+     * @return BelongsTo<OvertimeSubmission, $this>
+     */
+    public function submission(): BelongsTo
+    {
+        return $this->overtimeSubmission();
+    }
+
+    /**
      * @return BelongsTo<Employee, $this>
      */
     public function employee(): BelongsTo
