@@ -99,6 +99,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/submissions/{submission}', [OvertimeSubmissionController::class, 'show'])->name('submissions.show');
         Route::get('/submissions/{submission}/edit', [OvertimeSubmissionController::class, 'edit'])->name('submissions.edit');
         Route::put('/submissions/{submission}', [OvertimeSubmissionController::class, 'update'])->name('submissions.update');
+        Route::delete('/submissions/{submission}', [OvertimeSubmissionController::class, 'destroy'])->name('submissions.destroy');
         Route::post('/submissions/{submission}/spkl', [SpklDocumentController::class, 'attach'])->name('submissions.spkl.attach');
         Route::patch('/submissions/{submission}/spkl/verify', [SpklDocumentController::class, 'verify'])->name('submissions.spkl.verify');
         Route::get('/submissions/{submission}/spkl/download', [SpklDocumentController::class, 'download'])->name('submissions.spkl.download');
@@ -111,6 +112,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/approvals/bulk', [OvertimeApprovalController::class, 'bulkProcess'])->name('approvals.bulk');
         Route::post('/submissions/{submission}/approve-items', [OvertimeApprovalController::class, 'approveItems'])->name('submissions.approve-items');
         Route::get('/items/{item}/audit', [OvertimeItemAuditController::class, 'index'])->name('items.audit');
+    });
+
+    // Admin-only Overtime Overrides (E04-06)
+    Route::middleware(['role:admin'])->prefix('overtime')->name('overtime.')->group(function () {
+        Route::patch('/submissions/{submission}/unlock', [OvertimeSubmissionController::class, 'forceUnlock'])->name('submissions.unlock');
     });
 
     Route::middleware(['role:admin,manager'])->prefix('manager')->name('manager.')->group(function () {

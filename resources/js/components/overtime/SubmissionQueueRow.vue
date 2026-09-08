@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { Bot, ChevronDown, ChevronUp, Clock, Eye } from '@lucide/vue';
+import { usePage } from '@inertiajs/vue3';
+import { Bot, ChevronDown, ChevronUp, Clock, Eye, Unlock } from '@lucide/vue';
 import { computed, ref } from 'vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -11,6 +12,7 @@ import {
 } from '@/components/ui/tooltip';
 import { useTrans } from '@/composables/useTrans';
 import { formatDateIndo, formatRupiah } from '@/lib/formatters';
+import type { User } from '@/types';
 
 export interface QueueItemEmployee {
     id: number;
@@ -78,14 +80,26 @@ export interface QueueSubmission {
 const props = defineProps<{
     submission: QueueSubmission;
     selected?: boolean;
+    isAdmin?: boolean;
 }>();
 
 const emit = defineEmits<{
     toggleSelect: [id: number];
     review: [id: number];
+    unlock: [id: number];
 }>();
 
 const { __ } = useTrans();
+const page = usePage();
+const currentUser = computed(() => page.props.auth?.user as User | undefined);
+const userIsAdmin = computed(
+    () => props.isAdmin ?? currentUser.value?.role === 'admin',
+);
+const isLocked = computed(
+    () =>
+        props.submission.status === 'APPROVED' ||
+        props.submission.status === 'PARTIALLY_APPROVED',
+);
 const expanded = ref(false);
 
 const items = computed(() => props.submission.items ?? []);
@@ -334,6 +348,18 @@ const statusBadge = computed(() => getStatusBadge(props.submission.status));
                     >
                         <Eye class="mr-1 size-3.5" />
                         {{ __('Tinjau') }}
+                    </Button>
+                    <Button
+                        v-if="userIsAdmin && isLocked"
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        class="h-8 border-amber-300 bg-amber-50 px-2.5 text-xs font-semibold text-amber-800 hover:bg-amber-100 dark:border-amber-800 dark:bg-amber-950/60 dark:text-amber-300"
+                        :data-test="`unlock-btn-${submission.id}`"
+                        @click="emit('unlock', submission.id)"
+                    >
+                        <Unlock class="mr-1 size-3.5" />
+                        {{ __('Buka Kunci') }}
                     </Button>
                 </div>
             </td>

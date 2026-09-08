@@ -34,9 +34,9 @@ class UpdateOvertimeSubmissionRequest extends FormRequest
             return false;
         }
 
-        // Guard edit: submissions that are APPROVED or PARTIALLY_APPROVED cannot be edited
-        if (in_array($submission->status, ['APPROVED', 'PARTIALLY_APPROVED'], true)) {
-            abort(422, __('Pengajuan yang sudah disetujui atau disetujui sebagian terkunci dan tidak dapat diedit.'));
+        // Guard edit: submissions that are APPROVED or PARTIALLY_APPROVED or contain approved items cannot be edited
+        if (in_array($submission->status, ['APPROVED', 'PARTIALLY_APPROVED'], true) || $submission->items()->where('status', 'APPROVED')->exists()) {
+            abort(422, __('Pengajuan ini memuat item yang sudah disetujui dan tidak dapat diubah.'));
         }
 
         // Verify user has access to existing submission's section

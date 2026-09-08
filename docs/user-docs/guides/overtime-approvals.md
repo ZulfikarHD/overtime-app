@@ -153,7 +153,37 @@ When auditing overtime decisions or verifying who submitted, approved, or reject
 5. **Dismissing the Drawer**:
     - Click **Tutup** (`X`) or click outside the drawer. The drawer closes smoothly, returning you directly to your active approval modal.
 
+### Modification Lock on Approved Records & Admin Force-Unlock (E04-06)
+
+To maintain absolute financial and audit compliance, approved submissions are strictly protected from tampering:
+
+1. **Automatic Modification Lock**:
+    - Once a submission contains approved items or reaches **Disetujui (APPROVED)** or **Disetujui Sebagian (PARTIALLY_APPROVED)** status, it is locked.
+    - Team Leaders will see a disabled lock pill **🔒 Terkunci (Disetujui)** with tooltip: _"Pengajuan telah disetujui oleh Manajer dan tidak dapat diubah lagi (BR-10). Hubungi Admin jika memerlukan revisi."_
+    - Any attempt to edit, update, or delete a locked record will be rejected by the server with HTTP 422.
+
+2. **Admin Force-Unlock Procedure (For Corrections)**:
+    - If a genuine administrative correction is needed (e.g. wrong employee NPK recorded on an approved batch):
+    - Only a **Plant Administrator** can unlock the record.
+    - Click **Buka Kunci** on the queue row, within the submission detail modal, or on the submission list.
+    - The **⚠️ Buka Kunci Pengajuan (Admin Override)** dialog appears:
+        - Review the submission code and notice that unlocking reverts all items to **MENUNGGU REVIEW (SUBMITTED)** so the Team Leader can make corrections.
+        - Type the mandatory audit explanation (minimum 5 characters, e.g. _"Koreksi NPK operator yang salah catat atas memo HR No. 124/HR/IX/2026"_).
+        - Click **Buka Kunci Pengajuan**.
+    - The unlock action is executed in an atomic transaction:
+        - All employee items revert to **PENDING**.
+        - Reviewer timestamps and reasons are reset.
+        - An immutable audit trail entry (`Buka Kunci Admin`) is permanently recorded.
+        - Section monthly budget burn is automatically recalculated.
+    - The Team Leader can now open the submission in **Edit** mode, update the required data, and re-submit for management review.
+
 ## Frequently Asked Questions (FAQ)
+
+**Q: Can a Team Leader edit a submission once it has been approved?**  
+A: No. Any submission that has approved items is permanently locked against team leader edits to protect financial data integrity (BR-10).
+
+**Q: What if an approved submission has a genuine error?**  
+A: A Plant Administrator can perform an **Admin Force-Unlock** with a mandatory reason. This reverts the submission to **SUBMITTED** so the Team Leader can correct it.
 
 **Q: Can I modify or delete an audit record?**  
 A: No. Audit records are part of a permanent, tamper-proof immutable ledger. Once recorded, entries cannot be edited or deleted by anyone, including administrators.

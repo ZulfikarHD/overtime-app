@@ -209,6 +209,7 @@ Key invariants from the architecture:
 
 ### Story E04-06: Modification Lock on Approved Records
 
+**Status:** ✅ Completed  
 **As a** system,  
 **I want** approved overtime items to be locked against any modification or deletion by the submitting Team Leader,  
 **So that** finalized payroll and financial records cannot be tampered with after management approval.
@@ -218,19 +219,19 @@ Key invariants from the architecture:
 
 #### Acceptance Criteria
 
-- [ ] A Team Leader attempting to edit or delete a submission that contains any `APPROVED` item receives a `422` error: "This submission contains approved items and cannot be modified."
-- [ ] The edit button is hidden in the UI for submissions with `status = APPROVED` or `PARTIALLY_APPROVED`
-- [ ] Even via direct API call, the lock is enforced at the controller layer (not just UI-level)
-- [ ] Admin can override and "force-unlock" an approved submission with a mandatory audit reason — this creates an audit record: `{ action: 'ADMIN_UNLOCK', notes: reason }`
-- [ ] After force-unlock, the submission returns to `SUBMITTED` status for re-review
+- [x] A Team Leader attempting to edit or delete a submission that contains any `APPROVED` item receives a `422` error: "This submission contains approved items and cannot be modified."
+- [x] The edit button is hidden in the UI for submissions with `status = APPROVED` or `PARTIALLY_APPROVED`
+- [x] Even via direct API call, the lock is enforced at the controller layer (not just UI-level)
+- [x] Admin can override and "force-unlock" an approved submission with a mandatory audit reason — this creates an audit record: `{ action: 'ADMIN_UNLOCK', notes: reason }`
+- [x] After force-unlock, the submission returns to `SUBMITTED` status for re-review
 
 #### Technical Tasks
 
-- [ ] Gate check in `OvertimeSubmissionController@update`: `if ($submission->items()->where('status', 'APPROVED')->exists()) abort(422, ...)`
-- [ ] UI: `v-if="submission.status === 'SUBMITTED'"` on the edit button in `SubmissionQueueRow.vue`
-- [ ] Admin-only route: `PATCH /overtime/submissions/{id}/unlock` → `OvertimeSubmissionController@forceUnlock`
-- [ ] `forceUnlock()`: revert all items to `PENDING`, update submission status to `SUBMITTED`, write audit record
-- [ ] Admin UI: "Force Unlock" button visible only for `role:admin`
+- [x] Gate check in `OvertimeSubmissionController@update`: `if ($submission->items()->where('status', 'APPROVED')->exists()) abort(422, ...)`
+- [x] UI: `v-if="submission.status === 'SUBMITTED'"` on the edit button in `SubmissionQueueRow.vue`
+- [x] Admin-only route: `PATCH /overtime/submissions/{id}/unlock` → `OvertimeSubmissionController@forceUnlock`
+- [x] `forceUnlock()`: revert all items to `PENDING`, update submission status to `SUBMITTED`, write audit record
+- [x] Admin UI: "Force Unlock" button visible only for `role:admin`
 
 ---
 
@@ -283,3 +284,4 @@ Key invariants from the architecture:
 - [x] `OvertimeItemAuditTest` suite passes (insert-only immutability, role/dept scoping, lifecycle records)
 - [x] `ApprovalModalBrowserTest` Pest Playwright suite passes
 - [x] `AuditTrailDrawerBrowserTest` Pest Playwright suite passes (full drawer timeline, actor badge, state diff, metadata toggle)
+- [x] `ModificationLockAndForceUnlockBrowserTest` Pest Playwright suite passes (modification lock pill, admin force-unlock modal, and state transition)

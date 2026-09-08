@@ -13,6 +13,7 @@ import {
     Paperclip,
     Pencil,
     RefreshCw,
+    Unlock,
     Users,
     X,
 } from '@lucide/vue';
@@ -114,10 +115,24 @@ const emit = defineEmits<{
     (e: 'update:open', value: boolean): void;
     (e: 'attachSpkl', value: any): void;
     (e: 'verified'): void;
+    (e: 'unlock', submissionId: number): void;
 }>();
 
 const { __ } = useTrans();
 const page = usePage();
+
+const isAdmin = computed(
+    () => (page.props as any).auth?.user?.role === 'admin',
+);
+
+function handleUnlock() {
+    if (!detail.value) {
+        return;
+    }
+    const subId = detail.value.id;
+    emit('update:open', false);
+    emit('unlock', subId);
+}
 
 const canVerifySpkl = computed(() => {
     const role = (page.props as any).auth?.user?.role;
@@ -902,7 +917,7 @@ function isSpklOverdue(dueDateStr?: string | null): boolean {
                         <Lock class="size-3.5 text-amber-500" />
                         <span>{{
                             __(
-                                'Pengajuan sudah diproses oleh Manajer dan terkunci permanen.',
+                                'Pengajuan telah disetujui oleh Manajer dan tidak dapat diubah lagi (BR-10). Hubungi Admin jika memerlukan revisi.',
                             )
                         }}</span>
                     </div>
@@ -916,6 +931,19 @@ function isSpklOverdue(dueDateStr?: string | null): boolean {
                         data-test="btn-close-modal"
                     >
                         {{ __('Tutup') }}
+                    </Button>
+
+                    <!-- Admin Force Unlock Button -->
+                    <Button
+                        v-if="isAdmin && isLocked && detail"
+                        type="button"
+                        variant="outline"
+                        class="border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100 dark:border-amber-800 dark:bg-amber-950/60 dark:text-amber-300"
+                        @click="handleUnlock"
+                        data-test="btn-modal-unlock"
+                    >
+                        <Unlock class="mr-1.5 size-3.5 text-amber-600" />
+                        <span>{{ __('Buka Kunci') }}</span>
                     </Button>
 
                     <!-- Edit Button for SUBMITTED / DRAFT -->

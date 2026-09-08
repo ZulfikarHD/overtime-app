@@ -4,13 +4,16 @@ namespace App\Http\Controllers\Overtime;
 
 use App\Actions\Overtime\SubmitOvertimeAction;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Overtime\ForceUnlockSubmissionRequest;
 use App\Http\Requests\Overtime\StoreOvertimeSubmissionRequest;
 use App\Http\Requests\Overtime\UpdateOvertimeSubmissionRequest;
+use App\Jobs\RecalculateMonthlyBurnSnapshotJob;
 use App\Models\CapexProject;
 use App\Models\Department;
 use App\Models\Employee;
 use App\Models\OperationalCalendar;
 use App\Models\OvertimeBudget;
+use App\Models\OvertimeItemAudit;
 use App\Models\OvertimeSubmission;
 use App\Models\Section;
 use App\Models\User;
@@ -19,6 +22,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -342,8 +346,8 @@ class OvertimeSubmissionController extends Controller
             abort(403, __('Anda tidak memiliki akses ke data pengajuan seksi ini.'));
         }
 
-        if (in_array($submission->status, ['APPROVED', 'PARTIALLY_APPROVED'], true)) {
-            abort(422, __('Pengajuan yang sudah disetujui atau disetujui sebagian terkunci dan tidak dapat diedit.'));
+        if (in_array($submission->status, ['APPROVED', 'PARTIALLY_APPROVED'], true) || $submission->items()->where('status', 'APPROVED')->exists()) {
+            abort(422, __('Pengajuan ini memuat item yang sudah disetujui dan tidak dapat diubah.'));
         }
 
         // 1. Resolve departments accessible to the user
@@ -409,8 +413,8 @@ class OvertimeSubmissionController extends Controller
             abort(403, __('Anda tidak memiliki akses ke data pengajuan seksi ini.'));
         }
 
-        if (in_array($submission->status, ['APPROVED', 'PARTIALLY_APPROVED'], true)) {
-            abort(422, __('Pengajuan yang sudah disetujui atau disetujui sebagian terkunci dan tidak dapat diedit.'));
+        if (in_array($submission->status, ['APPROVED', 'PARTIALLY_APPROVED'], true) || $submission->items()->where('status', 'APPROVED')->exists()) {
+            abort(422, __('Pengajuan ini memuat item yang sudah disetujui dan tidak dapat diubah.'));
         }
 
         $updatedSubmission = $this->submitOvertimeAction->update($submission, $request->validated(), $user->id);
@@ -422,6 +426,143 @@ class OvertimeSubmissionController extends Controller
 
         return redirect()->route('overtime.submissions.index')
             ->with('success', __('Perubahan pengajuan lembur berhasil disimpan: :code', ['code' => $updatedSubmission->submission_code]));
+    }
+
+    /**
+     * Remove the specified overtime submission from storage.
+     */
+    public function destroy(Request $request, OvertimeSubmission $submission): RedirectResponse|JsonResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+
+        if (! $user->canAccessSection($submission->section_id)) {
+            abort(403, __('Anda tidak memiliki akses ke data pengajuan seksi ini.'));
+        }
+
+        if (in_array($submission->status, ['APPROVED', 'PARTIALLY_APPROVED'], true) || $submission->items()->where('status', 'APPROVED')->exists()) {
+            abort(422, __('Pengajuan ini memuat item yang sudah disetujui dan tidak dapat diubah.'));
+        }
+
+        $code = $submission->submission_code;
+        $sectionId = $submission->section_id;
+        $opDate = Carbon::parse($submission->operational_date);
+
+        DB::transaction(function () use ($submission) {
+            $submission->delete();
+        });
+
+        RecalculateMonthlyBurnSnapshotJob::dispatch(
+            $sectionId,
+            (int) $opDate->format('Y'),
+            (int) $opDate->format('n')
+        );
+
+        $successMsg = __('Pengajuan lembur :code berhasil dihapus.', ['code' => $code]);
+
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'message' => $successMsg,
+            ]);
+        }
+
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'message' => $successMsg,
+        ]);
+
+        return redirect()->route('overtime.submissions.index')->with('success', $successMsg);
+    }
+
+    /**
+     * Force unlock an approved or partially approved submission (Admin override).
+     */
+    public function forceUnlock(ForceUnlockSubmissionRequest $request, OvertimeSubmission $submission): RedirectResponse|JsonResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+
+        // Submissions can only be unlocked if locked (APPROVED or PARTIALLY_APPROVED or containing APPROVED items)
+        if (! in_array($submission->status, ['APPROVED', 'PARTIALLY_APPROVED'], true) && ! $submission->items()->where('status', 'APPROVED')->exists()) {
+            abort(422, __('Pengajuan tidak dalam status terkunci.'));
+        }
+
+        $reason = trim((string) $request->validated('reason'));
+
+        DB::transaction(function () use ($submission, $user, $reason, $request) {
+            // 1. Revert each item to PENDING and record item audit
+            $items = $submission->items()->lockForUpdate()->get();
+
+            foreach ($items as $item) {
+                $previousState = $item->toArray();
+
+                $item->update([
+                    'status' => 'PENDING',
+                    'reviewed_by_user_id' => null,
+                    'reviewed_at' => null,
+                    'rejection_reason' => null,
+                    'lock_version' => $item->lock_version + 1,
+                ]);
+
+                OvertimeItemAudit::create([
+                    'overtime_item_id' => $item->id,
+                    'action' => 'ADMIN_UNLOCK',
+                    'actor_user_id' => $user->id,
+                    'previous_state' => $previousState,
+                    'new_state' => $item->fresh()->toArray(),
+                    'notes' => $reason,
+                    'ip_address' => $request->ip(),
+                    'created_at' => Carbon::now('Asia/Jakarta'),
+                ]);
+            }
+
+            // 2. Write parent submission-level audit record
+            OvertimeItemAudit::create([
+                'overtime_item_id' => null,
+                'action' => 'ADMIN_UNLOCK',
+                'actor_user_id' => $user->id,
+                'previous_state' => [
+                    'submission_id' => $submission->id,
+                    'submission_code' => $submission->submission_code,
+                    'status' => $submission->status,
+                ],
+                'new_state' => [
+                    'submission_id' => $submission->id,
+                    'submission_code' => $submission->submission_code,
+                    'status' => 'SUBMITTED',
+                ],
+                'notes' => $reason,
+                'ip_address' => $request->ip(),
+                'created_at' => Carbon::now('Asia/Jakarta'),
+            ]);
+
+            // 3. Reset submission status to SUBMITTED
+            $submission->update(['status' => 'SUBMITTED']);
+
+            // 4. Recalculate monthly burn snapshot for the section
+            $opDate = Carbon::parse($submission->operational_date);
+            RecalculateMonthlyBurnSnapshotJob::dispatch(
+                $submission->section_id,
+                (int) $opDate->format('Y'),
+                (int) $opDate->format('n')
+            );
+        });
+
+        $successMsg = __('Pengajuan :code berhasil dibuka kuncinya oleh Admin.', ['code' => $submission->submission_code]);
+
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'message' => $successMsg,
+                'submission' => $submission->fresh(['items.employee', 'items.capexProject', 'section', 'department', 'spklDocument']),
+            ]);
+        }
+
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'message' => $successMsg,
+        ]);
+
+        return back()->with('success', $successMsg);
     }
 
     /**

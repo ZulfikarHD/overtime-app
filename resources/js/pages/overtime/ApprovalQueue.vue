@@ -22,6 +22,7 @@ import BulkActionResultToast, {
 } from '@/components/overtime/BulkActionResultToast.vue';
 import BulkApprovalConfirmModal from '@/components/overtime/BulkApprovalConfirmModal.vue';
 import ExportButton from '@/components/overtime/ExportButton.vue';
+import ForceUnlockModal from '@/components/overtime/ForceUnlockModal.vue';
 import SubmissionQueueRow, {
     type QueueSubmission,
 } from '@/components/overtime/SubmissionQueueRow.vue';
@@ -415,6 +416,30 @@ const isApprovalModalOpen = ref(false);
 const selectedSubmissionId = ref<number | null>(null);
 const toastMessage = ref<string | null>(null);
 
+const isUnlockModalOpen = ref(false);
+const unlockSubmissionId = ref<number | null>(null);
+
+const unlockSubmissionData = computed(() => {
+    if (!unlockSubmissionId.value) {
+        return null;
+    }
+    return (
+        props.submissions.data.find((s) => s.id === unlockSubmissionId.value) ??
+        null
+    );
+});
+
+function handleUnlock(id: number) {
+    unlockSubmissionId.value = id;
+    isUnlockModalOpen.value = true;
+}
+
+function handleUnlocked(_id: number) {
+    router.reload({
+        only: ['submissions', 'pending_count', 'pending_hours'],
+    });
+}
+
 const selectedSubmissionData = computed(() => {
     if (!selectedSubmissionId.value) {
         return null;
@@ -793,8 +818,10 @@ function handleApprovalSaved(payload: { message: string }) {
                             :key="submission.id"
                             :submission="submission"
                             :selected="selectedIds.includes(submission.id)"
+                            :is-admin="isAdmin"
                             @toggle-select="toggleSelect"
                             @review="handleReview"
+                            @unlock="handleUnlock"
                         />
                     </table>
                 </div>
@@ -877,6 +904,13 @@ function handleApprovalSaved(payload: { message: string }) {
             :submission-id="selectedSubmissionId"
             :initial-data="selectedSubmissionData as any"
             @saved="handleApprovalSaved"
+        />
+
+        <!-- E04-06: Admin Force-Unlock Modal -->
+        <ForceUnlockModal
+            v-model:open="isUnlockModalOpen"
+            :submission="unlockSubmissionData as any"
+            @unlocked="handleUnlocked"
         />
 
         <!-- E04-03: Floating Bulk Action Bar -->

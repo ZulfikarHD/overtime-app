@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head, Link, router } from '@inertiajs/vue3';
+import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import {
     AlertTriangle,
     Calendar,
@@ -15,8 +15,10 @@ import {
     Plus,
     RotateCcw,
     Search,
+    Unlock,
 } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
+import ForceUnlockModal from '@/components/overtime/ForceUnlockModal.vue';
 import SpklUploadSheet, {
     type SpklTargetSubmission,
 } from '@/components/overtime/SpklUploadSheet.vue';
@@ -32,6 +34,7 @@ import {
     edit as editSubmissionRoute,
     index as indexSubmissionRoute,
 } from '@/routes/overtime/submissions';
+import type { User } from '@/types';
 
 defineOptions({
     layout: {
@@ -123,9 +126,27 @@ const selectedSpkl = ref(props.filters.spkl_status ?? '');
 const dateFrom = ref(props.filters.date_from ?? '');
 const dateTo = ref(props.filters.date_to ?? '');
 
+const page = usePage();
+const currentUser = computed(() => page.props.auth?.user as User | undefined);
+const isAdmin = computed(() => currentUser.value?.role === 'admin');
+
 // Modal state
 const selectedDetailId = ref<number | null>(props.detail_id ?? null);
 const isDetailModalOpen = ref(Boolean(props.detail_id));
+
+const isUnlockModalOpen = ref(false);
+const unlockSubmission = ref<SubmissionRecord | null>(null);
+
+function openUnlockModal(sub: SubmissionRecord) {
+    unlockSubmission.value = sub;
+    isUnlockModalOpen.value = true;
+}
+
+function handleUnlocked(_id: number) {
+    router.reload({
+        only: ['submissions'],
+    });
+}
 
 watch(
     () => props.detail_id,
@@ -761,7 +782,7 @@ const hasActiveFilters = computed(() => {
                                             class="dark:bg-slate-850 inline-flex h-7 cursor-not-allowed items-center gap-1 rounded border border-slate-200 bg-slate-100 px-2 text-[11px] font-medium text-slate-400 dark:border-slate-800 dark:text-slate-500"
                                             :title="
                                                 __(
-                                                    'Pengajuan sudah diproses oleh Manajer dan terkunci permanen.',
+                                                    'Pengajuan telah disetujui oleh Manajer dan tidak dapat diubah lagi (BR-10). Hubungi Admin jika memerlukan revisi.',
                                                 )
                                             "
                                             :data-test="`btn-locked-${sub.id}`"
@@ -769,8 +790,29 @@ const hasActiveFilters = computed(() => {
                                             <Lock
                                                 class="size-3 text-slate-400"
                                             />
-                                            <span>{{ __('Terkunci') }}</span>
+                                            <span>{{
+                                                __('Terkunci (Disetujui)')
+                                            }}</span>
                                         </span>
+
+                                        <!-- Admin Force Unlock Button -->
+                                        <button
+                                            v-if="
+                                                isAdmin &&
+                                                (sub.status === 'APPROVED' ||
+                                                    sub.status ===
+                                                        'PARTIALLY_APPROVED')
+                                            "
+                                            type="button"
+                                            @click="openUnlockModal(sub)"
+                                            class="inline-flex h-7 items-center gap-1 rounded border border-amber-300 bg-amber-50 px-2 text-xs font-semibold text-amber-800 hover:bg-amber-100 dark:border-amber-800 dark:bg-amber-950/60 dark:text-amber-300"
+                                            :data-test="`btn-unlock-${sub.id}`"
+                                        >
+                                            <Unlock
+                                                class="size-3 text-amber-600"
+                                            />
+                                            <span>{{ __('Buka Kunci') }}</span>
+                                        </button>
                                     </div>
                                 </td>
                             </tr>
@@ -869,6 +911,14 @@ const hasActiveFilters = computed(() => {
             :submission-id="selectedDetailId"
             @attach-spkl="openSpklSheet"
             @verified="handleSpklSuccess"
+            @unlock="
+                (subId) => {
+                    const s = submissions.data.find(
+                        (item) => item.id === subId,
+                    );
+                    if (s) openUnlockModal(s);
+                }
+            "
         />
 
         <!-- Slide-in SPKL Upload Sheet Component -->
@@ -876,6 +926,13 @@ const hasActiveFilters = computed(() => {
             v-model:open="isSpklSheetOpen"
             :submission="selectedSpklSubmission"
             @success="handleSpklSuccess"
+        />
+
+        <!-- Admin Force-Unlock Modal -->
+        <ForceUnlockModal
+            v-model:open="isUnlockModalOpen"
+            :submission="unlockSubmission as any"
+            @unlocked="handleUnlocked"
         />
     </div>
 </template>

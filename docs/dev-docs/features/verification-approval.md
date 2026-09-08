@@ -1,4 +1,4 @@
-# Verification, Pending Approval Queue, Item-Level Approvals, Bulk Decisions, Overtime Export & Immutable Audit Trail (E04-01, E04-02, E04-03, E04-04 & E04-05)
+# Verification, Pending Approval Queue, Item-Level Approvals, Bulk Decisions, Overtime Export, Immutable Audit Trail & Modification Lock (E04-01, E04-02, E04-03, E04-04, E04-05 & E04-06)
 
 ## Overview
 
@@ -9,6 +9,7 @@ The **Approval Queue & Item-Level Decision System** is the Manager/Admin morning
 - **E04-03** introduces high-speed **Bulk Approval & Rejection** directly on the queue table, allowing approvers to select up to 50 submissions via row checkboxes, inspect totals in a floating toolbar, confirm in a centralized modal with mandatory rejection reasoning, process batches with per-submission transaction isolation, and receive feedback via an auto-dismissing result toast.
 - **E04-04** adds the **Streaming Overtime Data Export** (`ExportButton.vue` & `OvertimeExportService`) allowing approvers to download filtered records in CSV and Excel (.xlsx) formats with 19 standardized columns, \(O(1)\) constant-memory streaming via `LazyCollection`, department authority enforcement, and dual audit logging in `export_logs` and `overtime_item_audits`.
 - **E04-05** implements the **Immutable Audit Trail (Full Lifecycle)** featuring insert-only immutability enforced by `OvertimeItemAuditObserver`, initial synchronous `SUBMITTED` audit logging in `SubmitOvertimeAction`, a scoped audit history API (`GET /overtime/items/{item}/audit`), and an interactive slide-in drawer (`AuditTrailDrawer.vue`) with visual state diffing and WIB timestamps.
+- **E04-06** establishes the **Modification Lock on Approved Records & Admin Force-Unlock** enforcing strict immutability (HTTP 422) on approved or partially approved submissions for Team Leaders, providing an Admin-only override dialog (`ForceUnlockModal.vue`) with mandatory audit reasoning (minimum 5 characters), atomic status rollback to `SUBMITTED`, item revert to `PENDING`, and automatic section monthly burn recalculation.
 
 ## Architecture Diagram
 
@@ -81,6 +82,7 @@ erDiagram
 | Result Toast    | `resources/js/components/overtime/BulkActionResultToast.vue`     | Floating result banner with processed/skipped counters and collapsible skip log                |
 | Item Row        | `resources/js/components/overtime/ApprovalItemRow.vue`           | Employee item row: hours breakdown, CapEx tag, anomaly badge, decision, reason, Riwayat button |
 | Audit Drawer    | `resources/js/components/overtime/AuditTrailDrawer.vue`          | Slide-in right sheet: chronological timeline, actor badge, state diffing, and metadata         |
+| Unlock Modal    | `resources/js/components/overtime/ForceUnlockModal.vue`          | Admin override dialog with reason input, consequence notice, and live validation               |
 | Export Button   | `resources/js/components/overtime/ExportButton.vue`              | Header action popover menu: CSV/XLSX download trigger with active filter summary               |
 | Service         | `app/Services/OvertimeExportService.php`                         | LazyCollection cursor streaming, 19-column mapping, native OpenXML XLSX packaging              |
 | Model           | `app/Models/ExportLog.php`                                       | Audit trail model tracking export actor, format, counts, and filters                           |
@@ -88,17 +90,20 @@ erDiagram
 | Observer        | `app/Observers/OvertimeItemAuditObserver.php`                    | Strict immutability guard: throws RuntimeException on updating/deleting                        |
 | Controller      | `app/Http/Controllers/Overtime/OvertimeApprovalController.php`   | `index()`, `approveItems()`, `bulkProcess()`, and `export()` endpoints                         |
 | Controller      | `app/Http/Controllers/Overtime/OvertimeItemAuditController.php`  | `index()`: scoped chronological audit trail JSON endpoint                                      |
-| Controller      | `app/Http/Controllers/Overtime/OvertimeSubmissionController.php` | `show()` enhanced with anomaly logs and section burn indicator                                 |
+| Controller      | `app/Http/Controllers/Overtime/OvertimeSubmissionController.php` | `show()`, `edit()`, `update()`, `destroy()`, and `forceUnlock()` endpoints                     |
 | Action          | `app/Actions/Overtime/ApproveOvertimeItemsAction.php`            | Concurrency locking, status transitions, audit ledger, job dispatch                            |
 | Action          | `app/Actions/Overtime/SubmitOvertimeAction.php`                  | Synchronous initial `SUBMITTED` audit creation during item insertion                           |
 | Action          | `app/Actions/Overtime/BulkApproveSubmissionsAction.php`          | Bulk batch orchestrator with isolated try-catches and conflict skip aggregation                |
 | Request         | `app/Http/Requests/Overtime/ApproveOvertimeItemsRequest.php`     | Form validation for decisions array, actions, and rejection reasons                            |
 | Request         | `app/Http/Requests/Overtime/BulkApprovalRequest.php`             | Form validation for bulk submissions (max 50) and shared rejection reasons                     |
+| Request         | `app/Http/Requests/Overtime/ForceUnlockSubmissionRequest.php`    | Form validation and admin authorization for submission force unlock                            |
 | Exception       | `app/Exceptions/OptimisticLockException.php`                     | HTTP 409 Conflict exception for stale lock versions                                            |
 | Route           | `POST /overtime/submissions/{submission}/approve-items`          | Wayfinder: `@/routes/overtime/submissions` → `approveItems()`                                  |
 | Route           | `POST /overtime/approvals/bulk`                                  | Wayfinder: `@/routes/overtime/approvals` → `bulk()`                                            |
 | Route           | `GET /overtime/approvals/export`                                 | Wayfinder: `@/routes/overtime/approvals` → `export()`                                          |
 | Route           | `GET /overtime/items/{item}/audit`                               | Wayfinder: `@/routes/overtime/items` → `audit()`                                               |
+| Route           | `PATCH /overtime/submissions/{submission}/unlock`                | Wayfinder: `@/routes/overtime/submissions` → `unlock()`                                        |
+| Route           | `DELETE /overtime/submissions/{submission}`                      | Wayfinder: `@/routes/overtime/submissions` → `destroy()`                                       |
 
 ## Flow Explanation
 
@@ -146,17 +151,34 @@ erDiagram
         - Visual state diffing showing changed fields (`Status`, `Estimasi Biaya`, `Lock Version`, etc.).
         - Collapsible metadata body for IP address verification.
         - Closing the drawer returns smoothly to the active `ApprovalModal`.
+11. **Modification Lock on Approved Records (E04-06)**:
+    - Once any item in an overtime submission is approved (`APPROVED` or `PARTIALLY_APPROVED`), the entire submission is locked against changes by Team Leaders.
+    - In `Index.vue`, the standard "Edit" button is replaced with the disabled lock pill `🔒 Terkunci (Disetujui)` with hover tooltip explaining BR-10 constraints.
+    - Any direct HTTP attempt to `GET /edit`, `PUT /update`, or `DELETE /destroy` a locked submission terminates with `422 Unprocessable Entity`.
+12. **Admin Force-Unlock Flow (E04-06)**:
+    - An Administrator identifies an approved submission requiring post-decision correction.
+    - Admin clicks **Buka Kunci** on `ApprovalQueue.vue`, `SubmissionQueueRow.vue`, `Index.vue`, or `SubmissionDetailModal.vue`.
+    - `ForceUnlockModal.vue` opens, displaying the submission details, an amber warning outlining that all items will revert to `MENUNGGU REVIEW (SUBMITTED)`, and a mandatory reason textarea.
+    - Admin provides a valid explanation (minimum 5 characters, e.g. "Koreksi NPK operator yang salah catat atas memo HR No. 124/HR/IX/2026").
+    - Sending `PATCH /overtime/submissions/{submission}/unlock` executes in an atomic DB transaction:
+        - Reverts all items to `PENDING`, clearing reviewer references and incrementing `lock_version`.
+        - Logs item-level and parent-level `OvertimeItemAudit` records with `action: 'ADMIN_UNLOCK'`.
+        - Reverts parent submission status to `SUBMITTED`.
+        - Dispatches `RecalculateMonthlyBurnSnapshotJob`.
+    - Team Leader can now access `/edit` and modify the submission.
 
 ## API Endpoints & Routes
 
-| Method | URI                                                | Controller Action                         | Purpose                                       | Auth                         |
-| ------ | -------------------------------------------------- | ----------------------------------------- | --------------------------------------------- | ---------------------------- |
-| GET    | `/overtime/approvals`                              | `OvertimeApprovalController@index`        | Filtered approval queue (Inertia page)        | `auth`, `role:admin,manager` |
-| GET    | `/overtime/approvals/export`                       | `OvertimeApprovalController@export`       | Streamed CSV/XLSX export with audit logging   | `auth`, `role:admin,manager` |
-| GET    | `/overtime/submissions/{submission}`               | `OvertimeSubmissionController@show`       | Submission detail + burn + anomalies (JSON)   | `auth` (authorized scope)    |
-| POST   | `/overtime/submissions/{submission}/approve-items` | `OvertimeApprovalController@approveItems` | Commit item approvals/rejections with locking | `auth`, `role:admin,manager` |
-| POST   | `/overtime/approvals/bulk`                         | `OvertimeApprovalController@bulkProcess`  | Process bulk approvals/rejections (max 50)    | `auth`, `role:admin,manager` |
-| GET    | `/overtime/items/{item}/audit`                     | `OvertimeItemAuditController@index`       | Chronological audit history for single item   | `auth`, `role:admin,manager` |
+| Method | URI                                                | Controller Action                          | Purpose                                       | Auth                                     |
+| ------ | -------------------------------------------------- | ------------------------------------------ | --------------------------------------------- | ---------------------------------------- |
+| GET    | `/overtime/approvals`                              | `OvertimeApprovalController@index`         | Filtered approval queue (Inertia page)        | `auth`, `role:admin,manager`             |
+| GET    | `/overtime/approvals/export`                       | `OvertimeApprovalController@export`        | Streamed CSV/XLSX export with audit logging   | `auth`, `role:admin,manager`             |
+| GET    | `/overtime/submissions/{submission}`               | `OvertimeSubmissionController@show`        | Submission detail + burn + anomalies (JSON)   | `auth` (authorized scope)                |
+| POST   | `/overtime/submissions/{submission}/approve-items` | `OvertimeApprovalController@approveItems`  | Commit item approvals/rejections with locking | `auth`, `role:admin,manager`             |
+| POST   | `/overtime/approvals/bulk`                         | `OvertimeApprovalController@bulkProcess`   | Process bulk approvals/rejections (max 50)    | `auth`, `role:admin,manager`             |
+| GET    | `/overtime/items/{item}/audit`                     | `OvertimeItemAuditController@index`        | Chronological audit history for single item   | `auth`, `role:admin,manager`             |
+| PATCH  | `/overtime/submissions/{submission}/unlock`        | `OvertimeSubmissionController@forceUnlock` | Admin override force-unlock to SUBMITTED      | `auth`, `role:admin`                     |
+| DELETE | `/overtime/submissions/{submission}`               | `OvertimeSubmissionController@destroy`     | Delete unapproved (SUBMITTED/DRAFT) record    | `auth`, `role:admin,manager,team_leader` |
 
 ### POST /overtime/approvals/bulk Payload
 
@@ -257,4 +279,5 @@ Or for bulk rejection:
 - [ADR-003: Non-Blocking SPKL Document Workflow](../decisions/003-non-blocking-spkl-document-workflow.md)
 - [ADR-016: Streaming Overtime Export and Audit Logging](../decisions/016-streaming-overtime-export-and-audit-logging.md)
 - [ADR-017: Immutable Overtime Item Audit Ledger and Lifecycle History](../decisions/017-immutable-overtime-item-audit-ledger.md)
+- [ADR-018: Approved Records Modification Lock and Admin Force-Unlock](../decisions/018-approved-records-modification-lock-and-admin-force-unlock.md)
 - [User Guide: Overtime Approvals Queue](../../user-docs/guides/overtime-approvals.md)
