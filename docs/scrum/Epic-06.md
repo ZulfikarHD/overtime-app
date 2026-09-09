@@ -4,7 +4,7 @@
 **Priority:** P2 – Should Have  
 **Estimated Total:** 30 Story Points  
 **Target Sprints:** Sprint 6 (Weeks 11–12, parallel with Epic-07)  
-**Status:** 🟡 In Progress (5/30 SP completed)  
+**Status:** 🟡 In Progress (13/30 SP completed)  
 **Dependencies:** Epic-01, Epic-02 (Employee master data), Epic-03 (Submissions exist), Epic-04 (Approved items exist)  
 **Lead Area:** Backend (`EmployeeReportController`, `BurnIndexCalculatorService` extension) + Vue 3 Report Pages
 
@@ -64,30 +64,31 @@ This module serves four audiences:
 **So that** I can track my own workload and plan my personal schedule around upcoming shifts.
 
 **Story Points:** 8  
-**Priority:** Must Have
+**Priority:** Must Have  
+**Status:** 🟢 Completed (Sprint 6)
 
 #### Acceptance Criteria
 
-- [ ] KPI cards displayed at the top of the dossier:
+- [x] KPI cards displayed at the top of the dossier:
     - `Current Month Hours` (total approved hours this month)
     - `Year-to-Date Hours` (total approved hours this calendar year)
     - `Individual Burn Index %` (individual actual hours / individual planned hours from section budget allocation — or null if not individually budgeted)
     - `Departmental Ranking` (e.g., "Ranked 7th out of 28 employees in section by hours this month")
-- [ ] Hours breakdown donut chart: Production | TPM | Project (CapEx) | Others
-- [ ] Day-type breakdown: HKN hours vs HLR hours (bar chart or horizontal split)
-- [ ] All monetary amounts shown in Rupiah: `Total Estimated Cost: Rp 1.234.567` (sum of `total_cost_snapshot` for approved items)
-- [ ] "Employee" (User role) only sees their own dossier — they cannot look up other employees' data
-- [ ] Data computed from `overtime_items` with `status = 'APPROVED'` joined to `overtime_submissions`
+- [x] Hours breakdown donut chart: Production | TPM | Project (CapEx) | Others
+- [x] Day-type breakdown: HKN hours vs HLR hours (bar chart or horizontal split)
+- [x] All monetary amounts shown in Rupiah: `Total Estimated Cost: Rp 1.234.567` (sum of `total_cost_snapshot` for approved items)
+- [x] "Employee" (User role) only sees their own dossier — they cannot look up other employees' data
+- [x] Data computed from `overtime_items` with `status = 'APPROVED'` joined to `overtime_submissions`
 
 #### Technical Tasks
 
-- [ ] `EmployeeReportService::getSummary(int $employeeId, int $year, int $month): array`
-- [ ] Returns: `current_month_hours`, `ytd_hours`, `burn_index`, `dept_rank`, `category_breakdown`, `day_type_breakdown`, `total_cost_idr`
-- [ ] Departmental ranking query: `SELECT COUNT(*) + 1 FROM (subquery with all employee monthly totals for section where total > target_employee_total)`
-- [ ] User role gate: `if (auth()->user()->isEmployee() && $employee->id !== auth()->user()->employee_id) abort(403)`
-- [ ] Create `resources/js/Components/Reports/KpiSummaryCards.vue` — 4 KPI cards component
-- [ ] Create `resources/js/Components/Reports/CategoryDonutChart.vue` — Production/TPM/Project/Others
-- [ ] Create `resources/js/Components/Reports/DayTypeBreakdownBar.vue` — HKN vs HLR
+- [x] `EmployeeReportService::getSummary(int $employeeId, int $year, int $month): array`
+- [x] Returns: `current_month_hours`, `ytd_hours`, `burn_index`, `dept_rank`, `category_breakdown`, `day_type_breakdown`, `total_cost_idr`
+- [x] Departmental ranking query: `SELECT COUNT(*) + 1 FROM (subquery with all employee monthly totals for section where total > target_employee_total)`
+- [x] User role gate: `if (auth()->user()->isEmployee() && $employee->id !== auth()->user()->employee_id) abort(403)`
+- [x] Create `resources/js/Components/Reports/KpiSummaryCards.vue` — 4 KPI cards component
+- [x] Create `resources/js/Components/Reports/CategoryDonutChart.vue` — Production/TPM/Project/Others
+- [x] Create `resources/js/Components/Reports/DayTypeBreakdownBar.vue` — HKN vs HLR
 
 ---
 
@@ -234,10 +235,10 @@ This module serves four audiences:
 ## Definition of Done — Epic-06
 
 - [x] Employee search works across NPK and name with 300ms debounce
-- [ ] KPI cards show correct current month and YTD hours from approved items only
+- [x] KPI cards show correct current month and YTD hours from approved items only
 - [ ] Peer variance (CALC-06) calculates correctly
 - [ ] Fatigue consecutive-week alert correctly detects 3+ weeks over limit
 - [ ] Timesheet table is paginated, filterable, and sortable
-- [ ] User (Employee) role is strictly scoped to their own data
+- [x] User (Employee) role is strictly scoped to their own data
 - [x] `pnpm lint` passes
 - [x] `pnpm build` succeeds

@@ -18,9 +18,14 @@ import {
     User as UserIcon,
     Users,
 } from '@lucide/vue';
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import RoleBadge from '@/components/RoleBadge.vue';
+import CategoryDonutChart from '@/components/reports/CategoryDonutChart.vue';
+import DayTypeBreakdownBar from '@/components/reports/DayTypeBreakdownBar.vue';
 import EmployeeSearch from '@/components/reports/EmployeeSearch.vue';
+import KpiSummaryCards, {
+    type EmployeeSummaryMetrics,
+} from '@/components/reports/KpiSummaryCards.vue';
 import RecentLookups from '@/components/reports/RecentLookups.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -104,6 +109,7 @@ export interface RosterItem {
 
 const props = defineProps<{
     employee: DossierEmployee | null;
+    summary?: EmployeeSummaryMetrics | null;
     roster: RosterItem[];
     filters?: {
         department_id?: string | number | null;
@@ -132,6 +138,20 @@ const currentUser = computed(() => page.props.auth?.user as User | undefined);
 const activeTab = ref(props.current_tab || 'overview');
 const selectedYear = ref(props.fiscal_year || 2026);
 const selectedMonth = ref(props.fiscal_month || 9);
+
+watch(
+    () => props.fiscal_year,
+    (val) => {
+        if (val) selectedYear.value = val;
+    },
+);
+
+watch(
+    () => props.fiscal_month,
+    (val) => {
+        if (val) selectedMonth.value = val;
+    },
+);
 const rosterSearch = ref(props.filters?.search || '');
 const selectedDepartmentId = ref<string>(
     props.filters?.department_id ? String(props.filters.department_id) : 'all',
@@ -503,11 +523,32 @@ const filteredSections = computed(() => {
 
             <!-- Tab Content Panel -->
             <div class="flex flex-col gap-6">
-                <!-- TAB 1: Overview & Welfare Placeholder (Scaffold for E06-02, E06-03, E06-04) -->
+                <!-- TAB 1: Overview & Welfare (E06-02, E06-03, E06-04) -->
                 <div
                     v-if="activeTab === 'overview'"
                     class="flex flex-col gap-6"
                 >
+                    <!-- 4 KPI Summary Cards & Financial Cost Snapshot (E06-02) -->
+                    <KpiSummaryCards
+                        v-if="summary"
+                        :summary="summary"
+                        :fiscal-year="selectedYear"
+                        :fiscal-month="selectedMonth"
+                    />
+
+                    <!-- Overtime Hours Category Donut & Day-Type Breakdown Bar (E06-02) -->
+                    <div
+                        v-if="summary"
+                        class="grid grid-cols-1 gap-6 lg:grid-cols-2"
+                    >
+                        <CategoryDonutChart
+                            :breakdown="summary.category_breakdown"
+                        />
+                        <DayTypeBreakdownBar
+                            :breakdown="summary.day_type_breakdown"
+                        />
+                    </div>
+
                     <!-- Quick Info Notice Card -->
                     <Card class="border-border shadow-xs">
                         <CardHeader class="pb-3">
@@ -528,7 +569,7 @@ const filteredSections = computed(() => {
                             <CardDescription>
                                 {{
                                     __(
-                                        'Profil karyawan berhasil dimuat. Modul analitik lembur (E06-02), peer benchmarking (E06-03), dan indikator kelelahan (E06-04) terhubung ke dossier ini.',
+                                        'Profil karyawan terverifikasi. Modul analitik lembur (E06-02), peer benchmarking (E06-03), dan indikator kelelahan (E06-04) terhubung ke dossier ini.',
                                     )
                                 }}
                             </CardDescription>
@@ -608,27 +649,7 @@ const filteredSections = computed(() => {
                     </Card>
 
                     <!-- Preview Architecture Cards for Subsequent Sub-Epics -->
-                    <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
-                        <div
-                            class="border-border bg-card/60 flex flex-col gap-2 rounded-xl border border-dashed p-4"
-                        >
-                            <div
-                                class="text-primary flex items-center gap-2 text-sm font-semibold"
-                            >
-                                <BarChart3 class="size-4" />
-                                <span>{{
-                                    __('KPI Lembur & Kategori (E06-02)')
-                                }}</span>
-                            </div>
-                            <p class="text-muted-foreground text-xs">
-                                {{
-                                    __(
-                                        'Ringkasan 4 kartu KPI (Bulan Ini, YTD, Burn Index, Peringkat) serta visualisasi Donut Produksi/TPM/CapEx.',
-                                    )
-                                }}
-                            </p>
-                        </div>
-
+                    <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                         <div
                             class="border-border bg-card/60 flex flex-col gap-2 rounded-xl border border-dashed p-4"
                         >

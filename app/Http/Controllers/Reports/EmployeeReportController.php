@@ -72,6 +72,7 @@ class EmployeeReportController extends Controller
 
         return Inertia::render('reports/EmployeeDossier', [
             'employee' => null,
+            'summary' => null,
             'roster' => $roster,
             'filters' => $filters,
             'departments' => $departments,
@@ -113,8 +114,11 @@ class EmployeeReportController extends Controller
         $fiscalMonth = $request->integer('month', (int) $now->format('n'));
         $currentTab = $request->string('tab', 'overview')->value();
 
+        $summary = $this->employeeReportService->getSummary($employee['id'], $fiscalYear, $fiscalMonth);
+
         return Inertia::render('reports/EmployeeDossier', [
             'employee' => $employee,
+            'summary' => $summary,
             'roster' => [],
             'filters' => [],
             'departments' => [],

@@ -44,17 +44,21 @@ erDiagram
 
 ## Key Files & UI Mapping
 
-| Layer            | File / Route / Menu                                          | Purpose                                                                                    |
-| ---------------- | ------------------------------------------------------------ | ------------------------------------------------------------------------------------------ |
-| Sidebar Menu     | `Laporan Karyawan` (`/reports/employees`)                    | Navigation entry point for Managers, Team Leaders, and Admins                              |
-| Page Component   | `resources/js/pages/reports/EmployeeDossier.vue`             | Master dossier page featuring search hub, quick-pick roster, header card, and tab skeleton |
-| Search Component | `resources/js/components/reports/EmployeeSearch.vue`         | Debounced search-as-you-type input with loading spinner, clear button, and dropdown        |
-| Recent Lookups   | `resources/js/components/reports/RecentLookups.vue`          | Horizontal scrollable pills displaying the last 5 viewed workers from `localStorage`       |
-| Composable       | `resources/js/composables/useRecentLookups.ts`               | Reactive composable to read, write, and clear recent employee lookups                      |
-| Controller       | `app/Http/Controllers/Reports/EmployeeReportController.php`  | Controller handling index roster, search JSON API, and dossier show                        |
-| Service          | `app/Services/EmployeeReportService.php`                     | Pragmatic domain service handling role scoping, search query matching, and authorization   |
-| Feature Test     | `tests/Feature/Reports/EmployeeReportTest.php`               | 11 comprehensive automated tests verifying scoping, security, and responses                |
-| Browser Test     | `tests/Browser/Reports/EmployeeDossierLookupBrowserTest.php` | Playwright end-to-end browser tests verifying search, navigation, and local storage        |
+| Layer            | File / Route / Menu                                            | Purpose                                                                                    |
+| ---------------- | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| Sidebar Menu     | `Laporan Karyawan` (`/reports/employees`)                      | Navigation entry point for Managers, Team Leaders, and Admins                              |
+| Page Component   | `resources/js/pages/reports/EmployeeDossier.vue`               | Master dossier page featuring search hub, quick-pick roster, header card, and tab skeleton |
+| KPI Summary      | `resources/js/components/reports/KpiSummaryCards.vue`          | 4 KPI cards (Month Hours, YTD Hours, Burn Index, Section Rank) + financial cost banner     |
+| Category Donut   | `resources/js/components/reports/CategoryDonutChart.vue`       | Chart.js Doughnut showing Production, TPM, CapEx Project, and Others hours distribution    |
+| Day-Type Bar     | `resources/js/components/reports/DayTypeBreakdownBar.vue`      | Horizontal progress split comparing HKN vs HLR hours with recovery cycle guidance          |
+| Search Component | `resources/js/components/reports/EmployeeSearch.vue`           | Debounced search-as-you-type input with loading spinner, clear button, and dropdown        |
+| Recent Lookups   | `resources/js/components/reports/RecentLookups.vue`            | Horizontal scrollable pills displaying the last 5 viewed workers from `localStorage`       |
+| Composable       | `resources/js/composables/useRecentLookups.ts`                 | Reactive composable to read, write, and clear recent employee lookups                      |
+| Controller       | `app/Http/Controllers/Reports/EmployeeReportController.php`    | Controller handling index roster, search JSON API, and dossier show with summary metrics   |
+| Service          | `app/Services/EmployeeReportService.php`                       | Pragmatic domain service handling role scoping, search matching, and `getSummary` metrics  |
+| Feature Test     | `tests/Feature/Reports/EmployeeReportTest.php`                 | 15 automated tests verifying scoping, security, getSummary calculation, and Inertia props  |
+| Browser Test     | `tests/Browser/Reports/EmployeeDossierLookupBrowserTest.php`   | Playwright end-to-end browser tests verifying search, navigation, and local storage        |
+| Browser Test     | `tests/Browser/Reports/EmployeeDossierOverviewBrowserTest.php` | Playwright end-to-end browser tests verifying KPI cards, category donut, and day-type bar  |
 
 ## Flow Explanation
 
@@ -64,10 +68,11 @@ erDiagram
     - Administrators see plant-wide employees with optional department/section dropdown filters.
     - Standard operators (`User` role) accessing `/reports/employees` are automatically redirected to their own dossier.
 2. **Search & lookup**: Typing 3+ characters into `EmployeeSearch.vue` triggers a debounced (300ms) request to `GET /reports/employees/search?q=...`. The backend filters by partial NPK or full name, enforces hierarchical boundaries, and limits matches to 10 records.
-3. **Dossier rendering**: Clicking a search result or roster card transitions to `/reports/employees/{npk}`.
+3. **Dossier rendering & metrics computation**: Clicking a search result or roster card transitions to `/reports/employees/{npk}`.
     - The persistent header displays the employee's full name, NPK in monospace tabular figures (`font-mono tabular-nums`), department, section, job position, and active status badge.
     - The employee is automatically saved to the client's `localStorage` recent lookup history.
     - The header includes a WIB Month/Year period selector and tab switcher (`Ringkasan & Kesejahteraan` vs `Buku Jam Lembur`).
+    - `EmployeeReportService@getSummary` calculates approved hours for the selected period, year-to-date accumulation, section workload rank, individual burn index against section budget allocation, overtime category breakdown (Production/TPM/CapEx/Others), day-type split (HKN vs HLR), and total cost snapshot in IDR.
 4. **Security & authorization gates**:
     - Operator snooping protection: Operators trying to access another employee's dossier receive HTTP 403.
     - Cross-section/department protection: Team Leaders and Managers attempting to access out-of-scope employee dossiers receive HTTP 403.

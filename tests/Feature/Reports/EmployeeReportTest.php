@@ -2,9 +2,25 @@
 
 use App\Models\Department;
 use App\Models\Employee;
+use App\Models\OperationalCalendar;
+use App\Models\OvertimeBudget;
+use App\Models\OvertimeItem;
+use App\Models\OvertimeSubmission;
 use App\Models\Section;
 use App\Models\User;
+use App\Services\EmployeeReportService;
 use Inertia\Testing\AssertableInertia as Assert;
+
+function ensureReportCalendarDate(string $date, string $dayType = 'HKN'): void
+{
+    if (! OperationalCalendar::whereDate('calendar_date', $date)->exists()) {
+        OperationalCalendar::create([
+            'calendar_date' => $date,
+            'day_type' => $dayType,
+            'is_holiday' => false,
+        ]);
+    }
+}
 
 test('team leader can search employees within their assigned section only', function () {
     $dept = Department::factory()->create(['name' => 'Assembly Department']);
@@ -256,5 +272,315 @@ test('team leader visiting dossier index sees roster scoped to their section', f
         ->component('reports/EmployeeDossier')
         ->where('employee', null)
         ->has('roster', 3)
+    );
+});
+
+test('getSummary returns correct current month, YTD hours, and cost from approved items only', function () {
+    ensureReportCalendarDate('2026-09-05', 'HKN');
+    ensureReportCalendarDate('2026-09-12', 'HLR');
+    ensureReportCalendarDate('2026-09-20', 'HKN');
+    ensureReportCalendarDate('2026-08-15', 'HKN');
+
+    $dept = Department::factory()->create();
+    $section = Section::factory()->create(['department_id' => $dept->id]);
+    $submitter = User::factory()->teamLeader($section->id, $dept->id)->create();
+
+    $emp = Employee::factory()->create([
+        'department_id' => $dept->id,
+        'section_id' => $section->id,
+        'npk' => 'EMP-TEST-SUMM',
+        'full_name' => 'Budi Worker',
+        'is_active' => true,
+    ]);
+
+    // Submission 1: Sep 2026, HKN, Approved (4h prod, 2h tpm = 6h, cost 300,000)
+    $sub1 = OvertimeSubmission::create([
+        'submission_code' => 'OT-SUB-001',
+        'submission_date' => '2026-09-05',
+        'operational_date' => '2026-09-05',
+        'day_type' => 'HKN',
+        'department_id' => $dept->id,
+        'section_id' => $section->id,
+        'submitted_by_user_id' => $submitter->id,
+        'status' => 'APPROVED',
+    ]);
+
+    OvertimeItem::create([
+        'overtime_submission_id' => $sub1->id,
+        'employee_id' => $emp->id,
+        'npk_snapshot' => $emp->npk,
+        'hours_production' => 4.0,
+        'hours_tpm' => 2.0,
+        'hours_project' => 0.0,
+        'hours_others' => 0.0,
+        'hourly_rate_snapshot' => 50000.0,
+        'total_cost_snapshot' => 300000.0,
+        'status' => 'APPROVED',
+    ]);
+
+    // Submission 2: Sep 2026, HLR, Approved (5h project, 1h others = 6h, cost 300,000)
+    $sub2 = OvertimeSubmission::create([
+        'submission_code' => 'OT-SUB-002',
+        'submission_date' => '2026-09-12',
+        'operational_date' => '2026-09-12',
+        'day_type' => 'HLR',
+        'department_id' => $dept->id,
+        'section_id' => $section->id,
+        'submitted_by_user_id' => $submitter->id,
+        'status' => 'APPROVED',
+    ]);
+
+    OvertimeItem::create([
+        'overtime_submission_id' => $sub2->id,
+        'employee_id' => $emp->id,
+        'npk_snapshot' => $emp->npk,
+        'hours_production' => 0.0,
+        'hours_tpm' => 0.0,
+        'hours_project' => 5.0,
+        'hours_others' => 1.0,
+        'hourly_rate_snapshot' => 50000.0,
+        'total_cost_snapshot' => 300000.0,
+        'status' => 'APPROVED',
+    ]);
+
+    // Submission 3: Sep 2026, REJECTED (8h, cost 400,000) - must be ignored
+    $sub3 = OvertimeSubmission::create([
+        'submission_code' => 'OT-SUB-003',
+        'submission_date' => '2026-09-20',
+        'operational_date' => '2026-09-20',
+        'day_type' => 'HKN',
+        'department_id' => $dept->id,
+        'section_id' => $section->id,
+        'submitted_by_user_id' => $submitter->id,
+        'status' => 'REJECTED',
+    ]);
+
+    OvertimeItem::create([
+        'overtime_submission_id' => $sub3->id,
+        'employee_id' => $emp->id,
+        'npk_snapshot' => $emp->npk,
+        'hours_production' => 8.0,
+        'hours_tpm' => 0.0,
+        'hours_project' => 0.0,
+        'hours_others' => 0.0,
+        'hourly_rate_snapshot' => 50000.0,
+        'total_cost_snapshot' => 400000.0,
+        'status' => 'REJECTED',
+    ]);
+
+    // Submission 4: Earlier month (Aug 2026) - contributes to YTD, not current month
+    $subAug = OvertimeSubmission::create([
+        'submission_code' => 'OT-SUB-AUG',
+        'submission_date' => '2026-08-15',
+        'operational_date' => '2026-08-15',
+        'day_type' => 'HKN',
+        'department_id' => $dept->id,
+        'section_id' => $section->id,
+        'submitted_by_user_id' => $submitter->id,
+        'status' => 'APPROVED',
+    ]);
+
+    OvertimeItem::create([
+        'overtime_submission_id' => $subAug->id,
+        'employee_id' => $emp->id,
+        'npk_snapshot' => $emp->npk,
+        'hours_production' => 10.0,
+        'hours_tpm' => 0.0,
+        'hours_project' => 0.0,
+        'hours_others' => 0.0,
+        'hourly_rate_snapshot' => 50000.0,
+        'total_cost_snapshot' => 500000.0,
+        'status' => 'APPROVED',
+    ]);
+
+    /** @var EmployeeReportService $service */
+    $service = app(EmployeeReportService::class);
+    $summary = $service->getSummary($emp->id, 2026, 9);
+
+    expect($summary['current_month_hours'])->toBe(12.0)
+        ->and($summary['ytd_hours'])->toBe(22.0)
+        ->and($summary['total_cost_idr'])->toBe(600000.0)
+        ->and($summary['category_breakdown']['production'])->toBe(4.0)
+        ->and($summary['category_breakdown']['tpm'])->toBe(2.0)
+        ->and($summary['category_breakdown']['project'])->toBe(5.0)
+        ->and($summary['category_breakdown']['others'])->toBe(1.0)
+        ->and($summary['day_type_breakdown']['hkn_hours'])->toBe(6.0)
+        ->and($summary['day_type_breakdown']['hlr_hours'])->toBe(6.0)
+        ->and($summary['day_type_breakdown']['hkn_pct'])->toBe(50.0)
+        ->and($summary['day_type_breakdown']['hlr_pct'])->toBe(50.0);
+});
+
+test('individual burn index calculates based on section budget and active section employee count', function () {
+    ensureReportCalendarDate('2026-09-10', 'HKN');
+
+    $dept = Department::factory()->create();
+    $section = Section::factory()->create(['department_id' => $dept->id]);
+    $submitter = User::factory()->teamLeader($section->id, $dept->id)->create();
+
+    $emp1 = Employee::factory()->create([
+        'department_id' => $dept->id,
+        'section_id' => $section->id,
+        'is_active' => true,
+    ]);
+
+    $emp2 = Employee::factory()->create([
+        'department_id' => $dept->id,
+        'section_id' => $section->id,
+        'is_active' => true,
+    ]);
+
+    // Section budget: 100 planned hours for 2 active employees = 50 planned hours each
+    OvertimeBudget::create([
+        'department_id' => $dept->id,
+        'section_id' => $section->id,
+        'fiscal_year' => 2026,
+        'fiscal_month' => 9,
+        'planned_hours' => 100.0,
+        'planned_cost_idr' => 5000000.0,
+    ]);
+
+    $sub = OvertimeSubmission::create([
+        'submission_code' => 'OT-BBI-001',
+        'submission_date' => '2026-09-10',
+        'operational_date' => '2026-09-10',
+        'day_type' => 'HKN',
+        'department_id' => $dept->id,
+        'section_id' => $section->id,
+        'submitted_by_user_id' => $submitter->id,
+        'status' => 'APPROVED',
+    ]);
+
+    OvertimeItem::create([
+        'overtime_submission_id' => $sub->id,
+        'employee_id' => $emp1->id,
+        'npk_snapshot' => $emp1->npk,
+        'hours_production' => 40.0,
+        'hours_tpm' => 0.0,
+        'hours_project' => 0.0,
+        'hours_others' => 0.0,
+        'hourly_rate_snapshot' => 50000.0,
+        'total_cost_snapshot' => 2000000.0,
+        'status' => 'APPROVED',
+    ]);
+
+    /** @var EmployeeReportService $service */
+    $service = app(EmployeeReportService::class);
+    $summary = $service->getSummary($emp1->id, 2026, 9);
+
+    expect($summary['individual_planned_hours'])->toBe(50.0)
+        ->and($summary['burn_index'])->toBe(80.0);
+
+    // When no budget is set for a month, burn index is null
+    $summaryNoBudget = $service->getSummary($emp1->id, 2026, 10);
+    expect($summaryNoBudget['burn_index'])->toBeNull()
+        ->and($summaryNoBudget['individual_planned_hours'])->toBeNull();
+});
+
+test('departmental section ranking correctly ranks employees by approved hours', function () {
+    ensureReportCalendarDate('2026-09-08', 'HKN');
+
+    $dept = Department::factory()->create();
+    $section = Section::factory()->create(['department_id' => $dept->id]);
+    $submitter = User::factory()->teamLeader($section->id, $dept->id)->create();
+
+    $empA = Employee::factory()->create(['department_id' => $dept->id, 'section_id' => $section->id]);
+    $empB = Employee::factory()->create(['department_id' => $dept->id, 'section_id' => $section->id]);
+    $empC = Employee::factory()->create(['department_id' => $dept->id, 'section_id' => $section->id]);
+
+    $sub = OvertimeSubmission::create([
+        'submission_code' => 'OT-RNK-001',
+        'submission_date' => '2026-09-08',
+        'operational_date' => '2026-09-08',
+        'day_type' => 'HKN',
+        'department_id' => $dept->id,
+        'section_id' => $section->id,
+        'submitted_by_user_id' => $submitter->id,
+        'status' => 'APPROVED',
+    ]);
+
+    // B has 35h, A has 20h, C has 10h
+    OvertimeItem::create([
+        'overtime_submission_id' => $sub->id,
+        'employee_id' => $empB->id,
+        'npk_snapshot' => $empB->npk,
+        'hours_production' => 35.0,
+        'hours_tpm' => 0.0,
+        'hours_project' => 0.0,
+        'hours_others' => 0.0,
+        'hourly_rate_snapshot' => 50000.0,
+        'total_cost_snapshot' => 1750000.0,
+        'status' => 'APPROVED',
+    ]);
+
+    OvertimeItem::create([
+        'overtime_submission_id' => $sub->id,
+        'employee_id' => $empA->id,
+        'npk_snapshot' => $empA->npk,
+        'hours_production' => 20.0,
+        'hours_tpm' => 0.0,
+        'hours_project' => 0.0,
+        'hours_others' => 0.0,
+        'hourly_rate_snapshot' => 50000.0,
+        'total_cost_snapshot' => 1000000.0,
+        'status' => 'APPROVED',
+    ]);
+
+    OvertimeItem::create([
+        'overtime_submission_id' => $sub->id,
+        'employee_id' => $empC->id,
+        'npk_snapshot' => $empC->npk,
+        'hours_production' => 10.0,
+        'hours_tpm' => 0.0,
+        'hours_project' => 0.0,
+        'hours_others' => 0.0,
+        'hourly_rate_snapshot' => 50000.0,
+        'total_cost_snapshot' => 500000.0,
+        'status' => 'APPROVED',
+    ]);
+
+    /** @var EmployeeReportService $service */
+    $service = app(EmployeeReportService::class);
+
+    $summaryB = $service->getSummary($empB->id, 2026, 9);
+    expect($summaryB['dept_rank']['rank'])->toBe(1)
+        ->and($summaryB['dept_rank']['total_employees'])->toBe(3);
+
+    $summaryA = $service->getSummary($empA->id, 2026, 9);
+    expect($summaryA['dept_rank']['rank'])->toBe(2)
+        ->and($summaryA['dept_rank']['total_employees'])->toBe(3);
+
+    $summaryC = $service->getSummary($empC->id, 2026, 9);
+    expect($summaryC['dept_rank']['rank'])->toBe(3)
+        ->and($summaryC['dept_rank']['total_employees'])->toBe(3);
+});
+
+test('show dossier inertia response includes summary prop with all KPI and breakdown data', function () {
+    $dept = Department::factory()->create();
+    $section = Section::factory()->create(['department_id' => $dept->id]);
+    $tl = User::factory()->teamLeader($section->id, $dept->id)->create();
+
+    $emp = Employee::factory()->create([
+        'department_id' => $dept->id,
+        'section_id' => $section->id,
+        'npk' => 'EMP-SHOW-PROP',
+        'full_name' => 'Wayan Operator',
+    ]);
+
+    $response = $this->actingAs($tl)->get(route('reports.employees.show', [
+        'npk' => $emp->npk,
+        'year' => 2026,
+        'month' => 9,
+    ]));
+
+    $response->assertOk();
+    $response->assertInertia(fn (Assert $page) => $page
+        ->component('reports/EmployeeDossier')
+        ->where('employee.npk', 'EMP-SHOW-PROP')
+        ->has('summary.current_month_hours')
+        ->has('summary.ytd_hours')
+        ->has('summary.dept_rank')
+        ->has('summary.category_breakdown')
+        ->has('summary.day_type_breakdown')
+        ->has('summary.total_cost_idr')
     );
 });

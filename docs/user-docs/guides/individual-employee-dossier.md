@@ -56,8 +56,42 @@ Once an employee dossier is opened, the top header card shows:
 
 Beneath the header, use the tab bar to toggle between:
 
-- **Summary & Welfare** (`Ringkasan & Kesejahteraan`): Overview of accumulated monthly hours, burn index, peer comparisons, and fatigue safety gauges.
+- **Summary & Welfare** (`Ringkasan & Kesejahteraan`): Overview of accumulated monthly hours, burn index, category donut distribution, day-type split, and cost snapshot.
 - **Overtime Timesheet** (`Buku Jam Lembur`): Detailed chronological ledger of daily overtime entries and approval histories.
+
+---
+
+### 6. Read the Personal Overtime Dashboard (Summary & Welfare Tab)
+
+The **Summary & Welfare** tab displays 4 responsive KPI cards, a financial cost snapshot, and two visual breakdown charts:
+
+#### Key Performance Indicators (KPI Cards)
+
+1. **Current Month Hours** (`Jam Lembur Bulan Ini`): Total overtime hours that have been approved in the currently selected month and year.
+2. **Year-to-Date Hours (YTD)** (`Jam Lembur Tahun Berjalan (YTD)`): Cumulative approved overtime hours since January 1st of the selected year.
+3. **Individual Burn Index** (`Indeks Burn Individu`): Percentage comparing the employee's approved monthly hours against the section's per-worker budget allocation.
+    - **Safe** (Green, < 85%): Normal operating range.
+    - **Caution** (Amber, 85% - 100%): Approaching planned quota allocation.
+    - **Exceeded** (ISUZU Red, > 100%): Exceeded individual budget projection.
+    - **N/A** (Slate): Displayed when no section budget has been allocated for the selected period.
+4. **Section Workload Rank** (`Peringkat Beban Seksi`): Displays the employee's workload ranking relative to other workers in the same line section (e.g., "Rank 4 out of 24 employees").
+
+#### Financial Cost Snapshot
+
+- Displays the **Total Estimated Overtime Cost** in Rupiah (`Rp 1.234.567`) based on rate snapshots captured at the exact moment each submission was approved.
+
+#### Overtime Category Distribution Donut Chart
+
+- Shows how overtime hours are divided between work types:
+    - **Production** (`Produksi`): Regular manufacturing output support (Emerald).
+    - **TPM** (`Total Productive Maintenance`): Machine cleaning, inspection, and autonomous maintenance (Amber).
+    - **CapEx Project** (`CapEx Proyek`): Capitalized line changeovers and improvements (Sky Blue).
+    - **Others** (`Lainnya`): Other non-standard shift activities (Slate).
+
+#### Day-Type Distribution (HKN vs HLR)
+
+- Compares overtime worked on **Normal Working Days** (`Hari Kerja Normal / HKN`) versus **Rest / Holiday Days** (`Hari Libur / Istirahat / HLR`).
+- Highlights compliance guidance: overtime on weekly rest days (HLR) carries higher fatigue risk and requires careful monitoring of recovery cycles.
 
 ---
 
