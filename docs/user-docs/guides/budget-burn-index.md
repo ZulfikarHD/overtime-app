@@ -62,10 +62,16 @@ Each section within the department is represented by an analytical card featurin
     - `Zona 2: Baik (Terkendali)`: Normal high-volume production on track with quota.
     - `Zona 3: Peringatan (Burn Cepat)`: Unusually rapid burn relative to the calendar date.
     - `Zona 4: Defisit (Melebihi Anggaran)`: Actual hours have exceeded budget limits.
-5. **Burn Velocity & Projected Total**:
-    - **Kecepatan Burn**: Average hours burned per operational week (`jam/mgg`).
-    - **Proyeksi Akhir**: Forecasted month-end total hours based on current pace.
-    - **Trajectory Badge**: Indicates whether the section is `→ Aman (On Pace)`, `↗ Waspada (Trending Over)`, or `↑ Kritis (Will Overrun)`.
+5. **Burn Velocity & Projected Total (Story E05-06)**:
+    - **Kecepatan Burn (Burn Velocity)**: Average approved overtime hours consumed per operational week (`jam/mgg`). Evaluated in Western Indonesia Time (`Asia/Jakarta`) with automatic clamping to a minimum of 1.0 week to prevent statistical distortion during the first days of the month.
+    - **Proyeksi Akhir (Projected Total)**: Forecasted month-end cumulative hours ($\text{Velocity} \times 4.3\text{ weeks}$).
+    - **Trajectory Badge (Indikator Trajektori)**:
+        - `→ Aman (On Pace)`: Projected hours are $\le 100\%$ of allocated quota. The section is consuming overtime at a safe, sustainable pace.
+        - `↗ Waspada (Trending Over)`: Projected hours are between $100\%$ and $120\%$ of allocated quota. Early intervention (workload smoothing or shift redistribution) is recommended.
+        - `↑ Kritis (Will Overrun)`: Projected hours exceed $120\%$ of quota. An active deficit warning requiring immediate managerial corrective action.
+    - **Prediksi AI (Supervised Machine Learning Comparison)**:
+        - When predictive intelligence models are active, section cards display a purple **AI** badge and a **Prediksi AI** comparison box (e.g., `Prediksi AI: 175.0 jam ±12.0 jam`).
+        - Hovering over this box reveals the side-by-side comparison: `Heuristik: 182.0 jam | Prediksi AI: 175.0 jam ±12.0 jam`, allowing managers to contrast historical linear velocity with data-driven AI projections that account for holiday calendars and maintenance schedules.
 6. **CapEx vs OpEx Mini Split Bar**: Shows the breakdown between routine production overtime (OpEx) and capitalized project hours (CapEx).
 
 ### 5. Handling Unconfigured Budgets
@@ -79,6 +85,53 @@ If a section has not yet configured its monthly quota in **Budget Planning**:
 
 - **Automatic Refresh**: The dashboard automatically checks for updated numbers every 60 seconds without reloading the page.
 - **Manual Refresh**: Click the **Segarkan (Refresh)** button with the circular arrow icon in the top toolbar to fetch the latest approval figures immediately.
+
+### 7. Inspecting Section 5-Week Burndown & Budget Control Matrix (Story E05-02)
+
+To analyze overtime trends across the 5 weeks of the month without losing your dashboard overview, click anywhere on a section card or the **Lihat Burndown & Matriks** button. A slide-in drawer opens on the right side of the screen.
+
+#### What is Inside the Burndown Drawer?
+
+1. **Header & Status Badges**:
+    - Shows the section name, code, department, active period, and a prominent Burn Index status badge (**Aman**, **Terkendali**, **Peringatan**, or **Defisit**).
+    - If the budget is not configured, an alert banner provides a direct link to **Budget Planning**.
+
+2. **Quick KPI Summary**:
+    - **Rencana vs Realisasi**: Total approved hours vs allocated quota.
+    - **Sisa Kuota**: Remaining available hours.
+    - **Kecepatan Burn**: Current weekly consumption velocity (`jam/mgg`).
+    - **Proyeksi Akhir**: Forecasted month-end consumption with trajectory indicator.
+
+3. **5-Week Burndown Curve (`Kurva Burndown 5-Minggu`)**:
+    - **X-Axis**: Minggu 1 through Minggu 5 with Indonesian calendar date ranges (e.g., `01 - 07 Sep`).
+    - **Dashed Line (Slate)**: Cumulative planned target budget for each week.
+    - **Solid Line (Color-coded)**: Cumulative actual approved hours. Future weeks are left empty so the line does not artificially plummet to zero.
+    - **Dotted Line (Purple)**: AI/ML projected trajectory branching from the current week to the predicted month-end total.
+    - **Shaded Warning Deficit Zone**: Light red background fill above the 100% budget ceiling.
+    - **Shaded Safe Corridor**: Light blue background fill between 85% and 100% of the quota.
+
+4. **Weekly Breakdown Table (`Rincian Jam Lembur Mingguan`)**:
+    - Displays a week-by-week audit showing:
+        - **Minggu #** and **Rentang Tanggal** (e.g., `08 - 14 Sep`). The active week is highlighted with an **Aktif** tag.
+        - **Rencana**: Weekly planned quota hours.
+        - **Realisasi**: Weekly approved overtime hours.
+        - **Jam HKN**: Overtime performed on regular working days (Hari Kerja Normal).
+        - **Jam HLR**: Overtime performed on weekends and factory holidays (Hari Libur Resmi).
+        - **Akumulasi Burn**: Cumulative burn percentage at the end of each week.
+        - **Deviasi**: Variance between actual and planned hours (`+` indicates overrun, `-` indicates savings).
+
+5. **4-Quadrant Budget Control Matrix (`Matriks Kontrol Anggaran`)**:
+    - A scatter plot plotting the section's position against the 4 quadrants:
+        - **Zona 1 (Sangat Baik / Aman - Hijau)**: Low burn rate ($\le 100\%$) and low cumulative hours ($< 75\%$ of budget).
+        - **Zona 2 (Terkendali / Baik - Biru)**: Normal burn rate ($\le 100\%$) with high volume ($\ge 75\%$ of budget).
+        - **Zona 3 (Peringatan / Burn Cepat - Oranye)**: Rapid burn rate ($> 100\%$) early in the month before hours are fully exhausted.
+        - **Zona 4 (Defisit Kritis - Merah)**: Exceeded budget ($> 100\%$) with hours exhausted ($\ge 75\%$).
+    - A glowing marker indicates the section's exact coordinate with status details.
+
+6. **Deep-Linking & Sharing**:
+    - You can copy and share direct links to any section's burndown drawer:
+      `/dashboard/burn-index?tab=sections&section=14`
+    - Opening this URL automatically opens the drawer for section 14 while preserving active period and department filters.
 
 ---
 

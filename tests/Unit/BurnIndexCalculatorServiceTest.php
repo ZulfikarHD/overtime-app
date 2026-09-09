@@ -2,6 +2,7 @@
 
 use App\Models\Department;
 use App\Models\Employee;
+use App\Models\MonthlyBurnSnapshot;
 use App\Models\OperationalCalendar;
 use App\Models\OvertimeBudget;
 use App\Models\OvertimeItem;
@@ -219,4 +220,109 @@ test('evaluates all 4 budget control matrix zones correctly', function () {
     createTestOvertimeItem($section, '2026-09-02', 120.0, 0.0, 0.0, 0.0, 'APPROVED');
     $m4 = $service->calculateSectionMetrics($section->id, 2026, 9);
     expect($m4['burn_zone'])->toBe('ZONE_4_POOR');
+});
+
+test('test_velocity_uses_jakarta_timezone', function () {
+    // When UTC is 2026-08-31 20:30:00, in Asia/Jakarta it is 2026-09-01 03:30:00 (next day and next month)
+    Carbon::setTestNow(Carbon::parse('2026-08-31 20:30:00', 'UTC'));
+
+    $dept = Department::factory()->create();
+    $section = Section::factory()->create(['department_id' => $dept->id]);
+
+    OvertimeBudget::create([
+        'department_id' => $dept->id,
+        'section_id' => $section->id,
+        'fiscal_year' => 2026,
+        'fiscal_month' => 9,
+        'planned_hours' => 200.0,
+    ]);
+
+    // 14.0 hours approved on Sep 1
+    createTestOvertimeItem($section, '2026-09-01', 14.0, 0.0, 0.0, 0.0, 'APPROVED');
+
+    $service = new BurnIndexCalculatorService;
+    $metrics = $service->calculateSectionMetrics($section->id, 2026, 9);
+
+    // In Asia/Jakarta, it is day 1 of month 9 => elapsed weeks clamped to minimum 1.0
+    // Velocity = 14.0 / 1.0 = 14.0 hrs/week
+    expect($metrics['velocity_weekly'])->toBe(14.0)
+        // Projected total = 14.0 * 4.3 = 60.2 hrs
+        ->and($metrics['projected_total_hours'])->toBe(60.2)
+        ->and($metrics['trajectory'])->toBe('on_pace');
+});
+
+test('evaluates all trajectory indicator states correctly', function () {
+    $dept = Department::factory()->create();
+    $section = Section::factory()->create(['department_id' => $dept->id]);
+    $service = new BurnIndexCalculatorService;
+
+    // Set day 7 in September (7 / 7 = 1.0 elapsed week)
+    Carbon::setTestNow(Carbon::create(2026, 9, 7, 12, 0, 0, 'Asia/Jakarta'));
+
+    OvertimeBudget::create([
+        'department_id' => $dept->id,
+        'section_id' => $section->id,
+        'fiscal_year' => 2026,
+        'fiscal_month' => 9,
+        'planned_hours' => 100.0,
+    ]);
+
+    // Scenario 1: On pace (<= 100%)
+    // Actual 20 hrs / 1.0 wk = 20 velocity. 20 * 4.3 = 86.0 hrs (86% of 100) => on_pace
+    createTestOvertimeItem($section, '2026-09-03', 20.0, 0.0, 0.0, 0.0, 'APPROVED');
+    $res1 = $service->calculateSectionMetrics($section->id, 2026, 9);
+    expect($res1['trajectory'])->toBe('on_pace')
+        ->and($res1['projected_total_hours'])->toBe(86.0);
+
+    OvertimeItem::truncate();
+    OvertimeSubmission::truncate();
+
+    // Scenario 2: Trending over (100% - 120%)
+    // Actual 25 hrs / 1.0 wk = 25 velocity. 25 * 4.3 = 107.5 hrs (107.5% of 100) => trending_over
+    createTestOvertimeItem($section, '2026-09-03', 25.0, 0.0, 0.0, 0.0, 'APPROVED');
+    $res2 = $service->calculateSectionMetrics($section->id, 2026, 9);
+    expect($res2['trajectory'])->toBe('trending_over')
+        ->and($res2['projected_total_hours'])->toBe(107.5);
+
+    OvertimeItem::truncate();
+    OvertimeSubmission::truncate();
+
+    // Scenario 3: Will overrun (> 120%)
+    // Actual 30 hrs / 1.0 wk = 30 velocity. 30 * 4.3 = 129.0 hrs (129% of 100) => will_overrun
+    createTestOvertimeItem($section, '2026-09-03', 30.0, 0.0, 0.0, 0.0, 'APPROVED');
+    $res3 = $service->calculateSectionMetrics($section->id, 2026, 9);
+    expect($res3['trajectory'])->toBe('will_overrun')
+        ->and($res3['projected_total_hours'])->toBe(129.0);
+});
+
+test('monthly burn snapshot model accessors compute projected_total_hours and trajectory', function () {
+    $dept = Department::factory()->create();
+    $section = Section::factory()->create(['department_id' => $dept->id]);
+
+    $snapshot = new MonthlyBurnSnapshot([
+        'department_id' => $dept->id,
+        'section_id' => $section->id,
+        'fiscal_year' => 2026,
+        'fiscal_month' => 9,
+        'planned_budget_hours' => 100.0,
+        'cumulative_actual_hours' => 50.0,
+        'burn_velocity' => 20.0,
+    ]);
+
+    expect($snapshot->projected_total_hours)->toBe(86.0)
+        ->and($snapshot->trajectory)->toBe('on_pace');
+
+    // Over budget snapshot
+    $overSnapshot = new MonthlyBurnSnapshot([
+        'department_id' => $dept->id,
+        'section_id' => $section->id,
+        'fiscal_year' => 2026,
+        'fiscal_month' => 9,
+        'planned_budget_hours' => 100.0,
+        'cumulative_actual_hours' => 130.0,
+        'burn_velocity' => 35.0,
+    ]);
+
+    expect($overSnapshot->projected_total_hours)->toBe(150.5)
+        ->and($overSnapshot->trajectory)->toBe('will_overrun');
 });

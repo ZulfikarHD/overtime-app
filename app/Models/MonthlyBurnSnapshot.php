@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
@@ -21,6 +22,8 @@ use Illuminate\Support\Carbon;
  * @property string $burn_velocity
  * @property string $burn_zone
  * @property Carbon|null $last_recalculated_at
+ * @property-read float $projected_total_hours
+ * @property-read 'on_pace'|'trending_over'|'will_overrun' $trajectory
  */
 class MonthlyBurnSnapshot extends Model
 {
@@ -47,6 +50,14 @@ class MonthlyBurnSnapshot extends Model
         'burn_velocity',
         'burn_zone',
         'last_recalculated_at',
+    ];
+
+    /**
+     * @var list<string>
+     */
+    protected $appends = [
+        'projected_total_hours',
+        'trajectory',
     ];
 
     /**
@@ -81,6 +92,46 @@ class MonthlyBurnSnapshot extends Model
     public function section(): BelongsTo
     {
         return $this->belongsTo(Section::class);
+    }
+
+    /**
+     * Get the projected period-end total hours (CALC-05).
+     */
+    public function projectedTotalHours(): Attribute
+    {
+        return Attribute::make(
+            get: function (): float {
+                $velocity = (float) $this->burn_velocity;
+
+                return round($velocity * 4.3, 1);
+            },
+        );
+    }
+
+    /**
+     * Get the burn trajectory indicator ('on_pace'|'trending_over'|'will_overrun').
+     */
+    public function trajectory(): Attribute
+    {
+        return Attribute::make(
+            get: function (): string {
+                $planned = (float) $this->planned_budget_hours;
+                $actual = (float) $this->cumulative_actual_hours;
+                $projected = (float) $this->projected_total_hours;
+
+                if ($planned <= 0) {
+                    return $actual > 0 ? 'will_overrun' : 'on_pace';
+                }
+
+                $projectedRatio = ($projected / $planned) * 100;
+
+                return match (true) {
+                    $projectedRatio <= 100.0 => 'on_pace',
+                    $projectedRatio <= 120.0 => 'trending_over',
+                    default => 'will_overrun',
+                };
+            },
+        );
     }
 
     /**

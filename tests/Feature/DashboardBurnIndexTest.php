@@ -3,6 +3,8 @@
 use App\Jobs\RecalculateMonthlyBurnSnapshotJob;
 use App\Models\Department;
 use App\Models\Employee;
+use App\Models\MlModel;
+use App\Models\MlPrediction;
 use App\Models\MonthlyBurnSnapshot;
 use App\Models\OperationalCalendar;
 use App\Models\OvertimeBudget;
@@ -256,4 +258,101 @@ test('recalculate job asynchronously updates section snapshot in database', func
         'cumulative_actual_hours' => 75.0,
         'burn_index_pct' => 75.0,
     ]);
+});
+
+test('dashboard burn index props include velocity projected total trajectory and ml forecast', function () {
+    $dept = Department::factory()->create(['is_active' => true]);
+    $section = Section::factory()->create(['department_id' => $dept->id, 'is_active' => true]);
+
+    MonthlyBurnSnapshot::create([
+        'department_id' => $dept->id,
+        'section_id' => $section->id,
+        'fiscal_year' => 2026,
+        'fiscal_month' => 9,
+        'planned_budget_hours' => 200.0,
+        'cumulative_actual_hours' => 150.0,
+        'cumulative_opex_hours' => 100.0,
+        'cumulative_capex_hours' => 50.0,
+        'burn_index_pct' => 75.0,
+        'burn_velocity' => 37.5,
+        'burn_zone' => 'ZONE_1_EXCELLENT',
+        'last_recalculated_at' => Carbon::now('Asia/Jakarta'),
+    ]);
+
+    $mlModel = MlModel::create([
+        'model_key' => 'demand-ridge-v1',
+        'model_type' => 'DEMAND_FORECAST',
+        'version' => '1.0.0',
+        'algorithm_name' => 'RidgeRegression',
+        'is_active' => true,
+        'trained_at' => now(),
+    ]);
+
+    MlPrediction::create([
+        'ml_model_id' => $mlModel->id,
+        'target_type' => 'SECTION',
+        'target_id' => $section->id,
+        'prediction_horizon' => 'MONTH_END',
+        'predicted_value' => 175.00,
+        'confidence_interval_lower' => 163.00,
+        'confidence_interval_upper' => 187.00,
+        'risk_score' => 0.1500,
+        'risk_level' => 'LOW',
+        'fallback_used' => false,
+        'created_at' => now(),
+    ]);
+
+    $manager = User::factory()->manager($dept->id)->create();
+
+    $response = $this->actingAs($manager)->get(route('dashboard.burn-index', [
+        'year' => 2026,
+        'month' => 9,
+    ]));
+
+    $response->assertOk();
+    $response->assertInertia(fn (Assert $page) => $page
+        ->component('dashboard/BurnIndex')
+        ->where('snapshots.0.burn_velocity', 37.5)
+        ->where('snapshots.0.projected_total_hours', 161.3)
+        ->where('snapshots.0.trajectory', 'on_pace')
+        ->where('snapshots.0.ml_forecast.predicted_value', 175)
+        ->where('snapshots.0.ml_forecast.confidence_delta', 12)
+        ->where('snapshots.0.ml_forecast.risk_level', 'LOW')
+    );
+});
+
+test('dashboard burn index props have null ml forecast when no prediction exists', function () {
+    $dept = Department::factory()->create(['is_active' => true]);
+    $section = Section::factory()->create(['department_id' => $dept->id, 'is_active' => true]);
+
+    MonthlyBurnSnapshot::create([
+        'department_id' => $dept->id,
+        'section_id' => $section->id,
+        'fiscal_year' => 2026,
+        'fiscal_month' => 9,
+        'planned_budget_hours' => 100.0,
+        'cumulative_actual_hours' => 60.0,
+        'cumulative_opex_hours' => 40.0,
+        'cumulative_capex_hours' => 20.0,
+        'burn_index_pct' => 60.0,
+        'burn_velocity' => 25.0,
+        'burn_zone' => 'ZONE_1_EXCELLENT',
+        'last_recalculated_at' => Carbon::now('Asia/Jakarta'),
+    ]);
+
+    $manager = User::factory()->manager($dept->id)->create();
+
+    $response = $this->actingAs($manager)->get(route('dashboard.burn-index', [
+        'year' => 2026,
+        'month' => 9,
+    ]));
+
+    $response->assertOk();
+    $response->assertInertia(fn (Assert $page) => $page
+        ->component('dashboard/BurnIndex')
+        ->where('snapshots.0.burn_velocity', 25)
+        ->where('snapshots.0.projected_total_hours', 107.5)
+        ->where('snapshots.0.trajectory', 'trending_over')
+        ->where('snapshots.0.ml_forecast', null)
+    );
 });

@@ -82,31 +82,32 @@ This epic builds the analytical dashboard that answers that question in real tim
 **So that** I can spot if a section is burning budget too fast in early weeks and will run out before month end.
 
 **Story Points:** 8  
-**Priority:** Must Have
+**Priority:** Must Have  
+**Status:** 🟢 Completed (Sprint 5)
 
 #### Acceptance Criteria
 
-- [ ] Clicking into a section card (from E05-01) opens a section detail page or expanded panel
-- [ ] Section detail shows a **line chart**: X-axis = Week 1 through Week 5, Y-axis = cumulative hours
+- [x] Clicking into a section card (from E05-01) opens a section detail expanded panel (implemented as slide-in drawer `SectionBurndownSheet.vue` per `Epic-05-ux-plan.md` to preserve dashboard context and enable deep linking)
+- [x] Section detail shows a **line chart**: X-axis = Week 1 through Week 5, Y-axis = cumulative hours
     - Line 1 (dashed): Planned cumulative hours (`week1_planned_hours` + prior weeks)
     - Line 2 (solid): Actual cumulative hours (from approved items per week)
     - Line 3 (dotted, ML): ML-projected trajectory (from `ml_predictions` — optional, shows if ML Epic is complete)
-- [ ] Chart includes a **zone shading** area: above 100% budget = warning zone (light red fill), 85-100% = on-track zone (light blue)
-- [ ] Below chart: table showing per-week breakdown:
+- [x] Chart includes a **zone shading** area: above 100% budget = warning zone (light red fill), 85-100% = on-track zone (light blue)
+- [x] Below chart: table showing per-week breakdown:
     - Week #, Date range, Planned hrs, Actual hrs, HKN hrs, HLR hrs, Burn %
-- [ ] Section detail also shows the 4-quadrant Budget Control Matrix as a scatter plot (Burn % on X, Hours on Y) with the section's current position plotted
-- [ ] All charts rendered using a Vue-compatible charting library (recommend: `chart.js` via `vue-chartjs`)
+- [x] Section detail also shows the 4-quadrant Budget Control Matrix as a scatter plot (Burn % on X, Hours on Y) with the section's current position plotted
+- [x] All charts rendered using a Vue-compatible charting library (recommend: `chart.js` via `vue-chartjs`)
 
 #### Technical Tasks
 
-- [ ] `DashboardBurnIndexController@show` — returns section detail with weekly breakdowns
-- [ ] Weekly aggregation query: group approved items by `WEEK(operational_date)` or date bucket, compute cumulative totals per week
-- [ ] Store per-week breakdown in response data (not in `monthly_burn_snapshots` — computed on request for detail view)
-- [ ] `pnpm add vue-chartjs chart.js`
-- [ ] Create `resources/js/Pages/Dashboard/SectionDetail.vue` — section deep-dive page
-- [ ] Create `resources/js/Components/Dashboard/BurndownLineChart.vue` — line chart component
-- [ ] Create `resources/js/Components/Dashboard/BudgetMatrixScatter.vue` — 4-quadrant scatter plot
-- [ ] Create `resources/js/Components/Dashboard/WeeklyBreakdownTable.vue` — tabular weekly data
+- [x] `DashboardBurnIndexController@show` — returns section detail with weekly breakdowns
+- [x] Weekly aggregation query: group approved items by `WEEK(operational_date)` or date bucket, compute cumulative totals per week
+- [x] Store per-week breakdown in response data (not in `monthly_burn_snapshots` — computed on request for detail view)
+- [x] `pnpm add vue-chartjs chart.js`
+- [x] Create `resources/js/components/dashboard/SectionBurndownSheet.vue` — section deep-dive slide-in drawer (per UX plan)
+- [x] Create `resources/js/components/dashboard/BurndownLineChart.vue` — line chart component
+- [x] Create `resources/js/components/dashboard/BudgetMatrixScatter.vue` — 4-quadrant scatter plot
+- [x] Create `resources/js/components/dashboard/WeeklyBreakdownTable.vue` — tabular weekly data
 
 ---
 
@@ -211,28 +212,29 @@ This epic builds the analytical dashboard that answers that question in real tim
 **So that** I can take corrective action (redistribute work, defer overtime) before the overrun actually occurs.
 
 **Story Points:** 6  
-**Priority:** Must Have
+**Priority:** Must Have  
+**Status:** 🟢 Completed (Sprint 5)
 
 #### Acceptance Criteria
 
-- [ ] Burn Velocity (CALC-04) is calculated: `Cumulative Approved Hours ÷ Elapsed Weeks in Period`
-- [ ] Projected Period-End Total (CALC-05) = `Velocity × Total Weeks in Period (4.3 default)`
-- [ ] A "trajectory indicator" is shown below the Burn Index:
+- [x] Burn Velocity (CALC-04) is calculated: `Cumulative Approved Hours ÷ Elapsed Weeks in Period`
+- [x] Projected Period-End Total (CALC-05) = `Velocity × Total Weeks in Period (4.3 default)`
+- [x] A "trajectory indicator" is shown below the Burn Index:
     - `→ On Pace` (projected ≤ 100%)
     - `↗ Trending Over` (projected 100–120%)
     - `↑ Will Overrun` (projected > 120%)
-- [ ] Elapsed weeks uses `Asia/Jakarta` timezone: `days_elapsed_in_month / 7.0`, minimum 1.0
-- [ ] For months that have already ended (historical view): elapsed weeks = 4.3 (full month)
-- [ ] Projected total shown alongside ML forecast (when Epic-08 is live): "Heuristic: 182 hrs | ML Forecast: 175 hrs ±12 hrs"
-- [ ] Velocity and projection are recomputed in `BurnIndexCalculatorService` and stored in `monthly_burn_snapshots`
+- [x] Elapsed weeks uses `Asia/Jakarta` timezone: `days_elapsed_in_month / 7.0`, minimum 1.0
+- [x] For months that have already ended (historical view): elapsed weeks = 4.3 (full month)
+- [x] Projected total shown alongside ML forecast (when Epic-08 is live): "Heuristic: 182 hrs | ML Forecast: 175 hrs ±12 hrs"
+- [x] Velocity and projection are recomputed in `BurnIndexCalculatorService` and stored in `monthly_burn_snapshots`
 
 #### Technical Tasks
 
-- [ ] Implement `CALC-04` and `CALC-05` in `BurnIndexCalculatorService::calculateSectionMetrics()` — already stubbed in architecture doc §3.3
-- [ ] Store `burn_velocity` in `monthly_burn_snapshots` (column already in schema)
-- [ ] Add `projected_total_hours` computed field in service return array (not stored — derived from velocity × 4.3)
-- [ ] `BurnIndexCard.vue`: add trajectory indicator icon and label based on `projected_total_hours` vs `planned_budget_hours`
-- [ ] Unit test: `BurnIndexCalculatorServiceTest::test_velocity_uses_jakarta_timezone()`
+- [x] Implement `CALC-04` and `CALC-05` in `BurnIndexCalculatorService::calculateSectionMetrics()` — already stubbed in architecture doc §3.3
+- [x] Store `burn_velocity` in `monthly_burn_snapshots` (column already in schema)
+- [x] Add `projected_total_hours` computed field in service return array (not stored — derived from velocity × 4.3)
+- [x] `BurnIndexCard.vue`: add trajectory indicator icon and label based on `projected_total_hours` vs `planned_budget_hours`
+- [x] Unit test: `BurnIndexCalculatorServiceTest::test_velocity_uses_jakarta_timezone()`
 
 ---
 
@@ -274,10 +276,10 @@ This epic builds the analytical dashboard that answers that question in real tim
 ## Definition of Done — Epic-05
 
 - [ ] Burn Index dashboard loads in < 2 seconds for a section with 12 months of historical data
-- [ ] Section card shows correct color/zone based on current Burn Index
-- [ ] 5-week burndown chart renders correctly with planned vs actual lines
+- [x] Section card shows correct color/zone based on current Burn Index
+- [x] 5-week burndown chart renders correctly with planned vs actual lines
 - [ ] CapEx vs OpEx split panel shows accurate ratio from approved items
 - [ ] Budget threshold alert notification created once when threshold is crossed
 - [ ] `BurnIndexCalculatorService` unit tests pass for all 4 zone classifications
-- [ ] `pnpm lint` passes
-- [ ] `pnpm build` succeeds
+- [x] `pnpm lint` passes
+- [x] `pnpm build` succeeds

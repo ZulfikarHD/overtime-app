@@ -21,7 +21,7 @@
 | [Epic-02](./Epic-02.md) | Master Data & Administration                      | P0 – Critical     | 42 SP       | Sprint 2   | 🟢 Completed              |
 | [Epic-03](./Epic-03.md) | Daily Overtime Entry & SPKL Workflow              | P1 – Must Have    | 47 SP       | Sprint 3   | 🟢 Completed              |
 | [Epic-04](./Epic-04.md) | Verification & Approval Lifecycle                 | P1 – Must Have    | 38 SP       | Sprint 4   | 🟢 Completed              |
-| [Epic-05](./Epic-05.md) | Budget Management & Burn Index Dashboard          | P1 – Must Have    | 45 SP       | Sprint 5   | 🟡 In Progress (13/45 SP) |
+| [Epic-05](./Epic-05.md) | Budget Management & Burn Index Dashboard          | P1 – Must Have    | 45 SP       | Sprint 5   | 🟡 In Progress (27/45 SP) |
 | [Epic-06](./Epic-06.md) | Individual Employee Reporting & Welfare           | P2 – Should Have  | 30 SP       | Sprint 6   | 🔴 Not Started            |
 | [Epic-07](./Epic-07.md) | CapEx Project Labor Management                    | P2 – Should Have  | 35 SP       | Sprint 6–7 | 🔴 Not Started            |
 | [Epic-08](./Epic-08.md) | Supervised ML Analytics & Predictive Intelligence | P3 – Nice to Have | 58 SP       | Sprint 7–8 | 🔴 Not Started            |

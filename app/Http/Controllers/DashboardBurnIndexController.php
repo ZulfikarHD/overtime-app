@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Section;
 use App\Models\User;
 use App\Services\Analytics\MonthlySnapshotService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -63,5 +65,42 @@ class DashboardBurnIndexController extends Controller
         ]);
 
         return redirect()->back();
+    }
+
+    /**
+     * Display or return weekly burndown analytics for a specific section.
+     */
+    public function show(Request $request, Section $section): JsonResponse|RedirectResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+
+        // Role-based scoping check
+        if ($user->isTeamLeader()) {
+            abort_unless((int) $user->section_id === (int) $section->id, 403);
+        } elseif ($user->isManager()) {
+            abort_unless((int) $user->department_id === (int) $section->department_id, 403);
+        } elseif (! $user->isAdmin()) {
+            abort(403);
+        }
+
+        $now = Carbon::now('Asia/Jakarta');
+        $year = $request->integer('year', (int) $now->format('Y'));
+        $month = $request->integer('month', (int) $now->format('n'));
+
+        // If request is from browser navigation (not AJAX/Inertia partial/JSON), redirect to hub with deep link query
+        if (! $request->wantsJson() && ! $request->ajax()) {
+            return redirect()->route('dashboard.burn-index', [
+                'tab' => 'sections',
+                'section' => $section->id,
+                'year' => $year,
+                'month' => $month,
+                'department_id' => $section->department_id,
+            ]);
+        }
+
+        $data = $this->snapshotService->getWeeklyBurndown($section, $year, $month);
+
+        return response()->json($data);
     }
 }

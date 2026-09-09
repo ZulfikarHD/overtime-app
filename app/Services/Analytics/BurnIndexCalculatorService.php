@@ -62,15 +62,15 @@ class BurnIndexCalculatorService
         $capexHours = (float) ($metrics->total_project ?? 0.0);
         $opexHours = (float) (($metrics->total_prod ?? 0.0) + ($metrics->total_tpm ?? 0.0) + ($metrics->total_others ?? 0.0));
 
-        // CALC-03: Burn Index (%)
+        // CALC-02: Burn Index (%)
         $burnIndex = $plannedHours > 0
             ? round(($actualHours / $plannedHours) * 100, 2)
             : 0.0;
 
-        // CALC-04: Remaining Budget Hours
+        // CALC-03: Remaining Budget Hours
         $remainingHours = round($plannedHours - $actualHours, 2);
 
-        // CALC-05: Weekly Burn Velocity using Asia/Jakarta timezone
+        // CALC-04: Weekly Burn Velocity using Asia/Jakarta timezone
         $now = Carbon::now('Asia/Jakarta');
         if ($now->year === $year && $now->month === $month) {
             $elapsedWeeks = max(1.0, round($now->day / 7.0, 1));
@@ -83,9 +83,11 @@ class BurnIndexCalculatorService
         }
 
         $velocity = round($actualHours / $elapsedWeeks, 2);
+
+        // CALC-05: Projected Period-End Total Hours
         $projectedTotal = round($velocity * 4.3, 1);
 
-        // Trajectory Indicator
+        // Trajectory Indicator (On Pace <= 100%, Trending Over 100-120%, Will Overrun > 120%)
         if ($plannedHours <= 0) {
             $trajectory = $actualHours > 0 ? 'will_overrun' : 'on_pace';
         } else {

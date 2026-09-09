@@ -3,7 +3,10 @@
 namespace App\Services\Analytics;
 
 use App\Models\Department;
+use App\Models\MlPrediction;
 use App\Models\MonthlyBurnSnapshot;
+use App\Models\OvertimeBudget;
+use App\Models\OvertimeItem;
 use App\Models\Section;
 use App\Models\User;
 use Illuminate\Support\Carbon;
@@ -183,6 +186,16 @@ class MonthlySnapshotService
             ->get()
             ->keyBy('section_id');
 
+        // 4. Retrieve optional ML predictions for month-end trajectory (when Epic-08 / ML models run)
+        $mlPredictions = MlPrediction::query()
+            ->where('target_type', 'SECTION')
+            ->whereIn('target_id', $sections->pluck('id'))
+            ->where('prediction_horizon', 'MONTH_END')
+            ->orderByDesc('id')
+            ->get()
+            ->unique('target_id')
+            ->keyBy('target_id');
+
         $snapshotsList = [];
         $totalPlanned = 0.0;
         $totalActual = 0.0;
@@ -225,6 +238,29 @@ class MonthlySnapshotService
             $capexRatio = $actual > 0.0 ? round(($capex / $actual) * 100, 2) : 0.0;
             $opexRatio = round(100.0 - $capexRatio, 2);
 
+            $mlPred = $mlPredictions->get($section->id);
+            $mlForecast = null;
+            if ($mlPred) {
+                $predictedVal = (float) $mlPred->predicted_value;
+                $lower = $mlPred->confidence_interval_lower !== null ? (float) $mlPred->confidence_interval_lower : null;
+                $upper = $mlPred->confidence_interval_upper !== null ? (float) $mlPred->confidence_interval_upper : null;
+                $confidenceDelta = null;
+                if ($upper !== null && $lower !== null) {
+                    $confidenceDelta = round(($upper - $lower) / 2, 1);
+                } elseif ($upper !== null) {
+                    $confidenceDelta = round(abs($upper - $predictedVal), 1);
+                }
+
+                $mlForecast = [
+                    'predicted_value' => $predictedVal,
+                    'confidence_interval_lower' => $lower,
+                    'confidence_interval_upper' => $upper,
+                    'confidence_delta' => $confidenceDelta,
+                    'risk_level' => $mlPred->risk_level,
+                    'fallback_used' => (bool) $mlPred->fallback_used,
+                ];
+            }
+
             $snapshotsList[] = [
                 'id' => $snapshot->id,
                 'section_id' => $section->id,
@@ -240,6 +276,7 @@ class MonthlySnapshotService
                 'burn_velocity' => $velocity,
                 'projected_total_hours' => $projectedTotal,
                 'trajectory' => $trajectory,
+                'ml_forecast' => $mlForecast,
                 'burn_zone' => $zone,
                 'cumulative_opex_hours' => $opex,
                 'cumulative_capex_hours' => $capex,
@@ -294,6 +331,342 @@ class MonthlySnapshotService
                 'configured_sections_count' => $configuredCount,
                 'total_sections_count' => count($sections),
             ],
+        ];
+    }
+
+    /**
+     * Build 5-week burndown, tabular breakdown, and 4-quadrant scatter matrix for a section.
+     *
+     * @return array{
+     *     section: array{id: int, code: string, name: string, department_id: int, department_name: string, department_code: string},
+     *     fiscal_year: int,
+     *     fiscal_month: int,
+     *     is_budget_configured: bool,
+     *     summary: array{
+     *         planned_hours: float,
+     *         actual_hours: float,
+     *         remaining_hours: float,
+     *         burn_index_pct: float,
+     *         burn_zone: string,
+     *         burn_velocity: float,
+     *         projected_total_hours: float,
+     *         trajectory: string,
+     *         last_recalculated_at: string|null,
+     *     },
+     *     weeks: list<array{
+     *         week_number: int,
+     *         label: string,
+     *         date_range: string,
+     *         planned_hours: float,
+     *         actual_hours: float|null,
+     *         cumulative_planned_hours: float,
+     *         cumulative_actual_hours: float|null,
+     *         hkn_hours: float|null,
+     *         hlr_hours: float|null,
+     *         burn_pct: float|null,
+     *         deviation_hours: float|null,
+     *         is_future: bool,
+     *         is_current: bool,
+     *     }>,
+     *     ml_trajectory: list<float|null>|null,
+     *     ml_forecast: array{
+     *         predicted_value: float,
+     *         confidence_interval_lower: float|null,
+     *         confidence_interval_upper: float|null,
+     *         confidence_delta: float|null,
+     *         risk_level: string|null,
+     *         fallback_used: bool,
+     *     }|null,
+     *     scatter_plot: array{
+     *         current_burn_pct: float,
+     *         cumulative_actual_hours: float,
+     *         planned_budget_hours: float,
+     *         burn_zone: string,
+     *         threshold_hours_75_pct: float,
+     *         threshold_burn_100_pct: float,
+     *         max_x_scale: float,
+     *         max_y_scale: float,
+     *     }
+     * }
+     */
+    public function getWeeklyBurndown(Section $section, int $year, int $month): array
+    {
+        $section->loadMissing('department');
+
+        $startOfMonth = Carbon::create($year, $month, 1, 0, 0, 0, 'Asia/Jakarta');
+        $endOfMonth = $startOfMonth->copy()->endOfMonth();
+        $totalDays = $endOfMonth->day;
+
+        $monthNames = [
+            1 => 'Jan', 2 => 'Feb', 3 => 'Mar', 4 => 'Apr',
+            5 => 'Mei', 6 => 'Jun', 7 => 'Jul', 8 => 'Agu',
+            9 => 'Sep', 10 => 'Okt', 11 => 'Nov', 12 => 'Des',
+        ];
+        $mName = $monthNames[$month] ?? $startOfMonth->format('M');
+
+        $now = Carbon::now('Asia/Jakarta');
+        $isCurrentMonth = ($now->year === $year && $now->month === $month);
+        $isPastMonth = ($now->year > $year || ($now->year === $year && $now->month > $month));
+        $isFutureMonth = ! $isCurrentMonth && ! $isPastMonth;
+
+        $currentDay = $now->day;
+        $activeWeek = match (true) {
+            $currentDay <= 7 => 1,
+            $currentDay <= 14 => 2,
+            $currentDay <= 21 => 3,
+            $currentDay <= 28 => 4,
+            default => 5,
+        };
+
+        // 1. Fetch Budget
+        $budget = OvertimeBudget::query()
+            ->where('section_id', $section->id)
+            ->where('fiscal_year', $year)
+            ->where('fiscal_month', $month)
+            ->first();
+
+        $plannedHours = $budget ? (float) $budget->planned_hours : 0.0;
+        $w1 = $budget ? (float) $budget->week1_planned_hours : 0.0;
+        $w2 = $budget ? (float) $budget->week2_planned_hours : 0.0;
+        $w3 = $budget ? (float) $budget->week3_planned_hours : 0.0;
+        $w4 = $budget ? (float) $budget->week4_planned_hours : 0.0;
+        $w5 = $budget ? (float) $budget->week5_planned_hours : 0.0;
+
+        if ($budget && ($w1 + $w2 + $w3 + $w4 + $w5) == 0 && $plannedHours > 0) {
+            $weeklyAvg = round($plannedHours / 4.3, 2);
+            $w1 = $weeklyAvg;
+            $w2 = $weeklyAvg;
+            $w3 = $weeklyAvg;
+            $w4 = $weeklyAvg;
+            $w5 = round(max(0, $plannedHours - ($weeklyAvg * 4)), 2);
+        }
+
+        $isConfigured = $plannedHours > 0.0;
+        $weeklyPlanned = [1 => $w1, 2 => $w2, 3 => $w3, 4 => $w4, 5 => $w5];
+
+        // 2. Fetch approved items
+        $startStr = $startOfMonth->toDateString();
+        $endStr = $endOfMonth->toDateString();
+
+        $items = OvertimeItem::query()
+            ->join('overtime_submissions', 'overtime_items.overtime_submission_id', '=', 'overtime_submissions.id')
+            ->where('overtime_submissions.section_id', $section->id)
+            ->whereBetween('overtime_submissions.operational_date', [$startStr, $endStr])
+            ->where('overtime_items.status', 'APPROVED')
+            ->select([
+                'overtime_items.id',
+                'overtime_items.total_hours',
+                'overtime_submissions.operational_date',
+                'overtime_submissions.day_type',
+            ])
+            ->get();
+
+        $weekBuckets = [
+            1 => ['actual' => 0.0, 'hkn' => 0.0, 'hlr' => 0.0],
+            2 => ['actual' => 0.0, 'hkn' => 0.0, 'hlr' => 0.0],
+            3 => ['actual' => 0.0, 'hkn' => 0.0, 'hlr' => 0.0],
+            4 => ['actual' => 0.0, 'hkn' => 0.0, 'hlr' => 0.0],
+            5 => ['actual' => 0.0, 'hkn' => 0.0, 'hlr' => 0.0],
+        ];
+
+        foreach ($items as $item) {
+            $day = Carbon::parse($item->operational_date)->day;
+            $w = match (true) {
+                $day <= 7 => 1,
+                $day <= 14 => 2,
+                $day <= 21 => 3,
+                $day <= 28 => 4,
+                default => 5,
+            };
+            $hrs = (float) $item->total_hours;
+            $weekBuckets[$w]['actual'] += $hrs;
+            if ($item->day_type === 'HKN') {
+                $weekBuckets[$w]['hkn'] += $hrs;
+            } else {
+                $weekBuckets[$w]['hlr'] += $hrs;
+            }
+        }
+
+        // 3. Assemble weekly stats
+        $weeks = [];
+        $runningPlanned = 0.0;
+        $runningActual = 0.0;
+        $lastActualCumulative = 0.0;
+
+        for ($w = 1; $w <= 5; $w++) {
+            $planHrs = round($weeklyPlanned[$w], 2);
+            $runningPlanned = round($runningPlanned + $planHrs, 2);
+
+            $dateRange = match ($w) {
+                1 => sprintf('%02d - %02d %s', 1, 7, $mName),
+                2 => sprintf('%02d - %02d %s', 8, 14, $mName),
+                3 => sprintf('%02d - %02d %s', 15, 21, $mName),
+                4 => sprintf('%02d - %02d %s', 22, 28, $mName),
+                default => $totalDays >= 29 ? sprintf('%02d - %02d %s', 29, $totalDays, $mName) : '-',
+            };
+
+            if ($isFutureMonth) {
+                $isFuture = true;
+                $isCurrent = false;
+            } elseif ($isPastMonth) {
+                $isFuture = false;
+                $isCurrent = false;
+            } else {
+                $isFuture = ($w > $activeWeek);
+                $isCurrent = ($w === $activeWeek);
+            }
+
+            if ($isFuture) {
+                $actualHrs = null;
+                $hknHrs = null;
+                $hlrHrs = null;
+                $cumulativeActual = null;
+                $burnPct = null;
+                $deviation = null;
+            } else {
+                $actualHrs = round($weekBuckets[$w]['actual'], 2);
+                $hknHrs = round($weekBuckets[$w]['hkn'], 2);
+                $hlrHrs = round($weekBuckets[$w]['hlr'], 2);
+                $runningActual = round($runningActual + $actualHrs, 2);
+                $lastActualCumulative = $runningActual;
+                $cumulativeActual = $runningActual;
+
+                $burnPct = $runningPlanned > 0 ? round(($cumulativeActual / $runningPlanned) * 100, 1) : 0.0;
+                $deviation = round($actualHrs - $planHrs, 2);
+            }
+
+            $weeks[] = [
+                'week_number' => $w,
+                'label' => sprintf('Minggu %d', $w),
+                'date_range' => $dateRange,
+                'planned_hours' => $planHrs,
+                'actual_hours' => $actualHrs,
+                'cumulative_planned_hours' => $runningPlanned,
+                'cumulative_actual_hours' => $cumulativeActual,
+                'hkn_hours' => $hknHrs,
+                'hlr_hours' => $hlrHrs,
+                'burn_pct' => $burnPct,
+                'deviation_hours' => $deviation,
+                'is_future' => $isFuture,
+                'is_current' => $isCurrent,
+            ];
+        }
+
+        // 4. ML Prediction and Trajectory Interpolation
+        $mlPred = MlPrediction::query()
+            ->where('target_type', 'SECTION')
+            ->where('target_id', $section->id)
+            ->where('prediction_horizon', 'MONTH_END')
+            ->orderByDesc('id')
+            ->first();
+
+        $mlForecast = null;
+        $mlTrajectory = null;
+
+        if ($mlPred) {
+            $predictedVal = (float) $mlPred->predicted_value;
+            $lower = $mlPred->confidence_interval_lower !== null ? (float) $mlPred->confidence_interval_lower : null;
+            $upper = $mlPred->confidence_interval_upper !== null ? (float) $mlPred->confidence_interval_upper : null;
+            $confidenceDelta = null;
+            if ($upper !== null && $lower !== null) {
+                $confidenceDelta = round(($upper - $lower) / 2, 1);
+            } elseif ($upper !== null) {
+                $confidenceDelta = round(abs($upper - $predictedVal), 1);
+            }
+
+            $mlForecast = [
+                'predicted_value' => $predictedVal,
+                'confidence_interval_lower' => $lower,
+                'confidence_interval_upper' => $upper,
+                'confidence_delta' => $confidenceDelta,
+                'risk_level' => $mlPred->risk_level,
+                'fallback_used' => (bool) $mlPred->fallback_used,
+            ];
+
+            // 5-point ML line for chart
+            $mlPoints = [];
+            if ($isFutureMonth) {
+                for ($i = 1; $i <= 5; $i++) {
+                    $mlPoints[] = round(($predictedVal / 5) * $i, 1);
+                }
+            } elseif ($isPastMonth) {
+                for ($i = 1; $i <= 4; $i++) {
+                    $mlPoints[] = null;
+                }
+                $mlPoints[] = $predictedVal;
+            } else {
+                for ($i = 1; $i <= 5; $i++) {
+                    if ($i < $activeWeek) {
+                        $mlPoints[] = null;
+                    } elseif ($i === $activeWeek) {
+                        $mlPoints[] = $lastActualCumulative;
+                    } else {
+                        $remaining = 5 - $activeWeek;
+                        $step = ($predictedVal - $lastActualCumulative) / max(1, $remaining);
+                        $mlPoints[] = round($lastActualCumulative + ($step * ($i - $activeWeek)), 1);
+                    }
+                }
+            }
+            $mlTrajectory = $mlPoints;
+        }
+
+        // 5. Section Snapshot & Summary
+        $snapshot = $this->getOrRecalculate($section->id, $year, $month);
+        $cumActual = $snapshot ? (float) $snapshot->cumulative_actual_hours : $lastActualCumulative;
+        $burnIndexPct = $snapshot ? (float) $snapshot->burn_index_pct : ($plannedHours > 0 ? round(($cumActual / $plannedHours) * 100, 2) : 0.0);
+        $velocity = $snapshot ? (float) $snapshot->burn_velocity : 0.0;
+        $zone = $snapshot ? (string) $snapshot->burn_zone : 'ZONE_1_EXCELLENT';
+        $projectedTotal = round($velocity * 4.3, 1);
+
+        if (! $isConfigured) {
+            $trajectory = $cumActual > 0 ? 'will_overrun' : 'on_pace';
+        } else {
+            $projectedRatio = ($projectedTotal / $plannedHours) * 100;
+            $trajectory = match (true) {
+                $projectedRatio <= 100.0 => 'on_pace',
+                $projectedRatio <= 120.0 => 'trending_over',
+                default => 'will_overrun',
+            };
+        }
+
+        $scatterPlot = [
+            'current_burn_pct' => $burnIndexPct,
+            'cumulative_actual_hours' => $cumActual,
+            'planned_budget_hours' => $plannedHours,
+            'burn_zone' => $zone,
+            'threshold_hours_75_pct' => round($plannedHours * 0.75, 2),
+            'threshold_burn_100_pct' => 100.0,
+            'max_x_scale' => max(150.0, ceil($burnIndexPct * 1.15)),
+            'max_y_scale' => max(ceil($plannedHours * 1.25), ceil($cumActual * 1.15), 50.0),
+        ];
+
+        return [
+            'section' => [
+                'id' => $section->id,
+                'code' => $section->code,
+                'name' => $section->name,
+                'department_id' => $section->department_id,
+                'department_name' => $section->department?->name ?? '',
+                'department_code' => $section->department?->code ?? '',
+            ],
+            'fiscal_year' => $year,
+            'fiscal_month' => $month,
+            'is_budget_configured' => $isConfigured,
+            'summary' => [
+                'planned_hours' => $plannedHours,
+                'actual_hours' => $cumActual,
+                'remaining_hours' => round($plannedHours - $cumActual, 2),
+                'burn_index_pct' => $burnIndexPct,
+                'burn_zone' => $zone,
+                'burn_velocity' => $velocity,
+                'projected_total_hours' => $projectedTotal,
+                'trajectory' => $trajectory,
+                'last_recalculated_at' => $snapshot?->last_recalculated_at?->toISOString() ?? Carbon::now('Asia/Jakarta')->toISOString(),
+            ],
+            'weeks' => $weeks,
+            'ml_trajectory' => $mlTrajectory,
+            'ml_forecast' => $mlForecast,
+            'scatter_plot' => $scatterPlot,
         ];
     }
 }

@@ -29,6 +29,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::middleware(['role:admin,manager,team_leader'])->prefix('dashboard')->name('dashboard.')->group(function () {
         Route::get('/burn-index', [DashboardBurnIndexController::class, 'index'])->name('burn-index');
         Route::post('/burn-index/recalculate', [DashboardBurnIndexController::class, 'recalculate'])->name('burn-index.recalculate');
+        Route::get('/burn-index/{section}', [DashboardBurnIndexController::class, 'show'])->name('burn-index.show');
     });
 
     // Role-protected routes for authorization verification and testing

@@ -18,6 +18,7 @@ import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import BurnIndexCard, {
     type SectionSnapshotData,
 } from '@/components/dashboard/BurnIndexCard.vue';
+import SectionBurndownSheet from '@/components/dashboard/SectionBurndownSheet.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -189,10 +190,45 @@ function manualRefresh() {
     });
 }
 
+// Section Burndown Sheet State (E05-02)
+const isSheetOpen = ref(false);
+const selectedSectionId = ref<number | null>(null);
+
+function handleSelectSection(sectionId: number) {
+    selectedSectionId.value = sectionId;
+    isSheetOpen.value = true;
+}
+
+function handleSheetOpenChange(val: boolean) {
+    isSheetOpen.value = val;
+    if (!val) {
+        selectedSectionId.value = null;
+        if (typeof window !== 'undefined') {
+            const url = new URL(window.location.href);
+            if (url.searchParams.has('section')) {
+                url.searchParams.delete('section');
+                window.history.replaceState({}, '', url.toString());
+            }
+        }
+    }
+}
+
 // 60-Second Auto Refresh Polling
 let pollingInterval: ReturnType<typeof setInterval> | null = null;
 
 onMounted(() => {
+    // Check if deep linked via query param ?section={id}
+    if (typeof window !== 'undefined') {
+        const urlParams = new URLSearchParams(window.location.search);
+        const secParam = urlParams.get('section');
+        if (secParam) {
+            const secId = parseInt(secParam, 10);
+            if (!isNaN(secId)) {
+                handleSelectSection(secId);
+            }
+        }
+    }
+
     pollingInterval = setInterval(() => {
         router.reload({
             only: ['snapshots', 'summary'],
@@ -286,7 +322,7 @@ const deptZoneLabel = computed(() => {
 
         <!-- Top Header & Primary Controls -->
         <div
-            class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between"
+            class="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between"
         >
             <div>
                 <div class="flex items-center gap-2">
@@ -319,25 +355,32 @@ const deptZoneLabel = computed(() => {
             </div>
 
             <!-- Toolbar Filters: Department + Month/Year + Manual Refresh -->
-            <div class="flex flex-wrap items-center gap-2">
+            <div
+                class="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center"
+            >
                 <!-- Department Selector (Admin sees select; Manager sees locked badge) -->
                 <div
                     v-if="
                         currentUser?.role === 'admin' && departments.length > 0
                     "
-                    class="w-48"
+                    class="w-full min-w-0 sm:w-64 lg:w-72"
                 >
                     <Select
                         :model-value="selectedDepartmentId"
                         @update:model-value="handleDepartmentChange"
                     >
-                        <SelectTrigger class="h-9 text-xs">
-                            <Building2
-                                class="text-muted-foreground mr-1.5 size-3.5"
-                            />
-                            <SelectValue
-                                :placeholder="__('Pilih Departemen')"
-                            />
+                        <SelectTrigger class="h-9 w-full min-w-0 text-xs">
+                            <div
+                                class="flex min-w-0 items-center gap-1.5 truncate"
+                            >
+                                <Building2
+                                    class="text-muted-foreground size-3.5 shrink-0"
+                                />
+                                <SelectValue
+                                    :placeholder="__('Pilih Departemen')"
+                                    class="truncate"
+                                />
+                            </div>
                         </SelectTrigger>
                         <SelectContent>
                             <SelectItem
@@ -353,77 +396,89 @@ const deptZoneLabel = computed(() => {
                 </div>
                 <div
                     v-else-if="selected_department"
-                    class="flex h-9 items-center gap-1.5 rounded-md border border-slate-200 bg-slate-50 px-3 text-xs font-semibold dark:border-slate-800 dark:bg-slate-900"
+                    class="flex h-9 w-full max-w-full min-w-0 items-center gap-1.5 rounded-md border border-slate-200 bg-slate-50 px-3 text-xs font-semibold sm:w-auto sm:max-w-xs dark:border-slate-800 dark:bg-slate-900"
+                    :title="`${selected_department.code} - ${selected_department.name}`"
                 >
-                    <Building2 class="text-muted-foreground size-3.5" />
-                    <span
+                    <Building2
+                        class="text-muted-foreground size-3.5 shrink-0"
+                    />
+                    <span class="truncate"
                         >{{ selected_department.code }} -
                         {{ selected_department.name }}</span
                     >
                 </div>
 
-                <!-- Month Picker -->
-                <div class="w-36">
-                    <Select
-                        :model-value="String(selectedMonth)"
-                        @update:model-value="handleMonthChange"
-                    >
-                        <SelectTrigger class="h-9 text-xs">
-                            <Calendar
-                                class="text-muted-foreground mr-1.5 size-3.5"
-                            />
-                            <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem
-                                v-for="m in months"
-                                :key="m.value"
-                                :value="String(m.value)"
-                                class="text-xs"
-                            >
-                                {{ m.label }}
-                            </SelectItem>
-                        </SelectContent>
-                    </Select>
-                </div>
+                <!-- Date & Action Group: Month Picker + Year Picker + Refresh -->
+                <div class="flex items-center gap-2">
+                    <!-- Month Picker -->
+                    <div class="w-36 min-w-0">
+                        <Select
+                            :model-value="String(selectedMonth)"
+                            @update:model-value="handleMonthChange"
+                        >
+                            <SelectTrigger class="h-9 w-full min-w-0 text-xs">
+                                <div
+                                    class="flex min-w-0 items-center gap-1.5 truncate"
+                                >
+                                    <Calendar
+                                        class="text-muted-foreground size-3.5 shrink-0"
+                                    />
+                                    <SelectValue class="truncate" />
+                                </div>
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem
+                                    v-for="m in months"
+                                    :key="m.value"
+                                    :value="String(m.value)"
+                                    class="text-xs"
+                                >
+                                    {{ m.label }}
+                                </SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
 
-                <!-- Year Picker -->
-                <div class="w-24">
-                    <Select
-                        :model-value="String(selectedYear)"
-                        @update:model-value="handleYearChange"
-                    >
-                        <SelectTrigger class="h-9 font-mono text-xs">
-                            <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem
-                                v-for="y in availableYears"
-                                :key="y"
-                                :value="String(y)"
-                                class="font-mono text-xs"
+                    <!-- Year Picker -->
+                    <div class="w-24 min-w-0 shrink-0">
+                        <Select
+                            :model-value="String(selectedYear)"
+                            @update:model-value="handleYearChange"
+                        >
+                            <SelectTrigger
+                                class="h-9 w-full min-w-0 font-mono text-xs"
                             >
-                                {{ y }}
-                            </SelectItem>
-                        </SelectContent>
-                    </Select>
-                </div>
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem
+                                    v-for="y in availableYears"
+                                    :key="y"
+                                    :value="String(y)"
+                                    class="font-mono text-xs"
+                                >
+                                    {{ y }}
+                                </SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
 
-                <!-- Manual Refresh Button -->
-                <Button
-                    variant="outline"
-                    size="sm"
-                    class="h-9 cursor-pointer px-3"
-                    :disabled="isRefreshing"
-                    @click="manualRefresh"
-                    data-test="btn-refresh-dashboard"
-                >
-                    <RefreshCw
-                        class="mr-1 size-3.5"
-                        :class="{ 'animate-spin': isRefreshing }"
-                    />
-                    <span class="text-xs">{{ __('Segarkan') }}</span>
-                </Button>
+                    <!-- Manual Refresh Button -->
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        class="h-9 shrink-0 cursor-pointer px-3"
+                        :disabled="isRefreshing"
+                        @click="manualRefresh"
+                        data-test="btn-refresh-dashboard"
+                    >
+                        <RefreshCw
+                            class="mr-1 size-3.5"
+                            :class="{ 'animate-spin': isRefreshing }"
+                        />
+                        <span class="text-xs">{{ __('Segarkan') }}</span>
+                    </Button>
+                </div>
             </div>
         </div>
 
@@ -770,6 +825,7 @@ const deptZoneLabel = computed(() => {
                     v-for="item in filteredSnapshots"
                     :key="item.id"
                     :snapshot="item"
+                    @select-section="handleSelectSection"
                 />
             </div>
         </div>
@@ -809,5 +865,14 @@ const deptZoneLabel = computed(() => {
                 }}
             </p>
         </div>
+
+        <!-- Section Burndown & Control Matrix Slide-in Sheet (E05-02) -->
+        <SectionBurndownSheet
+            :open="isSheetOpen"
+            :section-id="selectedSectionId"
+            :fiscal-year="selectedYear"
+            :fiscal-month="selectedMonth"
+            @update:open="handleSheetOpenChange"
+        />
     </div>
 </template>

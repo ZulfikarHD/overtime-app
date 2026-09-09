@@ -4,9 +4,12 @@ import {
     Activity,
     AlertCircle,
     ArrowRight,
+    ArrowUp,
     ArrowUpRight,
     Clock,
+    LineChart,
     MoveRight,
+    Sparkles,
     TrendingUp,
 } from '@lucide/vue';
 import { computed } from 'vue';
@@ -30,6 +33,14 @@ export interface SectionSnapshotData {
     burn_velocity: number;
     projected_total_hours: number;
     trajectory: 'on_pace' | 'trending_over' | 'will_overrun';
+    ml_forecast?: {
+        predicted_value: number;
+        confidence_interval_lower: number | null;
+        confidence_interval_upper: number | null;
+        confidence_delta: number | null;
+        risk_level: string | null;
+        fallback_used: boolean;
+    } | null;
     burn_zone:
         | 'ZONE_1_EXCELLENT'
         | 'ZONE_2_GOOD'
@@ -45,6 +56,10 @@ export interface SectionSnapshotData {
 
 const props = defineProps<{
     snapshot: SectionSnapshotData;
+}>();
+
+const emit = defineEmits<{
+    (e: 'select-section', sectionId: number): void;
 }>();
 
 const { __ } = useTrans();
@@ -146,7 +161,7 @@ const trajectoryBadge = computed(() => {
             return {
                 label: __('↑ Kritis (Will Overrun)'),
                 class: 'text-[#cc0000] dark:text-red-400 bg-red-50 dark:bg-red-950/40 border-red-200 dark:border-red-900',
-                icon: ArrowUpRight,
+                icon: ArrowUp,
             };
         case 'on_pace':
         default:
@@ -175,13 +190,27 @@ const formattedLastRecalculated = computed(() => {
         ' WIB'
     );
 });
+
+const mlComparisonTooltip = computed(() => {
+    if (!props.snapshot.ml_forecast) {
+        return '';
+    }
+    const heur = `${props.snapshot.projected_total_hours.toFixed(1)} ${__('jam')}`;
+    const mlVal = props.snapshot.ml_forecast.predicted_value.toFixed(1);
+    const delta =
+        props.snapshot.ml_forecast.confidence_delta !== null
+            ? ` ±${props.snapshot.ml_forecast.confidence_delta.toFixed(1)} ${__('jam')}`
+            : ` ${__('jam')}`;
+    return `${__('Heuristik')}: ${heur} | ${__('Prediksi AI')}: ${mlVal}${delta}`;
+});
 </script>
 
 <template>
     <div
-        class="bg-card text-card-foreground flex flex-col justify-between rounded-xl border p-4 transition-all duration-200 hover:shadow-md"
+        class="bg-card text-card-foreground flex cursor-pointer flex-col justify-between rounded-xl border p-4 transition-all duration-200 hover:shadow-md"
         :class="burnStatus.cardBorder"
         :data-test="`burn-card-${snapshot.section_code}`"
+        @click="$emit('select-section', snapshot.section_id)"
     >
         <!-- Card Top Header -->
         <div class="space-y-2">
@@ -240,6 +269,7 @@ const formattedLastRecalculated = computed(() => {
                 <Link
                     :href="planning()"
                     class="inline-flex items-center gap-1 pt-1 text-xs font-semibold text-[#cc0000] hover:underline dark:text-red-400"
+                    @click.stop
                 >
                     <span>{{ __('Atur Anggaran di Planning') }}</span>
                     <ArrowRight class="size-3" />
@@ -325,9 +355,15 @@ const formattedLastRecalculated = computed(() => {
                     </Badge>
 
                     <div
-                        class="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 font-mono text-[10px] font-semibold"
+                        class="inline-flex shrink-0 items-center gap-1 rounded-full border px-2 py-0.5 font-mono text-[10px] font-semibold"
                         :class="trajectoryBadge.class"
+                        data-test="trajectory-badge"
                     >
+                        <component
+                            :is="trajectoryBadge.icon"
+                            class="size-3 shrink-0"
+                            data-test="trajectory-icon"
+                        />
                         <span>{{ trajectoryBadge.label }}</span>
                     </div>
                 </div>
@@ -345,6 +381,7 @@ const formattedLastRecalculated = computed(() => {
                         </div>
                         <div
                             class="pt-0.5 font-mono font-bold text-slate-900 tabular-nums dark:text-white"
+                            data-test="burn-velocity-value"
                         >
                             {{ snapshot.burn_velocity.toFixed(1) }}
                             <span
@@ -355,13 +392,27 @@ const formattedLastRecalculated = computed(() => {
                     </div>
                     <div>
                         <div
-                            class="text-muted-foreground flex items-center gap-1"
+                            class="text-muted-foreground flex items-center justify-between gap-1"
                         >
-                            <TrendingUp class="size-3 text-slate-400" />
-                            <span>{{ __('Proyeksi Akhir') }}</span>
+                            <div class="flex items-center gap-1">
+                                <TrendingUp class="size-3 text-slate-400" />
+                                <span>{{ __('Proyeksi Akhir') }}</span>
+                            </div>
+                            <span
+                                v-if="snapshot.ml_forecast"
+                                class="inline-flex items-center gap-0.5 rounded border border-violet-200 bg-violet-100 px-1 py-0 text-[9px] font-bold text-violet-800 dark:border-violet-800 dark:bg-violet-950/60 dark:text-violet-300"
+                                :title="__('Prediksi AI (Supervised ML)')"
+                                data-test="ml-forecast-pill"
+                            >
+                                <Sparkles
+                                    class="size-2.5 text-violet-600 dark:text-violet-400"
+                                />
+                                <span>AI</span>
+                            </span>
                         </div>
                         <div
                             class="pt-0.5 font-mono font-bold text-slate-900 tabular-nums dark:text-white"
+                            data-test="projected-total-value"
                         >
                             {{ snapshot.projected_total_hours.toFixed(1) }}
                             <span
@@ -370,6 +421,54 @@ const formattedLastRecalculated = computed(() => {
                             >
                         </div>
                     </div>
+                </div>
+
+                <!-- ML Forecast Comparison Display (When ML prediction exists) -->
+                <div
+                    v-if="snapshot.ml_forecast"
+                    class="flex items-center justify-between rounded-md border border-violet-100 bg-violet-50/60 px-2 py-1 text-[10px] text-violet-900 dark:border-violet-900/40 dark:bg-violet-950/30 dark:text-violet-300"
+                    data-test="ml-forecast-comparison"
+                    :title="mlComparisonTooltip"
+                >
+                    <div class="flex items-center gap-1">
+                        <Sparkles
+                            class="size-3 shrink-0 text-violet-600 dark:text-violet-400"
+                        />
+                        <span class="font-medium"
+                            >{{ __('Prediksi AI') }}:</span
+                        >
+                        <span class="font-mono font-bold tabular-nums">
+                            {{
+                                snapshot.ml_forecast.predicted_value.toFixed(1)
+                            }}
+                            {{ __('jam') }}
+                            <template
+                                v-if="
+                                    snapshot.ml_forecast.confidence_delta !==
+                                    null
+                                "
+                            >
+                                &plusmn;{{
+                                    snapshot.ml_forecast.confidence_delta.toFixed(
+                                        1,
+                                    )
+                                }}
+                                {{ __('jam') }}
+                            </template>
+                        </span>
+                    </div>
+                    <span
+                        v-if="snapshot.ml_forecast.risk_level"
+                        class="rounded px-1 py-0.5 font-mono text-[9px] font-bold uppercase"
+                        :class="
+                            snapshot.ml_forecast.risk_level === 'HIGH'
+                                ? 'border border-red-200 bg-red-100 text-[#cc0000] dark:border-red-900 dark:bg-red-950/60 dark:text-red-300'
+                                : 'border border-slate-200 bg-slate-100 text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300'
+                        "
+                        data-test="ml-risk-badge"
+                    >
+                        {{ snapshot.ml_forecast.risk_level }}
+                    </span>
                 </div>
 
                 <!-- CapEx vs OpEx Split Bar -->
@@ -382,6 +481,20 @@ const formattedLastRecalculated = computed(() => {
                     />
                 </div>
             </div>
+
+            <!-- Action to open Burndown Drawer -->
+            <button
+                type="button"
+                class="mt-3 flex w-full cursor-pointer items-center justify-between border-t border-slate-100 pt-2 text-xs font-semibold text-slate-700 transition-colors hover:text-[#cc0000] dark:border-slate-800 dark:text-slate-300 dark:hover:text-red-400"
+                data-test="btn-open-burndown"
+                @click.stop="$emit('select-section', snapshot.section_id)"
+            >
+                <span class="flex items-center gap-1.5">
+                    <LineChart class="size-3.5 text-slate-400" />
+                    <span>{{ __('Lihat Burndown & Matriks') }}</span>
+                </span>
+                <ArrowRight class="size-3.5 text-slate-400" />
+            </button>
         </div>
 
         <!-- Card Footer: Last Recalculated -->
