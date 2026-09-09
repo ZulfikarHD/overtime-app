@@ -84,14 +84,27 @@ Click any column header with an arrow icon to sort ascending or descending:
 
 ---
 
-## 5. Inspecting Individual Project Cockpits
+## 5. Inspecting Individual Project Cockpits & Updating Physical Progress (E07-05)
 
-Click any Project Code or the **Detail** (`→`) action icon to navigate to `/admin/capex-projects/{id}`:
+Click any Project Code or the **Detail** (`→`) action icon from the **CapEx Projects** table to open the Project Labor Cockpit:
 
 1. **Burndown Timeline**: Review weekly actual hours vs. linear planned allocation curves.
 2. **Team Contributor Roster**: See all technicians and operators contributing approved hours to the project.
-3. **In-Place Progress Editor**: Update physical progress percentage with a single click and slider adjustment.
-4. **Completion Prompt**: When physical progress reaches 100%, trigger 1-click status transition to `COMPLETED`.
+3. **In-Place Physical Progress Update**:
+    - Locate the **In-Place Project Physical Progress Update** card (`Pembaruan Kemajuan Fisik Proyek (In-Place)`).
+    - Review the current physical progress percentage and the last update attribution notice (`Updated by :name, :time` / `Diperbarui oleh :name, :time`).
+    - Click **Update Progress** (`Ubah Kemajuan`) to open the in-place editor.
+    - Adjust the completion percentage (0.0% to 100.0%) by dragging the interactive slider (`step="0.5"`) or typing the value in the manual numeric input box.
+    - Click **Save** (`Simpan`) to submit. The progress updates instantly in-place without a full browser reload, re-evaluating the **Milestone Burn Ratio** and risk indicators in real time.
+    - Click **Cancel** (`Batal`) at any time to discard uncommitted adjustments.
+4. **100% Completion Milestone Prompt**:
+    - When physical progress reaches `100.0%`, a prominent celebratory banner appears:
+        > 🎉 **Physical Progress Reached 100%** (`Kemajuan Fisik Mencapai 100%`)  
+        > _"Shopfloor physical work is complete. Would you like to transition project status to COMPLETED?"_
+    - Click **Change Status to COMPLETED Now** (`Ubah Status ke COMPLETED Sekarang`) to open the transition modal with `COMPLETED` pre-selected.
+    - Click **Later** (`Nanti Saja`) to dismiss the banner and keep the project active for final punch-list items.
+5. **Audit Trail Verification**:
+    - Every change to physical progress is permanently recorded in the immutable audit ledger (`PROGRESS_UPDATE`) with previous percentage, new percentage, actor username, IP address, and timestamp.
 
 ---
 

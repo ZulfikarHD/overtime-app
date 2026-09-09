@@ -14,9 +14,19 @@ import { Input } from '@/components/ui/input';
 import { useTrans } from '@/composables/useTrans';
 import capexProjectsRoute from '@/routes/admin/capex-projects';
 
+export interface LastProgressUpdateInfo {
+    actor_name: string;
+    actor_npk?: string;
+    updated_at?: string | null;
+    updated_at_diff?: string | null;
+    previous_pct?: number;
+    new_pct?: number;
+}
+
 const props = defineProps<{
     projectId: number;
     initialProgress: number;
+    lastProgressUpdate?: LastProgressUpdateInfo | null;
 }>();
 
 const emit = defineEmits<{
@@ -38,6 +48,21 @@ watch(
         }
     },
 );
+
+function clampProgress() {
+    if (
+        isNaN(currentProgress.value) ||
+        currentProgress.value === null ||
+        currentProgress.value === undefined
+    ) {
+        currentProgress.value = 0;
+    } else {
+        currentProgress.value = Math.min(
+            100,
+            Math.max(0, Math.round(currentProgress.value * 100) / 100),
+        );
+    }
+}
 
 function handleSliderChange(event: Event) {
     const target = event.target as HTMLInputElement;
@@ -61,6 +86,7 @@ function cancelEdit() {
 }
 
 function saveProgress() {
+    clampProgress();
     isSaving.value = true;
     errorMessage.value = null;
 
@@ -154,19 +180,35 @@ function saveProgress() {
                     </div>
                 </div>
 
-                <p
-                    class="text-muted-foreground max-w-xs text-right text-xs leading-relaxed"
-                >
-                    {{
-                        initialProgress >= 100
-                            ? __(
-                                  'Proyek telah mencapai 100% penyelesaian fisik dan siap ditransisikan ke status COMPLETED.',
-                              )
-                            : __(
-                                  'Klik "Ubah Kemajuan" untuk menyesuaikan progres fisik sesuai laporan aktual mandor lapangan.',
-                              )
-                    }}
-                </p>
+                <div class="space-y-1 sm:text-right">
+                    <p
+                        class="text-muted-foreground max-w-xs text-xs leading-relaxed"
+                    >
+                        {{
+                            initialProgress >= 100
+                                ? __(
+                                      'Proyek telah mencapai 100% penyelesaian fisik dan siap ditransisikan ke status COMPLETED.',
+                                  )
+                                : __(
+                                      'Klik "Ubah Kemajuan" untuk menyesuaikan progres fisik sesuai laporan aktual mandor lapangan.',
+                                  )
+                        }}
+                    </p>
+                    <p
+                        v-if="lastProgressUpdate"
+                        class="text-muted-foreground text-[11px] font-medium"
+                        data-test="last-progress-update-info"
+                    >
+                        {{
+                            __('Diperbarui oleh :name, :time', {
+                                name: lastProgressUpdate.actor_name,
+                                time:
+                                    lastProgressUpdate.updated_at_diff ||
+                                    __('baru saja'),
+                            })
+                        }}
+                    </p>
+                </div>
             </div>
 
             <!-- Edit Mode -->
@@ -198,6 +240,7 @@ function saveProgress() {
                             max="100"
                             step="0.5"
                             v-model.number="currentProgress"
+                            @input="handleSliderChange"
                             class="h-2 w-full cursor-pointer appearance-none rounded-lg bg-slate-200 accent-sky-600 dark:bg-slate-700"
                             data-test="slider-progress"
                         />
@@ -219,6 +262,8 @@ function saveProgress() {
                                 max="100"
                                 step="0.5"
                                 v-model.number="currentProgress"
+                                @input="handleInputChange"
+                                @blur="clampProgress"
                                 class="pr-7 font-mono text-sm font-bold tabular-nums"
                                 data-test="input-progress-number"
                             />

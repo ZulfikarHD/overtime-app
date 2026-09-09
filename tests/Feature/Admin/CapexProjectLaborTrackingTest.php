@@ -11,6 +11,7 @@ use App\Models\Section;
 use App\Models\User;
 use App\Notifications\CapexBurnAlertNotification;
 use App\Services\CapExAccountingService;
+use App\Services\CapexProjectService;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
@@ -219,8 +220,59 @@ test('progress update modifies physical_progress_pct and writes OvertimeItemAudi
 
     expect($audit)->not->toBeNull();
     expect((float) $audit->previous_state['physical_progress_pct'])->toBe(25.0);
+    expect((float) $audit->previous_state['previous_pct'])->toBe(25.0);
     expect((float) $audit->new_state['physical_progress_pct'])->toBe(75.5);
+    expect((float) $audit->new_state['new_pct'])->toBe(75.5);
     expect($audit->notes)->toContain('CPX-2026-AUDIT-001');
+
+    $projectService = app(CapexProjectService::class);
+    $detail = $projectService->getProjectDetail($fresh, $admin);
+    expect($detail['metrics']['last_progress_update'])->not->toBeNull();
+    expect($detail['metrics']['last_progress_update']['actor_name'])->toBe($admin->name);
+    expect($detail['metrics']['last_progress_update']['previous_pct'])->toBe(25.0);
+    expect($detail['metrics']['last_progress_update']['new_pct'])->toBe(75.5);
+});
+
+test('physical progress update recalculates milestone burn ratio and show cockpit exposes last_progress_update', function () {
+    $dept = Department::factory()->create();
+    $manager = User::factory()->manager($dept->id)->create();
+
+    $project = CapexProject::factory()->create([
+        'department_id' => $dept->id,
+        'allocated_labor_hours' => 100.0,
+        'physical_progress_pct' => 20.0,
+        'status' => 'ACTIVE',
+    ]);
+
+    // Initial state: 0 hours consumed, milestone ratio 0, no audit update yet
+    $this->actingAs($manager)
+        ->get(route('admin.capex-projects.show', $project))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('admin/CapexProjects/Show')
+            ->where('project.id', $project->id)
+            ->where('metrics.physical_progress_pct', fn ($val) => (float) $val === 20.0)
+            ->where('metrics.last_progress_update', null)
+        );
+
+    // Update progress to 80%
+    $this->actingAs($manager)
+        ->patch(route('admin.capex-projects.progress.update', $project), [
+            'physical_progress_pct' => 80.0,
+        ])
+        ->assertRedirect();
+
+    // Now cockpit show has last_progress_update populated
+    $this->actingAs($manager)
+        ->get(route('admin.capex-projects.show', $project))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('admin/CapexProjects/Show')
+            ->where('metrics.physical_progress_pct', fn ($val) => (float) $val === 80.0)
+            ->where('metrics.last_progress_update.actor_name', $manager->name)
+            ->where('metrics.last_progress_update.previous_pct', fn ($val) => (float) $val === 20.0)
+            ->where('metrics.last_progress_update.new_pct', fn ($val) => (float) $val === 80.0)
+        );
 });
 
 test('metrics calculation correctly sums consumed hours and cost snapshots only from approved overtime items', function () {

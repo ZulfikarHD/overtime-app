@@ -109,10 +109,14 @@ erDiagram
     - Triggers when `CapEx Burn Index > 80%`.
     - Checks the `notifications` table for prior dispatches for the same project in the current calendar month.
     - If unnotified, dispatches `CapexBurnAlertNotification` to the Department Manager and active Admins.
-6. **In-Place Physical Progress Update & Audit Trail**:
+6. **In-Place Physical Progress Update & Audit Trail (E07-05)**:
     - Sends `PATCH /admin/capex-projects/{id}/progress` with `physical_progress_pct` (0.0 to 100.0).
-    - Validates boundaries and logs an audit trail in `overtime_item_audits` with action `PROGRESS_UPDATE`.
-    - When progress reaches 100%, displays a celebratory prompt offering 1-click status transition to `COMPLETED`.
+    - Slider is constrained between `0.0` and `100.0` with `step="0.5"`, and manual numeric input auto-clamps on blur.
+    - Updates in-place with `preserveScroll: true` without full-page browser reloads.
+    - Validates boundaries and logs an audit trail in `overtime_item_audits` with action `PROGRESS_UPDATE`, recording `previous_pct`, `new_pct`, actor ID, timestamp, and notes.
+    - Exposes `last_progress_update` in project cockpit metrics to render author attribution (`Diperbarui oleh :name, :time`).
+    - When physical progress reaches 100%, reveals a celebratory prompt banner offering 1-click status transition to `COMPLETED` via `ProjectStatusTransitionModal` or temporary dismissal (`Nanti Saja`).
+    - Recalculates `Milestone Burn Ratio` immediately upon save, updating warning badges reactively.
 7. **Zero-Hours Graceful State**:
     - When `consumed_hours === 0`, displays the standard fallback:
       `Belum ada jam lembur tercatat — Proyek dalam tahap alokasi anggaran.`
@@ -163,3 +167,4 @@ erDiagram
 - [Epic-07 UX Plan](../../scrum/Epic-07-ux-plan.md)
 - [ADR-002: Immutable Rate Snapshotting](../decisions/002-immutable-labor-rate-snapshotting.md)
 - [ADR-026: Financial Labor Attribution Schedule & Native OpenXML Streaming Export](../decisions/026-financial-labor-attribution-report-and-native-xlsx-streaming.md)
+- [ADR-027: In-Place CapEx Physical Progress Update & Audit Trail](../decisions/027-in-place-capex-physical-progress-update-and-audit-trail.md)

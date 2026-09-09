@@ -191,10 +191,13 @@ Business Rule **BR-08** is the foundation: any overtime hour categorized as "Pro
 #### Technical Tasks
 
 - [x] `PATCH /admin/capex-projects/{id}/progress` → `CapexProjectController@updateProgress`
-- [x] Request: `{ physical_progress_pct: 0-100 }` with validation `between:0,100`
-- [x] Inline edit: Vue `<InlineProgressEditor>` component — shows current value as text, click to edit in-place
-- [x] Audit log: write to `overtime_item_audits` or dedicated `capex_project_logs` table with action `PROGRESS_UPDATE`
-- [x] Reactive milestone ratio update: Inertia `router.patch(...)` + partial reload of project data
+- [x] Request: `UpdateCapexProjectProgressRequest` with validation `required|numeric|min:0|max:100`
+- [x] Inline edit: Vue `<InlineProgressEditor>` component — shows current value as text, click to edit in-place with slider and number input
+- [x] Auto-clamping & UX polish: Input clamps between 0.0% and 100.0% on blur and save, eliminates UI flicker via `preserveScroll: true`
+- [x] Author attribution: `CapexProjectService@getProjectDetail` exposes `last_progress_update` with actor name, timestamp, and relative time
+- [x] Completion milestone banner: Celebratory callout banner when reaching 100% with 1-click status transition to `COMPLETED` via `ProjectStatusTransitionModal`
+- [x] Audit log: write to `overtime_item_audits` with action `PROGRESS_UPDATE` recording `previous_pct`, `new_pct`, actor, and notes ([ADR-027](../dev-docs/decisions/027-in-place-capex-physical-progress-update-and-audit-trail.md))
+- [x] Reactive milestone ratio update: Inertia partial reload and instant re-evaluation of Milestone Burn Ratio & burn warnings
 
 ---
 

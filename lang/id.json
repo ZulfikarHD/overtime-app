@@ -1506,5 +1506,8 @@
     "Tidak ada catatan lembur CapEx yang disetujui pada filter ini": "Tidak ada catatan lembur CapEx yang disetujui pada filter ini",
     "Pastikan jam lembur dengan alokasi Proyek CapEx telah berstatus disetujui (APPROVED) atau sesuaikan rentang tanggal dan parameter pencarian.": "Pastikan jam lembur dengan alokasi Proyek CapEx telah berstatus disetujui (APPROVED) atau sesuaikan rentang tanggal dan parameter pencarian.",
     "Buka Dossier Karyawan": "Buka Dossier Karyawan",
-    "Anda tidak memiliki akses untuk mengekspor data departemen lain.": "Anda tidak memiliki akses untuk mengekspor data departemen lain."
+    "Anda tidak memiliki akses untuk mengekspor data departemen lain.": "Anda tidak memiliki akses untuk mengekspor data departemen lain.",
+    "Diperbarui oleh :name, :time": "Diperbarui oleh :name, :time",
+    "baru saja": "baru saja",
+    "Sistem": "Sistem"
 }

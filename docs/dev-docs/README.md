@@ -87,6 +87,7 @@ Durable technical decisions and trade-offs:
 - **[ADR-024: Rolling 4-Week Welfare Indicators and Calendar-Month Fatigue Alert Deduplication](./decisions/024-rolling-4-week-welfare-indicators-and-fatigue-alert-deduplication.md)**
 - **[ADR-025: Chronological Audit Timesheet and Zero-Memory Streamed CSV Export](./decisions/025-chronological-audit-timesheet-and-zero-memory-streamed-csv-export.md)**
 - **[ADR-026: Financial Labor Attribution Schedule & Native OpenXML Streaming Export](./decisions/026-financial-labor-attribution-report-and-native-xlsx-streaming.md)**
+- **[ADR-027: In-Place CapEx Physical Progress Update & Audit Trail](./decisions/027-in-place-capex-physical-progress-update-and-audit-trail.md)**
 
 ---
 

@@ -384,10 +384,12 @@ class CapexProjectService
             'previous_state' => [
                 'capex_project_id' => $project->id,
                 'physical_progress_pct' => $previousProgress,
+                'previous_pct' => $previousProgress,
             ],
             'new_state' => [
                 'capex_project_id' => $project->id,
                 'physical_progress_pct' => $newProgress,
+                'new_pct' => $newProgress,
             ],
             'notes' => "Kemajuan fisik proyek {$project->project_code} diperbarui dari {$previousProgress}% menjadi {$newProgress}%",
             'ip_address' => request()->ip(),
@@ -436,7 +438,15 @@ class CapexProjectService
      *             planned_cumulative_hours: float,
      *             is_current: bool,
      *             is_future: bool
-     *         }>
+     *         }>,
+     *         last_progress_update: array{
+     *             actor_name: string,
+     *             actor_npk: string,
+     *             updated_at: string|null,
+     *             updated_at_diff: string|null,
+     *             previous_pct: float,
+     *             new_pct: float
+     *         }|null
      *     }
      * }
      */
@@ -446,6 +456,24 @@ class CapexProjectService
 
         $project->load('department:id,code,name');
         $metrics = $this->capexAccountingService->getProjectLaborMetrics($project);
+
+        /** @var OvertimeItemAudit|null $latestProgressAudit */
+        $latestProgressAudit = OvertimeItemAudit::query()
+            ->where('action', 'PROGRESS_UPDATE')
+            ->where('new_state->capex_project_id', $project->id)
+            ->with('actor:id,name,npk')
+            ->latest('created_at')
+            ->latest('id')
+            ->first();
+
+        $metrics['last_progress_update'] = $latestProgressAudit ? [
+            'actor_name' => $latestProgressAudit->actor?->name ?? __('Sistem'),
+            'actor_npk' => $latestProgressAudit->actor?->npk ?? '',
+            'updated_at' => $latestProgressAudit->created_at?->toIso8601String(),
+            'updated_at_diff' => $latestProgressAudit->created_at?->diffForHumans(),
+            'previous_pct' => (float) ($latestProgressAudit->previous_state['physical_progress_pct'] ?? $latestProgressAudit->previous_state['previous_pct'] ?? 0),
+            'new_pct' => (float) ($latestProgressAudit->new_state['physical_progress_pct'] ?? $latestProgressAudit->new_state['new_pct'] ?? 0),
+        ] : null;
 
         return [
             'project' => $project,

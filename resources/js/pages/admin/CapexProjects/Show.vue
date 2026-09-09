@@ -43,6 +43,14 @@ import capexProjectsRoute from '@/routes/admin/capex-projects';
 export interface ExtendedProjectMetrics extends ProjectBurnMetrics {
     top_contributors?: ContributorItem[];
     weekly_timeline?: TimelineWeekItem[];
+    last_progress_update?: {
+        actor_name: string;
+        actor_npk?: string;
+        updated_at?: string | null;
+        updated_at_diff?: string | null;
+        previous_pct?: number;
+        new_pct?: number;
+    } | null;
 }
 
 const props = defineProps<{
@@ -77,8 +85,10 @@ function handleRefresh() {
     router.reload();
 }
 
-function handleProgressUpdated() {
-    // Page props are automatically refreshed by Inertia upon redirect()->back()
+function handleProgressUpdated(newProgress?: number) {
+    if (newProgress !== undefined && newProgress >= 100) {
+        isPromptDismissed.value = false;
+    }
 }
 
 function openStatusModalWithTarget(
@@ -317,6 +327,7 @@ function getStatusBadgeClass(status: string) {
         <InlineProgressEditor
             :project-id="project.id"
             :initial-progress="Number(metrics.physical_progress_pct)"
+            :last-progress-update="metrics.last_progress_update"
             @updated="handleProgressUpdated"
         />
 
