@@ -1,73 +1,107 @@
-# Panduan Pengguna: Pemantauan Jam Lembur Proyek CapEx (Cockpit)
+# CapEx Project Labor & Portfolio Monitoring — User Guide
 
-## Ringkasan Fitur
+## What is CapEx Project Labor Monitoring?
 
-Dashboard Cockpit Pemantauan Proyek CapEx (**Story E07-02**) memungkinkan Manajer Departemen dan Project Manager memantau penyerapan jam kerja lembur yang dikapitalisasi ke dalam proyek aset tetap. Melalui cockpit ini, Anda dapat memantau indikator indeks burn jam kerja, membandingkan kemajuan fisik aktual lapangan dengan laju konsumsi jam lembur, memperbarui progres fisik secara langsung (_in-place_), membaca kurva burndown per minggu, dan meninjau daftar teknisi yang berkontribusi.
+In industrial manufacturing environments, capital project labor (CapEx) involves engineering work, machine installation, tooling jig fabrication, and automation cell assembly. Direct overtime labor spent on these initiatives is capitalized onto fixed assets on the balance sheet under statutory accounting standards (PSAK 16 / IAS 16), rather than expensed as operational costs (OpEx).
 
----
+The **CapEx Project Labor Management** module enables Department Managers and Administrators to:
 
-## 1. Mengakses Cockpit Proyek CapEx
-
-1. Buka menu navigasi utama di bilah samping (_sidebar_), lalu pilih **Proyek CapEx** (`/admin/capex-projects`).
-2. Pada tab **Portofolio & Master Data**, cari proyek yang ingin Anda periksa.
-3. Klik tombol **Lihat Detail** pada baris proyek.
-4. Anda akan diarahkan ke halaman detail cockpit proyek (`/admin/capex-projects/{id}`).
+- Monitor multi-project portfolio health and labor burn velocity across active capital projects (**Story E07-03**).
+- Identify projects where labor burn outpaces physical construction using the **Milestone Burn Ratio** and at-risk alerts (**⚠️**).
+- Deep-dive into an individual project's command center (**Story E07-02**) to review weekly burndown curves, contributor rosters, and update physical progress in-place.
 
 ---
 
-## 2. Membaca 4 Kartu KPI Makro
+## 1. Accessing the CapEx Projects Hub
 
-Di bagian atas cockpit, terdapat 4 kartu indikator utama:
-
-| Kartu KPI                      | Keterangan & Rumus                                                                                            | Indikator Visual                                                                                                                                                                                 |
-| :----------------------------- | :------------------------------------------------------------------------------------------------------------ | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Jam Tenaga Kerja**           | Membandingkan jam lembur aktual yang telah disetujui (_Approved_) terhadap plafon alokasi jam kerja.          | Menampilkan bilah progres biru (_controlled_) atau merah (_overrun_). Menunjukkan sisa jam alokasi.                                                                                              |
-| **Biaya Terkapitalisasi**      | Menghitung akumulasi biaya lembur (_snapshot cost_) terhadap plafon anggaran Rupiah proyek.                   | Format mata uang Rupiah (`Rp 12.345.000`). Menampilkan sisa anggaran tersedia.                                                                                                                   |
-| **Indeks Burn CapEx**          | Persentase konsumsi jam kerja: `(Jam Konsumsi / Jam Alokasi) × 100%`.                                         | <ul><li>**< 85%**: Hijau (Aman)</li><li>**85% - 100%**: Biru Muda (Mendekati Plafon)</li><li>**> 100%**: Kuning/Oranye (Peringatan Overrun)</li><li>**> 115%**: Merah (Defisit Kritis)</li></ul> |
-| **Kemajuan Fisik & Milestone** | Menampilkan persentase kemajuan fisik lapangan dan **Rasio Burn Milestone** (`Indeks Burn / Kemajuan Fisik`). | Jika Rasio > 1.20, muncul badge peringatan: `⚠️ Pembakaran jam lebih cepat dibanding kemajuan fisik!`                                                                                            |
+1. Open the main sidebar navigation and click **CapEx Projects**.
+2. You will land on the **Portfolio & Master Data** tab on the CapEx Project Hub (`/admin/capex-projects`).
+3. Department Managers automatically see projects scoped to their assigned department, while Administrators have access to cross-department portfolios.
 
 ---
 
-## 3. Memperbarui Kemajuan Fisik Lapangan (_In-Place_)
+## 2. Reading the Department Portfolio KPI Summary
 
-Kemajuan fisik proyek dapat diperbarui langsung dari cockpit tanpa harus membuka dialog terpisah atau memuat ulang halaman:
+At the top of the **Portfolio & Master Data** tab, the portfolio summary header and 4 macro KPI cards provide a 30-second health check:
 
-1. Pada kartu **Pembaruan Kemajuan Fisik Proyek (In-Place)**, klik tombol **Ubah Kemajuan**.
-2. Anda dapat menyesuaikan persentase dengan dua cara:
-    - Geser **Slider Persentase** antara 0% hingga 100%.
-    - Atau ketik nilai presisi pada kotak **Input Manual (%)** (misalnya `75.5`).
-3. Klik tombol **Simpan**. Sistem akan menyimpan perubahan ke basis data dan merekam jejak audit (_audit trail_).
-4. Rasio Burn Milestone dan indikator terkait akan langsung diperbarui.
+| KPI Indicator                    | Description & Formula                                                      | Visual Meaning                                                                 |
+| :------------------------------- | :------------------------------------------------------------------------- | :----------------------------------------------------------------------------- |
+| **Active Projects**              | Total count of projects currently in physical execution (`ACTIVE` status). | Green folder icon with active project count.                                   |
+| **Consumed vs. Allocated Hours** | Cumulative approved overtime hours vs. total planned labor ceiling.        | Blue progress display showing overall burn rate percentage.                    |
+| **Capitalized Labor Cost**       | Cumulative approved overtime cost based on immutable wage snapshots.       | Currency in Indonesian Rupiah (`Rp 87.150.000`) for statutory accounting.      |
+| **High-Risk Projects**           | Count of projects where labor is burning faster than physical completion.  | Amber/Red warning card if any project has Milestone Ratio > 1.2 or Burn > 90%. |
 
-> **Pemberitahuan Milestone 100%**: Ketika kemajuan fisik mencapai 100%, sistem akan menampilkan spanduk khusus di bagian atas:
-> `🎉 Kemajuan Fisik Mencapai 100% — Pekerjaan fisik proyek telah selesai 100%. Apakah Anda ingin memperbarui status proyek menjadi COMPLETED?`
-> Anda dapat langsung mengklik tombol **Ubah Status ke COMPLETED Sekarang** untuk memperbarui status proyek ke tahap penutupan.
+The **Department Summary Banner** directly above the table displays:
 
----
-
-## 4. Membaca Kurva Burndown Mingguan
-
-Grafik **Kurva Akumulasi Jam Tenaga Kerja (Burndown)** menampilkan tren konsumsi jam lembur:
-
-- **Garis Putus-Putus Abu-Abu**: Target akumulasi jam alokasi secara linear dari tanggal mulai hingga target selesai.
-- **Garis Tebal Berwarna**: Akumulasi aktual jam lembur yang telah disetujui setiap minggunya.
-    - Warna garis akan otomatis berubah sesuai status burn index (Hijau, Biru, Kuning, atau Merah).
+> `Dept Total: 8 Active Projects | 1,245.0 / 2,800.0 jam (44.5%) • 2 Proyek Berisiko Tinggi`
 
 ---
 
-## 5. Meninjau Roster Kontribusi Teknisi
+## 3. Using the Multi-Project Portfolio Table
 
-Tabel **Roster Kontribusi Tenaga Kerja Proyek** memuat daftar seluruh operator dan teknisi yang jam lemburnya dibebankan ke proyek ini:
+The consolidated portfolio table lists all projects in high-density industrial format:
 
-- Diurutkan dari teknisi dengan jam kontribusi tertinggi.
-- Kolom mencakup: No, NPK (dapat diklik untuk membuka berkas _Employee Dossier_), Nama Karyawan, Seksi/Pos, Total Jam Lembur Disetujui, Biaya Snapshot (Rp), dan Persentase Kontribusi terhadap total proyek.
+### Key Columns
+
+- **Status Risiko (⚠️)**: Highlights projects requiring urgent managerial intervention when Milestone Ratio > 1.2 or Burn Index > 90%.
+- **Kode Proyek**: Authoritative project code (`CPX-YYYY-DEPT-NNN`). Clicking opens the project detail cockpit.
+- **Nama Proyek & Aset Tetap**: Project name and optional fixed asset tag reference.
+- **Departemen**: Sponsoring department (visible to Admins or cross-department views).
+- **Status**: Lifecycle pill (`PLANNING`, `ACTIVE`, `ON_HOLD`, `COMPLETED`, `CLOSED`).
+- **Alokasi (Jam) & Realisasi (Jam)**: Planned vs. consumed approved hours.
+- **Indeks Burn (%)**: Percentage of budget consumed: `(Consumed / Allocated) × 100%`. Color-coded from Emerald (<85%), Sky Blue (85–100%), Amber (>100%), to Red (>115%).
+- **Kemajuan Fisik (%)**: Reported physical completion percentage from shopfloor assembly.
+- **Rasio Burn Milestone**: Ratio of labor burn to physical progress (`Burn Index / Physical Progress`). Values above 1.2 indicate labor is consuming faster than physical work. If physical progress is 0%, shows `N/A`.
+- **Target Selesai & Sisa Hari**: Target completion date and remaining calendar days (highlighted in red if overdue).
+- **Aksi**: Quick actions to view Cockpit (`→`), edit project details via drawer, update lifecycle status, or delete (only if 0 hours logged).
+
+### Table Row Highlighting
+
+- **Critical / Deficit (Red border & tint)**: Projects with Burn Index > 100%, or Burn Index > 90% combined with Milestone Ratio > 1.2.
+- **Caution / At Risk (Amber border & tint)**: Projects with Burn Index between 85% and 100%, or flagged with risk warning.
+- **Controlled / Safe (Neutral surface)**: Projects progressing normally with Burn Index < 85%.
 
 ---
 
-## 6. Notifikasi Peringatan Burn (>80%)
+## 4. Sorting and Filtering the Portfolio
 
-Sistem secara otomatis mengevaluasi ambang batas penggunaan jam lembur proyek CapEx:
+### Sorting Columns
 
-- Jika Indeks Burn CapEx melebihi **80%**, sistem akan mengirimkan notifikasi peringatan bertanda ⚠️ ke ikon lonceng (_Notification Bell_) Manajer Departemen dan Administrator.
-- Notifikasi dilengkapi tombol **Buka Proyek** yang membawa Anda langsung ke cockpit proyek terkait.
-- Notifikasi ini dideduplikasi sehingga hanya dikirimkan maksimal 1 kali per bulan kalender per proyek guna mencegah banjir notifikasi.
+Click any column header with an arrow icon to sort ascending or descending:
+
+- Project Code, Name, Department, Status
+- Allocated Hours, Consumed Hours, Burn Index %
+- Physical Progress %, Milestone Burn Ratio
+- Target End Date, Days Remaining
+
+### Filtering
+
+- **Status Filter Chips**: Click `Semua Status`, `Planning`, `Active`, `On Hold`, `Completed`, or `Closed` to instantly filter rows.
+- **Target Date Range**: Enter `Target Selesai Dari` and `Target Selesai Hingga` to focus on projects scheduled for completion in specific calendar windows.
+- **Department Dropdown** (Admin only): Filter to inspect specific department portfolios.
+- **Search Bar**: Type any project code, project name, or asset tag to filter results in real time.
+- **Reset Button**: Click **Reset** (`RotateCcw`) to restore default view filters.
+
+---
+
+## 5. Inspecting Individual Project Cockpits
+
+Click any Project Code or the **Detail** (`→`) action icon to navigate to `/admin/capex-projects/{id}`:
+
+1. **Burndown Timeline**: Review weekly actual hours vs. linear planned allocation curves.
+2. **Team Contributor Roster**: See all technicians and operators contributing approved hours to the project.
+3. **In-Place Progress Editor**: Update physical progress percentage with a single click and slider adjustment.
+4. **Completion Prompt**: When physical progress reaches 100%, trigger 1-click status transition to `COMPLETED`.
+
+---
+
+## Frequently Asked Questions (FAQ)
+
+**Q: Why does the Milestone Burn Ratio show N/A for some projects?**  
+A: If a project has 0% physical progress recorded, the ratio cannot be computed (avoiding division by zero). Once physical progress is updated, the ratio calculates automatically.
+
+**Q: Why can't I edit the Project Code in the edit drawer?**  
+A: In accordance with IAS 16 and PSAK 16 statutory audit requirements, project codes are immutable financial identifiers once registered.
+
+**Q: When does a project get flagged with the ⚠️ warning?**  
+A: A project is flagged as at-risk if it is active or on hold and its Milestone Burn Ratio exceeds 1.20 (labor burning faster than physical build) or its CapEx Burn Index exceeds 90%.

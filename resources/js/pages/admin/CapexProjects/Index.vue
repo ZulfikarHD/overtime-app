@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head, Link, router } from '@inertiajs/vue3';
+import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import {
     AlertCircle,
     AlertTriangle,
@@ -15,11 +15,13 @@ import {
     Layers,
     Plus,
     RefreshCw,
+    RotateCcw,
     Search,
     ShieldCheck,
     Trash2,
 } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
+import CapexPortfolioTable from '@/components/capex/CapexPortfolioTable.vue';
 import ConfirmationDialog from '@/components/admin/ConfirmationDialog.vue';
 import CapexProjectDrawer, {
     type CapexProjectRecord,
@@ -75,6 +77,8 @@ export interface PortfolioStats {
     total_consumed_hours: number;
     total_capitalized_cost: number;
     at_risk_count: number;
+    burn_rate_pct?: number;
+    department_name?: string | null;
 }
 
 const props = defineProps<{
@@ -85,11 +89,21 @@ const props = defineProps<{
         status?: string;
         department_id?: string | number | null;
         search?: string;
+        date_from?: string;
+        date_to?: string;
+        sort_by?: string;
+        sort_dir?: 'asc' | 'desc';
     };
     activeTab?: string;
 }>();
 
 const { __ } = useTrans();
+const page = usePage();
+
+const isAdmin = computed(() => {
+    const role = (page.props.auth as any)?.user?.role;
+    return role === 'admin' || props.departments.length > 1;
+});
 
 const currentTab = ref(props.activeTab ?? 'portfolio');
 const searchInput = ref(props.filters.search ?? '');
@@ -97,6 +111,12 @@ const selectedDepartmentId = ref(
     props.filters.department_id ? String(props.filters.department_id) : '',
 );
 const activeStatusFilter = ref(props.filters.status ?? 'ALL');
+const dateFrom = ref(props.filters.date_from ?? '');
+const dateTo = ref(props.filters.date_to ?? '');
+const sortBy = ref(props.filters.sort_by ?? 'created_at');
+const sortDir = ref<'asc' | 'desc'>(
+    (props.filters.sort_dir as 'asc' | 'desc') ?? 'desc',
+);
 
 // Drawer & Modal state
 const isDrawerOpen = ref(false);
@@ -108,6 +128,18 @@ const statusTargetProject = ref<CapexProjectTransitionTarget | null>(null);
 const isDeleteDialogOpen = ref(false);
 const deletingProject = ref<CapexProjectRecord | null>(null);
 const isDeleting = ref(false);
+
+const isFilterActive = computed(() => {
+    return (
+        activeStatusFilter.value !== 'ALL' ||
+        Boolean(selectedDepartmentId.value) ||
+        Boolean(searchInput.value.trim()) ||
+        Boolean(dateFrom.value) ||
+        Boolean(dateTo.value) ||
+        sortBy.value !== 'created_at' ||
+        sortDir.value !== 'desc'
+    );
+});
 
 const statusFilterChips = [
     { value: 'ALL', label: 'Semua Status' },
@@ -130,6 +162,11 @@ function switchTab(tab: string) {
                         : undefined,
                 department_id: selectedDepartmentId.value || undefined,
                 search: searchInput.value || undefined,
+                date_from: dateFrom.value || undefined,
+                date_to: dateTo.value || undefined,
+                sort_by:
+                    sortBy.value !== 'created_at' ? sortBy.value : undefined,
+                sort_dir: sortDir.value !== 'desc' ? sortDir.value : undefined,
             },
         }),
         {},
@@ -144,6 +181,15 @@ watch(searchInput, (val) => {
     searchTimer = setTimeout(() => {
         applyFilters({ search: val });
     }, 350);
+});
+
+// Debounced date range filter
+let dateTimer: ReturnType<typeof setTimeout> | null = null;
+watch([dateFrom, dateTo], ([from, to]) => {
+    if (dateTimer) clearTimeout(dateTimer);
+    dateTimer = setTimeout(() => {
+        applyFilters({ date_from: from, date_to: to });
+    }, 300);
 });
 
 function applyFilters(overrides: Record<string, any> = {}) {
@@ -163,6 +209,26 @@ function applyFilters(overrides: Record<string, any> = {}) {
             overrides.search !== undefined
                 ? overrides.search
                 : searchInput.value || undefined,
+        date_from:
+            overrides.date_from !== undefined
+                ? overrides.date_from
+                : dateFrom.value || undefined,
+        date_to:
+            overrides.date_to !== undefined
+                ? overrides.date_to
+                : dateTo.value || undefined,
+        sort_by:
+            overrides.sort_by !== undefined
+                ? overrides.sort_by
+                : sortBy.value !== 'created_at'
+                  ? sortBy.value
+                  : undefined,
+        sort_dir:
+            overrides.sort_dir !== undefined
+                ? overrides.sort_dir
+                : sortDir.value !== 'desc'
+                  ? sortDir.value
+                  : undefined,
     };
 
     // Clean up empty keys
@@ -185,6 +251,39 @@ function applyFilters(overrides: Record<string, any> = {}) {
             replace: true,
         },
     );
+}
+
+function handleSort(field: string) {
+    if (sortBy.value === field) {
+        sortDir.value = sortDir.value === 'asc' ? 'desc' : 'asc';
+    } else {
+        sortBy.value = field;
+        sortDir.value = 'desc';
+    }
+    applyFilters({ sort_by: sortBy.value, sort_dir: sortDir.value });
+}
+
+function handleDateChange() {
+    applyFilters({ date_from: dateFrom.value, date_to: dateTo.value });
+}
+
+function resetFilters() {
+    activeStatusFilter.value = 'ALL';
+    selectedDepartmentId.value = '';
+    searchInput.value = '';
+    dateFrom.value = '';
+    dateTo.value = '';
+    sortBy.value = 'created_at';
+    sortDir.value = 'desc';
+    applyFilters({
+        status: 'ALL',
+        department_id: '',
+        search: '',
+        date_from: '',
+        date_to: '',
+        sort_by: 'created_at',
+        sort_dir: 'desc',
+    });
 }
 
 function selectStatusFilter(status: string) {
@@ -525,14 +624,79 @@ function getBurnIndexBadgeClass(index: number) {
                 </Card>
             </div>
 
+            <!-- Department Summary Header (AC5) -->
+            <div
+                class="flex flex-col items-start justify-between gap-2 rounded-lg border border-sky-200 bg-sky-50/60 px-4 py-3 text-xs shadow-xs sm:flex-row sm:items-center dark:border-sky-900/60 dark:bg-sky-950/30"
+                data-test="department-summary-header"
+            >
+                <div class="flex flex-wrap items-center gap-2">
+                    <span class="font-bold text-sky-800 dark:text-sky-300">
+                        {{
+                            stats.department_name
+                                ? __('Ringkasan :dept', {
+                                      dept: stats.department_name,
+                                  })
+                                : __('Ringkasan Departemen')
+                        }}:
+                    </span>
+                    <span
+                        class="font-mono font-semibold text-slate-900 tabular-nums dark:text-slate-100"
+                    >
+                        {{
+                            __(
+                                'Dept Total: :active Proyek Aktif | :consumed / :allocated jam (:burn%)',
+                                {
+                                    active: stats.total_active,
+                                    consumed:
+                                        stats.total_consumed_hours.toLocaleString(
+                                            'id-ID',
+                                            {
+                                                minimumFractionDigits: 1,
+                                                maximumFractionDigits: 1,
+                                            },
+                                        ),
+                                    allocated:
+                                        stats.total_allocated_hours.toLocaleString(
+                                            'id-ID',
+                                            {
+                                                minimumFractionDigits: 1,
+                                                maximumFractionDigits: 1,
+                                            },
+                                        ),
+                                    burn: (
+                                        stats.burn_rate_pct ??
+                                        (stats.total_allocated_hours > 0
+                                            ? (stats.total_consumed_hours /
+                                                  stats.total_allocated_hours) *
+                                              100
+                                            : 0)
+                                    ).toFixed(1),
+                                },
+                            )
+                        }}
+                    </span>
+                </div>
+                <div
+                    v-if="stats.at_risk_count > 0"
+                    class="flex items-center gap-1.5 font-semibold text-[#cc0000]"
+                >
+                    <span>⚠️</span>
+                    <span>{{
+                        __(':count Proyek Berisiko Tinggi', {
+                            count: stats.at_risk_count,
+                        })
+                    }}</span>
+                </div>
+            </div>
+
             <!-- Toolbar & Filter Action Bar -->
             <div
-                class="bg-card border-border flex flex-col items-stretch justify-between gap-3 rounded-lg border p-3 md:flex-row md:items-center"
+                class="bg-card border-border flex flex-col items-stretch justify-between gap-3 rounded-lg border p-3 lg:flex-row lg:items-center"
                 data-test="portfolio-toolbar"
             >
                 <!-- Status Filter Chips -->
                 <div
-                    class="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0"
+                    class="flex items-center gap-1.5 overflow-x-auto pb-1 lg:pb-0"
                     data-test="status-filter-chips"
                 >
                     <button
@@ -553,7 +717,36 @@ function getBurnIndexBadgeClass(index: number) {
                 </div>
 
                 <!-- Right Toolbar Filters -->
-                <div class="flex items-center gap-2">
+                <div class="flex flex-wrap items-center gap-2">
+                    <!-- Date Range Filter (Target End Date) -->
+                    <div class="flex items-center gap-1.5">
+                        <div
+                            class="text-muted-foreground flex items-center gap-1 text-xs"
+                        >
+                            <Calendar class="text-muted-foreground size-3.5" />
+                            <span class="hidden sm:inline">{{
+                                __('Target:')
+                            }}</span>
+                        </div>
+                        <Input
+                            v-model="dateFrom"
+                            type="date"
+                            class="h-8 w-32 font-mono text-xs"
+                            :title="__('Target Selesai Dari')"
+                            @change="handleDateChange"
+                            data-test="input-date-from"
+                        />
+                        <span class="text-muted-foreground text-xs">-</span>
+                        <Input
+                            v-model="dateTo"
+                            type="date"
+                            class="h-8 w-32 font-mono text-xs"
+                            :title="__('Target Selesai Hingga')"
+                            @change="handleDateChange"
+                            data-test="input-date-to"
+                        />
+                    </div>
+
                     <!-- Department Filter -->
                     <select
                         v-if="departments.length > 1"
@@ -573,7 +766,7 @@ function getBurnIndexBadgeClass(index: number) {
                     </select>
 
                     <!-- Search Input -->
-                    <div class="relative w-full md:w-64">
+                    <div class="relative w-full sm:w-56">
                         <Search
                             class="text-muted-foreground absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2"
                         />
@@ -585,379 +778,36 @@ function getBurnIndexBadgeClass(index: number) {
                             data-test="input-search"
                         />
                     </div>
+
+                    <!-- Reset Filters Button -->
+                    <Button
+                        v-if="isFilterActive"
+                        variant="ghost"
+                        size="sm"
+                        class="text-muted-foreground hover:text-foreground h-8 px-2 text-xs"
+                        @click="resetFilters"
+                        data-test="btn-reset-filters"
+                        :title="__('Reset Filter')"
+                    >
+                        <RotateCcw class="size-3.5" />
+                        <span class="ml-1 hidden sm:inline">{{
+                            __('Reset')
+                        }}</span>
+                    </Button>
                 </div>
             </div>
 
-            <!-- Unified Portfolio & Master Data Table -->
-            <Card class="border-border overflow-hidden">
-                <div class="overflow-x-auto">
-                    <table
-                        class="w-full border-collapse text-left text-xs"
-                        data-test="capex-projects-table"
-                    >
-                        <thead>
-                            <tr
-                                class="border-border bg-muted/50 text-muted-foreground border-b text-[11px] font-semibold tracking-wider uppercase"
-                            >
-                                <th class="p-3">{{ __('Kode Proyek') }}</th>
-                                <th class="p-3">{{ __('Nama Proyek') }}</th>
-                                <th class="p-3">{{ __('Aset Tetap') }}</th>
-                                <th class="p-3">{{ __('Departemen') }}</th>
-                                <th class="p-3">{{ __('Status') }}</th>
-                                <th class="p-3 text-right">
-                                    {{ __('Alokasi (Jam)') }}
-                                </th>
-                                <th class="p-3 text-right">
-                                    {{ __('Realisasi (Jam)') }}
-                                </th>
-                                <th class="p-3 text-right">
-                                    {{ __('Indeks Burn') }}
-                                </th>
-                                <th class="p-3 text-right">
-                                    {{ __('Kemajuan Fisik') }}
-                                </th>
-                                <th class="p-3 text-right">
-                                    {{ __('Target Selesai') }}
-                                </th>
-                                <th class="p-3 text-right">
-                                    {{ __('Sisa Hari') }}
-                                </th>
-                                <th class="p-3 text-center">
-                                    {{ __('Aksi') }}
-                                </th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-border divide-y">
-                            <tr
-                                v-for="item in projects.data"
-                                :key="item.id"
-                                class="hover:bg-muted/40 transition-colors"
-                                :class="{
-                                    'bg-amber-50/20 dark:bg-amber-950/10':
-                                        item.is_at_risk,
-                                }"
-                                :data-test="`project-row-${item.id}`"
-                            >
-                                <!-- Kode Proyek -->
-                                <td
-                                    class="text-foreground p-3 font-mono font-bold whitespace-nowrap tabular-nums"
-                                >
-                                    <Link
-                                        :href="
-                                            capexProjectsRoute.show.url({
-                                                capex_project: item.id,
-                                            })
-                                        "
-                                        class="flex items-center gap-1 text-[#cc0000] hover:underline"
-                                        data-test="link-project-code"
-                                    >
-                                        {{ item.project_code }}
-                                        <span
-                                            v-if="item.is_at_risk"
-                                            class="font-normal text-amber-500"
-                                            title="Proyek Berisiko Tinggi"
-                                            >⚠️</span
-                                        >
-                                    </Link>
-                                </td>
-
-                                <!-- Nama Proyek -->
-                                <td
-                                    class="text-foreground max-w-xs truncate p-3 font-medium"
-                                    :title="item.name"
-                                >
-                                    {{ item.name }}
-                                </td>
-
-                                <!-- Aset Tetap -->
-                                <td
-                                    class="text-muted-foreground p-3 font-mono whitespace-nowrap tabular-nums"
-                                >
-                                    {{ item.asset_code || '—' }}
-                                </td>
-
-                                <!-- Departemen -->
-                                <td class="p-3 whitespace-nowrap">
-                                    <span
-                                        class="text-foreground inline-flex items-center gap-1 font-medium"
-                                    >
-                                        <Building2
-                                            class="text-muted-foreground size-3"
-                                        />
-                                        {{ item.department?.code || '—' }}
-                                    </span>
-                                </td>
-
-                                <!-- Status -->
-                                <td class="p-3 whitespace-nowrap">
-                                    <Badge
-                                        variant="outline"
-                                        :class="
-                                            getStatusBadgeClass(item.status)
-                                        "
-                                        class="text-[11px] font-semibold uppercase"
-                                        :data-test="`badge-status-${item.id}`"
-                                    >
-                                        {{ item.status }}
-                                    </Badge>
-                                </td>
-
-                                <!-- Alokasi Jam -->
-                                <td
-                                    class="p-3 text-right font-mono whitespace-nowrap tabular-nums"
-                                >
-                                    {{
-                                        Number(
-                                            item.allocated_labor_hours,
-                                        ).toLocaleString('id-ID', {
-                                            minimumFractionDigits: 1,
-                                            maximumFractionDigits: 1,
-                                        })
-                                    }}
-                                </td>
-
-                                <!-- Realisasi Jam -->
-                                <td
-                                    class="p-3 text-right font-mono font-semibold whitespace-nowrap tabular-nums"
-                                >
-                                    {{
-                                        Number(
-                                            item.consumed_hours || 0,
-                                        ).toLocaleString('id-ID', {
-                                            minimumFractionDigits: 1,
-                                            maximumFractionDigits: 1,
-                                        })
-                                    }}
-                                </td>
-
-                                <!-- Indeks Burn -->
-                                <td class="p-3 text-right whitespace-nowrap">
-                                    <Badge
-                                        variant="outline"
-                                        :class="
-                                            getBurnIndexBadgeClass(
-                                                item.computed_burn_index_pct ??
-                                                    0,
-                                            )
-                                        "
-                                        class="font-mono text-[11px] tabular-nums"
-                                    >
-                                        {{
-                                            (
-                                                item.computed_burn_index_pct ??
-                                                0
-                                            ).toFixed(1)
-                                        }}%
-                                    </Badge>
-                                </td>
-
-                                <!-- Kemajuan Fisik -->
-                                <td
-                                    class="p-3 text-right font-mono whitespace-nowrap tabular-nums"
-                                >
-                                    <div
-                                        class="flex items-center justify-end gap-1.5"
-                                    >
-                                        <span class="font-semibold"
-                                            >{{
-                                                Number(
-                                                    item.physical_progress_pct ||
-                                                        0,
-                                                ).toFixed(1)
-                                            }}%</span
-                                        >
-                                        <span
-                                            v-if="
-                                                (item.computed_milestone_burn_ratio ??
-                                                    0) > 1.2
-                                            "
-                                            class="text-[10px] font-semibold text-amber-600"
-                                            title="Rasio Milestone > 1.2 (Lembur membakar lebih cepat dibanding kemajuan fisik)"
-                                        >
-                                            (M:
-                                            {{
-                                                (
-                                                    item.computed_milestone_burn_ratio ??
-                                                    0
-                                                ).toFixed(2)
-                                            }})
-                                        </span>
-                                    </div>
-                                </td>
-
-                                <!-- Target Selesai -->
-                                <td
-                                    class="text-muted-foreground p-3 text-right font-mono whitespace-nowrap tabular-nums"
-                                >
-                                    {{ formatDateIndo(item.target_end_date) }}
-                                </td>
-
-                                <!-- Sisa Hari -->
-                                <td
-                                    class="p-3 text-right font-mono whitespace-nowrap tabular-nums"
-                                >
-                                    <span
-                                        v-if="item.is_overdue"
-                                        class="font-bold text-[#cc0000]"
-                                    >
-                                        {{
-                                            __('Lewat :days h', {
-                                                days: Math.abs(
-                                                    item.days_remaining ?? 0,
-                                                ),
-                                            })
-                                        }}
-                                    </span>
-                                    <span
-                                        v-else-if="
-                                            ['COMPLETED', 'CLOSED'].includes(
-                                                item.status,
-                                            )
-                                        "
-                                        class="text-muted-foreground"
-                                    >
-                                        —
-                                    </span>
-                                    <span v-else class="text-muted-foreground">
-                                        {{
-                                            __(':days hari', {
-                                                days: item.days_remaining ?? 0,
-                                            })
-                                        }}
-                                    </span>
-                                </td>
-
-                                <!-- Aksi -->
-                                <td class="p-3 text-center whitespace-nowrap">
-                                    <div
-                                        class="flex items-center justify-center gap-1.5"
-                                    >
-                                        <Link
-                                            :href="
-                                                capexProjectsRoute.show.url({
-                                                    capex_project: item.id,
-                                                })
-                                            "
-                                            class="hover:bg-muted text-muted-foreground hover:text-foreground rounded-md p-1.5 transition-colors"
-                                            :title="__('Lihat Detail Cockpit')"
-                                            :data-test="`btn-detail-${item.id}`"
-                                        >
-                                            <ArrowRight class="size-3.5" />
-                                        </Link>
-                                        <button
-                                            type="button"
-                                            class="hover:bg-muted text-muted-foreground hover:text-foreground rounded-md p-1.5 transition-colors"
-                                            :title="__('Edit Master Data')"
-                                            @click="openEditDrawer(item)"
-                                            :data-test="`btn-edit-${item.id}`"
-                                        >
-                                            <Edit2 class="size-3.5" />
-                                        </button>
-                                        <button
-                                            type="button"
-                                            class="hover:bg-muted rounded-md p-1.5 text-sky-600 transition-colors hover:text-sky-700"
-                                            :title="__('Ubah Status Proyek')"
-                                            @click="openStatusModal(item)"
-                                            :data-test="`btn-status-${item.id}`"
-                                        >
-                                            <RefreshCw class="size-3.5" />
-                                        </button>
-                                        <button
-                                            v-if="
-                                                !item.consumed_hours ||
-                                                Number(item.consumed_hours) ===
-                                                    0
-                                            "
-                                            type="button"
-                                            class="text-muted-foreground rounded-md p-1.5 transition-colors hover:bg-red-50 hover:text-[#cc0000]"
-                                            :title="__('Hapus Proyek')"
-                                            @click="confirmDelete(item)"
-                                            :data-test="`btn-delete-${item.id}`"
-                                        >
-                                            <Trash2 class="size-3.5" />
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-
-                            <tr v-if="projects.data.length === 0">
-                                <td
-                                    colspan="12"
-                                    class="text-muted-foreground p-10 text-center"
-                                >
-                                    <div
-                                        class="flex flex-col items-center justify-center space-y-2"
-                                    >
-                                        <FolderKanban
-                                            class="text-muted-foreground/60 size-8"
-                                        />
-                                        <p
-                                            class="text-foreground text-sm font-semibold"
-                                        >
-                                            {{
-                                                __(
-                                                    'Tidak ada proyek CapEx yang ditemukan',
-                                                )
-                                            }}
-                                        </p>
-                                        <p
-                                            class="text-muted-foreground text-xs"
-                                        >
-                                            {{
-                                                __(
-                                                    'Sesuaikan filter pencarian atau daftarkan proyek belanja modal baru menggunakan tombol di atas.',
-                                                )
-                                            }}
-                                        </p>
-                                    </div>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-
-                <!-- Pagination Footer -->
-                <div
-                    v-if="projects.total > 0"
-                    class="border-border bg-card text-muted-foreground flex flex-col items-center justify-between gap-2 border-t p-3 text-xs sm:flex-row"
-                    data-test="pagination-footer"
-                >
-                    <div>
-                        {{
-                            __(
-                                'Menampilkan :from - :to dari total :total proyek',
-                                {
-                                    from: projects.from ?? 0,
-                                    to: projects.to ?? 0,
-                                    total: projects.total,
-                                },
-                            )
-                        }}
-                    </div>
-                    <div class="flex items-center gap-1">
-                        <Link
-                            v-if="projects.prev_page_url"
-                            :href="projects.prev_page_url"
-                            class="border-border bg-background hover:bg-muted text-foreground rounded-md border px-2.5 py-1 font-semibold"
-                            data-test="btn-prev-page"
-                        >
-                            {{ __('Sebelumnya') }}
-                        </Link>
-                        <span class="px-2 font-mono">
-                            {{ projects.current_page }} /
-                            {{ projects.last_page }}
-                        </span>
-                        <Link
-                            v-if="projects.next_page_url"
-                            :href="projects.next_page_url"
-                            class="border-border bg-background hover:bg-muted text-foreground rounded-md border px-2.5 py-1 font-semibold"
-                            data-test="btn-next-page"
-                        >
-                            {{ __('Selanjutnya') }}
-                        </Link>
-                    </div>
-                </div>
-            </Card>
+            <!-- Unified Portfolio & Master Data Table (CapexPortfolioTable Component) -->
+            <CapexPortfolioTable
+                :projects="projects"
+                :is-admin="isAdmin"
+                :sort-by="sortBy"
+                :sort-dir="sortDir"
+                @sort="handleSort"
+                @edit="openEditDrawer"
+                @status="openStatusModal"
+                @delete="confirmDelete"
+            />
         </div>
 
         <!-- TAB 2: Laporan Atribusi Finansial (Placeholder / Hook for E07-04) -->

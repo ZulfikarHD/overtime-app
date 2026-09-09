@@ -22,6 +22,7 @@ use App\Http\Controllers\Overtime\OvertimeItemAuditController;
 use App\Http\Controllers\Overtime\OvertimeSubmissionController;
 use App\Http\Controllers\Overtime\SpklDocumentController;
 use App\Http\Controllers\Reports\EmployeeReportController;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 Route::inertia('/', 'Welcome')->name('home');
@@ -42,7 +43,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::redirect('/reports/capex-opex', '/dashboard/burn-index?tab=capex-opex');
 
     // Legacy/Scrum alias redirects for CapEx Project Portfolio & Labor Attribution (E07 per UX Plan Section 1.3 & 5.1/5.2)
-    Route::redirect('/reports/capex-projects/portfolio', '/admin/capex-projects?tab=portfolio');
+    Route::get('/reports/capex-projects/portfolio', function (Request $request) {
+        $query = $request->query();
+        $query['tab'] = 'portfolio';
+
+        return redirect()->route('admin.capex-projects.index', $query);
+    });
     Route::redirect('/reports/capex-labor', '/admin/capex-projects?tab=attribution');
 
     // Individual Employee Reporting & Welfare Tracking (E06 - Admin, Manager, Team Leader, User)

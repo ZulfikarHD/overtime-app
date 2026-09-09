@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\CapexProject;
+use App\Models\Department;
 use App\Models\OvertimeItemAudit;
 use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -40,7 +41,9 @@ class CapexProjectService
      *         total_allocated_hours: float,
      *         total_consumed_hours: float,
      *         total_capitalized_cost: float,
-     *         at_risk_count: int
+     *         at_risk_count: int,
+     *         burn_rate_pct: float,
+     *         department_name: string|null
      *     }
      * }
      */
@@ -56,7 +59,7 @@ class CapexProjectService
         }
 
         // Compute portfolio summary metrics across the scoped dataset (before pagination)
-        $stats = $this->calculatePortfolioStats(clone $baseQuery);
+        $stats = $this->calculatePortfolioStats(clone $baseQuery, $user, $filters);
 
         // Apply filters to list query
         $query = (clone $baseQuery)
@@ -77,7 +80,54 @@ class CapexProjectService
             });
         }
 
-        $projects = $query->orderBy('created_at', 'desc')->paginate($perPage)->withQueryString();
+        if (! empty($filters['date_from'])) {
+            $query->whereDate('target_end_date', '>=', $filters['date_from']);
+        }
+
+        if (! empty($filters['date_to'])) {
+            $query->whereDate('target_end_date', '<=', $filters['date_to']);
+        }
+
+        $sortDir = strtolower((string) ($filters['sort_dir'] ?? 'desc')) === 'asc' ? 'asc' : 'desc';
+        $sortBy = (string) ($filters['sort_by'] ?? 'created_at');
+
+        switch ($sortBy) {
+            case 'project_code':
+            case 'name':
+            case 'status':
+            case 'allocated_labor_hours':
+            case 'physical_progress_pct':
+            case 'created_at':
+                $query->orderBy($sortBy, $sortDir);
+                break;
+            case 'target_end_date':
+            case 'days_remaining':
+                $query->orderBy('target_end_date', $sortDir);
+                break;
+            case 'consumed_hours':
+                $query->orderBy('consumed_hours', $sortDir);
+                break;
+            case 'burn_index':
+            case 'burn_index_pct':
+            case 'computed_burn_index_pct':
+                $query->orderByRaw("CASE WHEN allocated_labor_hours > 0 THEN (consumed_hours / allocated_labor_hours) ELSE 0 END {$sortDir}");
+                break;
+            case 'milestone_burn_ratio':
+            case 'computed_milestone_burn_ratio':
+                $query->orderByRaw("CASE WHEN physical_progress_pct > 0 AND allocated_labor_hours > 0 THEN ((consumed_hours / allocated_labor_hours) * 100.0 / physical_progress_pct) ELSE 0 END {$sortDir}");
+                break;
+            case 'department':
+                $query->orderBy(
+                    Department::select('name')->whereColumn('departments.id', 'capex_projects.department_id'),
+                    $sortDir
+                );
+                break;
+            default:
+                $query->orderBy('created_at', 'desc');
+                break;
+        }
+
+        $projects = $query->paginate($perPage)->withQueryString();
 
         // Compute runtime derived attributes for each project
         $now = Carbon::now('Asia/Jakarta')->startOfDay();
@@ -114,15 +164,18 @@ class CapexProjectService
      * Calculate portfolio summary metrics.
      *
      * @param  Builder<CapexProject>  $query
+     * @param  array<string, mixed>  $filters
      * @return array{
      *     total_active: int,
      *     total_allocated_hours: float,
      *     total_consumed_hours: float,
      *     total_capitalized_cost: float,
-     *     at_risk_count: int
+     *     at_risk_count: int,
+     *     burn_rate_pct: float,
+     *     department_name: string|null
      * }
      */
-    protected function calculatePortfolioStats(Builder $query): array
+    protected function calculatePortfolioStats(Builder $query, User $user, array $filters = []): array
     {
         $allProjects = $query
             ->withSum(['overtimeItems as consumed_hours' => fn ($q) => $q->where('status', 'APPROVED')], 'hours_project')
@@ -158,12 +211,26 @@ class CapexProjectService
             }
         }
 
+        $burnRatePct = $totalAllocatedHours > 0
+            ? round(($totalConsumedHours / $totalAllocatedHours) * 100, 1)
+            : 0.0;
+
+        $departmentName = null;
+        if ($user->isManager() && $user->department_id) {
+            $departmentName = $user->department?->name ?? 'Departemen';
+        } elseif (! empty($filters['department_id'])) {
+            $dept = Department::find((int) $filters['department_id']);
+            $departmentName = $dept ? $dept->name : null;
+        }
+
         return [
             'total_active' => $totalActive,
             'total_allocated_hours' => round($totalAllocatedHours, 1),
             'total_consumed_hours' => round($totalConsumedHours, 1),
             'total_capitalized_cost' => round($totalCapitalizedCost, 2),
             'at_risk_count' => $atRiskCount,
+            'burn_rate_pct' => $burnRatePct,
+            'department_name' => $departmentName,
         ];
     }
 

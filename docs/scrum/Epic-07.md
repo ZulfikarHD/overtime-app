@@ -117,24 +117,25 @@ Business Rule **BR-08** is the foundation: any overtime hour categorized as "Pro
 **So that** I can prioritize which projects need attention during my weekly management review.
 
 **Story Points:** 5  
-**Priority:** Should Have
+**Priority:** Should Have  
+**Status:** 🟢 Completed (Sprint 7)
 
 #### Acceptance Criteria
 
-- [ ] Portfolio page lists all CapEx projects for the Manager's department
-- [ ] Table columns: `Project Code`, `Name`, `Status`, `Allocated Hours`, `Consumed Hours`, `Burn Index %`, `Physical Progress %`, `Milestone Burn Ratio`, `Target End Date`, `Days Remaining`
-- [ ] Color-coded rows by CapEx Burn Index: same threshold scheme as section Burn Index
-- [ ] Flagged column: `⚠️` if `Milestone Burn Ratio > 1.2` or `CapEx Burn Index > 90%`
-- [ ] Summary header: "Dept Total: 8 Active Projects | 1,245 / 2,800 hrs consumed (44.5%)"
-- [ ] Filter by: status, date range
-- [ ] Admin sees cross-department portfolio with department column
+- [x] Portfolio page lists all CapEx projects for the Manager's department
+- [x] Table columns: `Project Code`, `Name`, `Status`, `Allocated Hours`, `Consumed Hours`, `Burn Index %`, `Physical Progress %`, `Milestone Burn Ratio`, `Target End Date`, `Days Remaining`
+- [x] Color-coded rows by CapEx Burn Index: same threshold scheme as section Burn Index
+- [x] Flagged column: `⚠️` if `Milestone Burn Ratio > 1.2` or `CapEx Burn Index > 90%`
+- [x] Summary header: "Dept Total: 8 Active Projects | 1,245 / 2,800 hrs consumed (44.5%)"
+- [x] Filter by: status, date range
+- [x] Admin sees cross-department portfolio with department column
 
 #### Technical Tasks
 
-- [ ] `CapexProjectController@portfolio` — `GET /reports/capex-projects/portfolio`
-- [ ] Query: joins `capex_projects` with aggregated approved item hours per project
-- [ ] Create `resources/js/Pages/Reports/CapexPortfolio.vue`
-- [ ] Create `resources/js/Components/CapEx/CapexPortfolioTable.vue` — sortable, color-coded
+- [x] `CapexProjectController@index` (unified with portfolio overview per UX Plan Section 1.3 & 5.1; legacy `/reports/capex-projects/portfolio` redirects to `/admin/capex-projects?tab=portfolio`)
+- [x] Query: joins `capex_projects` with aggregated approved item hours per project, date filtering, and server-side column sorting
+- [x] Unified Tab 1 on `resources/js/pages/admin/CapexProjects/Index.vue`
+- [x] Create `resources/js/components/capex/CapexPortfolioTable.vue` — sortable, color-coded, dedicated milestone ratio column & risk badges
 
 ---
 
@@ -202,7 +203,7 @@ Business Rule **BR-08** is the foundation: any overtime hour categorized as "Pro
 | ------------------ | -------------------------------------------------- | -------------- | ------------ |
 | Sprint 6, Day 6–7  | CapEx project master data management               | E07-01         | 🟢 Completed |
 | Sprint 6, Day 8–10 | CapEx project detail dashboard + physical progress | E07-02, E07-05 | 🟢 Completed |
-| Sprint 7, Day 1–3  | Multi-project portfolio overview                   | E07-03         | ⏳ Pending   |
+| Sprint 7, Day 1–3  | Multi-project portfolio overview                   | E07-03         | 🟢 Completed |
 | Sprint 7, Day 4–6  | CapEx labor attribution report + Excel export      | E07-04         | ⏳ Pending   |
 
 ---
@@ -232,7 +233,7 @@ Business Rule **BR-08** is the foundation: any overtime hour categorized as "Pro
 - [x] CapEx projects can be created, managed, and status-transitioned
 - [x] Only ACTIVE projects appear in the overtime form's project dropdown
 - [x] Project detail shows correct burn index and milestone burn ratio
-- [ ] Portfolio table shows all active CapEx projects with burn status
+- [x] Portfolio table shows all active CapEx projects with burn status
 - [ ] Labor attribution report exports correct Excel with immutable cost snapshots
 - [x] Physical progress update is logged in audit trail
 - [x] `pnpm lint` passes

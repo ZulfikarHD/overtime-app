@@ -6,6 +6,8 @@ The **CapEx Project Labor Management & Capitalization** module governs overtime 
 
 Story **[E07-02]** expands this capability with an executive and managerial **CapEx Project Labor Burn Tracking Dashboard** featuring real-time burn index computations, weekly labor burndown timeline charts, shopfloor team contribution rosters, in-place physical progress editing, automated burn alert notifications, and completion milestone transitions.
 
+Story **[E07-03]** adds the **Multi-Project Portfolio Overview**, providing consolidated portfolio monitoring with high-density tabular presentation, sortable columns, risk color-coding, at-risk flags (⚠️), date range filtering on target completion schedules, and department summary KPI metrics directly on Tab 1 of the CapEx Project Hub.
+
 ## Architecture Diagram
 
 ```mermaid
@@ -68,6 +70,7 @@ erDiagram
 | ------------------- | ---------------------------------------------------------------- | ------------------------------------------------------------------------- |
 | Sidebar Menu        | `Proyek CapEx` (`/admin/capex-projects`)                         | Master list and capital tracking for managers and admins (`FolderKanban`) |
 | Page Component      | `resources/js/pages/admin/CapexProjects/Index.vue`               | Unified hub: Tab 1 (Portfolio & Master Data) + Tab 2 (Financial Report)   |
+| Portfolio Table     | `resources/js/components/capex/CapexPortfolioTable.vue`          | Sortable, color-coded multi-project portfolio table with milestone ratio  |
 | Drawer Comp         | `resources/js/components/admin/CapexProjectDrawer.vue`           | Ergonomic slide-in sheet for creating and updating projects               |
 | Modal Comp          | `resources/js/components/admin/ProjectStatusTransitionModal.vue` | State machine transition dialog with audit warnings & target preselection |
 | Detail Cockpit Page | `resources/js/pages/admin/CapexProjects/Show.vue`                | Capital labor burn cockpit, macro KPI cards, timeline, team roster        |
@@ -78,7 +81,7 @@ erDiagram
 | Notification Bell   | `resources/js/components/NotificationBell.vue`                   | Renders `capex_burn_alert` notification items with 1-click cockpit route  |
 | Accounting Service  | `app/Services/CapExAccountingService.php`                        | Metric aggregations, timeline bucketing, burn alert evaluation            |
 | Project Service     | `app/Services/CapexProjectService.php`                           | Project management, department scoping, audit logging (`PROGRESS_UPDATE`) |
-| Controller          | `app/Http/Controllers/Admin/CapexProjectController.php`          | Resource CRUD management, progress updates, and redirects                 |
+| Controller          | `app/Http/Controllers/Admin/CapexProjectController.php`          | Resource CRUD management, progress updates, sorting, and filtering        |
 | Notification        | `app/Notifications/CapexBurnAlertNotification.php`               | Queued database notification dispatched on >80% burn thresholds           |
 
 ## Metric Calculations & Business Logic
@@ -109,6 +112,16 @@ erDiagram
 7. **Zero-Hours Graceful State**:
     - When `consumed_hours === 0`, displays the standard fallback:
       `Belum ada jam lembur tercatat — Proyek dalam tahap alokasi anggaran.`
+8. **Multi-Project Portfolio Overview & Risk Highlighting (E07-03)**:
+    - **Department KPI Summary Header**: Aggregates total active projects, consumed vs. allocated labor hours, overall portfolio burn rate %, and at-risk project count across department scope.
+    - **Sortable Columns**: Supports server-side sorting across both database attributes (`project_code`, `name`, `status`, `allocated_labor_hours`, `physical_progress_pct`, `target_end_date`, `created_at`) and computed attributes (`consumed_hours`, `burn_index`, `milestone_burn_ratio`, `days_remaining`).
+    - **Threshold Row Highlighting**:
+        - _Critical / Deficit_: Red tint (`border-l-4 border-l-[#cc0000]`) when CapEx Burn Index > 100% or Burn Index > 90% with Milestone Ratio > 1.20.
+        - _Caution / At Risk_: Amber tint (`border-l-4 border-l-amber-500`) when CapEx Burn Index >= 85% or project is flagged as at-risk.
+        - _Safe_: Clean surface with subtle hover effect when Burn Index < 85%.
+    - **Dedicated Milestone Burn Ratio Column**: Renders computed `Milestone Burn Ratio` with prominent amber highlighting if > 1.20, and gracefully falls back to `N/A` if physical progress is 0% to prevent division-by-zero artifacts.
+    - **Dedicated Risk Flag Column**: Displays `⚠️` icon for projects where `Milestone Burn Ratio > 1.20` or `CapEx Burn Index > 90%`.
+    - **Target Completion Date Range Filter**: Filters projects by `target_end_date` between `date_from` and `date_to`.
 
 ## API Endpoints & Routes
 

@@ -29,6 +29,7 @@ Step-by-step instructions for everyday plant operations:
 | **[Overtime Approvals Queue](./guides/overtime-approvals.md)**                            | Managers & Admins       | Morning standup approval queue, item approvals, bulk processing, CSV/Excel data export, immutable audit trail, and modification lock / force unlock.                                                                  |
 | **[Individual Employee Dossier & Welfare](./guides/individual-employee-dossier.md)**      | All Plant Supervisors   | Fast debounced employee search by NPK or name, recent lookups, roster quick-pick, dossier header, period filtering, peer benchmarking, welfare monitoring, chronological audit timesheet, and zero-memory CSV export. |
 | **[Employee Self-Service Dashboard](./guides/employee-self-service.md)**                  | Line Operators (User)   | Mobile-first personal summary (/my/dashboard), monthly hours, estimated gross earnings, welfare safety status, recent 5 submissions, and rejection feedback.                                                          |
+| **[CapEx Project Labor & Portfolio Monitoring](./guides/capex-project-labor.md)**         | Managers & Admins       | Multi-project portfolio monitoring, milestone burn ratio tracking, at-risk project alerts, burndown curves, and in-place physical progress updates.                                                                   |
 
 ---
 

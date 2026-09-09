@@ -40,6 +40,10 @@ class CapexProjectController extends Controller
             'status' => $request->query('status', 'ALL'),
             'department_id' => $request->query('department_id'),
             'search' => $request->query('search', ''),
+            'date_from' => $request->query('date_from', ''),
+            'date_to' => $request->query('date_to', ''),
+            'sort_by' => $request->query('sort_by', 'created_at'),
+            'sort_dir' => $request->query('sort_dir', 'desc'),
         ];
 
         $data = $this->capexProjectService->list($filters, $user);

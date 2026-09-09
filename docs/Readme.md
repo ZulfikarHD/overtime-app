@@ -130,6 +130,7 @@ Plain-language operating guides for factory supervisors, team leaders, and opera
     - [Overtime Approvals Queue Guide](./user-docs/guides/overtime-approvals.md)
     - [Individual Employee Dossier & Welfare Tracking Guide](./user-docs/guides/individual-employee-dossier.md)
     - [Employee Self-Service Personal Dashboard Guide](./user-docs/guides/employee-self-service.md)
+    - [CapEx Project Labor & Portfolio Monitoring Guide](./user-docs/guides/capex-project-labor.md)
 
 ---
 
