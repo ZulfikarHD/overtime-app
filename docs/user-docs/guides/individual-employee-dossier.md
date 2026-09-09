@@ -95,10 +95,46 @@ The **Summary & Welfare** tab displays 4 responsive KPI cards, a financial cost 
 
 ---
 
+### 7. Inspect Peer Benchmarking & Workload Distribution (CALC-06)
+
+Below the KPI cards and category charts on the **Summary & Welfare** tab, the **Peer Benchmarking** panel gives instant visibility into whether overtime is distributed fairly across the line section:
+
+#### Section Average vs Individual Hours & CALC-06 Variance
+
+- **Employee Overtime Hours** (`Jam Lembur Karyawan`): Current month approved hours for the selected employee.
+- **Section Average** (`Rata-rata Seksi`): Per-capita overtime hours across all active members in the section ($\frac{\text{Total Section Hours}}{\text{Total Employees}}$).
+- **Workload Deviation Pill** (`Deviasi Beban Kerja / CALC-06`):
+    - **Overloaded** (Amber, `+X.X jam di atas rata-rata seksi`): The worker has logged more overtime than section peers, indicating potential fatigue or scheduling concentration.
+    - **Rested / Underloaded** (Emerald, `-X.X jam di bawah rata-rata seksi`): The worker has logged less overtime than the section average.
+    - **Balanced** (Slate, `0.0 jam sama dengan rata-rata seksi`): The worker's hours align with the section average.
+
+#### Section Members Overtime Distribution Histogram
+
+- A bar chart visualizes all members of the line section sorted by overtime hours.
+- The currently selected employee is prominently highlighted in **ISUZU Red** (`#cc0000`).
+- Co-workers are rendered in neutral **Slate** (`#94a3b8`).
+- Hovering over any bar reveals exact approved hours, variance from the section mean, and section ranking.
+
+#### Top 5 Highest & Bottom 5 Lowest Overtime Lists
+
+- **Top 5 Highest Hours** (`5 Jam Tertinggi`): Highlights operators carrying the heaviest overtime load this month, aiding supervisors in avoiding repeated weekend dispatch of the same operators.
+- **Top 5 Lowest Hours** (`5 Jam Terendah`): Highlights operators with the lowest overtime hours, providing candidates for fair rotation on upcoming weekend shifts.
+
+#### Operator Role Privacy Guarantee (Mode Privasi Operator)
+
+- When an operator (`User` role) views their own dossier, co-worker names and NPKs are strictly anonymized as `Karyawan #1`, `Karyawan #2`, etc.
+- This ensures operators understand their workload distribution standing without sparking peer friction, gossip, or perceived favoritism on the factory floor.
+- Supervisors (Team Leaders, Managers, Admins) see full employee names to make informed shift dispatch decisions.
+
+---
+
 ## Frequently Asked Questions (FAQ)
 
 **Q: Why can't I find an employee from another department when I search?**  
 A: For data privacy and organizational hierarchy, Team Leaders can only search and view workers within their assigned section, and Managers can only view workers within their department. Plant Administrators have full plant-wide visibility.
+
+**Q: Why are other employees' names masked as "Karyawan #1" when I log in as an operator?**  
+A: To protect worker privacy and prevent interpersonal conflict, general operators only see their own name and position relative to the anonymized section distribution. Supervisors can see all names to balance shift assignments.
 
 **Q: Are my recent lookups saved on the company server?**  
 A: No. Recent lookups are stored securely in your local browser storage (`localStorage`), giving you instant access while preventing unnecessary network calls.

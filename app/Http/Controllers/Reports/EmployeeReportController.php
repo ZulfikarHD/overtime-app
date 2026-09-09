@@ -73,6 +73,7 @@ class EmployeeReportController extends Controller
         return Inertia::render('reports/EmployeeDossier', [
             'employee' => null,
             'summary' => null,
+            'peer_comparison' => null,
             'roster' => $roster,
             'filters' => $filters,
             'departments' => $departments,
@@ -116,9 +117,19 @@ class EmployeeReportController extends Controller
 
         $summary = $this->employeeReportService->getSummary($employee['id'], $fiscalYear, $fiscalMonth);
 
+        $sectionId = (int) ($employee['section']['id'] ?? 0);
+        $peerComparison = $this->employeeReportService->getPeerComparison(
+            $employee['id'],
+            $sectionId,
+            $fiscalYear,
+            $fiscalMonth,
+            $user->isUser(),
+        );
+
         return Inertia::render('reports/EmployeeDossier', [
             'employee' => $employee,
             'summary' => $summary,
+            'peer_comparison' => $peerComparison,
             'roster' => [],
             'filters' => [],
             'departments' => [],

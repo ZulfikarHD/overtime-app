@@ -582,5 +582,250 @@ test('show dossier inertia response includes summary prop with all KPI and break
         ->has('summary.category_breakdown')
         ->has('summary.day_type_breakdown')
         ->has('summary.total_cost_idr')
+        ->has('peer_comparison.section_average_hours')
+        ->has('peer_comparison.variance_hours')
+        ->has('peer_comparison.distribution')
+        ->has('peer_comparison.top_5')
+        ->has('peer_comparison.bottom_5')
     );
+});
+
+test('getPeerComparison calculates correct section average, individual hours, and CALC-06 variance', function () {
+    ensureReportCalendarDate('2026-09-10', 'HKN');
+
+    $dept = Department::factory()->create();
+    $section = Section::factory()->create(['department_id' => $dept->id, 'name' => 'Sub-Assembly 1', 'code' => 'SEC-SUB1']);
+    $submitter = User::factory()->teamLeader($section->id, $dept->id)->create();
+
+    $empA = Employee::factory()->create([
+        'department_id' => $dept->id,
+        'section_id' => $section->id,
+        'full_name' => 'Aditya Overloaded',
+        'npk' => 'EMP-PEER-A',
+        'is_active' => true,
+    ]);
+
+    $empB = Employee::factory()->create([
+        'department_id' => $dept->id,
+        'section_id' => $section->id,
+        'full_name' => 'Bagus Balanced',
+        'npk' => 'EMP-PEER-B',
+        'is_active' => true,
+    ]);
+
+    $empC = Employee::factory()->create([
+        'department_id' => $dept->id,
+        'section_id' => $section->id,
+        'full_name' => 'Candra Rested',
+        'npk' => 'EMP-PEER-C',
+        'is_active' => true,
+    ]);
+
+    $sub = OvertimeSubmission::create([
+        'submission_code' => 'OT-PEER-001',
+        'submission_date' => '2026-09-10',
+        'operational_date' => '2026-09-10',
+        'day_type' => 'HKN',
+        'department_id' => $dept->id,
+        'section_id' => $section->id,
+        'submitted_by_user_id' => $submitter->id,
+        'status' => 'APPROVED',
+    ]);
+
+    // Emp A: 30.0 hours
+    OvertimeItem::create([
+        'overtime_submission_id' => $sub->id,
+        'employee_id' => $empA->id,
+        'npk_snapshot' => $empA->npk,
+        'hours_production' => 30.0,
+        'hours_tpm' => 0.0,
+        'hours_project' => 0.0,
+        'hours_others' => 0.0,
+        'hourly_rate_snapshot' => 50000.0,
+        'total_cost_snapshot' => 1500000.0,
+        'status' => 'APPROVED',
+    ]);
+
+    // Emp B: 15.0 hours
+    OvertimeItem::create([
+        'overtime_submission_id' => $sub->id,
+        'employee_id' => $empB->id,
+        'npk_snapshot' => $empB->npk,
+        'hours_production' => 15.0,
+        'hours_tpm' => 0.0,
+        'hours_project' => 0.0,
+        'hours_others' => 0.0,
+        'hourly_rate_snapshot' => 50000.0,
+        'total_cost_snapshot' => 750000.0,
+        'status' => 'APPROVED',
+    ]);
+
+    // Emp C: 0.0 hours (no approved items)
+
+    /** @var EmployeeReportService $service */
+    $service = app(EmployeeReportService::class);
+
+    // Test for Emp A (overloaded: +15.0 above section average)
+    $peerA = $service->getPeerComparison($empA->id, $section->id, 2026, 9, false);
+    expect($peerA['has_section'])->toBeTrue()
+        ->and($peerA['total_section_employees'])->toBe(3)
+        ->and($peerA['section_total_hours'])->toBe(45.0)
+        ->and($peerA['section_average_hours'])->toBe(15.0)
+        ->and($peerA['individual_hours'])->toBe(30.0)
+        ->and($peerA['variance_hours'])->toBe(15.0)
+        ->and($peerA['variance_status'])->toBe('above')
+        ->and($peerA['distribution'])->toHaveCount(3)
+        ->and($peerA['distribution'][0]['name'])->toBe('Aditya Overloaded')
+        ->and($peerA['distribution'][0]['rank'])->toBe(1)
+        ->and($peerA['distribution'][0]['is_current_employee'])->toBeTrue()
+        ->and($peerA['top_5'][0]['name'])->toBe('Aditya Overloaded')
+        ->and($peerA['bottom_5'][0]['name'])->toBe('Candra Rested');
+
+    // Test for Emp B (balanced: variance 0.0)
+    $peerB = $service->getPeerComparison($empB->id, $section->id, 2026, 9, false);
+    expect($peerB['individual_hours'])->toBe(15.0)
+        ->and($peerB['variance_hours'])->toBe(0.0)
+        ->and($peerB['variance_status'])->toBe('equal')
+        ->and($peerB['distribution'][1]['is_current_employee'])->toBeTrue();
+
+    // Test for Emp C (underloaded: -15.0 below section average)
+    $peerC = $service->getPeerComparison($empC->id, $section->id, 2026, 9, false);
+    expect($peerC['individual_hours'])->toBe(0.0)
+        ->and($peerC['variance_hours'])->toBe(-15.0)
+        ->and($peerC['variance_status'])->toBe('below')
+        ->and($peerC['distribution'][2]['is_current_employee'])->toBeTrue();
+});
+
+test('getPeerComparison excludes rejected and pending overtime items', function () {
+    ensureReportCalendarDate('2026-09-15', 'HKN');
+
+    $dept = Department::factory()->create();
+    $section = Section::factory()->create(['department_id' => $dept->id]);
+    $submitter = User::factory()->teamLeader($section->id, $dept->id)->create();
+
+    $emp = Employee::factory()->create([
+        'department_id' => $dept->id,
+        'section_id' => $section->id,
+        'npk' => 'EMP-STATUS-CK',
+    ]);
+
+    // Approved submission (5.0h)
+    $subApproved = OvertimeSubmission::create([
+        'submission_code' => 'OT-STAT-APP',
+        'submission_date' => '2026-09-15',
+        'operational_date' => '2026-09-15',
+        'day_type' => 'HKN',
+        'department_id' => $dept->id,
+        'section_id' => $section->id,
+        'submitted_by_user_id' => $submitter->id,
+        'status' => 'APPROVED',
+    ]);
+
+    OvertimeItem::create([
+        'overtime_submission_id' => $subApproved->id,
+        'employee_id' => $emp->id,
+        'npk_snapshot' => $emp->npk,
+        'hours_production' => 5.0,
+        'hours_tpm' => 0.0,
+        'hours_project' => 0.0,
+        'hours_others' => 0.0,
+        'hourly_rate_snapshot' => 50000.0,
+        'total_cost_snapshot' => 250000.0,
+        'status' => 'APPROVED',
+    ]);
+
+    // Rejected submission (20.0h)
+    $subRejected = OvertimeSubmission::create([
+        'submission_code' => 'OT-STAT-REJ',
+        'submission_date' => '2026-09-15',
+        'operational_date' => '2026-09-15',
+        'day_type' => 'HKN',
+        'department_id' => $dept->id,
+        'section_id' => $section->id,
+        'submitted_by_user_id' => $submitter->id,
+        'status' => 'REJECTED',
+    ]);
+
+    OvertimeItem::create([
+        'overtime_submission_id' => $subRejected->id,
+        'employee_id' => $emp->id,
+        'npk_snapshot' => $emp->npk,
+        'hours_production' => 20.0,
+        'hours_tpm' => 0.0,
+        'hours_project' => 0.0,
+        'hours_others' => 0.0,
+        'hourly_rate_snapshot' => 50000.0,
+        'total_cost_snapshot' => 1000000.0,
+        'status' => 'REJECTED',
+    ]);
+
+    /** @var EmployeeReportService $service */
+    $service = app(EmployeeReportService::class);
+    $result = $service->getPeerComparison($emp->id, $section->id, 2026, 9, false);
+
+    expect($result['individual_hours'])->toBe(5.0)
+        ->and($result['section_total_hours'])->toBe(5.0);
+});
+
+test('getPeerComparison strictly anonymizes co-workers for User role', function () {
+    $dept = Department::factory()->create();
+    $section = Section::factory()->create(['department_id' => $dept->id]);
+
+    $empTarget = Employee::factory()->create([
+        'department_id' => $dept->id,
+        'section_id' => $section->id,
+        'full_name' => 'Operator Saya Sendiri',
+        'npk' => 'EMP-ME-01',
+    ]);
+
+    $empPeer = Employee::factory()->create([
+        'department_id' => $dept->id,
+        'section_id' => $section->id,
+        'full_name' => 'Rahasia Teman Seksi',
+        'npk' => 'EMP-OTHER-02',
+    ]);
+
+    /** @var EmployeeReportService $service */
+    $service = app(EmployeeReportService::class);
+
+    // Non-anonymized (Supervisor)
+    $supervisorResult = $service->getPeerComparison($empTarget->id, $section->id, 2026, 9, false);
+    $peerItemSup = collect($supervisorResult['distribution'])->firstWhere('is_current_employee', false);
+    expect($peerItemSup['name'])->toBe('Rahasia Teman Seksi')
+        ->and($peerItemSup['npk'])->toBe('EMP-OTHER-02')
+        ->and($peerItemSup['employee_id'])->toBe($empPeer->id);
+
+    // Anonymized (Operator)
+    $operatorResult = $service->getPeerComparison($empTarget->id, $section->id, 2026, 9, true);
+    expect($operatorResult['is_anonymized'])->toBeTrue();
+
+    // Target employee's own record retains their name
+    $selfItem = collect($operatorResult['distribution'])->firstWhere('is_current_employee', true);
+    expect($selfItem['name'])->toBe('Operator Saya Sendiri')
+        ->and($selfItem['npk'])->toBe('EMP-ME-01');
+
+    // Peer record is masked
+    $peerItemAnon = collect($operatorResult['distribution'])->firstWhere('is_current_employee', false);
+    expect($peerItemAnon['name'])->toMatch('/^Karyawan #\d+$/')
+        ->and($peerItemAnon['npk'])->toBe('••••')
+        ->and($peerItemAnon['employee_id'])->toBeNull();
+});
+
+test('getPeerComparison handles unassigned section id gracefully', function () {
+    $dept = Department::factory()->create();
+    $section = Section::factory()->create(['department_id' => $dept->id]);
+    $emp = Employee::factory()->create([
+        'department_id' => $dept->id,
+        'section_id' => $section->id,
+        'npk' => 'EMP-NO-SEC',
+    ]);
+
+    /** @var EmployeeReportService $service */
+    $service = app(EmployeeReportService::class);
+    $result = $service->getPeerComparison($emp->id, 0, 2026, 9, false);
+
+    expect($result['has_section'])->toBeFalse()
+        ->and($result['section_average_hours'])->toBe(0.0)
+        ->and($result['variance_hours'])->toBe(0.0)
+        ->and($result['distribution'])->toBeEmpty();
 });

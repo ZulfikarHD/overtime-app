@@ -103,23 +103,23 @@ This module serves four audiences:
 
 #### Acceptance Criteria
 
-- [ ] Below the KPI cards, a "Peer Comparison" panel shows:
+- [x] Below the KPI cards, a "Peer Comparison" panel shows:
     - Section average hours (current month) vs individual hours — shown as a horizontal bar or gauge
     - Variance (CALC-06): `Individual Hours − Department Average Hours per Employee`
     - Variance badge: `+8.5 hrs above average` (positive = overloaded, negative = underloaded)
     - Distribution histogram: shows all employees' monthly hours in the section as a bar chart with the current employee highlighted
-- [ ] "Top 5 Most Hours" and "Bottom 5 Least Hours" quick lists for the section this month
-- [ ] All peer data is **anonymized for User (Employee) role** — they see only their own bar and the section average, not other employees' names
-- [ ] For Manager/Team Leader: full names are shown in the distribution histogram
+- [x] "Top 5 Most Hours" and "Bottom 5 Least Hours" quick lists for the section this month
+- [x] All peer data is **anonymized for User (Employee) role** — they see only their own bar and the section average, not other employees' names
+- [x] For Manager/Team Leader: full names are shown in the distribution histogram
 
 #### Technical Tasks
 
-- [ ] `EmployeeReportService::getPeerComparison(int $employeeId, int $sectionId, int $year, int $month): array`
-- [ ] Query: `SELECT employee_id, SUM(total_hours) FROM overtime_items JOIN overtime_submissions ... GROUP BY employee_id ORDER BY SUM(total_hours) DESC` for the section
-- [ ] CALC-06: `$variance = $individualHours - $sectionAverageHours`
-- [ ] Create `resources/js/Components/Reports/PeerComparisonPanel.vue`
-- [ ] Create `resources/js/Components/Reports/SectionDistributionChart.vue` — bar chart with highlight
-- [ ] Anonymization logic: if `auth()->user()->role === 'user'`, remove `employee_name` from peer data, keep only values
+- [x] `EmployeeReportService::getPeerComparison(int $employeeId, int $sectionId, int $year, int $month): array`
+- [x] Query: `SELECT employee_id, SUM(total_hours) FROM overtime_items JOIN overtime_submissions ... GROUP BY employee_id ORDER BY SUM(total_hours) DESC` for the section
+- [x] CALC-06: `$variance = $individualHours - $sectionAverageHours`
+- [x] Create `resources/js/Components/Reports/PeerComparisonPanel.vue`
+- [x] Create `resources/js/Components/Reports/SectionDistributionChart.vue` — bar chart with highlight
+- [x] Anonymization logic: if `auth()->user()->role === 'user'`, remove `employee_name` from peer data, keep only values
 
 ---
 
@@ -236,7 +236,7 @@ This module serves four audiences:
 
 - [x] Employee search works across NPK and name with 300ms debounce
 - [x] KPI cards show correct current month and YTD hours from approved items only
-- [ ] Peer variance (CALC-06) calculates correctly
+- [x] Peer variance (CALC-06) calculates correctly
 - [ ] Fatigue consecutive-week alert correctly detects 3+ weeks over limit
 - [ ] Timesheet table is paginated, filterable, and sortable
 - [x] User (Employee) role is strictly scoped to their own data

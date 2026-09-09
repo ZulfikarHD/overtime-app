@@ -82,6 +82,7 @@ Durable technical decisions and trade-offs:
 - **[ADR-020: Budget Threshold Alert Timestamp Locking for Anti-Fatigue Deduplication](./decisions/020-budget-threshold-alert-deduplication.md)**
 - **[ADR-021: Department-Level Consolidated Dashboard and Server-Side PDF Reporting](./decisions/021-department-level-consolidated-dashboard-and-pdf-reporting.md)**
 - **[ADR-022: Unified Single-Surface Employee Dossier Hub and Client-Side Cached Lookups](./decisions/022-unified-employee-dossier-hub-and-client-cached-lookups.md)**
+- **[ADR-023: Peer Benchmarking Workload Distribution (CALC-06) and Server-Side Operator Anonymization](./decisions/023-peer-benchmarking-calc-06-and-operator-role-anonymization.md)**
 
 ---
 

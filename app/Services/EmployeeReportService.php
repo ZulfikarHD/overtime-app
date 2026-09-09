@@ -386,6 +386,195 @@ class EmployeeReportService
     }
 
     /**
+     * Retrieve peer benchmarking and workload distribution comparison for an employee in a section.
+     *
+     * @return array{
+     *     has_section: bool,
+     *     section_id: int|null,
+     *     section_name: string|null,
+     *     section_code: string|null,
+     *     total_section_employees: int,
+     *     section_total_hours: float,
+     *     section_average_hours: float,
+     *     individual_hours: float,
+     *     variance_hours: float,
+     *     variance_status: string,
+     *     is_anonymized: bool,
+     *     distribution: array<int, array{
+     *         employee_id: int|null,
+     *         npk: string,
+     *         name: string,
+     *         job_position: string|null,
+     *         hours: float,
+     *         variance_hours: float,
+     *         is_current_employee: bool,
+     *         rank: int
+     *     }>,
+     *     top_5: array<int, array{
+     *         employee_id: int|null,
+     *         npk: string,
+     *         name: string,
+     *         job_position: string|null,
+     *         hours: float,
+     *         variance_hours: float,
+     *         is_current_employee: bool,
+     *         rank: int
+     *     }>,
+     *     bottom_5: array<int, array{
+     *         employee_id: int|null,
+     *         npk: string,
+     *         name: string,
+     *         job_position: string|null,
+     *         hours: float,
+     *         variance_hours: float,
+     *         is_current_employee: bool,
+     *         rank: int
+     *     }>
+     * }
+     */
+    public function getPeerComparison(
+        int $employeeId,
+        int $sectionId,
+        int $year,
+        int $month,
+        bool $anonymize = false,
+    ): array {
+        if ($sectionId <= 0) {
+            return [
+                'has_section' => false,
+                'section_id' => null,
+                'section_name' => null,
+                'section_code' => null,
+                'total_section_employees' => 0,
+                'section_total_hours' => 0.0,
+                'section_average_hours' => 0.0,
+                'individual_hours' => 0.0,
+                'variance_hours' => 0.0,
+                'variance_status' => 'equal',
+                'is_anonymized' => $anonymize,
+                'distribution' => [],
+                'top_5' => [],
+                'bottom_5' => [],
+            ];
+        }
+
+        $section = Section::find($sectionId);
+
+        $monthStartDate = Carbon::create($year, $month, 1, 0, 0, 0, 'Asia/Jakarta')->startOfMonth()->toDateString();
+        $monthEndDate = Carbon::create($year, $month, 1, 23, 59, 59, 'Asia/Jakarta')->endOfMonth()->toDateString();
+
+        $approvedTotals = OvertimeItem::query()
+            ->join('overtime_submissions', 'overtime_items.overtime_submission_id', '=', 'overtime_submissions.id')
+            ->join('employees', 'overtime_items.employee_id', '=', 'employees.id')
+            ->where('employees.section_id', $sectionId)
+            ->where('overtime_items.status', 'APPROVED')
+            ->whereBetween('overtime_submissions.operational_date', [$monthStartDate, $monthEndDate])
+            ->selectRaw('overtime_items.employee_id as emp_id, SUM(overtime_items.total_hours) as total_approved_hours')
+            ->groupBy('overtime_items.employee_id')
+            ->pluck('total_approved_hours', 'emp_id')
+            ->all();
+
+        $sectionEmployees = Employee::query()
+            ->where('section_id', $sectionId)
+            ->orderBy('full_name', 'asc')
+            ->get(['id', 'npk', 'full_name', 'job_position', 'is_active']);
+
+        if ($sectionEmployees->isEmpty()) {
+            return [
+                'has_section' => true,
+                'section_id' => $sectionId,
+                'section_name' => $section?->name ?? '-',
+                'section_code' => $section?->code ?? '-',
+                'total_section_employees' => 0,
+                'section_total_hours' => 0.0,
+                'section_average_hours' => 0.0,
+                'individual_hours' => 0.0,
+                'variance_hours' => 0.0,
+                'variance_status' => 'equal',
+                'is_anonymized' => $anonymize,
+                'distribution' => [],
+                'top_5' => [],
+                'bottom_5' => [],
+            ];
+        }
+
+        $individualHours = round((float) ($approvedTotals[$employeeId] ?? 0.0), 2);
+        $sectionTotalHours = round(array_sum(array_map('floatval', $approvedTotals)), 2);
+        $totalSectionEmployees = $sectionEmployees->count();
+        $sectionAverageHours = $totalSectionEmployees > 0
+            ? round($sectionTotalHours / $totalSectionEmployees, 2)
+            : 0.0;
+
+        // CALC-06: Individual Hours - Section Average Hours
+        $varianceHours = round($individualHours - $sectionAverageHours, 2);
+        $varianceStatus = 'equal';
+        if ($varianceHours > 0) {
+            $varianceStatus = 'above';
+        } elseif ($varianceHours < 0) {
+            $varianceStatus = 'below';
+        }
+
+        $rawList = $sectionEmployees->map(function (Employee $emp) use ($approvedTotals, $employeeId): array {
+            $hours = round((float) ($approvedTotals[$emp->id] ?? 0.0), 2);
+
+            return [
+                'employee' => $emp,
+                'hours' => $hours,
+                'is_current' => ($emp->id === $employeeId),
+            ];
+        })->all();
+
+        usort($rawList, function (array $a, array $b): int {
+            if ($a['hours'] !== $b['hours']) {
+                return $b['hours'] <=> $a['hours'];
+            }
+
+            return strcasecmp($a['employee']->full_name, $b['employee']->full_name);
+        });
+
+        $distribution = [];
+        foreach ($rawList as $index => $item) {
+            /** @var Employee $emp */
+            $emp = $item['employee'];
+            $hours = $item['hours'];
+            $rank = $index + 1;
+            $isCurrent = $item['is_current'];
+
+            $distribution[] = [
+                'employee_id' => ($anonymize && ! $isCurrent) ? null : $emp->id,
+                'npk' => ($anonymize && ! $isCurrent) ? '••••' : $emp->npk,
+                'name' => ($anonymize && ! $isCurrent) ? "Karyawan #{$rank}" : $emp->full_name,
+                'job_position' => ($anonymize && ! $isCurrent) ? null : $emp->job_position,
+                'hours' => $hours,
+                'variance_hours' => round($hours - $sectionAverageHours, 2),
+                'is_current_employee' => $isCurrent,
+                'rank' => $rank,
+            ];
+        }
+
+        $top5 = array_slice($distribution, 0, 5);
+        $bottom5Raw = array_slice($distribution, -5);
+        $bottom5 = array_reverse($bottom5Raw);
+
+        return [
+            'has_section' => true,
+            'section_id' => $sectionId,
+            'section_name' => $section?->name ?? '-',
+            'section_code' => $section?->code ?? '-',
+            'total_section_employees' => $totalSectionEmployees,
+            'section_total_hours' => $sectionTotalHours,
+            'section_average_hours' => $sectionAverageHours,
+            'individual_hours' => $individualHours,
+            'variance_hours' => $varianceHours,
+            'variance_status' => $varianceStatus,
+            'is_anonymized' => $anonymize,
+            'distribution' => $distribution,
+            'top_5' => $top5,
+            'bottom_5' => $bottom5,
+        ];
+    }
+
+    /**
      * Apply role-based scoping to the employee query builder.
      */
     protected function applyRoleScope(Builder $builder, User $user): void

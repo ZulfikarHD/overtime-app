@@ -26,6 +26,9 @@ import EmployeeSearch from '@/components/reports/EmployeeSearch.vue';
 import KpiSummaryCards, {
     type EmployeeSummaryMetrics,
 } from '@/components/reports/KpiSummaryCards.vue';
+import PeerComparisonPanel, {
+    type PeerComparisonData,
+} from '@/components/reports/PeerComparisonPanel.vue';
 import RecentLookups from '@/components/reports/RecentLookups.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -110,6 +113,7 @@ export interface RosterItem {
 const props = defineProps<{
     employee: DossierEmployee | null;
     summary?: EmployeeSummaryMetrics | null;
+    peer_comparison?: PeerComparisonData | null;
     roster: RosterItem[];
     filters?: {
         department_id?: string | number | null;
@@ -648,47 +652,33 @@ const filteredSections = computed(() => {
                         </CardContent>
                     </Card>
 
-                    <!-- Preview Architecture Cards for Subsequent Sub-Epics -->
-                    <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-                        <div
-                            class="border-border bg-card/60 flex flex-col gap-2 rounded-xl border border-dashed p-4"
-                        >
-                            <div
-                                class="text-primary flex items-center gap-2 text-sm font-semibold"
-                            >
-                                <Users class="size-4" />
-                                <span>{{
-                                    __('Peer Benchmarking (E06-03)')
-                                }}</span>
-                            </div>
-                            <p class="text-muted-foreground text-xs">
-                                {{
-                                    __(
-                                        'Perbandingan beban kerja terhadap rata-rata seksi (CALC-06) dengan histogram distribusi dan proteksi privasi.',
-                                    )
-                                }}
-                            </p>
-                        </div>
+                    <!-- Peer Benchmarking & Section Workload Distribution (E06-03) -->
+                    <PeerComparisonPanel
+                        v-if="peer_comparison"
+                        :peer-comparison="peer_comparison"
+                    />
 
+                    <!-- Preview Architecture Card for Safety & Fatigue Indicators (E06-04) -->
+                    <div
+                        class="border-border bg-card/60 flex flex-col gap-2 rounded-xl border border-dashed p-4"
+                    >
                         <div
-                            class="border-border bg-card/60 flex flex-col gap-2 rounded-xl border border-dashed p-4"
+                            class="text-primary flex items-center gap-2 text-sm font-semibold"
                         >
-                            <div
-                                class="text-primary flex items-center gap-2 text-sm font-semibold"
-                            >
-                                <HeartPulse class="size-4" />
-                                <span>{{
-                                    __('Indikator Kelelahan (E06-04)')
-                                }}</span>
-                            </div>
-                            <p class="text-muted-foreground text-xs">
-                                {{
-                                    __(
-                                        'Tren rolling 4 minggu, indikator batas keselamatan kerja, dan badge peringatan kelelahan terstruktur.',
-                                    )
-                                }}
-                            </p>
+                            <HeartPulse class="size-4" />
+                            <span>{{
+                                __(
+                                    'Indikator Kelelahan & Keselamatan Kerja (E06-04)',
+                                )
+                            }}</span>
                         </div>
+                        <p class="text-muted-foreground text-xs">
+                            {{
+                                __(
+                                    'Tren rolling 4 minggu, indikator batas keselamatan kerja, dan badge peringatan kelelahan terstruktur.',
+                                )
+                            }}
+                        </p>
                     </div>
                 </div>
 
