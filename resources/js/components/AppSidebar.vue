@@ -6,6 +6,7 @@ import {
     ClipboardList,
     Database,
     Flame,
+    FolderKanban,
     LayoutGrid,
     ShieldCheck,
     Users,
@@ -27,6 +28,7 @@ import { useTrans } from '@/composables/useTrans';
 import { dashboard } from '@/routes';
 import { dashboard as myDashboard } from '@/routes/my';
 import { administration, masterData } from '@/routes/admin';
+import capexProjects from '@/routes/admin/capex-projects';
 import { planning } from '@/routes/budgets';
 import { burnIndex } from '@/routes/dashboard';
 import { approvals as overtimeApprovals } from '@/routes/overtime';
@@ -65,6 +67,12 @@ const mainNavItems = computed<NavItem[]>(() => {
     }
 
     if (user.value?.role === 'admin' || user.value?.role === 'manager') {
+        items.push({
+            title: __('Proyek CapEx'),
+            href: capexProjects.index(),
+            icon: FolderKanban,
+            testId: 'nav-capex-projects',
+        });
         items.push({
             title: __('Burn Index'),
             href: burnIndex(),

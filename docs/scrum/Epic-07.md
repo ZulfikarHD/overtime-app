@@ -34,11 +34,12 @@ Business Rule **BR-08** is the foundation: any overtime hour categorized as "Pro
 **So that** Team Leaders can attribute "Project" overtime hours to the correct capital project and the system can track labor burn against each project's allocated budget.
 
 **Story Points:** 8  
-**Priority:** Must Have
+**Priority:** Must Have  
+**Status:** 🟢 Completed (Sprint 6)
 
 #### Acceptance Criteria
 
-- [ ] Admin and Manager can create a CapEx project with:
+- [x] Admin and Manager can create a CapEx project with:
     - `project_code` (unique, e.g., `CPX-2026-ASSY-001`)
     - `asset_code` (nullable, fixed asset tag reference for accounting)
     - `name` (descriptive project name)
@@ -47,24 +48,25 @@ Business Rule **BR-08** is the foundation: any overtime hour categorized as "Pro
     - `allocated_labor_budget_idr` (Rp value of the labor allocation)
     - `start_date` and `target_end_date`
     - `status`: `PLANNING | ACTIVE | ON_HOLD | COMPLETED | CLOSED`
-- [ ] `project_code` is immutable after creation (same invariant as NPK)
-- [ ] Only `ACTIVE` projects appear in the Team Leader's "Project" dropdown on the overtime form
-- [ ] Admin can transition project status: `PLANNING → ACTIVE`, `ACTIVE → ON_HOLD / COMPLETED`, `COMPLETED → CLOSED`
-- [ ] Once `CLOSED`, no new overtime items can be attributed to this project (enforced at `StoreOvertimeSubmissionRequest` level)
-- [ ] Project list page: searchable, filterable by status and department
-- [ ] Project detail page: shows basic info + labor burn summary (from E07-02)
+- [x] `project_code` is immutable after creation (same invariant as NPK)
+- [x] Only `ACTIVE` projects appear in the Team Leader's "Project" dropdown on the overtime form
+- [x] Admin can transition project status: `PLANNING → ACTIVE`, `ACTIVE → ON_HOLD / COMPLETED`, `COMPLETED → CLOSED`
+- [x] Once `CLOSED`, no new overtime items can be attributed to this project (enforced at `StoreOvertimeSubmissionRequest` level)
+- [x] Project list page: searchable, filterable by status and department
+- [x] Project detail page: shows basic info + labor burn summary (from E07-02)
 
 #### Technical Tasks
 
-- [ ] `php artisan make:controller Admin/CapexProjectController --resource`
-- [ ] `php artisan make:request StoreCapexProjectRequest` + `UpdateCapexProjectRequest`
-- [ ] `StoreOvertimeSubmissionRequest`: when `hours_project > 0`, validate `capex_project_id` exists AND `capex_projects.status = 'ACTIVE'`
-- [ ] Route: `resources/admin/capex-projects` registered in `routes/web.php` with `->middleware(['auth', 'role:admin,manager'])`
-- [ ] `project_code` immutability: exclude from `UpdateCapexProjectRequest` fillable, return 422 if client sends it
-- [ ] Create `resources/js/Pages/Admin/CapexProjects/Index.vue` — searchable table with status filter chips
-- [ ] Create `resources/js/Pages/Admin/CapexProjects/Form.vue` — create/edit modal
-- [ ] Create `resources/js/Pages/Admin/CapexProjects/Show.vue` — project detail page (skeleton, E07-02 fills the content)
-- [ ] Status transition: PATCH `/admin/capex-projects/{id}/status` → `CapexProjectController@updateStatus`
+- [x] `php artisan make:controller Admin/CapexProjectController --resource`
+- [x] `php artisan make:request StoreCapexProjectRequest` + `UpdateCapexProjectRequest` + `UpdateCapexProjectStatusRequest`
+- [x] `StoreOvertimeSubmissionRequest`: when `hours_project > 0`, validate `capex_project_id` exists AND `capex_projects.status = 'ACTIVE'`
+- [x] Route: `/admin/capex-projects` registered in `routes/web.php` with `->middleware(['auth', 'role:admin,manager'])`
+- [x] `project_code` immutability: exclude from `UpdateCapexProjectRequest` fillable, return 422 if client sends it
+- [x] Create `resources/js/pages/admin/CapexProjects/Index.vue` — unified hub with portfolio KPIs and status chips
+- [x] Create `resources/js/components/admin/CapexProjectDrawer.vue` — ergonomic slide-in drawer for create & edit
+- [x] Create `resources/js/components/admin/ProjectStatusTransitionModal.vue` — single-level state machine modal
+- [x] Create `resources/js/pages/admin/CapexProjects/Show.vue` — project detail cockpit skeleton
+- [x] Status transition: PATCH `/admin/capex-projects/{id}/status` → `CapexProjectController@updateStatus`
 
 ---
 
@@ -194,12 +196,12 @@ Business Rule **BR-08** is the foundation: any overtime hour categorized as "Pro
 
 ## Sprint 6–7 Schedule (Partial Sprint 6, Full Sprint 7)
 
-| Sprint Day         | Focus                                              | Stories        |
-| ------------------ | -------------------------------------------------- | -------------- |
-| Sprint 6, Day 6–7  | CapEx project master data management               | E07-01         |
-| Sprint 6, Day 8–10 | CapEx project detail dashboard + physical progress | E07-02, E07-05 |
-| Sprint 7, Day 1–3  | Multi-project portfolio overview                   | E07-03         |
-| Sprint 7, Day 4–6  | CapEx labor attribution report + Excel export      | E07-04         |
+| Sprint Day         | Focus                                              | Stories        | Status       |
+| ------------------ | -------------------------------------------------- | -------------- | ------------ |
+| Sprint 6, Day 6–7  | CapEx project master data management               | E07-01         | 🟢 Completed |
+| Sprint 6, Day 8–10 | CapEx project detail dashboard + physical progress | E07-02, E07-05 | ⏳ Pending   |
+| Sprint 7, Day 1–3  | Multi-project portfolio overview                   | E07-03         | ⏳ Pending   |
+| Sprint 7, Day 4–6  | CapEx labor attribution report + Excel export      | E07-04         | ⏳ Pending   |
 
 ---
 
@@ -225,11 +227,11 @@ Business Rule **BR-08** is the foundation: any overtime hour categorized as "Pro
 
 ## Definition of Done — Epic-07
 
-- [ ] CapEx projects can be created, managed, and status-transitioned
-- [ ] Only ACTIVE projects appear in the overtime form's project dropdown
-- [ ] Project detail shows correct burn index and milestone burn ratio
+- [x] CapEx projects can be created, managed, and status-transitioned
+- [x] Only ACTIVE projects appear in the overtime form's project dropdown
+- [x] Project detail shows correct burn index and milestone burn ratio
 - [ ] Portfolio table shows all active CapEx projects with burn status
 - [ ] Labor attribution report exports correct Excel with immutable cost snapshots
 - [ ] Physical progress update is logged in audit trail
-- [ ] `pnpm lint` passes
-- [ ] `pnpm build` succeeds
+- [x] `pnpm lint` passes
+- [x] `pnpm build` succeeds

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\AdministrationController;
+use App\Http\Controllers\Admin\CapexProjectController;
 use App\Http\Controllers\Admin\DepartmentController;
 use App\Http\Controllers\Admin\EmployeeController;
 use App\Http\Controllers\Admin\EmployeeImportController;
@@ -39,6 +40,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // Legacy/Scrum alias redirect for CapEx vs OpEx tab (E05-03 per UX Plan Section 1.3 & 5.1)
     Route::redirect('/reports/capex-opex', '/dashboard/burn-index?tab=capex-opex');
+
+    // Legacy/Scrum alias redirects for CapEx Project Portfolio & Labor Attribution (E07 per UX Plan Section 1.3 & 5.1/5.2)
+    Route::redirect('/reports/capex-projects/portfolio', '/admin/capex-projects?tab=portfolio');
+    Route::redirect('/reports/capex-labor', '/admin/capex-projects?tab=attribution');
 
     // Individual Employee Reporting & Welfare Tracking (E06 - Admin, Manager, Team Leader, User)
     Route::middleware(['role:admin,manager,team_leader,user'])->prefix('reports')->name('reports.')->group(function () {
@@ -100,6 +105,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::put('/users/{user}', [UserController::class, 'update'])->name('users.update');
         Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
         Route::post('/users/{user}/reset-password', [UserController::class, 'sendResetLink'])->name('users.reset-password');
+    });
+
+    // CapEx Project Master Data & Portfolio Hub (E07-01 - Admin & Manager)
+    Route::middleware(['role:admin,manager'])->prefix('admin')->name('admin.')->group(function () {
+        Route::get('/capex-projects', [CapexProjectController::class, 'index'])->name('capex-projects.index');
+        Route::post('/capex-projects', [CapexProjectController::class, 'store'])->name('capex-projects.store');
+        Route::get('/capex-projects/{capex_project}', [CapexProjectController::class, 'show'])->name('capex-projects.show');
+        Route::put('/capex-projects/{capex_project}', [CapexProjectController::class, 'update'])->name('capex-projects.update');
+        Route::delete('/capex-projects/{capex_project}', [CapexProjectController::class, 'destroy'])->name('capex-projects.destroy');
+        Route::patch('/capex-projects/{capex_project}/status', [CapexProjectController::class, 'updateStatus'])->name('capex-projects.status.update');
     });
 
     // Calendar Classification API for timesheet and general auto-classification (E02-03)

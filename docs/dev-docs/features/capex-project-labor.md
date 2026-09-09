@@ -32,15 +32,17 @@ erDiagram
 
 ## Key Files & UI Mapping
 
-| Layer           | File / Route / Menu                                        | Purpose                                                            |
-| --------------- | ---------------------------------------------------------- | ------------------------------------------------------------------ |
-| Sidebar Menu    | `Proyek CapEx` (`/admin/capex-projects`)                   | Master list and capital tracking for managers                      |
-| Page Component  | `resources/js/pages/Admin/CapexProjects/Index.vue`         | Project portfolio list with status filters and progress bars       |
-| Detail Page     | `resources/js/pages/Admin/CapexProjects/Show.vue`          | Capital labor burn cockpit, worker roster, and financial ledger    |
-| Chart Component | `resources/js/components/Charts/CapexProjectBurnChart.vue` | Chart.js multi-line chart of labor hours vs physical progress %    |
-| Controller      | `app/Http/Controllers/Admin/CapexProjectController.php`    | CRUD management, status transitions, and audit export              |
-| Service         | `app/Services/Analytics/CapExAccountingService.php`        | Calculates CapEx ratio (`CALC-07`) and cumulative capitalized cost |
-| Model           | `App\Models\CapexProject`                                  | Master project record with allocated hours and Rupiah budget       |
+| Layer          | File / Route / Menu                                              | Purpose                                                                   |
+| -------------- | ---------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| Sidebar Menu   | `Proyek CapEx` (`/admin/capex-projects`)                         | Master list and capital tracking for managers and admins (`FolderKanban`) |
+| Page Component | `resources/js/pages/admin/CapexProjects/Index.vue`               | Unified hub: Tab 1 (Portfolio & Master Data) + Tab 2 (Financial Report)   |
+| Drawer Comp    | `resources/js/components/admin/CapexProjectDrawer.vue`           | Ergonomic slide-in sheet for creating and updating projects               |
+| Modal Comp     | `resources/js/components/admin/ProjectStatusTransitionModal.vue` | State machine transition dialog with audit warnings                       |
+| Detail Page    | `resources/js/pages/admin/CapexProjects/Show.vue`                | Capital labor burn cockpit, macro KPI cards, and master audit params      |
+| Controller     | `app/Http/Controllers/Admin/CapexProjectController.php`          | Resource CRUD management, status transitions, and redirects               |
+| Service        | `app/Services/CapexProjectService.php`                           | Project scoping, burn calculation, CRUD, and state transitions            |
+| Requests       | `app/Http/Requests/Admin/*CapexProject*.php`                     | Validation rules, regex CPX format, and project_code immutability guard   |
+| Model          | `App\Models\CapexProject`                                        | Master project record with allocated hours and Rupiah budget              |
 
 ## Flow Explanation
 
@@ -64,13 +66,16 @@ erDiagram
 
 ## API Endpoints & Routes
 
-| Method | URI                                 | Controller Action                     | Purpose                                         | Auth / Middleware            |
-| ------ | ----------------------------------- | ------------------------------------- | ----------------------------------------------- | ---------------------------- |
-| GET    | `/admin/capex-projects`             | `CapexProjectController@index`        | Project portfolio list and burn status          | `auth`, `role:manager,admin` |
-| POST   | `/admin/capex-projects`             | `CapexProjectController@store`        | Create new CapEx project                        | `auth`, `role:manager,admin` |
-| GET    | `/admin/capex-projects/{id}`        | `CapexProjectController@show`         | Project labor audit cockpit                     | `auth`, `role:manager,admin` |
-| PATCH  | `/admin/capex-projects/{id}/status` | `CapexProjectController@updateStatus` | Transition project lifecycle status             | `auth`, `role:manager,admin` |
-| GET    | `/admin/capex-projects/{id}/export` | `CapexProjectController@exportLedger` | Export labor capitalization ledger for auditors | `auth`, `role:manager,admin` |
+| Method   | URI                                 | Controller Action                         | Purpose                                         | Auth / Middleware            |
+| -------- | ----------------------------------- | ----------------------------------------- | ----------------------------------------------- | ---------------------------- |
+| GET      | `/admin/capex-projects`             | `CapexProjectController@index`            | Project portfolio list and burn status          | `auth`, `role:admin,manager` |
+| POST     | `/admin/capex-projects`             | `CapexProjectController@store`            | Create new CapEx project                        | `auth`, `role:admin,manager` |
+| GET      | `/admin/capex-projects/{id}`        | `CapexProjectController@show`             | Project labor audit cockpit                     | `auth`, `role:admin,manager` |
+| PUT      | `/admin/capex-projects/{id}`        | `CapexProjectController@update`           | Update project attributes (project_code locked) | `auth`, `role:admin,manager` |
+| DELETE   | `/admin/capex-projects/{id}`        | `CapexProjectController@destroy`          | Delete project (only if 0 overtime items)       | `auth`, `role:admin,manager` |
+| PATCH    | `/admin/capex-projects/{id}/status` | `CapexProjectController@updateStatus`     | Transition project lifecycle status             | `auth`, `role:admin,manager` |
+| REDIRECT | `/reports/capex-projects/portfolio` | → `/admin/capex-projects?tab=portfolio`   | Legacy alias redirect to Portfolio Hub          | Public / Web                 |
+| REDIRECT | `/reports/capex-labor`              | → `/admin/capex-projects?tab=attribution` | Legacy alias redirect to Attribution Tab        | Public / Web                 |
 
 ## Decisions & Trade-offs
 

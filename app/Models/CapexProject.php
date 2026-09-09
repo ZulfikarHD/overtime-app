@@ -2,7 +2,9 @@
 
 namespace App\Models;
 
+use Database\Factories\CapexProjectFactory;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -25,6 +27,9 @@ use Illuminate\Support\Carbon;
  */
 class CapexProject extends Model
 {
+    /** @use HasFactory<CapexProjectFactory> */
+    use HasFactory;
+
     /**
      * @var list<string>
      */
