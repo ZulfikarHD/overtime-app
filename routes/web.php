@@ -18,6 +18,7 @@ use App\Http\Controllers\Overtime\OvertimeApprovalController;
 use App\Http\Controllers\Overtime\OvertimeItemAuditController;
 use App\Http\Controllers\Overtime\OvertimeSubmissionController;
 use App\Http\Controllers\Overtime\SpklDocumentController;
+use App\Http\Controllers\Reports\EmployeeReportController;
 use Illuminate\Support\Facades\Route;
 
 Route::inertia('/', 'Welcome')->name('home');
@@ -35,6 +36,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // Legacy/Scrum alias redirect for CapEx vs OpEx tab (E05-03 per UX Plan Section 1.3 & 5.1)
     Route::redirect('/reports/capex-opex', '/dashboard/burn-index?tab=capex-opex');
+
+    // Individual Employee Reporting & Welfare Tracking (E06 - Admin, Manager, Team Leader, User)
+    Route::middleware(['role:admin,manager,team_leader,user'])->prefix('reports')->name('reports.')->group(function () {
+        Route::get('/employees', [EmployeeReportController::class, 'index'])->name('employees.index');
+        Route::get('/employees/search', [EmployeeReportController::class, 'search'])->name('employees.search');
+        Route::get('/employees/{npk}', [EmployeeReportController::class, 'show'])->name('employees.show');
+    });
 
     // Role-protected routes for authorization verification and testing
     Route::middleware(['role:admin'])->prefix('admin')->name('admin.')->group(function () {

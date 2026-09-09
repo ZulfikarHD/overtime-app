@@ -2,78 +2,93 @@
 
 ## Overview
 
-The **Individual Employee Reporting & Welfare Tracking** module provides deep visibility into personal overtime history, cumulative hours, fatigue risk indicators, and peer variance benchmarking across plant sections. It serves both individual contributors (tracking their own shifts and compensation baselines) and supervisory personnel (identifying workload distribution imbalances and preventing fatigue safety risks).
+The **Individual Employee Reporting & Welfare Tracking** module modernizes the legacy `ReportIndividu` screen. It provides deep visibility into personal overtime history, cumulative hours, fatigue risk indicators, and peer variance benchmarking across manufacturing plant sections. It serves both individual contributors (tracking their own shifts and compensation baselines) and supervisory personnel (identifying workload distribution imbalances and preventing fatigue safety risks).
+
+Sub-epic **E06-01** delivers the foundational **Individual Employee Dossier Lookup & Hub**: a unified, single-surface search and dossier screen with debounced search-as-you-type, role-scoped roster views, client-side zero-latency recent lookup history via `localStorage`, and an industrial header card.
 
 ## Architecture Diagram
 
 ```mermaid
 flowchart TD
-    USR[User / Team Leader / Manager] -->|Lookup by NPK or Name| ERC[EmployeeReportController@show]
-    ERC -->|Scope by Auth Role| DB[(Database)]
-    ERC -->|Aggregate History & Peers| BICS[BurnIndexCalculatorService]
-    ERC -->|Return Inertia Props| VUE[EmployeeDossier.vue]
+    User([Manager / Team Leader / Admin]) -->|Click Sidebar 'Laporan Karyawan'| Nav[AppSidebar Navigation]
+    Nav -->|GET /reports/employees| ControllerIndex[EmployeeReportController@index]
+    ControllerIndex -->|Scope by Role/Dept/Section| Service[EmployeeReportService@getRoster]
+    Service -->|Query Database| DB[(Database)]
+    ControllerIndex -->|Render Inertia Page| Page[reports/EmployeeDossier.vue]
 
-    subgraph ChartLayer["Chart.js Reporting Visuals"]
-        VUE --> CATDONUT[HoursBreakdownDonut.vue]
-        VUE --> PEERCHART[PeerVarianceChart.vue]
-        VUE --> DAYBAR[DayTypeDistributionBar.vue]
-    end
+    Page --> SearchComp[EmployeeSearch.vue]
+    SearchComp -->|300ms Debounced Query q >= 3| SearchApi[GET /reports/employees/search?q=...]
+    SearchApi --> ControllerSearch[EmployeeReportController@search]
+    ControllerSearch -->|Scoped Query, Limit 10| SearchService[EmployeeReportService@search]
+    SearchService -->|Return JSON| SearchComp
+
+    SearchComp -->|Select Employee| DossierRoute[GET /reports/employees/{npk}]
+    Page -->|Click Roster Card| DossierRoute
+    DossierRoute --> ControllerShow[EmployeeReportController@show]
+    ControllerShow -->|Authorize & Retrieve| DossierService[EmployeeReportService@getEmployeeDossier]
+    ControllerShow -->|Render Inertia Props| DossierView[EmployeeDossier.vue with Header]
+    DossierView -->|Save Viewed Employee| RecentLookupsComp[RecentLookups.vue via localStorage]
 ```
 
 ## Data Model
 
 ```mermaid
 erDiagram
+    DEPARTMENTS ||--o{ SECTIONS : contains
+    DEPARTMENTS ||--o{ EMPLOYEES : employs
+    SECTIONS ||--o{ EMPLOYEES : assigns
     EMPLOYEES ||--o{ OVERTIME_ITEMS : performs
-    OVERTIME_ITEMS ||--|| OVERTIME_SUBMISSIONS : belongs_to
-    OVERTIME_SUBMISSIONS ||--|| OPERATIONAL_CALENDARS : dates_on
-    SECTIONS ||--o{ EMPLOYEES : groups
+    OVERTIME_ITEMS }o--|| OVERTIME_SUBMISSIONS : belongs_to
+    USERS ||--o| EMPLOYEES : links_via_npk
 ```
 
 ## Key Files & UI Mapping
 
-| Layer            | File / Route / Menu                                          | Purpose                                                         |
-| ---------------- | ------------------------------------------------------------ | --------------------------------------------------------------- |
-| Sidebar Menu     | `Laporan Individu` (`/reports/employees`)                    | Navigation entry point for timesheet dossiers                   |
-| Page Component   | `resources/js/pages/Reports/EmployeeDossier.vue`             | Master dossier page featuring KPIs, timesheet, and charts       |
-| Search Component | `resources/js/components/Reports/EmployeeSearch.vue`         | Debounced search-as-you-type input with recent lookup history   |
-| Chart Component  | `resources/js/components/Charts/HoursBreakdownDonut.vue`     | Chart.js doughnut chart of hours by work category               |
-| Chart Component  | `resources/js/components/Charts/PeerVarianceChart.vue`       | Chart.js bar chart comparing worker hours to section average    |
-| Timesheet Table  | `resources/js/components/Reports/EmployeeTimesheetTable.vue` | Filterable chronological history of approved shifts             |
-| Controller       | `app/Http/Controllers/EmployeeReportController.php`          | Controller resolving dossier data and peer distribution stats   |
-| Service          | `app/Services/Policy/OvertimePolicyEvaluator.php`            | Evaluates soft fatigue limits (e.g., > 20 hrs/week for 3 weeks) |
+| Layer            | File / Route / Menu                                          | Purpose                                                                                    |
+| ---------------- | ------------------------------------------------------------ | ------------------------------------------------------------------------------------------ |
+| Sidebar Menu     | `Laporan Karyawan` (`/reports/employees`)                    | Navigation entry point for Managers, Team Leaders, and Admins                              |
+| Page Component   | `resources/js/pages/reports/EmployeeDossier.vue`             | Master dossier page featuring search hub, quick-pick roster, header card, and tab skeleton |
+| Search Component | `resources/js/components/reports/EmployeeSearch.vue`         | Debounced search-as-you-type input with loading spinner, clear button, and dropdown        |
+| Recent Lookups   | `resources/js/components/reports/RecentLookups.vue`          | Horizontal scrollable pills displaying the last 5 viewed workers from `localStorage`       |
+| Composable       | `resources/js/composables/useRecentLookups.ts`               | Reactive composable to read, write, and clear recent employee lookups                      |
+| Controller       | `app/Http/Controllers/Reports/EmployeeReportController.php`  | Controller handling index roster, search JSON API, and dossier show                        |
+| Service          | `app/Services/EmployeeReportService.php`                     | Pragmatic domain service handling role scoping, search query matching, and authorization   |
+| Feature Test     | `tests/Feature/Reports/EmployeeReportTest.php`               | 11 comprehensive automated tests verifying scoping, security, and responses                |
+| Browser Test     | `tests/Browser/Reports/EmployeeDossierLookupBrowserTest.php` | Playwright end-to-end browser tests verifying search, navigation, and local storage        |
 
 ## Flow Explanation
 
-1. **User triggers**: A user or supervisor navigates to **Laporan Individu**.
-    - Line operators automatically see their personal dossier.
-    - Team Leaders and Managers see a search bar scoped to their authorized section or department.
-2. **Search & lookup**: Typing an NPK or employee name performs a debounced search (300ms). Recent lookups are stored in browser `localStorage` for rapid switching.
-3. **Dossier rendering**: The page presents key metrics:
-    - Current Month Hours and Year-to-Date cumulative hours.
-    - Estimated Overtime Cost Snapshot in Rupiah (`Rp`).
-    - Category distribution doughnut chart (Production, TPM, CapEx, Others) rendered via Chart.js.
-    - Day-type split bar comparing normal workdays (`HKN`) against rest days/holidays (`HLR`).
-4. **Peer variance & welfare alerts**:
-    - `PeerVarianceChart.vue` maps the employee's hours against the section average (`CALC-06`).
-    - If an employee exceeds weekly threshold limits (> 20 hours/week) for 3 consecutive weeks, a yellow/red **Fatigue Alert Badge** is displayed to prompt supervisor schedule rebalancing.
-5. **Detailed audit timesheet**: A chronological table itemizes each shift, showing submission codes, categories, tasks, RCA tags, and approval states with direct links to approved SPKL files.
+1. **User triggers**: A supervisor clicks **Laporan Karyawan** in the sidebar.
+    - Team Leaders see only employees from their assigned section.
+    - Managers see all employees from their assigned department.
+    - Administrators see plant-wide employees with optional department/section dropdown filters.
+    - Standard operators (`User` role) accessing `/reports/employees` are automatically redirected to their own dossier.
+2. **Search & lookup**: Typing 3+ characters into `EmployeeSearch.vue` triggers a debounced (300ms) request to `GET /reports/employees/search?q=...`. The backend filters by partial NPK or full name, enforces hierarchical boundaries, and limits matches to 10 records.
+3. **Dossier rendering**: Clicking a search result or roster card transitions to `/reports/employees/{npk}`.
+    - The persistent header displays the employee's full name, NPK in monospace tabular figures (`font-mono tabular-nums`), department, section, job position, and active status badge.
+    - The employee is automatically saved to the client's `localStorage` recent lookup history.
+    - The header includes a WIB Month/Year period selector and tab switcher (`Ringkasan & Kesejahteraan` vs `Buku Jam Lembur`).
+4. **Security & authorization gates**:
+    - Operator snooping protection: Operators trying to access another employee's dossier receive HTTP 403.
+    - Cross-section/department protection: Team Leaders and Managers attempting to access out-of-scope employee dossiers receive HTTP 403.
 
 ## API Endpoints & Routes
 
-| Method | URI                               | Controller Action                    | Purpose                                                | Auth / Middleware                        |
-| ------ | --------------------------------- | ------------------------------------ | ------------------------------------------------------ | ---------------------------------------- |
-| GET    | `/reports/employees`              | `EmployeeReportController@index`     | Self dossier (operator) or search portal (supervisors) | `auth`                                   |
-| GET    | `/reports/employees/search`       | `EmployeeReportController@search`    | Scoped search query by name/NPK                        | `auth`, `role:team_leader,manager,admin` |
-| GET    | `/reports/employees/{npk}`        | `EmployeeReportController@show`      | Complete dossier for specified NPK                     | `auth`                                   |
-| GET    | `/reports/employees/{npk}/export` | `EmployeeReportController@exportCsv` | Export individual timesheet history to CSV             | `auth`                                   |
+| Method | URI                         | Controller Action                 | Purpose                                                                      | Auth / Middleware                             |
+| ------ | --------------------------- | --------------------------------- | ---------------------------------------------------------------------------- | --------------------------------------------- |
+| GET    | `/reports/employees`        | `EmployeeReportController@index`  | Employee search hub & quick-pick roster (supervisors) or redirect (operator) | `auth`, `role:admin,manager,team_leader,user` |
+| GET    | `/reports/employees/search` | `EmployeeReportController@search` | Live debounced employee lookup by partial NPK or name                        | `auth`, `role:admin,manager,team_leader,user` |
+| GET    | `/reports/employees/{npk}`  | `EmployeeReportController@show`   | Complete dossier header and tab view for specified employee                  | `auth`, `role:admin,manager,team_leader,user` |
 
 ## Decisions & Trade-offs
 
-- **Client-Side Recent History**: Recent lookups are retained in client `localStorage` rather than the database, saving unnecessary server writes while accelerating navigation for supervisors monitoring multiple workers.
-- **Soft Fatigue Indicators**: Policy alerts function as soft advisory flags rather than hard system blockers, ensuring shift managers maintain operational flexibility during unexpected manufacturing emergencies.
+- **Single Responsive Surface (Anti-Splitting Constraint)**: Both the search hub (`/reports/employees`) and the individual employee dossier (`/reports/employees/{npk}`) share the same Vue page component `EmployeeDossier.vue`. This eliminates unnecessary routing complexity and simplifies navigation.
+- **Client-Side Recent History**: Recent lookups are stored in browser `localStorage` rather than the database. This provides instantaneous zero-latency rendering, works offline, and avoids excessive database writes during high-frequency shift handovers.
+- **Strict Role-Based Scoping at Service Layer**: Role filtering is centralized in `EmployeeReportService@applyRoleScope` and `EmployeeReportService@authorizeDossierAccess` rather than scattered across controller endpoints, preventing accidental cross-department data exposure.
 
 ## Related
 
 - [Epic-06: Individual Employee Reporting & Welfare Tracking](../../scrum/Epic-06.md)
-- [ADR-004: Chart.js Visualization Engine](../decisions/004-chartjs-visualization-engine.md)
+- [Epic-06 UX Plan](../../scrum/Epic-06-ux-plan.md)
+- [ADR-022: Unified Single-Surface Employee Dossier Hub and Client-Side Cached Lookups](../decisions/022-unified-employee-dossier-hub-and-client-cached-lookups.md)
+- [User Guide: Individual Employee Dossier & Welfare Tracking](../../user-docs/guides/individual-employee-dossier.md)

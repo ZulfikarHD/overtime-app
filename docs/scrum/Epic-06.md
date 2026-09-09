@@ -4,6 +4,7 @@
 **Priority:** P2 – Should Have  
 **Estimated Total:** 30 Story Points  
 **Target Sprints:** Sprint 6 (Weeks 11–12, parallel with Epic-07)  
+**Status:** 🟡 In Progress (5/30 SP completed)  
 **Dependencies:** Epic-01, Epic-02 (Employee master data), Epic-03 (Submissions exist), Epic-04 (Approved items exist)  
 **Lead Area:** Backend (`EmployeeReportController`, `BurnIndexCalculatorService` extension) + Vue 3 Report Pages
 
@@ -33,25 +34,26 @@ This module serves four audiences:
 **So that** I can make informed scheduling decisions and flag welfare concerns.
 
 **Story Points:** 5  
-**Priority:** Must Have
+**Priority:** Must Have  
+**Status:** 🟢 Completed (Sprint 6)
 
 #### Acceptance Criteria
 
-- [ ] Search input supports: NPK (exact or partial), full name (partial, case-insensitive)
-- [ ] Search results appear as a dropdown after 3+ characters (debounced, 300ms)
-- [ ] Manager sees employees from their department; Team Leader sees employees from their section only; Admin sees all
-- [ ] Clicking a result navigates to the employee's dossier page
-- [ ] Dossier page header shows: full name, NPK, department, section, job position, `is_active` badge
-- [ ] "Recent lookups" (last 5 employees the user viewed) shown below the search for quick return access — stored in localStorage, not DB
+- [x] Search input supports: NPK (exact or partial), full name (partial, case-insensitive)
+- [x] Search results appear as a dropdown after 3+ characters (debounced, 300ms)
+- [x] Manager sees employees from their department; Team Leader sees employees from their section only; Admin sees all
+- [x] Clicking a result navigates to the employee's dossier page
+- [x] Dossier page header shows: full name, NPK, department, section, job position, `is_active` badge
+- [x] "Recent lookups" (last 5 employees the user viewed) shown below the search for quick return access — stored in localStorage, not DB
 
 #### Technical Tasks
 
-- [ ] `EmployeeReportController@search` — `GET /reports/employees/search?q=...` — scoped by auth user's department/section
-- [ ] `EmployeeReportController@show` — `GET /reports/employees/{npk}` — returns full dossier data
-- [ ] Route authorization: Manager or Team Leader can only query their own department/section employees
-- [ ] Create `resources/js/Pages/Reports/EmployeeDossier.vue` — main employee report page
-- [ ] Create `resources/js/Components/Reports/EmployeeSearch.vue` — search-as-you-type input with dropdown
-- [ ] `useRecentLookups()` composable — reads/writes `localStorage.getItem('recentLookups')` array
+- [x] `EmployeeReportController@search` — `GET /reports/employees/search?q=...` — scoped by auth user's department/section
+- [x] `EmployeeReportController@show` — `GET /reports/employees/{npk}` — returns full dossier data
+- [x] Route authorization: Manager or Team Leader can only query their own department/section employees
+- [x] Create `resources/js/pages/reports/EmployeeDossier.vue` — main employee report page (unified dossier hub per UX Plan)
+- [x] Create `resources/js/components/reports/EmployeeSearch.vue` — search-as-you-type input with dropdown
+- [x] `useRecentLookups()` composable — reads/writes `localStorage.getItem('recentLookups')` array
 
 ---
 
@@ -231,11 +233,11 @@ This module serves four audiences:
 
 ## Definition of Done — Epic-06
 
-- [ ] Employee search works across NPK and name with 300ms debounce
+- [x] Employee search works across NPK and name with 300ms debounce
 - [ ] KPI cards show correct current month and YTD hours from approved items only
 - [ ] Peer variance (CALC-06) calculates correctly
 - [ ] Fatigue consecutive-week alert correctly detects 3+ weeks over limit
 - [ ] Timesheet table is paginated, filterable, and sortable
 - [ ] User (Employee) role is strictly scoped to their own data
-- [ ] `pnpm lint` passes
-- [ ] `pnpm build` succeeds
+- [x] `pnpm lint` passes
+- [x] `pnpm build` succeeds

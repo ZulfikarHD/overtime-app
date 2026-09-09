@@ -51,6 +51,7 @@ Technical specifications and decision records for the engineering implementation
     - [ADR-019: Single-Hub Tab-Based CapEx vs OpEx Distribution Panel](./dev-docs/decisions/019-single-hub-tab-based-capex-opex-distribution.md)
     - [ADR-020: Budget Threshold Alert Timestamp Locking for Anti-Fatigue Deduplication](./dev-docs/decisions/020-budget-threshold-alert-deduplication.md)
     - [ADR-021: Department-Level Consolidated Dashboard and Server-Side PDF Reporting](./dev-docs/decisions/021-department-level-consolidated-dashboard-and-pdf-reporting.md)
+    - [ADR-022: Unified Single-Surface Employee Dossier Hub and Client-Side Cached Lookups](./dev-docs/decisions/022-unified-employee-dossier-hub-and-client-cached-lookups.md)
 - **Technical Feature Design Specifications:**
     - [Authentication & Role-Based Access Control](./dev-docs/features/authentication-rbac.md)
     - [Database Schema Migrations (Full DDL)](./dev-docs/features/database-schema-migrations.md)
@@ -124,6 +125,7 @@ Plain-language operating guides for factory supervisors, team leaders, and opera
     - [SPKL Document Attachment Guide](./user-docs/guides/spkl-document-attachment.md)
     - [SPKL Pending Reminders & Notifications Guide](./user-docs/guides/spkl-pending-reminders.md)
     - [Overtime Approvals Queue Guide](./user-docs/guides/overtime-approvals.md)
+    - [Individual Employee Dossier & Welfare Tracking Guide](./user-docs/guides/individual-employee-dossier.md)
 
 ---
 

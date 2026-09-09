@@ -27,6 +27,7 @@ Step-by-step instructions for everyday plant operations:
 | **[SPKL Document Attachment](./guides/spkl-document-attachment.md)**                      | Team Leaders & Managers | Post-shift photo/PDF upload, physical SPKL registration numbers, manager verification, and download access.                                          |
 | **[SPKL Pending Reminders & Notifications](./guides/spkl-pending-reminders.md)**          | Team Leaders & Admins   | In-app notification bell alerts, 1-click SPKL attachment drawer resolution, and reminder preference management.                                      |
 | **[Overtime Approvals Queue](./guides/overtime-approvals.md)**                            | Managers & Admins       | Morning standup approval queue, item approvals, bulk processing, CSV/Excel data export, immutable audit trail, and modification lock / force unlock. |
+| **[Individual Employee Dossier & Welfare](./guides/individual-employee-dossier.md)**      | All Plant Supervisors   | Fast debounced employee search by NPK or name, recent lookups, roster quick-pick, dossier header, period filtering, and tabbed welfare monitoring.   |
 
 ---
 
@@ -40,6 +41,7 @@ All navigation in the OT-CapEx system corresponds directly to your assigned side
 - **Administration**: Consolidated administrative hub for plant-wide policy thresholds and user accounts (Admin role).
 - **Budget Planning**: Consolidated hub for section-level monthly overtime hour quotas, 5-week distributions, and labor cost estimates (Admin and Manager roles).
 - **Persetujuan Lembur**: Morning approval queue for reviewing Team Leader overtime submissions (Manager and Admin roles).
+- **Laporan Karyawan (Employee Reports)**: Consolidated dossier hub for looking up individual employee overtime profiles, welfare indicators, and chronological timesheets (Admin, Manager, and Team Leader roles).
 - **Settings → Profile / Security / Appearance / Preferences**: Update personal profile details, change password, configure two-factor authentication, or set UI and alert preferences.
 
 ---

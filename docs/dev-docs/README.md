@@ -81,6 +81,7 @@ Durable technical decisions and trade-offs:
 - **[ADR-019: Single-Hub Tab-Based CapEx vs OpEx Distribution Panel](./decisions/019-single-hub-tab-based-capex-opex-distribution.md)**
 - **[ADR-020: Budget Threshold Alert Timestamp Locking for Anti-Fatigue Deduplication](./decisions/020-budget-threshold-alert-deduplication.md)**
 - **[ADR-021: Department-Level Consolidated Dashboard and Server-Side PDF Reporting](./decisions/021-department-level-consolidated-dashboard-and-pdf-reporting.md)**
+- **[ADR-022: Unified Single-Surface Employee Dossier Hub and Client-Side Cached Lookups](./decisions/022-unified-employee-dossier-hub-and-client-cached-lookups.md)**
 
 ---
 

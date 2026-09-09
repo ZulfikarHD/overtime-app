@@ -8,6 +8,7 @@ import {
     Flame,
     LayoutGrid,
     ShieldCheck,
+    Users,
 } from '@lucide/vue';
 import { computed } from 'vue';
 import AppLogo from '@/components/AppLogo.vue';
@@ -28,6 +29,7 @@ import { administration, masterData } from '@/routes/admin';
 import { planning } from '@/routes/budgets';
 import { burnIndex } from '@/routes/dashboard';
 import { approvals as overtimeApprovals } from '@/routes/overtime';
+import { index as reportsEmployees } from '@/routes/reports/employees';
 import { create as overtimeCreate } from '@/routes/overtime/submissions';
 import type { NavItem, User } from '@/types';
 
@@ -86,6 +88,19 @@ const mainNavItems = computed<NavItem[]>(() => {
             title: __('Input Lembur'),
             href: overtimeCreate(),
             icon: ClipboardList,
+        });
+    }
+
+    if (
+        user.value?.role === 'admin' ||
+        user.value?.role === 'manager' ||
+        user.value?.role === 'team_leader'
+    ) {
+        items.push({
+            title: __('Laporan Karyawan'),
+            href: reportsEmployees(),
+            icon: Users,
+            testId: 'nav-employee-reports',
         });
     }
 
