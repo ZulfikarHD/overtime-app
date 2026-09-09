@@ -80,6 +80,7 @@ Durable technical decisions and trade-offs:
 - **[ADR-018: Approved Records Modification Lock and Admin Force-Unlock](./decisions/018-approved-records-modification-lock-and-admin-force-unlock.md)**
 - **[ADR-019: Single-Hub Tab-Based CapEx vs OpEx Distribution Panel](./decisions/019-single-hub-tab-based-capex-opex-distribution.md)**
 - **[ADR-020: Budget Threshold Alert Timestamp Locking for Anti-Fatigue Deduplication](./decisions/020-budget-threshold-alert-deduplication.md)**
+- **[ADR-021: Department-Level Consolidated Dashboard and Server-Side PDF Reporting](./decisions/021-department-level-consolidated-dashboard-and-pdf-reporting.md)**
 
 ---
 

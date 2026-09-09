@@ -3,13 +3,14 @@
     "private": true,
     "type": "module",
     "scripts": {
-        "build": "vp build",
+        "build": "NODE_OPTIONS='--max-old-space-size=2048' vp build",
         "build:ssr": "vp build && vp build --ssr",
         "dev": "vp dev",
         "lint": "vp check",
         "check": "vp check",
         "check:fix": "vp check --fix",
-        "types:check": "vue-tsc --noEmit"
+        "types:check": "NODE_OPTIONS='--max-old-space-size=1536' vue-tsc --noEmit",
+        "clean:test": "pkill -9 -f '[p]laywright.*launchServer' 2>/dev/null || true; pkill -9 -f '[c]hrome-headless-shell' 2>/dev/null || true"
     },
     "dependencies": {
         "@inertiajs/vite": "^3.0.0",

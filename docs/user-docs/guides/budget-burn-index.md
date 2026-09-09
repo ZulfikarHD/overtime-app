@@ -133,7 +133,47 @@ To analyze overtime trends across the 5 weeks of the month without losing your d
       `/dashboard/burn-index?tab=sections&section=14`
     - Opening this URL automatically opens the drawer for section 14 while preserving active period and department filters.
 
-### 6. CapEx vs OpEx Distribution & Capitalization Tab
+### 6. Using Tab 2: Konsolidasi Departemen (Ranked Table View)
+
+Click **Konsolidasi Departemen (Tabel)** to switch from the card grid to a ranked tabular view designed for morning standup reviews:
+
+- **Ranked Order**: Automatically sorted by **Burn Index (%)** descending, placing sections with highest deficit or burn velocity at the top (`#1`, `#2`, etc.).
+- **Columns Available**:
+    - **#**: Rank number.
+    - **Seksi & Kode**: Section name and code pill.
+    - **Rencana**: Approved budget hours.
+    - **Realisasi**: Cumulative actual approved hours.
+    - **Sisa**: Remaining hours balance (red if over budget).
+    - **Indeks Burn**: Color-coded Burn Index % badge.
+    - **Zona Kontrol**: Budget Control Matrix zone (Aman, Baik, Waspada, Defisit).
+    - **Kecepatan**: Weekly burn velocity in hours/week (`j/mg`).
+    - **Proyeksi**: Projected total hours by month-end.
+    - **Trajektori**: Trajectory icon (`→ Aman`, `↗ Waspada`, `↑ Kritis`).
+    - **Aksi (Detail →)**: Click anywhere on the row or the **Detail** button to slide open the **Section Burndown Drawer** without leaving the table.
+- **Search & Status Filters**: Filter sections by typing in the search box or selecting status pills (`Semua`, `Aman`, `Terkendali`, `Peringatan`, `Defisit`, `Belum Diatur`).
+- **Column Sorting**: Click any column header to sort ascending or descending.
+
+### 7. Plant-Wide Cross-Department Consolidation (Admin Only)
+
+When a Plant Administrator selects **Semua Departemen (Lintas Pabrik)** in the department dropdown:
+
+- **Comparison Cards Grid**: Summary cards for every active department appear at the top, showing overall planned vs actual hours, Burn Index %, zone badge, and count of Defisit/Peringatan/Aman sections.
+- **One-Click Drill Down**: Click **Tampilkan Detail Seksi** on any department card to filter the table directly to that department.
+
+### 8. Exporting Executive PDF Reports
+
+Click the **Unduh Laporan PDF** button in the top toolbar to access two tailored PDF formats:
+
+1. **Ringkasan Standup Mingguan (1 Halaman PDF)**:
+    - Designed specifically for daily morning standup meetings and shopfloor briefings.
+    - Contains executive KPI summaries, high-risk intervention warnings, ranked sections table, and physical signature lines for Section Head, Manager, and Finance Controller.
+2. **Laporan Analisis Bulanan Lengkap (PDF)**:
+    - Comprehensive closing report designed for monthly financial reviews.
+    - Includes full section rankings, CapEx vs OpEx labor breakdown, CapEx project variance performance, and plant-wide department consolidation.
+
+---
+
+### 9. CapEx vs OpEx Distribution & Capitalization Tab (Tab 3)
 
 For financial controllers, accounting teams, and department managers tracking labor capitalization compliance, click the **Distribusi CapEx vs OpEx** tab in the navigation bar.
 

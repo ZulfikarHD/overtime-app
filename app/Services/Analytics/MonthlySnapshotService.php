@@ -12,6 +12,7 @@ use App\Models\Section;
 use App\Models\User;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
 
 class MonthlySnapshotService
 {
@@ -132,7 +133,13 @@ class MonthlySnapshotService
             $targetDeptId = (int) $user->department_id;
         } else {
             $departmentsQuery = Department::where('is_active', true)->orderBy('code');
-            $targetDeptId = $departmentId ?? Department::where('is_active', true)->orderBy('code')->value('id');
+            if ($departmentId === 0 || $departmentId === -1) {
+                $targetDeptId = null;
+            } elseif ($departmentId !== null) {
+                $targetDeptId = (int) $departmentId;
+            } else {
+                $targetDeptId = Department::where('is_active', true)->orderBy('code')->value('id');
+            }
         }
 
         /** @var list<array{id: int, code: string, name: string}> $departments */
@@ -162,6 +169,12 @@ class MonthlySnapshotService
                 ->orderBy('code')
                 ->with('department')
                 ->get();
+        } elseif ($user->isAdmin()) {
+            $sections = Section::where('is_active', true)
+                ->orderBy('department_id')
+                ->orderBy('code')
+                ->with('department')
+                ->get();
         } else {
             $sections = collect();
         }
@@ -185,6 +198,7 @@ class MonthlySnapshotService
                     'configured_sections_count' => 0,
                     'total_sections_count' => 0,
                 ],
+                'departments_summary' => [],
                 'capex_opex' => [
                     'summary' => [
                         'total_hours' => 0.0,
@@ -351,6 +365,48 @@ class MonthlySnapshotService
             $endDate,
         );
 
+        $deptSnapshotsMap = collect($snapshotsList)->groupBy('department_id');
+        $departmentsSummary = [];
+
+        foreach ($departments as $dept) {
+            $deptSnaps = $deptSnapshotsMap->get($dept['id'], collect());
+            $dPlanned = (float) $deptSnaps->sum('planned_budget_hours');
+            $dActual = (float) $deptSnaps->sum('cumulative_actual_hours');
+            $dRemaining = round($dPlanned - $dActual, 2);
+            $dBurnPct = $dPlanned > 0.0 ? round(($dActual / $dPlanned) * 100, 2) : 0.0;
+            $isHighBurn = $dBurnPct > 100.0;
+            $isHighHours = $dPlanned > 0.0 && $dActual >= ($dPlanned * 0.75);
+
+            $dZone = match (true) {
+                $dPlanned <= 0.0 && $dActual <= 0.0 => 'ZONE_1_EXCELLENT',
+                $dPlanned <= 0.0 && $dActual > 0.0 => 'ZONE_4_POOR',
+                ! $isHighBurn && ! $isHighHours => 'ZONE_1_EXCELLENT',
+                ! $isHighBurn && $isHighHours => 'ZONE_2_GOOD',
+                $isHighBurn && ! $isHighHours => 'ZONE_3_WARNING',
+                default => 'ZONE_4_POOR',
+            };
+
+            $dWarning = $deptSnaps->where('burn_zone', 'ZONE_3_WARNING')->count();
+            $dDanger = $deptSnaps->where('burn_zone', 'ZONE_4_POOR')->count();
+            $dConfigured = $deptSnaps->where('is_budget_configured', true)->count();
+            $dTotal = $deptSnaps->count();
+
+            $departmentsSummary[] = [
+                'id' => $dept['id'],
+                'code' => $dept['code'],
+                'name' => $dept['name'],
+                'total_planned_hours' => round($dPlanned, 2),
+                'total_actual_hours' => round($dActual, 2),
+                'total_remaining_hours' => $dRemaining,
+                'department_burn_index_pct' => $dBurnPct,
+                'department_burn_zone' => $dZone,
+                'warning_sections_count' => $dWarning,
+                'danger_sections_count' => $dDanger,
+                'configured_sections_count' => $dConfigured,
+                'total_sections_count' => $dTotal,
+            ];
+        }
+
         return [
             'departments' => $departments,
             'selected_department' => $selectedDepartment,
@@ -369,6 +425,7 @@ class MonthlySnapshotService
                 'configured_sections_count' => $configuredCount,
                 'total_sections_count' => count($sections),
             ],
+            'departments_summary' => $departmentsSummary,
             'capex_opex' => $capexOpex,
         ];
     }
@@ -961,6 +1018,83 @@ class MonthlySnapshotService
             'ml_trajectory' => $mlTrajectory,
             'ml_forecast' => $mlForecast,
             'scatter_plot' => $scatterPlot,
+        ];
+    }
+
+    /**
+     * Compile structured data for server-side PDF export (weekly standup or monthly closing).
+     *
+     * @return array<string, mixed>
+     */
+    public function getPdfExportData(
+        User $user,
+        int $year,
+        int $month,
+        ?int $departmentId = null,
+        string $reportType = 'standup'
+    ): array {
+        $data = $this->getDashboardData(
+            $user,
+            $year,
+            $month,
+            $departmentId,
+            'department'
+        );
+
+        $monthNames = [
+            1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April',
+            5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus',
+            9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember',
+        ];
+
+        $periodLabel = ($monthNames[$month] ?? 'Bulan '.$month).' '.$year;
+        $deptLabel = $data['selected_department']
+            ? ($data['selected_department']['code'].' - '.$data['selected_department']['name'])
+            : 'Semua Departemen (Lintas Pabrik)';
+
+        $deptSlug = $data['selected_department']
+            ? Str::slug($data['selected_department']['code'])
+            : 'ALL';
+
+        $prefix = $reportType === 'monthly' ? 'Laporan-Bulanan-Burn-Index' : 'Laporan-Standup-Burn-Index';
+        $filename = "{$prefix}-{$deptSlug}-{$year}-".sprintf('%02d', $month).'.pdf';
+
+        // Sort snapshots by burn_index_pct descending (highest burn first)
+        /** @var list<array<string, mixed>> $rankedSnapshots */
+        $rankedSnapshots = collect($data['snapshots'])
+            ->sortByDesc('burn_index_pct')
+            ->values()
+            ->all();
+
+        // Assign rank numbers
+        foreach ($rankedSnapshots as $index => &$snap) {
+            $snap['rank'] = $index + 1;
+        }
+        unset($snap);
+
+        $highRiskSections = array_filter($rankedSnapshots, function ($s) {
+            return in_array($s['burn_zone'], ['ZONE_3_WARNING', 'ZONE_4_POOR'], true)
+                || ($s['is_budget_configured'] && $s['burn_index_pct'] > 100);
+        });
+
+        return [
+            'report_type' => $reportType,
+            'title' => $reportType === 'monthly'
+                ? 'LAPORAN ANALISIS BULANAN LENGKAP'
+                : 'RINGKASAN STANDUP MINGGUAN',
+            'subtitle' => 'Overtime Burn Index & Budget Control Matrix',
+            'department_label' => $deptLabel,
+            'period_label' => $periodLabel,
+            'fiscal_year' => $year,
+            'fiscal_month' => $month,
+            'generated_at' => Carbon::now('Asia/Jakarta')->format('d/m/Y H:i').' WIB',
+            'printed_by' => $user->name.($user->npk ? ' (NPK: '.$user->npk.')' : ''),
+            'summary' => $data['summary'],
+            'snapshots' => $rankedSnapshots,
+            'departments_summary' => $data['departments_summary'],
+            'high_risk_sections' => array_values($highRiskSections),
+            'capex_opex' => $data['capex_opex'] ?? null,
+            'filename' => $filename,
         ];
     }
 }

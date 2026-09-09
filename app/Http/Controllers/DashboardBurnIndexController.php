@@ -5,12 +5,14 @@ namespace App\Http\Controllers;
 use App\Models\Section;
 use App\Models\User;
 use App\Services\Analytics\MonthlySnapshotService;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 
 class DashboardBurnIndexController extends Controller
 {
@@ -29,9 +31,13 @@ class DashboardBurnIndexController extends Controller
         $now = Carbon::now('Asia/Jakarta');
         $year = $request->integer('year', (int) $now->format('Y'));
         $month = $request->integer('month', (int) $now->format('n'));
-        $departmentId = $request->has('department_id') && $request->input('department_id') !== ''
-            ? $request->integer('department_id')
-            : null;
+
+        $rawDept = $request->input('department_id');
+        $departmentId = null;
+        if ($request->has('department_id') && $rawDept !== '') {
+            $departmentId = ($rawDept === 'all' || (int) $rawDept === 0) ? 0 : (int) $rawDept;
+        }
+
         $tab = $request->string('tab', 'sections')->value();
         $rangeType = $request->string('range_type', 'month')->value();
         $startDate = $request->filled('start_date') ? $request->string('start_date')->value() : null;
@@ -49,6 +55,45 @@ class DashboardBurnIndexController extends Controller
         );
 
         return Inertia::render('dashboard/BurnIndex', $data);
+    }
+
+    /**
+     * Generate and stream executive PDF reports (Weekly Standup or Monthly Closing).
+     */
+    public function exportPdf(Request $request): SymfonyResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+
+        abort_unless($user->isAdmin() || $user->isManager() || $user->isTeamLeader(), 403);
+
+        $now = Carbon::now('Asia/Jakarta');
+        $year = $request->integer('year', (int) $now->format('Y'));
+        $month = $request->integer('month', (int) $now->format('n'));
+
+        $rawDept = $request->input('department_id');
+        $departmentId = null;
+        if ($request->has('department_id') && $rawDept !== '') {
+            $departmentId = ($rawDept === 'all' || (int) $rawDept === 0) ? 0 : (int) $rawDept;
+        }
+
+        if ($user->isManager() || $user->isTeamLeader()) {
+            $departmentId = (int) $user->department_id;
+        }
+
+        $reportType = $request->string('type', 'standup')->value();
+        if (! in_array($reportType, ['standup', 'monthly'], true)) {
+            $reportType = 'standup';
+        }
+
+        $pdfData = $this->snapshotService->getPdfExportData($user, $year, $month, $departmentId, $reportType);
+
+        $viewName = $reportType === 'monthly' ? 'pdf.burn-index-monthly' : 'pdf.burn-index-standup';
+
+        $pdf = Pdf::loadView($viewName, $pdfData);
+        $pdf->setPaper('a4', 'portrait');
+
+        return $pdf->download($pdfData['filename']);
     }
 
     /**

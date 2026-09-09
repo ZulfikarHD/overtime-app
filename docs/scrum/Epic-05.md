@@ -185,26 +185,28 @@ This epic builds the analytical dashboard that answers that question in real tim
 **So that** I can identify the worst-performing sections at a glance during daily standups without clicking into each one.
 
 **Story Points:** 5  
-**Priority:** Must Have
+**Priority:** Must Have  
+**Status:** 🟢 Completed (Sprint 5)
 
 #### Acceptance Criteria
 
-- [ ] Top-level department dashboard shows a ranked list/table of all sections by Burn Index (highest first)
-- [ ] Columns: Section name, Planned Hours, Actual Hours, Remaining Hours, Burn Index %, Zone, Velocity, Projected Total
-- [ ] Color-coded rows matching Burn Index thresholds
-- [ ] Summary header: "Department Total: 1,245 / 2,000 hrs (62.3%) — On Track" using department-level aggregation
-- [ ] One-click navigation from section row to section detail (E05-02)
-- [ ] Admin sees a cross-department aggregated view: all departments side-by-side with drill-down
-- [ ] "Export to PDF" option for weekly management report (basic HTML-to-PDF)
+- [x] Top-level department dashboard shows a ranked list/table of all sections by Burn Index (highest first)
+- [x] Columns: Section name, Planned Hours, Actual Hours, Remaining Hours, Burn Index %, Zone, Velocity, Projected Total
+- [x] Color-coded rows matching Burn Index thresholds
+- [x] Summary header: "Department Total: 1,245 / 2,000 hrs (62.3%) — On Track" using department-level aggregation
+- [x] One-click navigation from section row to section detail (E05-02) via `SectionBurndownSheet.vue` slide-in drawer
+- [x] Admin sees a cross-department aggregated view: all departments side-by-side with drill-down (`DepartmentComparisonCards.vue`)
+- [x] "Export to PDF" option for weekly management report and monthly closing analysis via `barryvdh/laravel-dompdf`
 
 #### Technical Tasks
 
-- [ ] `DashboardBurnIndexController@departmentSummary` — aggregates from `monthly_burn_snapshots` grouped by department
-- [ ] Route: `GET /dashboard/burn-index/department/{id}` → `departmentSummary()`
-- [ ] Create `resources/js/Pages/Dashboard/DepartmentBurnSummary.vue`
-- [ ] Create `resources/js/Components/Dashboard/SectionBurnTable.vue` — sortable, color-coded rows
-- [ ] "Export to PDF": use `barryvdh/laravel-dompdf` or server-side PDF generation
-- [ ] Admin multi-department view: Inertia page with all departments as tabs or accordion
+- [x] `DashboardBurnIndexController@index` & `MonthlySnapshotService::getDashboardData` — tab-based consolidation (`?tab=department`) complying with UX Plan single-hub constraint
+- [x] Single Hub Route: `GET /dashboard/burn-index` with `?tab=department` and `export-pdf`
+- [x] Create `resources/js/components/dashboard/SectionBurnTable.vue` — sortable, color-coded rows with instant search and status filtering
+- [x] Create `resources/js/components/dashboard/DepartmentComparisonCards.vue` — Admin plant-wide comparison cards
+- [x] Create `resources/js/components/dashboard/PdfExportButton.vue` and Blade templates (`pdf/burn-index-standup.blade.php`, `pdf/burn-index-monthly.blade.php`)
+- [x] "Export to PDF": server-side PDF streaming using `barryvdh/laravel-dompdf` (ADR-021)
+- [x] Admin multi-department view: integrated within the unified Burn Index page (`resources/js/pages/dashboard/BurnIndex.vue`)
 
 ---
 
@@ -278,11 +280,12 @@ This epic builds the analytical dashboard that answers that question in real tim
 
 ## Definition of Done — Epic-05
 
-- [ ] Burn Index dashboard loads in < 2 seconds for a section with 12 months of historical data
+- [x] Burn Index dashboard loads in < 2 seconds for a section with 12 months of historical data
 - [x] Section card shows correct color/zone based on current Burn Index
 - [x] 5-week burndown chart renders correctly with planned vs actual lines
-- [ ] CapEx vs OpEx split panel shows accurate ratio from approved items
-- [ ] Budget threshold alert notification created once when threshold is crossed
-- [ ] `BurnIndexCalculatorService` unit tests pass for all 4 zone classifications
+- [x] CapEx vs OpEx split panel shows accurate ratio from approved items
+- [x] Budget threshold alert notification created once when threshold is crossed
+- [x] `BurnIndexCalculatorService` unit tests pass for all 4 zone classifications
+- [x] Department consolidated view and server-side PDF exports operational
 - [x] `pnpm lint` passes
 - [x] `pnpm build` succeeds

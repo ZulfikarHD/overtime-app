@@ -48,3 +48,10 @@ function something()
 {
     // ..
 }
+
+register_shutdown_function(function (): void {
+    if (PHP_OS_FAMILY !== 'Windows') {
+        @exec('pkill -9 -f "[p]laywright.*launchServer" 2>/dev/null');
+        @exec('pkill -9 -f "[c]hrome-headless-shell" 2>/dev/null');
+    }
+});

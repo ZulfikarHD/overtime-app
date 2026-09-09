@@ -21,7 +21,12 @@ import BurnIndexCard, {
 import CapexOpexTab, {
     type CapexOpexData,
 } from '@/components/dashboard/CapexOpexTab.vue';
+import DepartmentComparisonCards, {
+    type DepartmentSummaryItem,
+} from '@/components/dashboard/DepartmentComparisonCards.vue';
+import PdfExportButton from '@/components/dashboard/PdfExportButton.vue';
 import SectionBurndownSheet from '@/components/dashboard/SectionBurndownSheet.vue';
+import SectionBurnTable from '@/components/dashboard/SectionBurnTable.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -63,6 +68,7 @@ const props = defineProps<{
     current_tab: string;
     snapshots: SectionSnapshotData[];
     summary: DepartmentSummary;
+    departments_summary?: DepartmentSummaryItem[];
     capex_opex?: CapexOpexData;
 }>();
 
@@ -75,7 +81,11 @@ const activeTab = ref(props.current_tab || 'sections');
 const selectedYear = ref(props.fiscal_year);
 const selectedMonth = ref(props.fiscal_month);
 const selectedDepartmentId = ref(
-    props.selected_department ? String(props.selected_department.id) : '',
+    props.selected_department
+        ? String(props.selected_department.id)
+        : currentUser.value?.role === 'admin'
+          ? 'all'
+          : '',
 );
 const searchQuery = ref('');
 const statusFilter = ref<
@@ -132,7 +142,11 @@ watch(
 watch(
     () => props.selected_department,
     (val) => {
-        selectedDepartmentId.value = val ? String(val.id) : '';
+        selectedDepartmentId.value = val
+            ? String(val.id)
+            : currentUser.value?.role === 'admin'
+              ? 'all'
+              : '';
     },
 );
 
@@ -160,7 +174,8 @@ function applyFilters(
         {
             year: selectedYear.value,
             month: selectedMonth.value,
-            department_id: targetDept || undefined,
+            department_id:
+                targetDept === 'all' ? 'all' : targetDept || undefined,
             tab: targetTab,
             range_type: targetTab === 'capex-opex' ? rangeType : undefined,
             start_date:
@@ -178,6 +193,11 @@ function applyFilters(
             replace: true,
         },
     );
+}
+
+function handleSelectDepartment(deptId: number) {
+    selectedDepartmentId.value = String(deptId);
+    applyFilters(String(deptId));
 }
 
 function handleDepartmentChange(value: unknown) {
@@ -221,7 +241,7 @@ function handleCapexOpexRangeFilter(payload: {
 function manualRefresh() {
     isRefreshing.value = true;
     router.reload({
-        only: ['snapshots', 'summary', 'capex_opex'],
+        only: ['snapshots', 'summary', 'departments_summary', 'capex_opex'],
         onFinish: () => {
             isRefreshing.value = false;
         },
@@ -269,7 +289,7 @@ onMounted(() => {
 
     pollingInterval = setInterval(() => {
         router.reload({
-            only: ['snapshots', 'summary', 'capex_opex'],
+            only: ['snapshots', 'summary', 'departments_summary', 'capex_opex'],
         });
     }, 60000);
 });
@@ -439,6 +459,12 @@ const deptZoneLabel = computed(() => {
                         </SelectTrigger>
                         <SelectContent>
                             <SelectItem
+                                value="all"
+                                class="text-xs font-semibold"
+                            >
+                                {{ __('Semua Departemen (Lintas Pabrik)') }}
+                            </SelectItem>
+                            <SelectItem
                                 v-for="dept in departments"
                                 :key="dept.id"
                                 :value="String(dept.id)"
@@ -517,6 +543,13 @@ const deptZoneLabel = computed(() => {
                             </SelectContent>
                         </Select>
                     </div>
+
+                    <!-- Standup & Monthly PDF Export Trigger (E05-05) -->
+                    <PdfExportButton
+                        :fiscal-year="selectedYear"
+                        :fiscal-month="selectedMonth"
+                        :selected-department="selected_department"
+                    />
 
                     <!-- Manual Refresh Button -->
                     <Button
@@ -885,22 +918,31 @@ const deptZoneLabel = computed(() => {
             </div>
         </div>
 
-        <!-- TAB 2 PLACEHOLDER (E05-05 Future Story) -->
+        <!-- TAB 2: DEPARTMENT CONSOLIDATED VIEW (E05-05 CORE) -->
         <div
             v-else-if="activeTab === 'department'"
-            class="bg-card space-y-2 rounded-xl border border-dashed p-8 text-center"
+            class="space-y-6"
+            data-test="tab-department-content"
         >
-            <Table class="text-muted-foreground mx-auto size-8" />
-            <h3 class="text-sm font-bold">
-                {{ __('Konsolidasi Departemen (Tabel)') }}
-            </h3>
-            <p class="text-muted-foreground mx-auto max-w-md text-xs">
-                {{
-                    __(
-                        'Tampilan tabel berperingkat dan ringkasan eksekutif departemen akan diaktifkan pada Story E05-05.',
-                    )
-                }}
-            </p>
+            <!-- Cross-Department Summary Cards (Admin plant-wide overview) -->
+            <DepartmentComparisonCards
+                v-if="
+                    departments_summary &&
+                    departments_summary.length > 1 &&
+                    currentUser?.role === 'admin'
+                "
+                :departments-summary="departments_summary"
+                @select-department="handleSelectDepartment"
+            />
+
+            <!-- Ranked Section Burn Table -->
+            <SectionBurnTable
+                :snapshots="snapshots"
+                :is-cross-department="
+                    !selected_department || selectedDepartmentId === 'all'
+                "
+                @select-section="handleSelectSection"
+            />
         </div>
 
         <!-- TAB 3: CAPEX VS OPEX DISTRIBUTION (E05-03 CORE) -->

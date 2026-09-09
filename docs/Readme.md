@@ -50,6 +50,7 @@ Technical specifications and decision records for the engineering implementation
     - [ADR-018: Approved Records Modification Lock and Admin Force-Unlock](./dev-docs/decisions/018-approved-records-modification-lock-and-admin-force-unlock.md)
     - [ADR-019: Single-Hub Tab-Based CapEx vs OpEx Distribution Panel](./dev-docs/decisions/019-single-hub-tab-based-capex-opex-distribution.md)
     - [ADR-020: Budget Threshold Alert Timestamp Locking for Anti-Fatigue Deduplication](./dev-docs/decisions/020-budget-threshold-alert-deduplication.md)
+    - [ADR-021: Department-Level Consolidated Dashboard and Server-Side PDF Reporting](./dev-docs/decisions/021-department-level-consolidated-dashboard-and-pdf-reporting.md)
 - **Technical Feature Design Specifications:**
     - [Authentication & Role-Based Access Control](./dev-docs/features/authentication-rbac.md)
     - [Database Schema Migrations (Full DDL)](./dev-docs/features/database-schema-migrations.md)
