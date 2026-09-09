@@ -47,6 +47,7 @@ class DashboardController extends Controller
         $trendWorkingTime = $this->kpiService->getTrendWorkingTime($user, $date, $departmentId, $sectionId);
         $dailyIndexTrend = $this->kpiService->getDailyIndexTrend($user, $date, $departmentId, $sectionId);
         $dayTypeBreakdown = $this->kpiService->getDayTypeBreakdown($user, $date, $departmentId, $sectionId);
+        $employeeSummary = $this->kpiService->getEmployeeSummaryTable($user, $date, $departmentId, $sectionId);
 
         $departments = Department::query()
             ->where('is_active', true)
@@ -62,6 +63,7 @@ class DashboardController extends Controller
             'trendWorkingTime' => $trendWorkingTime,
             'dailyIndexTrend' => $dailyIndexTrend,
             'dayTypeBreakdown' => $dayTypeBreakdown,
+            'employeeSummary' => $employeeSummary,
             'departments' => $departments,
             'selectedDepartmentId' => $kpiCards['scope']['department_id'],
             'selectedSectionId' => $dailyBurnChart['scope']['section_id'],
@@ -237,6 +239,25 @@ class DashboardController extends Controller
         [$date, $departmentId, $sectionId] = $this->extractFilterParams($request);
 
         $data = $this->kpiService->getDayTypeBreakdown($user, $date, $departmentId, $sectionId);
+
+        return response()->json($data);
+    }
+
+    /**
+     * Return JSON endpoint for employee overtime summary table (E09-05).
+     */
+    public function employeeSummaryTable(Request $request): JsonResponse
+    {
+        /** @var User|null $user */
+        $user = $request->user();
+
+        if ($user?->isUser()) {
+            return response()->json(['error' => 'Unauthorized for operational dashboard'], 403);
+        }
+
+        [$date, $departmentId, $sectionId] = $this->extractFilterParams($request);
+
+        $data = $this->kpiService->getEmployeeSummaryTable($user, $date, $departmentId, $sectionId);
 
         return response()->json($data);
     }

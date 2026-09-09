@@ -33,6 +33,7 @@ Step-by-step instructions for everyday plant operations:
 | **[Executive Operational Dashboard & KPI Cards](./guides/executive-dashboard-kpi.md)**                 | Managers, Admins & TL   | Live plant command center (/dashboard), 4 header KPI cards (Production Volume, Working Days, Manpower, Burn Index), sparklines, and date/department filters.                                                          |
 | **[Daily Burn Chart Index & Section Comparison](./guides/daily-burn-and-section-comparison.md)**       | Managers, Admins & TL   | Interactive daily cumulative burn line chart with budget ceiling, month navigation, section ranking horizontal bar chart, and 1-click drill-down.                                                                     |
 | **[Executive Dashboard Multi-Chart Analytics Grid](./guides/executive-dashboard-multi-chart-grid.md)** | Managers, Admins & TL   | Morning standup guide for reading the Top 10 Overtime Leaderboard, Category Donut, 12-Month HKN/HLR Trend, Daily Index Pacing, and Weekly Day Type Breakdown.                                                         |
+| **[Summary Employee Overtime Table](./guides/executive-dashboard-employee-summary-table.md)**          | Managers, Admins & TL   | Standup guide for using the Band 5 summary table, live search, sortable metrics, category donut cross-filtering, and slide-in Quick Dossier Drawer.                                                                   |
 
 ---
 

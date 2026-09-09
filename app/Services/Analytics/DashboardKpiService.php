@@ -1352,4 +1352,386 @@ class DashboardKpiService
             ],
         ];
     }
+
+    /**
+     * Build summary employee overtime table dataset (E09-05).
+     *
+     * @return array{
+     *     items: list<array{
+     *         id: int,
+     *         employee_id: int,
+     *         npk: string,
+     *         name: string,
+     *         full_name: string,
+     *         job_position: string,
+     *         department_id: ?int,
+     *         department_name: string,
+     *         section_id: ?int,
+     *         section_code: string,
+     *         section_name: string,
+     *         total_hours: float,
+     *         hours_production: float,
+     *         hours_tpm: float,
+     *         hours_project: float,
+     *         hours_others: float,
+     *         capex_hours: float,
+     *         opex_hours: float,
+     *         categories: list<array{
+     *             key: 'production'|'tpm'|'project'|'others',
+     *             label: string,
+     *             hours: float,
+     *             percentage: float,
+     *             color: string
+     *         }>,
+     *         planned_hours: float,
+     *         burn_index: float,
+     *         burn_zone: 'safe'|'on_track'|'warning'|'danger',
+     *         burn_zone_label: string,
+     *         burn_zone_color: string,
+     *         spkl_status: 'approved'|'grace_period'|'overdue'|'none',
+     *         spkl_status_label: string,
+     *         recent_shifts: list<array{
+     *             submission_id: int,
+     *             submission_code: string,
+     *             operational_date: string,
+     *             formatted_date: string,
+     *             day_type: string,
+     *             hours: float,
+     *             spkl_number: string,
+     *             spkl_status: string
+     *         }>,
+     *         consecutive_alert: bool,
+     *         consecutive_weeks: int,
+     *         weekly_hours: float,
+     *         weekly_limit_hours: float
+     *     }>,
+     *     total_count: int,
+     *     fiscal_year: int,
+     *     fiscal_month: int,
+     *     month_name: string,
+     *     soft_limit_hours: float,
+     *     scope: array{
+     *         department_id: ?int,
+     *         section_id: ?int
+     *     }
+     * }
+     */
+    public function getEmployeeSummaryTable(User $user, ?string $date = null, ?int $departmentId = null, ?int $sectionId = null): array
+    {
+        $now = Carbon::now('Asia/Jakarta');
+        try {
+            $selectedCarbon = $date ? Carbon::parse($date, 'Asia/Jakarta') : $now;
+        } catch (\Throwable) {
+            $selectedCarbon = $now;
+        }
+
+        $fiscalYear = (int) $selectedCarbon->year;
+        $fiscalMonth = (int) $selectedCarbon->month;
+        $startOfMonth = $selectedCarbon->copy()->startOfMonth()->toDateString();
+        $endOfMonth = $selectedCarbon->copy()->endOfMonth()->toDateString();
+
+        [$scopedDepartmentId, $scopedSectionId] = $this->resolveScoping($user, $departmentId, $sectionId);
+
+        $threshold = $this->thresholdService->getForDepartment($scopedDepartmentId);
+        $weeklySoftLimit = (float) $threshold->weekly_soft_limit_hours;
+        $monthlySoftLimit = round($weeklySoftLimit * 4, 1);
+        $consecutiveWeeksAlert = (int) $threshold->consecutive_weeks_alert;
+
+        $empQuery = Employee::query()
+            ->with([
+                'department:id,code,name',
+                'section:id,code,name',
+            ])
+            ->where('is_active', true);
+
+        if ($scopedSectionId) {
+            $empQuery->where('section_id', $scopedSectionId);
+        } elseif ($scopedDepartmentId) {
+            $empQuery->where('department_id', $scopedDepartmentId);
+        }
+
+        $employees = $empQuery->orderBy('full_name')->get();
+        if ($employees->isEmpty()) {
+            return [
+                'items' => [],
+                'total_count' => 0,
+                'fiscal_year' => $fiscalYear,
+                'fiscal_month' => $fiscalMonth,
+                'month_name' => $selectedCarbon->translatedFormat('F Y'),
+                'soft_limit_hours' => $monthlySoftLimit,
+                'scope' => [
+                    'department_id' => $scopedDepartmentId,
+                    'section_id' => $scopedSectionId,
+                ],
+            ];
+        }
+
+        $employeeIds = $employees->pluck('id')->all();
+        $sectionIds = $employees->pluck('section_id')->filter()->unique()->all();
+
+        $budgetsBySection = OvertimeBudget::query()
+            ->whereIn('section_id', $sectionIds)
+            ->where('fiscal_year', $fiscalYear)
+            ->where('fiscal_month', $fiscalMonth)
+            ->get()
+            ->keyBy('section_id');
+
+        $activeCountBySection = Employee::query()
+            ->whereIn('section_id', $sectionIds)
+            ->where('is_active', true)
+            ->selectRaw('section_id, count(*) as total')
+            ->groupBy('section_id')
+            ->pluck('total', 'section_id');
+
+        $monthlyItems = OvertimeItem::query()
+            ->join('overtime_submissions', 'overtime_items.overtime_submission_id', '=', 'overtime_submissions.id')
+            ->leftJoin('spkl_documents', 'spkl_documents.overtime_submission_id', '=', 'overtime_submissions.id')
+            ->whereIn('overtime_items.employee_id', $employeeIds)
+            ->where('overtime_items.status', 'APPROVED')
+            ->whereBetween('overtime_submissions.operational_date', [$startOfMonth, $endOfMonth])
+            ->select([
+                'overtime_items.id as item_id',
+                'overtime_items.employee_id',
+                'overtime_items.hours_production',
+                'overtime_items.hours_tpm',
+                'overtime_items.hours_project',
+                'overtime_items.hours_others',
+                'overtime_items.total_hours',
+                'overtime_submissions.id as submission_id',
+                'overtime_submissions.submission_code',
+                'overtime_submissions.operational_date',
+                'overtime_submissions.day_type',
+                'spkl_documents.spkl_number',
+                'spkl_documents.status as spkl_doc_status',
+                'spkl_documents.due_date as spkl_due_date',
+            ])
+            ->orderByDesc('overtime_submissions.operational_date')
+            ->get()
+            ->groupBy('employee_id');
+
+        $currentWeekStart = $selectedCarbon->copy()->startOfWeek(Carbon::MONDAY)->toDateString();
+        $currentWeekEnd = $selectedCarbon->copy()->endOfWeek(Carbon::SUNDAY)->toDateString();
+        $oldestWeekStart = $selectedCarbon->copy()->subWeeks(12)->startOfWeek(Carbon::MONDAY)->toDateString();
+
+        $weeklyItems = OvertimeItem::query()
+            ->join('overtime_submissions', 'overtime_items.overtime_submission_id', '=', 'overtime_submissions.id')
+            ->whereIn('overtime_items.employee_id', $employeeIds)
+            ->where('overtime_items.status', 'APPROVED')
+            ->whereBetween('overtime_submissions.operational_date', [$oldestWeekStart, $currentWeekEnd])
+            ->select([
+                'overtime_items.employee_id',
+                'overtime_items.total_hours',
+                'overtime_submissions.operational_date',
+            ])
+            ->get()
+            ->groupBy('employee_id');
+
+        $today = $now->toDateString();
+        $items = [];
+
+        foreach ($employees as $emp) {
+            $empItems = $monthlyItems->get($emp->id, collect());
+
+            $prodHours = round((float) $empItems->sum('hours_production'), 1);
+            $tpmHours = round((float) $empItems->sum('hours_tpm'), 1);
+            $capexHours = round((float) $empItems->sum('hours_project'), 1);
+            $othersHours = round((float) $empItems->sum('hours_others'), 1);
+            $totalHours = round((float) $empItems->sum('total_hours'), 1);
+            $opexHours = round($prodHours + $tpmHours + $othersHours, 1);
+
+            // Individual planned hours calculation
+            $budget = $emp->section_id ? ($budgetsBySection[$emp->section_id] ?? null) : null;
+            $secCount = $emp->section_id ? (int) ($activeCountBySection[$emp->section_id] ?? 1) : 1;
+            if ($budget && (float) $budget->planned_hours > 0 && $secCount > 0) {
+                $indPlanned = round((float) $budget->planned_hours / $secCount, 1);
+            } else {
+                $indPlanned = $monthlySoftLimit;
+            }
+
+            $burnIndex = $indPlanned > 0 ? round(($totalHours / $indPlanned) * 100, 1) : 0.0;
+
+            $burnZone = match (true) {
+                $burnIndex > 115.0 => 'danger',
+                $burnIndex > 100.0 => 'warning',
+                $burnIndex >= 85.0 => 'on_track',
+                default => 'safe',
+            };
+
+            $burnZoneLabel = match ($burnZone) {
+                'danger' => 'Defisit Kritis (>115%)',
+                'warning' => 'Peringatan (101–115%)',
+                'on_track' => 'Sesuai Rencana (85–100%)',
+                'safe' => 'Aman (<85%)',
+            };
+
+            $burnZoneColor = match ($burnZone) {
+                'danger' => '#dc2626',
+                'warning' => '#d97706',
+                'on_track' => '#2563eb',
+                'safe' => '#16a34a',
+            };
+
+            // SPKL Status resolution
+            if ($empItems->isEmpty()) {
+                $spklStatus = 'none';
+                $spklStatusLabel = 'Tidak Ada';
+            } else {
+                $hasOverdue = false;
+                $hasPending = false;
+                foreach ($empItems as $itemRow) {
+                    $docStatus = $itemRow->spkl_doc_status;
+                    if ($docStatus === 'PENDING' || empty($docStatus)) {
+                        $dueDate = $itemRow->spkl_due_date;
+                        if ($dueDate && $dueDate < $today) {
+                            $hasOverdue = true;
+                        } else {
+                            $hasPending = true;
+                        }
+                    }
+                }
+
+                if ($hasOverdue) {
+                    $spklStatus = 'overdue';
+                    $spklStatusLabel = 'SPKL Terlambat';
+                } elseif ($hasPending) {
+                    $spklStatus = 'grace_period';
+                    $spklStatusLabel = 'Masa Tenggang';
+                } else {
+                    $spklStatus = 'approved';
+                    $spklStatusLabel = 'Disetujui';
+                }
+            }
+
+            // Recent shifts (last 5)
+            $recentShifts = $empItems
+                ->groupBy('submission_id')
+                ->take(5)
+                ->map(function ($group) {
+                    $first = $group->first();
+
+                    return [
+                        'submission_id' => (int) $first->submission_id,
+                        'submission_code' => (string) $first->submission_code,
+                        'operational_date' => (string) $first->operational_date,
+                        'formatted_date' => Carbon::parse($first->operational_date, 'Asia/Jakarta')->translatedFormat('d M Y'),
+                        'day_type' => (string) $first->day_type,
+                        'hours' => round((float) $group->sum('total_hours'), 1),
+                        'spkl_number' => $first->spkl_number ?: '-',
+                        'spkl_status' => $first->spkl_doc_status ?: 'PENDING',
+                    ];
+                })
+                ->values()
+                ->all();
+
+            // Weekly fatigue analysis
+            $empWeekly = $weeklyItems->get($emp->id, collect());
+            $weekMap = [];
+            foreach ($empWeekly as $wRow) {
+                $wKey = Carbon::parse($wRow->operational_date, 'Asia/Jakarta')->startOfWeek(Carbon::MONDAY)->toDateString();
+                $weekMap[$wKey] = ($weekMap[$wKey] ?? 0.0) + (float) $wRow->total_hours;
+            }
+
+            $currentWeekHours = round((float) ($weekMap[$currentWeekStart] ?? 0.0), 1);
+            $currentWeekOver = $currentWeekHours > $weeklySoftLimit;
+
+            $pastStreak = 0;
+            for ($w = 1; $w <= 12; $w++) {
+                $pastWeekKey = $selectedCarbon->copy()->subWeeks($w)->startOfWeek(Carbon::MONDAY)->toDateString();
+                $pastWeekTotal = (float) ($weekMap[$pastWeekKey] ?? 0.0);
+                if ($pastWeekTotal > $weeklySoftLimit) {
+                    $pastStreak++;
+                } else {
+                    break;
+                }
+            }
+
+            $consecutiveWeeks = $currentWeekOver ? (1 + $pastStreak) : $pastStreak;
+            $consecutiveAlert = $consecutiveWeeks >= $consecutiveWeeksAlert;
+
+            $items[] = [
+                'id' => (int) $emp->id,
+                'employee_id' => (int) $emp->id,
+                'npk' => (string) $emp->npk,
+                'name' => (string) $emp->full_name,
+                'full_name' => (string) $emp->full_name,
+                'job_position' => (string) ($emp->job_position ?? '-'),
+                'department_id' => $emp->department_id ? (int) $emp->department_id : null,
+                'department_name' => (string) ($emp->department?->name ?? '-'),
+                'section_id' => $emp->section_id ? (int) $emp->section_id : null,
+                'section_code' => (string) ($emp->section?->code ?? '-'),
+                'section_name' => (string) ($emp->section?->name ?? '-'),
+                'total_hours' => $totalHours,
+                'hours_production' => $prodHours,
+                'hours_tpm' => $tpmHours,
+                'hours_project' => $capexHours,
+                'hours_others' => $othersHours,
+                'capex_hours' => $capexHours,
+                'opex_hours' => $opexHours,
+                'categories' => [
+                    [
+                        'key' => 'production',
+                        'label' => 'Produksi',
+                        'hours' => $prodHours,
+                        'percentage' => $totalHours > 0 ? round(($prodHours / $totalHours) * 100, 1) : 0.0,
+                        'color' => '#3b82f6',
+                    ],
+                    [
+                        'key' => 'tpm',
+                        'label' => 'TPM',
+                        'hours' => $tpmHours,
+                        'percentage' => $totalHours > 0 ? round(($tpmHours / $totalHours) * 100, 1) : 0.0,
+                        'color' => '#10b981',
+                    ],
+                    [
+                        'key' => 'project',
+                        'label' => 'CapEx',
+                        'hours' => $capexHours,
+                        'percentage' => $totalHours > 0 ? round(($capexHours / $totalHours) * 100, 1) : 0.0,
+                        'color' => '#7c3aed',
+                    ],
+                    [
+                        'key' => 'others',
+                        'label' => 'Others',
+                        'hours' => $othersHours,
+                        'percentage' => $totalHours > 0 ? round(($othersHours / $totalHours) * 100, 1) : 0.0,
+                        'color' => '#94a3b8',
+                    ],
+                ],
+                'planned_hours' => $indPlanned,
+                'burn_index' => $burnIndex,
+                'burn_zone' => $burnZone,
+                'burn_zone_label' => $burnZoneLabel,
+                'burn_zone_color' => $burnZoneColor,
+                'spkl_status' => $spklStatus,
+                'spkl_status_label' => $spklStatusLabel,
+                'recent_shifts' => $recentShifts,
+                'consecutive_alert' => $consecutiveAlert,
+                'consecutive_weeks' => $consecutiveWeeks,
+                'weekly_hours' => $currentWeekHours,
+                'weekly_limit_hours' => $weeklySoftLimit,
+            ];
+        }
+
+        // Sort items by total_hours desc by default, then name asc
+        usort($items, function ($a, $b) {
+            if ($b['total_hours'] === $a['total_hours']) {
+                return strcmp($a['name'], $b['name']);
+            }
+
+            return $b['total_hours'] <=> $a['total_hours'];
+        });
+
+        return [
+            'items' => $items,
+            'total_count' => count($items),
+            'fiscal_year' => $fiscalYear,
+            'fiscal_month' => $fiscalMonth,
+            'month_name' => $selectedCarbon->translatedFormat('F Y'),
+            'soft_limit_hours' => $monthlySoftLimit,
+            'scope' => [
+                'department_id' => $scopedDepartmentId,
+                'section_id' => $scopedSectionId,
+            ],
+        ];
+    }
 }

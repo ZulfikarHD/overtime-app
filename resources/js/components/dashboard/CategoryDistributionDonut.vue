@@ -182,6 +182,7 @@ const chartOptions = computed<ChartOptions<'doughnut'>>(() => {
                             ? 'border-slate-800 bg-slate-100 ring-1 ring-slate-400 dark:border-slate-300 dark:bg-slate-800'
                             : 'border-slate-200/80 bg-white dark:border-slate-800 dark:bg-slate-900',
                     ]"
+                    :data-test="'category-pill-' + cat.key"
                     :title="__('Klik untuk filter tabel karyawan')"
                     @click="toggleCategory(cat.key)"
                 >

@@ -263,23 +263,23 @@ Before any chart story begins, the chart infrastructure must be in place.
 
 #### Acceptance Criteria (maps to `dashboard.html` "Summary Overtime Data" table)
 
-- [ ] Table columns: `Employee Name`, `Burn Index` (mini progress bar), `Total Hours`, `Category` (mini horizontal stacked bar), `Status` (SPKL badge + approval status)
-- [ ] Client-side search: typing in the search box filters visible rows in real-time (no server round-trip)
-- [ ] Clicking an employee row navigates to their full dossier (Epic-06, E06-01)
-- [ ] Table shows all employees in the Manager's department for the selected month
-- [ ] Sortable columns: Total Hours (default: desc), Name (alphabetical), Burn Index
-- [ ] Burn Index mini progress bar: same 4-color scheme (green/blue/amber/red)
-- [ ] Category mini bar: tiny 4-color stacked bar (no labels, just proportional colored segments)
-- [ ] Pagination: first 50 rows shown, "Load More" button for the rest
+- [x] Table columns: `Employee Name`, `Burn Index` (mini progress bar), `Total Hours`, `Category` (mini horizontal stacked bar), `Status` (SPKL badge + approval status)
+- [x] Client-side search: typing in the search box filters visible rows in real-time (no server round-trip)
+- [x] Clicking an employee row navigates to their full dossier (Epic-06, E06-01)
+- [x] Table shows all employees in the Manager's department for the selected month
+- [x] Sortable columns: Total Hours (default: desc), Name (alphabetical), Burn Index
+- [x] Burn Index mini progress bar: same 4-color scheme (green/blue/amber/red)
+- [x] Category mini bar: tiny 4-color stacked bar (no labels, just proportional colored segments)
+- [x] Pagination: first 50 rows shown, "Load More" button for the rest
 
 #### Technical Tasks
 
-- [ ] `DashboardController@employeeSummaryTable` — returns all employees in dept with their monthly totals
-- [ ] Vue reactive search: `computed(() => employees.filter(e => e.name.includes(searchQuery)))`
-- [ ] Create `resources/js/Components/Dashboard/EmployeeSummaryTable.vue`
-- [ ] Create `resources/js/Components/Dashboard/MiniProgressBar.vue` — reusable colored bar
-- [ ] Create `resources/js/Components/Dashboard/MiniCategoryBar.vue` — 4-color stacked mini bar (Production/TPM/CapEx/Others)
-- [ ] Route: `GET /dashboard` → passes all summary data with Inertia (or lazy-load via `GET /dashboard/employee-summary`)
+- [x] `DashboardController@employeeSummaryTable` — returns all employees in dept with their monthly totals
+- [x] Vue reactive search: `computed(() => employees.filter(e => e.name.includes(searchQuery)))`
+- [x] Create `resources/js/Components/Dashboard/EmployeeSummaryTable.vue`
+- [x] Create `resources/js/Components/Dashboard/MiniProgressBar.vue` — reusable colored bar
+- [x] Create `resources/js/Components/Dashboard/MiniCategoryBar.vue` — 4-color stacked mini bar (Production/TPM/CapEx/Others)
+- [x] Route: `GET /dashboard` → passes all summary data with Inertia (or lazy-load via `GET /dashboard/employee-summary`)
 
 ---
 

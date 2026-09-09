@@ -42,6 +42,9 @@ import DailyIndexTrendChart, {
 import DayTypeBreakdownChart, {
     type DayTypeBreakdownData,
 } from '@/components/dashboard/DayTypeBreakdownChart.vue';
+import EmployeeSummaryTable, {
+    type EmployeeSummaryData,
+} from '@/components/dashboard/EmployeeSummaryTable.vue';
 import OvertimeLeaderboardChart, {
     type LeaderboardData,
 } from '@/components/dashboard/OvertimeLeaderboardChart.vue';
@@ -102,6 +105,7 @@ interface Props {
     trendWorkingTime?: TrendWorkingTimeData;
     dailyIndexTrend?: DailyIndexTrendData;
     dayTypeBreakdown?: DayTypeBreakdownData;
+    employeeSummary?: EmployeeSummaryData;
     departments?: DepartmentItem[];
     selectedDepartmentId?: number | null;
     selectedSectionId?: number | null;
@@ -117,6 +121,7 @@ const props = withDefaults(defineProps<Props>(), {
     trendWorkingTime: undefined,
     dailyIndexTrend: undefined,
     dayTypeBreakdown: undefined,
+    employeeSummary: undefined,
     departments: () => [],
     selectedDepartmentId: null,
     selectedSectionId: null,
@@ -196,6 +201,7 @@ function applyFilters(overrideSection?: number | null | Event) {
                 'trendWorkingTime',
                 'dailyIndexTrend',
                 'dayTypeBreakdown',
+                'employeeSummary',
                 'selectedDepartmentId',
                 'selectedSectionId',
                 'selectedDate',
@@ -535,6 +541,14 @@ const roleCapabilities = computed(() => {
                 />
             </div>
         </div>
+
+        <!-- Band 5: Summary Employee Overtime Table (Story E09-05) -->
+        <EmployeeSummaryTable
+            :data="employeeSummary"
+            :loading="isFiltering"
+            :selected-category-filter="selectedCategoryFilter"
+            @clear-category-filter="selectedCategoryFilter = null"
+        />
 
         <!-- Assignment & Identity Cards -->
         <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
