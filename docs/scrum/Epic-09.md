@@ -682,6 +682,7 @@ resources/js/
 | `GET /dashboard/charts/leaderboard`   | `DashboardController@leaderboard`           | E09-04                  |
 | `GET /dashboard/charts/category`      | `DashboardController@categoryDistribution`  | E09-04                  |
 | `GET /dashboard/charts/trend-working` | `DashboardController@trendWorkingTime`      | E09-04                  |
+| `GET /dashboard/charts/daily-index`   | `DashboardController@dailyIndexTrend`       | E09-04                  |
 | `GET /dashboard/charts/day-type`      | `DashboardController@dayTypeBreakdown`      | E09-04                  |
 | `GET /dashboard/employee-summary`     | `DashboardController@employeeSummaryTable`  | E09-05                  |
 | `GET /analytics`                      | `AnalyticsController@index`                 | Analytics page          |
