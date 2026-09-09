@@ -49,12 +49,18 @@ class DashboardController extends Controller
         $dayTypeBreakdown = $this->kpiService->getDayTypeBreakdown($user, $date, $departmentId, $sectionId);
         $employeeSummary = $this->kpiService->getEmployeeSummaryTable($user, $date, $departmentId, $sectionId);
 
+        $tab = $request->query('tab', 'pacing');
+        if (! in_array($tab, ['pacing', 'distribution', 'employees'], true)) {
+            $tab = 'pacing';
+        }
+
         $departments = Department::query()
             ->where('is_active', true)
             ->orderBy('name')
             ->get(['id', 'code', 'name']);
 
         return Inertia::render('Dashboard', [
+            'currentTab' => $tab,
             'kpiCards' => $kpiCards,
             'dailyBurnChart' => $dailyBurnChart,
             'sectionBurnComparison' => $sectionBurnComparison,

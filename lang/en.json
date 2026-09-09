@@ -1575,7 +1575,7 @@
     "Klik untuk filter tabel karyawan": "Click to filter employee table",
     "Tren Jam Kerja 12 Bulan": "12-Month Working Time Trend",
     "Perbandingan tren lembur HKN vs HLR selama 12 bulan terakhir": "Comparison of HKN vs HLR overtime trends over the past 12 months",
-    "Hari Kerja Normal (HKN)": "Normal Working Days (HKN)",
+    "Hari Kerja Normal (HKN)": "Normal Workday (HKN)",
     "Hari Libur Resmi (HLR)": "Official Holidays (HLR)",
     "Total 12 Bulan": "12-Month Total",
     "Total HKN": "Total HKN",
@@ -1630,5 +1630,12 @@
     "Riwayat 5 Shift Lembur Terakhir": "Last 5 Overtime Shifts History",
     "shift tercatat": "recorded shifts",
     "Belum ada riwayat shift lembur disetujui pada bulan ini.": "No approved overtime shift history recorded for this month.",
-    "Buka Dossier Lengkap": "Open Full Dossier"
+    "Buka Dossier Lengkap": "Open Full Dossier",
+    "All Departments (Plant-wide)": "All Departments (Plant-wide)",
+    "Overtime Pacing & Sections": "Overtime Pacing & Sections",
+    "Distribution & Trends": "Distribution & Trends",
+    "Employee Overtime Roster": "Employee Overtime Roster",
+    "Laju Lembur & Seksi": "Overtime Pacing & Sections",
+    "Distribusi & Tren": "Distribution & Trends",
+    "Daftar Karyawan": "Employee Overtime Roster"
 }

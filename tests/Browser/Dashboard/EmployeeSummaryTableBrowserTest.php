@@ -120,6 +120,7 @@ test('manager can view summary employee overtime table with all columns and visu
         ->fill('password', 'password')
         ->click('Log in to System')
         ->assertPathIs('/dashboard')
+        ->click('[data-test="tab-employees"]')
         ->assertPresent('[data-test="employee-summary-table-section"]')
         ->assertPresent('[data-test="employee-summary-table"]')
         ->assertPresent('[data-test="employee-table-search-input"]')
@@ -177,6 +178,7 @@ test('manager can search employees in real-time by name and npk', function () {
         ->fill('password', 'password')
         ->click('Log in to System')
         ->assertPathIs('/dashboard')
+        ->click('[data-test="tab-employees"]')
         ->assertSee('Wawan Hendrawan')
         ->assertSee('Siti Aminah')
         // Filter by specific name
@@ -270,6 +272,7 @@ test('manager can click employee row to open quick dossier drawer and inspect de
         ->fill('password', 'password')
         ->click('Log in to System')
         ->assertPathIs('/dashboard')
+        ->click('[data-test="tab-employees"]')
         ->assertSee('Agus Gunawan')
         // Click employee row to open drawer
         ->click('Agus Gunawan')
@@ -328,6 +331,7 @@ test('manager can sort table columns by name, total hours, and burn index', func
         ->fill('password', 'password')
         ->click('Log in to System')
         ->assertPathIs('/dashboard')
+        ->click('[data-test="tab-employees"]')
         ->assertPresent('[data-test="sort-header-name"]')
         ->assertPresent('[data-test="sort-header-burn-index"]')
         ->assertPresent('[data-test="sort-header-total-hours"]')
@@ -408,9 +412,9 @@ test('selecting category in category donut filters employee table rows', functio
         ->fill('password', 'password')
         ->click('Log in to System')
         ->assertPathIs('/dashboard')
+        ->click('[data-test="tab-distribution"]')
         ->assertPresent('[data-test="category-distribution-donut-card"]')
-        ->assertSee('Hadi Supriyanto')
-        // Click Production category legend button via data-test
+        // Click Production category legend button via data-test (auto-switches to employees tab)
         ->click('[data-test="category-pill-production"]')
         ->assertPresent('[data-test="active-category-filter-badge"]')
         ->assertSee('Hadi Supriyanto');

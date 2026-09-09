@@ -102,7 +102,7 @@ erDiagram
 
 | Layer             | File / Route / Component                                           | Purpose                                                                                     |
 | ----------------- | ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------- |
-| Page Container    | `resources/js/pages/Dashboard.vue`                                 | Hosts Band 5 Summary Employee Overtime Table below Multi-Chart Grid                         |
+| Page Container    | `resources/js/pages/Dashboard.vue`                                 | Master operational dashboard shell hosting Tab 3 (`?tab=employees`): Daftar Karyawan        |
 | Summary Table     | `resources/js/components/dashboard/EmployeeSummaryTable.vue`       | High-density searchable, sortable table with virtualized client pagination                  |
 | Quick Drawer      | `resources/js/components/dashboard/EmployeeQuickDossierDrawer.vue` | Slide-in right sheet displaying individual metrics, fatigue alerts, and recent shifts       |
 | Mini Progress Bar | `resources/js/components/dashboard/MiniProgressBar.vue`            | 4-color coded individual Burn Index progress bar (`font-mono tabular-nums`)                 |

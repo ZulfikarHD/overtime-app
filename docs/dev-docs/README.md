@@ -94,6 +94,7 @@ Durable technical decisions and trade-offs:
 - **[ADR-027: In-Place CapEx Physical Progress Update & Audit Trail](./decisions/027-in-place-capex-physical-progress-update-and-audit-trail.md)**
 - **[ADR-028: Shared Vue Chart.js Infrastructure and Operational KPI Cards](./decisions/028-shared-vue-chartjs-infrastructure-and-operational-kpi-cards.md)**
 - **[ADR-029: Daily Burn Line Chart and Section Burn Comparison](./decisions/029-daily-burn-chart-and-section-burn-comparison.md)**
+- **[ADR-030: Executive Dashboard Tabbed Progressive Disclosure Architecture](./decisions/030-executive-dashboard-tabbed-progressive-disclosure.md)**
 
 ---
 

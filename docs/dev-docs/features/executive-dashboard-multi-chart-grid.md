@@ -108,7 +108,7 @@ erDiagram
 | Layer              | File / Route / Component                                          | Purpose                                                                        |
 | :----------------- | :---------------------------------------------------------------- | :----------------------------------------------------------------------------- |
 | **Route**          | `/dashboard`                                                      | Executive Operational Dashboard surface                                        |
-| **Page Component** | `resources/js/pages/Dashboard.vue`                                | Orchestrates filters, reloads, and multi-chart grid                            |
+| **Page Component** | `resources/js/pages/Dashboard.vue`                                | Hosts Tab 2 (`?tab=distribution`): Distribusi & Tren                           |
 | **Controller**     | `app/Http/Controllers/DashboardController.php`                    | Serves initial Inertia props and 5 JSON endpoints                              |
 | **Service Layer**  | `app/Services/Analytics/DashboardKpiService.php`                  | Aggregates leaderboard, donut, 12M trend, daily pacing, and day-type data      |
 | **Policy Service** | `app/Services/PolicyThresholdService.php`                         | Resolves department-specific vs plant-wide threshold limits                    |

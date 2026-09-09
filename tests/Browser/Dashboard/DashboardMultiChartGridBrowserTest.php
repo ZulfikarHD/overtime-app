@@ -103,6 +103,7 @@ test('manager can view all 5 multi-chart grid widgets on dashboard with proper i
         ->fill('password', 'password')
         ->click('Log in to System')
         ->assertPathIs('/dashboard')
+        ->click('[data-test="tab-distribution"]')
         ->assertPresent('[data-test="multi-chart-grid-band"]')
         ->assertPresent('[data-test="overtime-leaderboard-card"]')
         ->assertPresent('[data-test="category-distribution-donut-card"]')
@@ -152,6 +153,7 @@ test('manager can interact with category distribution legend pills', function ()
         ->fill('password', 'password')
         ->click('Log in to System')
         ->assertPathIs('/dashboard')
+        ->click('[data-test="tab-distribution"]')
         ->assertPresent('[data-test="category-distribution-donut-card"]')
         ->assertPresent('[data-test="overtime-leaderboard-card"]');
 });

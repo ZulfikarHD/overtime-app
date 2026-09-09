@@ -59,6 +59,7 @@ Technical specifications and decision records for the engineering implementation
     - [ADR-027: In-Place CapEx Physical Progress Update & Audit Trail](./dev-docs/decisions/027-in-place-capex-physical-progress-update-and-audit-trail.md)
     - [ADR-028: Shared Vue Chart.js Infrastructure and Operational KPI Cards](./dev-docs/decisions/028-shared-vue-chartjs-infrastructure-and-operational-kpi-cards.md)
     - [ADR-029: Daily Burn Line Chart and Section Burn Comparison](./dev-docs/decisions/029-daily-burn-chart-and-section-burn-comparison.md)
+    - [ADR-030: Executive Dashboard Tabbed Progressive Disclosure Architecture](./dev-docs/decisions/030-executive-dashboard-tabbed-progressive-disclosure.md)
 - **Technical Feature Design Specifications:**
     - [Authentication & Role-Based Access Control](./dev-docs/features/authentication-rbac.md)
     - [Database Schema Migrations (Full DDL)](./dev-docs/features/database-schema-migrations.md)

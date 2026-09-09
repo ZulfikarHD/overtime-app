@@ -9,12 +9,15 @@ import {
     Clock,
     FileSpreadsheet,
     Filter,
+    Flame,
     Layers,
+    PieChart,
     RotateCcw,
     Shield,
     Users,
 } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
+import { Badge } from '@/components/ui/badge';
 import DailyBurnLineChart, {
     type DailyBurnChartData,
 } from '@/components/dashboard/DailyBurnLineChart.vue';
@@ -97,6 +100,7 @@ interface KpiCardsPayload {
 }
 
 interface Props {
+    currentTab?: string;
     kpiCards?: KpiCardsPayload;
     dailyBurnChart?: DailyBurnChartData;
     sectionBurnComparison?: SectionBurnComparisonData;
@@ -113,6 +117,7 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
+    currentTab: 'pacing',
     kpiCards: undefined,
     dailyBurnChart: undefined,
     sectionBurnComparison: undefined,
@@ -128,6 +133,42 @@ const props = withDefaults(defineProps<Props>(), {
     selectedDate: '',
 });
 
+export type DashboardTab = 'pacing' | 'distribution' | 'employees';
+
+const activeTab = ref<DashboardTab>('pacing');
+
+function getInitialTab(): DashboardTab {
+    if (typeof window !== 'undefined') {
+        const urlParams = new URLSearchParams(window.location.search);
+        const tab = urlParams.get('tab');
+        if (tab === 'distribution' || tab === 'employees') {
+            return tab;
+        }
+    }
+    if (
+        props.currentTab === 'distribution' ||
+        props.currentTab === 'employees'
+    ) {
+        return props.currentTab;
+    }
+    return 'pacing';
+}
+
+activeTab.value = getInitialTab();
+
+function handleTabChange(tab: DashboardTab) {
+    activeTab.value = tab;
+    if (typeof window !== 'undefined') {
+        const url = new URL(window.location.href);
+        if (tab === 'pacing') {
+            url.searchParams.delete('tab');
+        } else {
+            url.searchParams.set('tab', tab);
+        }
+        window.history.replaceState({}, '', url.pathname + url.search);
+    }
+}
+
 const { __ } = useTrans();
 const { timeString, dateString, currentShift } = useShiftInfo();
 const page = usePage();
@@ -138,6 +179,9 @@ const selectedCategoryFilter = ref<string | null>(null);
 
 function handleCategorySelect(catKey: string | null) {
     selectedCategoryFilter.value = catKey;
+    if (catKey) {
+        handleTabChange('employees');
+    }
 }
 
 const filterDept = ref(
@@ -188,6 +232,7 @@ function applyFilters(overrideSection?: number | null | Event) {
             department_id:
                 filterDept.value === 'all' ? undefined : filterDept.value,
             section_id: targetSection ? targetSection : undefined,
+            tab: activeTab.value !== 'pacing' ? activeTab.value : undefined,
         },
         {
             preserveState: true,
@@ -413,7 +458,7 @@ const roleCapabilities = computed(() => {
                                 @change="applyFilters"
                             >
                                 <option value="all">
-                                    {{ __('Semua Departemen (Plant-wide)') }}
+                                    {{ __('All Departments (Plant-wide)') }}
                                 </option>
                                 <option
                                     v-for="dept in departments"
@@ -430,7 +475,7 @@ const roleCapabilities = computed(() => {
                             >
                                 {{
                                     user?.department?.name ??
-                                    __('Semua Departemen (Plant-wide)')
+                                    __('All Departments (Plant-wide)')
                                 }}
                             </span>
                         </div>
@@ -491,64 +536,144 @@ const roleCapabilities = computed(() => {
             />
         </div>
 
-        <!-- Hero Section: Daily Cumulative Burn Line Chart (Story E09-02) -->
-        <DailyBurnLineChart
-            :data="dailyBurnChart"
-            :loading="isFiltering"
-            :selected-section-id="filterSection"
-            @navigate-month="handleMonthNavigation"
-            @select-section="handleSectionSelect"
-        />
+        <!-- Operational Navigation Tabs (UX Plan Progressive Disclosure) -->
+        <div
+            class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 pb-0 dark:border-slate-800"
+            data-test="dashboard-tabs-nav"
+        >
+            <div class="flex items-center gap-1">
+                <button
+                    type="button"
+                    class="flex cursor-pointer items-center gap-2 border-b-2 px-4 py-2.5 text-xs font-semibold transition-all"
+                    :class="
+                        activeTab === 'pacing'
+                            ? 'border-[#cc0000] text-[#cc0000] dark:text-red-400'
+                            : 'text-muted-foreground border-transparent hover:text-slate-900 dark:hover:text-white'
+                    "
+                    @click="handleTabChange('pacing')"
+                    data-test="tab-pacing"
+                >
+                    <Flame class="size-3.5" />
+                    <span>{{ __('Overtime Pacing & Sections') }}</span>
+                </button>
 
-        <!-- Mid Section: Section Burn Comparison Bar Chart (Story E09-03) -->
-        <SectionBurnComparisonChart
-            :data="sectionBurnComparison"
-            :loading="isFiltering"
-        />
+                <button
+                    type="button"
+                    class="flex cursor-pointer items-center gap-2 border-b-2 px-4 py-2.5 text-xs font-semibold transition-all"
+                    :class="
+                        activeTab === 'distribution'
+                            ? 'border-[#cc0000] text-[#cc0000] dark:text-red-400'
+                            : 'text-muted-foreground border-transparent hover:text-slate-900 dark:hover:text-white'
+                    "
+                    @click="handleTabChange('distribution')"
+                    data-test="tab-distribution"
+                >
+                    <PieChart class="size-3.5" />
+                    <span>{{ __('Distribution & Trends') }}</span>
+                </button>
 
-        <!-- Band 4: Multi-Chart Analytics Grid (Story E09-04) -->
-        <div class="space-y-4" data-test="multi-chart-grid-band">
-            <!-- Top Row: Leaderboard, Category Donut, 12-Month Trend (3 columns on lg) -->
-            <div class="grid gap-4 lg:grid-cols-3">
-                <OvertimeLeaderboardChart
-                    :data="leaderboard"
-                    :loading="isFiltering"
-                />
-
-                <CategoryDistributionDonut
-                    :data="categoryDistribution"
-                    :loading="isFiltering"
-                    :selected-category="selectedCategoryFilter"
-                    @select-category="handleCategorySelect"
-                />
-
-                <TrendWorkingTimeChart
-                    :data="trendWorkingTime"
-                    :loading="isFiltering"
-                />
-            </div>
-
-            <!-- Bottom Row: Daily Index Trend & Day Type Breakdown (2 columns on lg) -->
-            <div class="grid gap-4 lg:grid-cols-2">
-                <DailyIndexTrendChart
-                    :data="dailyIndexTrend"
-                    :loading="isFiltering"
-                />
-
-                <DayTypeBreakdownChart
-                    :data="dayTypeBreakdown"
-                    :loading="isFiltering"
-                />
+                <button
+                    type="button"
+                    class="flex cursor-pointer items-center gap-2 border-b-2 px-4 py-2.5 text-xs font-semibold transition-all"
+                    :class="
+                        activeTab === 'employees'
+                            ? 'border-[#cc0000] text-[#cc0000] dark:text-red-400'
+                            : 'text-muted-foreground border-transparent hover:text-slate-900 dark:hover:text-white'
+                    "
+                    @click="handleTabChange('employees')"
+                    data-test="tab-employees"
+                >
+                    <Users class="size-3.5" />
+                    <span>{{ __('Employee Overtime Roster') }}</span>
+                    <Badge
+                        v-if="employeeSummary?.total_count"
+                        variant="secondary"
+                        class="ml-1 px-1.5 py-0 font-mono text-[10px]"
+                    >
+                        {{ employeeSummary.total_count }}
+                    </Badge>
+                </button>
             </div>
         </div>
 
-        <!-- Band 5: Summary Employee Overtime Table (Story E09-05) -->
-        <EmployeeSummaryTable
-            :data="employeeSummary"
-            :loading="isFiltering"
-            :selected-category-filter="selectedCategoryFilter"
-            @clear-category-filter="selectedCategoryFilter = null"
-        />
+        <!-- TAB 1: PACING & SECTION HEALTH (Stories E09-02, E09-03) -->
+        <div
+            v-show="activeTab === 'pacing'"
+            class="space-y-6"
+            data-test="tab-panel-pacing"
+        >
+            <!-- Hero Section: Daily Cumulative Burn Line Chart (Story E09-02) -->
+            <DailyBurnLineChart
+                :data="dailyBurnChart"
+                :loading="isFiltering"
+                :selected-section-id="filterSection"
+                @navigate-month="handleMonthNavigation"
+                @select-section="handleSectionSelect"
+            />
+
+            <!-- Mid Section: Section Burn Comparison Bar Chart (Story E09-03) -->
+            <SectionBurnComparisonChart
+                :data="sectionBurnComparison"
+                :loading="isFiltering"
+            />
+        </div>
+
+        <!-- TAB 2: OVERTIME DISTRIBUTION & TRENDS (Story E09-04) -->
+        <div
+            v-show="activeTab === 'distribution'"
+            class="space-y-4"
+            data-test="tab-panel-distribution"
+        >
+            <!-- Band 4: Multi-Chart Analytics Grid (Story E09-04) -->
+            <div class="space-y-4" data-test="multi-chart-grid-band">
+                <!-- Top Row: Leaderboard, Category Donut, 12-Month Trend (3 columns on lg) -->
+                <div class="grid gap-4 lg:grid-cols-3">
+                    <OvertimeLeaderboardChart
+                        :data="leaderboard"
+                        :loading="isFiltering"
+                    />
+
+                    <CategoryDistributionDonut
+                        :data="categoryDistribution"
+                        :loading="isFiltering"
+                        :selected-category="selectedCategoryFilter"
+                        @select-category="handleCategorySelect"
+                    />
+
+                    <TrendWorkingTimeChart
+                        :data="trendWorkingTime"
+                        :loading="isFiltering"
+                    />
+                </div>
+
+                <!-- Bottom Row: Daily Index Trend & Day Type Breakdown (2 columns on lg) -->
+                <div class="grid gap-4 lg:grid-cols-2">
+                    <DailyIndexTrendChart
+                        :data="dailyIndexTrend"
+                        :loading="isFiltering"
+                    />
+
+                    <DayTypeBreakdownChart
+                        :data="dayTypeBreakdown"
+                        :loading="isFiltering"
+                    />
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 3: SUMMARY EMPLOYEE OVERTIME TABLE (Story E09-05) -->
+        <div
+            v-show="activeTab === 'employees'"
+            class="space-y-4"
+            data-test="tab-panel-employees"
+        >
+            <EmployeeSummaryTable
+                :data="employeeSummary"
+                :loading="isFiltering"
+                :selected-category-filter="selectedCategoryFilter"
+                @clear-category-filter="selectedCategoryFilter = null"
+            />
+        </div>
 
         <!-- Assignment & Identity Cards -->
         <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

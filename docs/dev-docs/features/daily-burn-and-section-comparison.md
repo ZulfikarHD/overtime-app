@@ -125,9 +125,9 @@ erDiagram
 | Layer                     | File / Route / Menu                                                    | Purpose                                                                                      |
 | ------------------------- | ---------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
 | **Sidebar Menu**          | `Dashboard` (`/dashboard`)                                             | Main operational landing page for supervisors and administrators                             |
-| **Page Component**        | `resources/js/pages/Dashboard.vue`                                     | Orchestrates KPI cards, daily burn line chart, and section comparison bar chart              |
-| **Daily Burn Line Chart** | `resources/js/components/dashboard/DailyBurnLineChart.vue`             | Hero line chart with budget ceiling, zone shading, month navigation, and section filtering   |
-| **Section Comparison**    | `resources/js/components/dashboard/SectionBurnComparisonChart.vue`     | Horizontal bar chart ranked descending by Burn Index %, with click-to-cockpit drill-down     |
+| **Page Component**        | `resources/js/pages/Dashboard.vue`                                     | Master operational dashboard shell with 3 tabs; hosts Tab 1 (`?tab=pacing`)                  |
+| **Daily Burn Line Chart** | `resources/js/components/dashboard/DailyBurnLineChart.vue`             | Hero line chart on Tab 1 with budget ceiling, zone shading, month nav, and section filtering |
+| **Section Comparison**    | `resources/js/components/dashboard/SectionBurnComparisonChart.vue`     | Horizontal bar chart on Tab 1 ranked descending by Burn Index %, with click-to-cockpit link  |
 | **Base Line Wrapper**     | `resources/js/components/charts/BaseLineChart.vue`                     | Reusable Chart.js line canvas supporting custom canvas plugins                               |
 | **Base Bar Wrapper**      | `resources/js/components/charts/BaseBarChart.vue`                      | Reusable Chart.js horizontal/vertical bar canvas with click event handlers                   |
 | **Backend Controller**    | `app/Http/Controllers/DashboardController.php`                         | Renders Inertia page and exposes JSON endpoints for chart reloads                            |
