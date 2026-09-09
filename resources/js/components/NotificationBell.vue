@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { usePage } from '@inertiajs/vue3';
+import { router, usePage } from '@inertiajs/vue3';
 import {
+    Activity,
     AlertTriangle,
     Bell,
     Check,
@@ -21,12 +22,18 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Spinner } from '@/components/ui/spinner';
 import { useTrans } from '@/composables/useTrans';
+import { burnIndex } from '@/routes/dashboard';
 import {
     index as notificationsIndexRoute,
     read as notificationsReadRoute,
     readAll as notificationsReadAllRoute,
 } from '@/routes/notifications';
-import type { AppNotification, NotificationsPayload } from '@/types/ui';
+import type {
+    AppNotification,
+    BudgetThresholdNotificationData,
+    NotificationsPayload,
+    SpklNotificationData,
+} from '@/types/ui';
 
 const { __ } = useTrans();
 const page = usePage();
@@ -125,18 +132,48 @@ async function markAllAsRead() {
     }
 }
 
+function isBudgetAlert(item: AppNotification): boolean {
+    return (
+        (item.data as any)?.notification_type === 'budget_threshold' ||
+        Boolean(item.type?.includes('BudgetThresholdAlert'))
+    );
+}
+
+function asBudgetData(item: AppNotification): BudgetThresholdNotificationData {
+    return item.data as BudgetThresholdNotificationData;
+}
+
+function asSpklData(item: AppNotification): SpklNotificationData {
+    return item.data as SpklNotificationData;
+}
+
+function handleBudgetNotificationClick(item: AppNotification) {
+    void markAsRead(item.id);
+    isOpen.value = false;
+    const data = item.data as BudgetThresholdNotificationData;
+    router.visit(
+        burnIndex.url({
+            query: {
+                tab: 'sections',
+                section: data.section_id,
+            },
+        }),
+    );
+}
+
 function handleAttachSpkl(notification: AppNotification) {
+    const spklData = notification.data as SpklNotificationData;
     activeNotificationId.value = notification.id;
     selectedSubmission.value = {
-        id: notification.data.submission_id,
-        submission_code: notification.data.submission_code,
-        operational_date: notification.data.operational_date,
-        section_name: notification.data.section_name,
-        total_hours: notification.data.total_hours,
+        id: spklData.submission_id,
+        submission_code: spklData.submission_code,
+        operational_date: spklData.operational_date,
+        section_name: spklData.section_name,
+        total_hours: spklData.total_hours,
         spkl_document: {
-            id: notification.data.spkl_document_id,
+            id: spklData.spkl_document_id,
             status: 'PENDING',
-            due_date: notification.data.due_date,
+            due_date: spklData.due_date,
             spkl_number: null,
             file_name: null,
         },
@@ -264,19 +301,157 @@ const displayCount = computed(() => {
                             class="hover:bg-muted/40 p-3 transition-colors"
                             data-test="notification-item"
                         >
-                            <div class="flex items-start gap-2.5">
+                            <!-- Budget Threshold Alert Item (E05-04) -->
+                            <div
+                                v-if="isBudgetAlert(item)"
+                                class="flex cursor-pointer items-start gap-2.5"
+                                data-test="notification-budget-item"
+                                @click="handleBudgetNotificationClick(item)"
+                            >
                                 <!-- Type Icon -->
                                 <div
                                     class="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full"
                                     :class="
-                                        item.data.reminder_type === 'overdue'
+                                        asBudgetData(item).alert_level ===
+                                        'danger'
+                                            ? 'bg-rose-100 text-[#cc0000] dark:bg-rose-950/60 dark:text-rose-400'
+                                            : 'bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-400'
+                                    "
+                                >
+                                    <AlertTriangle class="size-3.5" />
+                                </div>
+
+                                <!-- Body -->
+                                <div class="min-w-0 flex-1">
+                                    <div
+                                        class="flex items-center justify-between gap-1"
+                                    >
+                                        <span
+                                            class="text-foreground font-mono text-xs font-semibold"
+                                        >
+                                            {{
+                                                asBudgetData(item)
+                                                    .section_code ||
+                                                asBudgetData(item).section_name
+                                            }}
+                                        </span>
+                                        <Badge
+                                            v-if="
+                                                asBudgetData(item)
+                                                    .alert_level === 'danger'
+                                            "
+                                            variant="destructive"
+                                            class="px-1.5 py-0 text-[10px]"
+                                            data-test="badge-budget-danger"
+                                        >
+                                            {{
+                                                __('Defisit Kritis (:pct%)', {
+                                                    pct: Number(
+                                                        asBudgetData(item)
+                                                            .burn_index_pct,
+                                                    ).toFixed(1),
+                                                })
+                                            }}
+                                        </Badge>
+                                        <Badge
+                                            v-else
+                                            variant="outline"
+                                            class="border-amber-300 px-1.5 py-0 text-[10px] text-amber-600 dark:text-amber-400"
+                                            data-test="badge-budget-warning"
+                                        >
+                                            {{
+                                                __('Peringatan (:pct%)', {
+                                                    pct: Number(
+                                                        asBudgetData(item)
+                                                            .burn_index_pct,
+                                                    ).toFixed(1),
+                                                })
+                                            }}
+                                        </Badge>
+                                    </div>
+
+                                    <p
+                                        class="text-muted-foreground mt-0.5 line-clamp-2 text-xs"
+                                    >
+                                        {{
+                                            asBudgetData(item).message ||
+                                            asBudgetData(item).title
+                                        }}
+                                    </p>
+
+                                    <div
+                                        class="border-border/40 mt-2 flex items-center justify-between border-t pt-1"
+                                    >
+                                        <span
+                                            class="text-muted-foreground text-[11px]"
+                                        >
+                                            {{
+                                                asBudgetData(item).section_name
+                                            }}
+                                            <template
+                                                v-if="
+                                                    asBudgetData(item)
+                                                        .department_name
+                                                "
+                                            >
+                                                •
+                                                {{
+                                                    asBudgetData(item)
+                                                        .department_name
+                                                }}
+                                            </template>
+                                        </span>
+
+                                        <div class="flex items-center gap-1">
+                                            <Button
+                                                size="sm"
+                                                variant="outline"
+                                                class="h-6 cursor-pointer border-red-200 px-2 text-[11px] font-medium text-red-600 hover:bg-red-50 hover:text-red-700 dark:border-red-900 dark:hover:bg-red-950/40"
+                                                data-test="btn-view-burn-from-notif"
+                                                @click.stop="
+                                                    handleBudgetNotificationClick(
+                                                        item,
+                                                    )
+                                                "
+                                            >
+                                                <Activity class="mr-1 size-3" />
+                                                {{ __('Lihat Burn Index') }}
+                                            </Button>
+
+                                            <Button
+                                                size="icon"
+                                                variant="ghost"
+                                                class="text-muted-foreground hover:text-foreground h-6 w-6 cursor-pointer"
+                                                data-test="btn-mark-read"
+                                                :title="
+                                                    __('Tandai sudah dibaca')
+                                                "
+                                                @click.stop="
+                                                    markAsRead(item.id)
+                                                "
+                                            >
+                                                <Check class="size-3" />
+                                            </Button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- SPKL Document Reminder Item -->
+                            <div v-else class="flex items-start gap-2.5">
+                                <!-- Type Icon -->
+                                <div
+                                    class="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full"
+                                    :class="
+                                        asSpklData(item).reminder_type ===
+                                        'overdue'
                                             ? 'bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:text-rose-400'
                                             : 'bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-400'
                                     "
                                 >
                                     <AlertTriangle
                                         v-if="
-                                            item.data.reminder_type ===
+                                            asSpklData(item).reminder_type ===
                                             'overdue'
                                         "
                                         class="size-3.5"
@@ -292,19 +467,21 @@ const displayCount = computed(() => {
                                         <span
                                             class="text-foreground font-mono text-xs font-semibold"
                                         >
-                                            {{ item.data.submission_code }}
+                                            {{
+                                                asSpklData(item).submission_code
+                                            }}
                                         </span>
                                         <Badge
                                             v-if="
-                                                item.data.reminder_type ===
-                                                'overdue'
+                                                asSpklData(item)
+                                                    .reminder_type === 'overdue'
                                             "
                                             variant="destructive"
                                             class="px-1.5 py-0 text-[10px]"
                                         >
                                             {{
                                                 __('Lewat :days hari', {
-                                                    days: item.data
+                                                    days: asSpklData(item)
                                                         .overdue_days,
                                                 })
                                             }}
@@ -321,7 +498,7 @@ const displayCount = computed(() => {
                                     <p
                                         class="text-muted-foreground mt-0.5 line-clamp-2 text-xs"
                                     >
-                                        {{ item.data.message }}
+                                        {{ asSpklData(item).message }}
                                     </p>
 
                                     <div
@@ -330,8 +507,9 @@ const displayCount = computed(() => {
                                         <span
                                             class="text-muted-foreground text-[11px]"
                                         >
-                                            {{ item.data.section_name }} •
-                                            {{ item.data.due_date }}
+                                            {{ asSpklData(item).section_name }}
+                                            •
+                                            {{ asSpklData(item).due_date }}
                                         </span>
 
                                         <div class="flex items-center gap-1">

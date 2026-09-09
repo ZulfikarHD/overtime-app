@@ -152,28 +152,29 @@ This epic builds the analytical dashboard that answers that question in real tim
 **So that** I have enough time to adjust overtime scheduling before the budget is exhausted.
 
 **Story Points:** 5  
-**Priority:** Must Have
+**Priority:** Must Have  
+**Status:** 🟢 Completed (Sprint 5)
 
 #### Acceptance Criteria
 
-- [ ] After each `RecalculateMonthlyBurnSnapshotJob` run, the system evaluates whether the Burn Index crossed a threshold
-- [ ] Thresholds checked (from `policy_thresholds`):
+- [x] After each `RecalculateMonthlyBurnSnapshotJob` run, the system evaluates whether the Burn Index crossed a threshold
+- [x] Thresholds checked (from `policy_thresholds`):
     - `burn_warning_pct` (default 100%) → Creates a `WARNING` notification: "Section X Burn Index reached 103% — approaching budget ceiling"
     - `burn_danger_pct` (default 115%) → Creates a `DANGER` notification: "Section X is 18% over budget. Immediate review required."
-- [ ] Notifications are sent **only once per threshold crossing per section per fiscal month** (not on every job run after crossing)
-- [ ] Notification recipients: Manager for that department + Admin
-- [ ] Notification respects user preference `notifications.budget_alerts`
-- [ ] Alert is visible in the notification bell (from Epic-03 E03-05 infrastructure)
-- [ ] Dashboard cards that have crossed warning threshold show a pulsing border animation
+- [x] Notifications are sent **only once per threshold crossing per section per fiscal month** (not on every job run after crossing)
+- [x] Notification recipients: Manager for that department + Admin
+- [x] Notification respects user preference `notifications.budget_alerts`
+- [x] Alert is visible in the notification bell (from Epic-03 E03-05 infrastructure)
+- [x] Dashboard cards that have crossed warning threshold show a pulsing border animation
 
 #### Technical Tasks
 
-- [ ] `BudgetAlertService::evaluateAndNotify(MonthlyBurnSnapshot $snapshot): void`
-- [ ] Track "already notified" state: add `warned_at` and `danger_at` columns to `monthly_burn_snapshots`
-- [ ] Condition: `if ($snapshot->burn_index_pct >= $threshold->burn_warning_pct && $snapshot->warned_at === null)`
-- [ ] `php artisan make:notification BudgetThresholdAlert` (database channel)
-- [ ] Call `BudgetAlertService::evaluateAndNotify()` at end of `RecalculateMonthlyBurnSnapshotJob`
-- [ ] CSS: `.burn-card--danger { animation: pulse-border 1.5s infinite; }` in Tailwind or custom CSS
+- [x] `BudgetAlertService::evaluateAndNotify(MonthlyBurnSnapshot $snapshot): void`
+- [x] Track "already notified" state: add `warned_at` and `danger_at` columns to `monthly_burn_snapshots`
+- [x] Condition: `if ($snapshot->burn_index_pct >= $threshold->burn_warning_pct && $snapshot->warned_at === null)`
+- [x] `php artisan make:notification BudgetThresholdAlert` (database channel)
+- [x] Call `BudgetAlertService::evaluateAndNotify()` at end of `RecalculateMonthlyBurnSnapshotJob`
+- [x] CSS: `.burn-card--danger { animation: pulse-border 1.5s infinite; }` in Tailwind or custom CSS
 
 ---
 

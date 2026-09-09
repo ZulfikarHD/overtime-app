@@ -274,6 +274,23 @@ onMounted(() => {
     }, 60000);
 });
 
+watch(
+    () => page.url,
+    (newUrl) => {
+        if (typeof window !== 'undefined' && newUrl) {
+            const search = newUrl.includes('?') ? newUrl.split('?')[1] : '';
+            const urlParams = new URLSearchParams(search);
+            const secParam = urlParams.get('section');
+            if (secParam) {
+                const secId = parseInt(secParam, 10);
+                if (!isNaN(secId)) {
+                    handleSelectSection(secId);
+                }
+            }
+        }
+    },
+);
+
 onUnmounted(() => {
     if (pollingInterval) {
         clearInterval(pollingInterval);

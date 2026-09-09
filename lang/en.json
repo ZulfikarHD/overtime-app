@@ -1041,5 +1041,9 @@
     "Deviasi (Variance)": "Deviation (Variance)",
     "Progress Fisik": "Physical Progress",
     "Belum ada proyek CapEx pada periode ini": "No CapEx projects recorded this period",
-    "Tidak ada proyek yang cocok dengan filter": "No projects match the filter"
+    "Tidak ada proyek yang cocok dengan filter": "No projects match the filter",
+    "Defisit Kritis (:pct%)": "Critical Deficit (:pct%)",
+    "Peringatan (:pct%)": "Warning (:pct%)",
+    "Lihat Burn Index": "View Burn Index",
+    "Bulan ini": "This month"
 }

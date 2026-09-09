@@ -2,7 +2,9 @@
 
 namespace App\Jobs;
 
+use App\Models\MonthlyBurnSnapshot;
 use App\Services\Analytics\MonthlySnapshotService;
+use App\Services\BudgetAlertService;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Queue\InteractsWithQueue;
@@ -37,18 +39,32 @@ class RecalculateMonthlyBurnSnapshotJob implements ShouldQueue
     /**
      * Execute the job.
      */
-    public function handle(?MonthlySnapshotService $snapshotService = null): void
-    {
+    public function handle(
+        ?MonthlySnapshotService $snapshotService = null,
+        ?BudgetAlertService $budgetAlertService = null,
+    ): void {
         $snapshotService ??= app(MonthlySnapshotService::class);
+        $budgetAlertService ??= app(BudgetAlertService::class);
 
         $now = Carbon::now('Asia/Jakarta');
         $year = $this->fiscalYear ?? (int) $now->format('Y');
         $month = $this->fiscalMonth ?? (int) $now->format('n');
 
         if ($this->sectionId !== null) {
-            $snapshotService->recalculate($this->sectionId, $year, $month);
+            $snapshot = $snapshotService->recalculate($this->sectionId, $year, $month);
+            if ($snapshot !== null) {
+                $budgetAlertService->evaluateAndNotify($snapshot);
+            }
         } else {
             $snapshotService->recalculateAll($year, $month);
+            $snapshots = MonthlyBurnSnapshot::query()
+                ->where('fiscal_year', $year)
+                ->where('fiscal_month', $month)
+                ->get();
+
+            foreach ($snapshots as $snapshot) {
+                $budgetAlertService->evaluateAndNotify($snapshot);
+            }
         }
     }
 }

@@ -37,6 +37,7 @@ Deep-dive technical documentation detailing architecture flows, data models, key
 | **[SPKL Pending Reminder & In-App Notifications](./features/spkl-pending-reminder-notifications.md)**      | [Epic-03](../../scrum/Epic-03.md) | Automated daily 08:00 WIB reminder job, in-app notifications, topbar notification bell, and 1-click SPKL attachment drawer flow.                   |
 | **[Verification, Item Approvals, Bulk Decisions & Export](./features/verification-approval.md)**           | [Epic-04](../../scrum/Epic-04.md) | Manager/Admin standup approval queue, item-level approvals, bulk processing, and CSV/Excel streaming export.                                       |
 | **[Budget Management & Burn Index Dashboard](./features/budget-burn-index.md)**                            | [Epic-05](../../scrum/Epic-05.md) | Analytical command center, section burn cards, 5-week burndown curves, 4-quadrant Budget Control Matrix drawer, and asynchronous monthly rollups.  |
+| **[Budget Threshold Alert System & In-App Warnings](./features/budget-threshold-alerts.md)**               | [Epic-05](../../scrum/Epic-05.md) | Automated policy threshold evaluator, database alerts with timestamp locks, pulsing warning/danger card borders, and direct drawer deep links.     |
 | **[Individual Employee Reporting & Welfare](./features/employee-welfare-report.md)**                       | [Epic-06](../../scrum/Epic-06.md) | Personal employee dossiers, welfare fatigue soft limits, and peer variance benchmarking.                                                           |
 | **[CapEx Project Labor Management](./features/capex-project-labor.md)**                                    | [Epic-07](../../scrum/Epic-07.md) | Fixed asset labor capitalization, project codes, progress vs. burn curves, and statutory audit integrity.                                          |
 | **[Supervised Machine Learning Analytics](./features/ml-predictive-analytics.md)**                         | [Epic-08](../../scrum/Epic-08.md) | Overtime demand forecasting, Burn Index trajectory ribbon charts, anomaly detection, and cold-start fallback.                                      |
@@ -78,6 +79,7 @@ Durable technical decisions and trade-offs:
 - **[ADR-017: Immutable Overtime Item Audit Ledger and Lifecycle History](./decisions/017-immutable-overtime-item-audit-ledger.md)**
 - **[ADR-018: Approved Records Modification Lock and Admin Force-Unlock](./decisions/018-approved-records-modification-lock-and-admin-force-unlock.md)**
 - **[ADR-019: Single-Hub Tab-Based CapEx vs OpEx Distribution Panel](./decisions/019-single-hub-tab-based-capex-opex-distribution.md)**
+- **[ADR-020: Budget Threshold Alert Timestamp Locking for Anti-Fatigue Deduplication](./decisions/020-budget-threshold-alert-deduplication.md)**
 
 ---
 

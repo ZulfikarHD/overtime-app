@@ -21,6 +21,8 @@ use Illuminate\Support\Carbon;
  * @property string $burn_index_pct
  * @property string $burn_velocity
  * @property string $burn_zone
+ * @property Carbon|null $warned_at
+ * @property Carbon|null $danger_at
  * @property Carbon|null $last_recalculated_at
  * @property-read float $projected_total_hours
  * @property-read 'on_pace'|'trending_over'|'will_overrun' $trajectory
@@ -49,6 +51,8 @@ class MonthlyBurnSnapshot extends Model
         'burn_index_pct',
         'burn_velocity',
         'burn_zone',
+        'warned_at',
+        'danger_at',
         'last_recalculated_at',
     ];
 
@@ -74,6 +78,8 @@ class MonthlyBurnSnapshot extends Model
             'cumulative_capex_hours' => 'decimal:2',
             'burn_index_pct' => 'decimal:2',
             'burn_velocity' => 'decimal:2',
+            'warned_at' => 'datetime',
+            'danger_at' => 'datetime',
             'last_recalculated_at' => 'datetime',
         ];
     }

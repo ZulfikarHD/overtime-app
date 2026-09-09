@@ -86,7 +86,7 @@ const burnStatus = computed(() => {
                 'bg-red-50 text-[#cc0000] border-red-200 dark:bg-red-950/40 dark:text-red-300 dark:border-red-900',
             barBg: 'bg-[#cc0000]',
             cardBorder:
-                'border-red-300 dark:border-red-800/80 shadow-xs shadow-red-500/10',
+                'burn-card--danger animate-pulse border-red-500 shadow-md shadow-red-500/20',
         };
     }
 
@@ -98,7 +98,7 @@ const burnStatus = computed(() => {
                 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-900',
             barBg: 'bg-amber-500',
             cardBorder:
-                'border-amber-300 dark:border-amber-800/80 shadow-xs shadow-amber-500/10',
+                'burn-card--warning animate-pulse border-amber-500 shadow-md shadow-amber-500/20',
         };
     }
 

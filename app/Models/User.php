@@ -97,7 +97,7 @@ class User extends Authenticatable implements PasskeyUser
         return [
             'theme' => (string) ($prefs['theme'] ?? 'system'),
             'spkl_pending_reminder' => (bool) ($prefs['spkl_pending_reminder'] ?? true),
-            'budget_threshold_alert' => (bool) ($prefs['budget_threshold_alert'] ?? true),
+            'budget_threshold_alert' => (bool) data_get($prefs, 'notifications.budget_alerts', $prefs['budget_threshold_alert'] ?? true),
             'approval_status_notification' => (bool) ($prefs['approval_status_notification'] ?? true),
         ];
     }

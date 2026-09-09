@@ -170,3 +170,44 @@
         @apply bg-background text-foreground;
     }
 }
+
+/* E05-04: In-Place High-Burn Card Pulsing Border Animations */
+@keyframes pulse-border-danger {
+    0%,
+    100% {
+        border-color: #cc0000;
+        box-shadow:
+            0 0 0 1px rgba(204, 0, 0, 0.4),
+            0 0 15px -3px rgba(204, 0, 0, 0.3);
+    }
+    50% {
+        border-color: rgba(204, 0, 0, 0.3);
+        box-shadow:
+            0 0 0 1px rgba(204, 0, 0, 0.1),
+            0 0 5px -3px rgba(204, 0, 0, 0.1);
+    }
+}
+
+@keyframes pulse-border-warning {
+    0%,
+    100% {
+        border-color: #f59e0b;
+        box-shadow:
+            0 0 0 1px rgba(245, 158, 11, 0.4),
+            0 0 15px -3px rgba(245, 158, 11, 0.3);
+    }
+    50% {
+        border-color: rgba(245, 158, 11, 0.3);
+        box-shadow:
+            0 0 0 1px rgba(245, 158, 11, 0.1),
+            0 0 5px -3px rgba(245, 158, 11, 0.1);
+    }
+}
+
+.burn-card--danger {
+    animation: pulse-border-danger 1.5s infinite ease-in-out;
+}
+
+.burn-card--warning {
+    animation: pulse-border-warning 1.5s infinite ease-in-out;
+}
