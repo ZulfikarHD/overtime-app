@@ -11,16 +11,21 @@ use App\Models\OvertimeBudget;
 use App\Models\OvertimeItem;
 use App\Models\Section;
 use App\Models\User;
+use App\Services\PolicyThresholdService;
 use Illuminate\Support\Carbon;
 
 class DashboardKpiService
 {
     public MonthlySnapshotService $snapshotService;
 
+    public PolicyThresholdService $thresholdService;
+
     public function __construct(
         ?MonthlySnapshotService $snapshotService = null,
+        ?PolicyThresholdService $thresholdService = null,
     ) {
         $this->snapshotService = $snapshotService ?? app(MonthlySnapshotService::class);
+        $this->thresholdService = $thresholdService ?? app(PolicyThresholdService::class);
     }
 
     /**
@@ -712,6 +717,639 @@ class DashboardKpiService
             'warning_sections_count' => count(array_filter($sectionList, fn ($s) => $s['zone'] === 'warning')),
             'on_track_sections_count' => count(array_filter($sectionList, fn ($s) => $s['zone'] === 'on_track')),
             'safe_sections_count' => count(array_filter($sectionList, fn ($s) => $s['zone'] === 'safe')),
+        ];
+    }
+
+    /**
+     * Resolve effective department and section ID based on user role and filters.
+     *
+     * @return array{0: ?int, 1: ?int}
+     */
+    public function resolveScoping(User $user, ?int $departmentId, ?int $sectionId = null): array
+    {
+        $scopedDepartmentId = $departmentId;
+        $scopedSectionId = $sectionId;
+
+        if ($user->isManager()) {
+            $scopedDepartmentId = $user->department_id ? (int) $user->department_id : null;
+        } elseif ($user->isTeamLeader()) {
+            $scopedDepartmentId = $user->department_id ? (int) $user->department_id : null;
+            $scopedSectionId = $user->section_id ? (int) $user->section_id : null;
+        } elseif (! $user->isAdmin()) {
+            $scopedDepartmentId = $user->department_id ? (int) $user->department_id : null;
+            $scopedSectionId = $user->section_id ? (int) $user->section_id : null;
+        }
+
+        return [$scopedDepartmentId, $scopedSectionId];
+    }
+
+    /**
+     * Resolve planned budget hours for a given month and scope.
+     */
+    public function resolvePlannedHours(int $fiscalYear, int $fiscalMonth, ?int $scopedDepartmentId, ?int $scopedSectionId): float
+    {
+        if ($scopedSectionId) {
+            $plannedHours = (float) OvertimeBudget::query()
+                ->where('section_id', $scopedSectionId)
+                ->where('fiscal_year', $fiscalYear)
+                ->where('fiscal_month', $fiscalMonth)
+                ->value('planned_hours');
+            if ($plannedHours <= 0) {
+                $plannedHours = (float) MonthlyBurnSnapshot::query()
+                    ->where('section_id', $scopedSectionId)
+                    ->where('fiscal_year', $fiscalYear)
+                    ->where('fiscal_month', $fiscalMonth)
+                    ->value('planned_budget_hours') ?: 0.0;
+            }
+        } elseif ($scopedDepartmentId) {
+            $secIds = Section::query()->where('department_id', $scopedDepartmentId)->pluck('id');
+            $plannedHours = (float) OvertimeBudget::query()
+                ->whereIn('section_id', $secIds)
+                ->where('fiscal_year', $fiscalYear)
+                ->where('fiscal_month', $fiscalMonth)
+                ->sum('planned_hours');
+            if ($plannedHours <= 0) {
+                $plannedHours = (float) MonthlyBurnSnapshot::query()
+                    ->where('department_id', $scopedDepartmentId)
+                    ->where('fiscal_year', $fiscalYear)
+                    ->where('fiscal_month', $fiscalMonth)
+                    ->sum('planned_budget_hours') ?: 0.0;
+            }
+        } else {
+            $plannedHours = (float) OvertimeBudget::query()
+                ->where('fiscal_year', $fiscalYear)
+                ->where('fiscal_month', $fiscalMonth)
+                ->sum('planned_hours');
+            if ($plannedHours <= 0) {
+                $plannedHours = (float) MonthlyBurnSnapshot::query()
+                    ->where('fiscal_year', $fiscalYear)
+                    ->where('fiscal_month', $fiscalMonth)
+                    ->sum('planned_budget_hours') ?: 0.0;
+            }
+        }
+
+        return round($plannedHours, 1);
+    }
+
+    /**
+     * Build top 10 employee overtime leaderboard dataset (E09-04).
+     *
+     * @return array{
+     *     items: list<array{
+     *         employee_id: int,
+     *         npk: string,
+     *         name: string,
+     *         full_name: string,
+     *         section_code: string,
+     *         total_hours: float,
+     *         soft_limit_hours: float,
+     *         percentage_of_limit: float,
+     *         zone: 'safe'|'warning'|'danger',
+     *         zone_color: string
+     *     }>,
+     *     fiscal_year: int,
+     *     fiscal_month: int,
+     *     month_name: string,
+     *     soft_limit_hours: float,
+     *     scope: array{
+     *         department_id: ?int,
+     *         section_id: ?int
+     *     }
+     * }
+     */
+    public function getOvertimeLeaderboard(User $user, ?string $date = null, ?int $departmentId = null, ?int $sectionId = null): array
+    {
+        $now = Carbon::now('Asia/Jakarta');
+        try {
+            $selectedCarbon = $date ? Carbon::parse($date, 'Asia/Jakarta') : $now;
+        } catch (\Throwable) {
+            $selectedCarbon = $now;
+        }
+
+        $fiscalYear = (int) $selectedCarbon->year;
+        $fiscalMonth = (int) $selectedCarbon->month;
+        $startOfMonth = $selectedCarbon->copy()->startOfMonth()->toDateString();
+        $endOfMonth = $selectedCarbon->copy()->endOfMonth()->toDateString();
+
+        [$scopedDepartmentId, $scopedSectionId] = $this->resolveScoping($user, $departmentId, $sectionId);
+
+        $threshold = $this->thresholdService->getForDepartment($scopedDepartmentId);
+        $weeklySoftLimit = (float) $threshold->weekly_soft_limit_hours;
+        $monthlySoftLimit = round($weeklySoftLimit * 4, 1);
+
+        $query = OvertimeItem::query()
+            ->join('overtime_submissions', 'overtime_items.overtime_submission_id', '=', 'overtime_submissions.id')
+            ->join('employees', 'overtime_items.employee_id', '=', 'employees.id')
+            ->leftJoin('sections', 'employees.section_id', '=', 'sections.id')
+            ->where('overtime_items.status', 'APPROVED')
+            ->whereBetween('overtime_submissions.operational_date', [$startOfMonth, $endOfMonth]);
+
+        if ($scopedSectionId) {
+            $query->where('overtime_submissions.section_id', $scopedSectionId);
+        } elseif ($scopedDepartmentId) {
+            $query->where('overtime_submissions.department_id', $scopedDepartmentId);
+        }
+
+        $rows = $query
+            ->selectRaw('
+                overtime_items.employee_id,
+                employees.npk,
+                employees.full_name,
+                COALESCE(sections.code, "-") as section_code,
+                SUM(overtime_items.total_hours) as total_approved_hours
+            ')
+            ->groupBy('overtime_items.employee_id', 'employees.npk', 'employees.full_name', 'sections.code')
+            ->orderByDesc('total_approved_hours')
+            ->limit(10)
+            ->get();
+
+        $items = [];
+        foreach ($rows as $row) {
+            $hours = round((float) $row->total_approved_hours, 1);
+            $pctOfLimit = $monthlySoftLimit > 0 ? round(($hours / $monthlySoftLimit) * 100, 1) : 0.0;
+
+            $zone = match (true) {
+                $hours > ($monthlySoftLimit * 1.15) => 'danger',
+                $hours > $monthlySoftLimit => 'warning',
+                default => 'safe',
+            };
+
+            $zoneColor = match ($zone) {
+                'danger' => '#dc2626',
+                'warning' => '#d97706',
+                default => '#16a34a',
+            };
+
+            $items[] = [
+                'employee_id' => (int) $row->employee_id,
+                'npk' => (string) $row->npk,
+                'name' => $user->isUser() ? (string) $row->npk : (string) $row->full_name,
+                'full_name' => (string) $row->full_name,
+                'section_code' => (string) $row->section_code,
+                'total_hours' => $hours,
+                'soft_limit_hours' => $monthlySoftLimit,
+                'percentage_of_limit' => $pctOfLimit,
+                'zone' => $zone,
+                'zone_color' => $zoneColor,
+            ];
+        }
+
+        return [
+            'items' => $items,
+            'fiscal_year' => $fiscalYear,
+            'fiscal_month' => $fiscalMonth,
+            'month_name' => $selectedCarbon->translatedFormat('F Y'),
+            'soft_limit_hours' => $monthlySoftLimit,
+            'scope' => [
+                'department_id' => $scopedDepartmentId,
+                'section_id' => $scopedSectionId,
+            ],
+        ];
+    }
+
+    /**
+     * Build category overtime distribution donut dataset (E09-04).
+     *
+     * @return array{
+     *     total_hours: float,
+     *     categories: list<array{
+     *         key: 'production'|'tpm'|'project'|'others',
+     *         label: string,
+     *         hours: float,
+     *         percentage: float,
+     *         color: string
+     *     }>,
+     *     fiscal_year: int,
+     *     fiscal_month: int,
+     *     month_name: string,
+     *     scope: array{
+     *         department_id: ?int,
+     *         section_id: ?int
+     *     }
+     * }
+     */
+    public function getCategoryDistribution(User $user, ?string $date = null, ?int $departmentId = null, ?int $sectionId = null): array
+    {
+        $now = Carbon::now('Asia/Jakarta');
+        try {
+            $selectedCarbon = $date ? Carbon::parse($date, 'Asia/Jakarta') : $now;
+        } catch (\Throwable) {
+            $selectedCarbon = $now;
+        }
+
+        $fiscalYear = (int) $selectedCarbon->year;
+        $fiscalMonth = (int) $selectedCarbon->month;
+        $startOfMonth = $selectedCarbon->copy()->startOfMonth()->toDateString();
+        $endOfMonth = $selectedCarbon->copy()->endOfMonth()->toDateString();
+
+        [$scopedDepartmentId, $scopedSectionId] = $this->resolveScoping($user, $departmentId, $sectionId);
+
+        $query = OvertimeItem::query()
+            ->join('overtime_submissions', 'overtime_items.overtime_submission_id', '=', 'overtime_submissions.id')
+            ->where('overtime_items.status', 'APPROVED')
+            ->whereBetween('overtime_submissions.operational_date', [$startOfMonth, $endOfMonth]);
+
+        if ($scopedSectionId) {
+            $query->where('overtime_submissions.section_id', $scopedSectionId);
+        } elseif ($scopedDepartmentId) {
+            $query->where('overtime_submissions.department_id', $scopedDepartmentId);
+        }
+
+        $row = $query
+            ->selectRaw('
+                COALESCE(SUM(overtime_items.hours_production), 0) as production_hours,
+                COALESCE(SUM(overtime_items.hours_tpm), 0) as tpm_hours,
+                COALESCE(SUM(overtime_items.hours_project), 0) as capex_hours,
+                COALESCE(SUM(overtime_items.hours_others), 0) as others_hours,
+                COALESCE(SUM(overtime_items.total_hours), 0) as total_hours
+            ')
+            ->first();
+
+        $prodHours = round((float) ($row->production_hours ?? 0.0), 1);
+        $tpmHours = round((float) ($row->tpm_hours ?? 0.0), 1);
+        $capexHours = round((float) ($row->capex_hours ?? 0.0), 1);
+        $othersHours = round((float) ($row->others_hours ?? 0.0), 1);
+        $totalHours = round((float) ($row->total_hours ?? ($prodHours + $tpmHours + $capexHours + $othersHours)), 1);
+
+        $categories = [
+            [
+                'key' => 'production',
+                'label' => 'Produksi (Production)',
+                'hours' => $prodHours,
+                'percentage' => $totalHours > 0 ? round(($prodHours / $totalHours) * 100, 1) : 0.0,
+                'color' => '#3b82f6',
+            ],
+            [
+                'key' => 'tpm',
+                'label' => 'TPM / Maintenance',
+                'hours' => $tpmHours,
+                'percentage' => $totalHours > 0 ? round(($tpmHours / $totalHours) * 100, 1) : 0.0,
+                'color' => '#10b981',
+            ],
+            [
+                'key' => 'project',
+                'label' => 'CapEx Project',
+                'hours' => $capexHours,
+                'percentage' => $totalHours > 0 ? round(($capexHours / $totalHours) * 100, 1) : 0.0,
+                'color' => '#7c3aed',
+            ],
+            [
+                'key' => 'others',
+                'label' => 'Lain-lain (Others)',
+                'hours' => $othersHours,
+                'percentage' => $totalHours > 0 ? round(($othersHours / $totalHours) * 100, 1) : 0.0,
+                'color' => '#64748b',
+            ],
+        ];
+
+        return [
+            'total_hours' => $totalHours,
+            'categories' => $categories,
+            'fiscal_year' => $fiscalYear,
+            'fiscal_month' => $fiscalMonth,
+            'month_name' => $selectedCarbon->translatedFormat('F Y'),
+            'scope' => [
+                'department_id' => $scopedDepartmentId,
+                'section_id' => $scopedSectionId,
+            ],
+        ];
+    }
+
+    /**
+     * Build rolling 12-month overtime working time trend dataset (E09-04).
+     *
+     * @return array{
+     *     labels: list<string>,
+     *     hkn_series: list<float>,
+     *     hlr_series: list<float>,
+     *     total_series: list<float>,
+     *     total_hkn: float,
+     *     total_hlr: float,
+     *     grand_total: float,
+     *     fiscal_year: int,
+     *     fiscal_month: int,
+     *     month_name: string,
+     *     scope: array{
+     *         department_id: ?int,
+     *         section_id: ?int
+     *     }
+     * }
+     */
+    public function getTrendWorkingTime(User $user, ?string $date = null, ?int $departmentId = null, ?int $sectionId = null): array
+    {
+        $now = Carbon::now('Asia/Jakarta');
+        try {
+            $selectedCarbon = $date ? Carbon::parse($date, 'Asia/Jakarta') : $now;
+        } catch (\Throwable) {
+            $selectedCarbon = $now;
+        }
+
+        $fiscalYear = (int) $selectedCarbon->year;
+        $fiscalMonth = (int) $selectedCarbon->month;
+        $startDate = $selectedCarbon->copy()->subMonths(11)->startOfMonth()->toDateString();
+        $endDate = $selectedCarbon->copy()->endOfMonth()->toDateString();
+
+        [$scopedDepartmentId, $scopedSectionId] = $this->resolveScoping($user, $departmentId, $sectionId);
+
+        $query = OvertimeItem::query()
+            ->join('overtime_submissions', 'overtime_items.overtime_submission_id', '=', 'overtime_submissions.id')
+            ->where('overtime_items.status', 'APPROVED')
+            ->whereBetween('overtime_submissions.operational_date', [$startDate, $endDate]);
+
+        if ($scopedSectionId) {
+            $query->where('overtime_submissions.section_id', $scopedSectionId);
+        } elseif ($scopedDepartmentId) {
+            $query->where('overtime_submissions.department_id', $scopedDepartmentId);
+        }
+
+        $rows = $query
+            ->selectRaw('
+                overtime_submissions.operational_date,
+                overtime_submissions.day_type,
+                SUM(overtime_items.total_hours) as total_hours
+            ')
+            ->groupBy('overtime_submissions.operational_date', 'overtime_submissions.day_type')
+            ->get();
+
+        $monthlyMap = [];
+        foreach ($rows as $r) {
+            $monthKey = Carbon::parse($r->operational_date)->format('Y-m');
+            $dayType = strtoupper((string) $r->day_type);
+            if (! isset($monthlyMap[$monthKey])) {
+                $monthlyMap[$monthKey] = ['HKN' => 0.0, 'HLR' => 0.0];
+            }
+            if ($dayType === 'HLR') {
+                $monthlyMap[$monthKey]['HLR'] += (float) $r->total_hours;
+            } else {
+                $monthlyMap[$monthKey]['HKN'] += (float) $r->total_hours;
+            }
+        }
+
+        $labels = [];
+        $hknSeries = [];
+        $hlrSeries = [];
+        $totalSeries = [];
+
+        for ($i = 11; $i >= 0; $i--) {
+            $monthCarbon = $selectedCarbon->copy()->subMonths($i);
+            $monthKey = $monthCarbon->format('Y-m');
+            $labels[] = $monthCarbon->translatedFormat('M y');
+            $hkn = round($monthlyMap[$monthKey]['HKN'] ?? 0.0, 1);
+            $hlr = round($monthlyMap[$monthKey]['HLR'] ?? 0.0, 1);
+            $hknSeries[] = $hkn;
+            $hlrSeries[] = $hlr;
+            $totalSeries[] = round($hkn + $hlr, 1);
+        }
+
+        $totalHkn = round(array_sum($hknSeries), 1);
+        $totalHlr = round(array_sum($hlrSeries), 1);
+        $grandTotal = round(array_sum($totalSeries), 1);
+
+        return [
+            'labels' => $labels,
+            'hkn_series' => $hknSeries,
+            'hlr_series' => $hlrSeries,
+            'total_series' => $totalSeries,
+            'total_hkn' => $totalHkn,
+            'total_hlr' => $totalHlr,
+            'grand_total' => $grandTotal,
+            'fiscal_year' => $fiscalYear,
+            'fiscal_month' => $fiscalMonth,
+            'month_name' => $selectedCarbon->translatedFormat('F Y'),
+            'scope' => [
+                'department_id' => $scopedDepartmentId,
+                'section_id' => $scopedSectionId,
+            ],
+        ];
+    }
+
+    /**
+     * Build daily burn index contribution trendline dataset (E09-04).
+     *
+     * @return array{
+     *     labels: list<string>,
+     *     daily_indices: list<float|null>,
+     *     daily_hours: list<float|null>,
+     *     planned_daily_pacing_hours: float,
+     *     threshold_pct: float,
+     *     average_index: float,
+     *     cutoff_day: int,
+     *     days_in_month: int,
+     *     fiscal_year: int,
+     *     fiscal_month: int,
+     *     month_name: string,
+     *     scope: array{
+     *         department_id: ?int,
+     *         section_id: ?int
+     *     }
+     * }
+     */
+    public function getDailyIndexTrend(User $user, ?string $date = null, ?int $departmentId = null, ?int $sectionId = null): array
+    {
+        $now = Carbon::now('Asia/Jakarta');
+        try {
+            $selectedCarbon = $date ? Carbon::parse($date, 'Asia/Jakarta') : $now;
+        } catch (\Throwable) {
+            $selectedCarbon = $now;
+        }
+
+        $fiscalYear = (int) $selectedCarbon->year;
+        $fiscalMonth = (int) $selectedCarbon->month;
+        $daysInMonth = (int) $selectedCarbon->daysInMonth;
+        $startOfMonth = $selectedCarbon->copy()->startOfMonth()->toDateString();
+        $endOfMonth = $selectedCarbon->copy()->endOfMonth()->toDateString();
+
+        [$scopedDepartmentId, $scopedSectionId] = $this->resolveScoping($user, $departmentId, $sectionId);
+
+        $plannedHours = $this->resolvePlannedHours($fiscalYear, $fiscalMonth, $scopedDepartmentId, $scopedSectionId);
+        $dailyPacing = $daysInMonth > 0 ? $plannedHours / $daysInMonth : 0.0;
+
+        $threshold = $this->thresholdService->getForDepartment($scopedDepartmentId);
+        $thresholdPct = (float) $threshold->burn_warning_pct ?: 100.0;
+
+        if ($selectedCarbon->year === $now->year && $selectedCarbon->month === $now->month) {
+            $cutoffDay = min($now->day, $daysInMonth);
+        } elseif ($selectedCarbon->isPast()) {
+            $cutoffDay = $daysInMonth;
+        } else {
+            $cutoffDay = 0;
+        }
+
+        $query = OvertimeItem::query()
+            ->join('overtime_submissions', 'overtime_items.overtime_submission_id', '=', 'overtime_submissions.id')
+            ->where('overtime_items.status', 'APPROVED')
+            ->whereBetween('overtime_submissions.operational_date', [$startOfMonth, $endOfMonth]);
+
+        if ($scopedSectionId) {
+            $query->where('overtime_submissions.section_id', $scopedSectionId);
+        } elseif ($scopedDepartmentId) {
+            $query->where('overtime_submissions.department_id', $scopedDepartmentId);
+        }
+
+        $rows = $query
+            ->selectRaw('
+                overtime_submissions.operational_date,
+                SUM(overtime_items.total_hours) as total_daily_hours
+            ')
+            ->groupBy('overtime_submissions.operational_date')
+            ->get();
+
+        $dailyHoursMap = [];
+        foreach ($rows as $r) {
+            $dateKey = Carbon::parse($r->operational_date)->toDateString();
+            $dailyHoursMap[$dateKey] = (float) $r->total_daily_hours;
+        }
+
+        $labels = [];
+        $dailyIndices = [];
+        $dailyHours = [];
+        $validIndices = [];
+
+        for ($d = 1; $d <= $daysInMonth; $d++) {
+            $labels[] = (string) $d;
+            $dayCarbon = $selectedCarbon->copy()->day($d);
+            $dayDate = $dayCarbon->toDateString();
+
+            if ($d <= $cutoffDay) {
+                $actual = round($dailyHoursMap[$dayDate] ?? 0.0, 1);
+                $dailyHours[] = $actual;
+
+                if ($dailyPacing > 0) {
+                    $index = round(($actual / $dailyPacing) * 100, 1);
+                } else {
+                    $index = $actual > 0 ? 100.0 : 0.0;
+                }
+                $dailyIndices[] = $index;
+                $validIndices[] = $index;
+            } else {
+                $dailyHours[] = null;
+                $dailyIndices[] = null;
+            }
+        }
+
+        $averageIndex = count($validIndices) > 0 ? round(array_sum($validIndices) / count($validIndices), 1) : 0.0;
+
+        return [
+            'labels' => $labels,
+            'daily_indices' => $dailyIndices,
+            'daily_hours' => $dailyHours,
+            'planned_daily_pacing_hours' => round($dailyPacing, 1),
+            'threshold_pct' => $thresholdPct,
+            'average_index' => $averageIndex,
+            'cutoff_day' => $cutoffDay,
+            'days_in_month' => $daysInMonth,
+            'fiscal_year' => $fiscalYear,
+            'fiscal_month' => $fiscalMonth,
+            'month_name' => $selectedCarbon->translatedFormat('F Y'),
+            'scope' => [
+                'department_id' => $scopedDepartmentId,
+                'section_id' => $scopedSectionId,
+            ],
+        ];
+    }
+
+    /**
+     * Build weekly overtime day type breakdown (HKN vs HLR) dataset (E09-04).
+     *
+     * @return array{
+     *     labels: list<string>,
+     *     hkn_hours: list<float>,
+     *     hlr_hours: list<float>,
+     *     total_hkn: float,
+     *     total_hlr: float,
+     *     grand_total: float,
+     *     hlr_ratio_pct: float,
+     *     fiscal_year: int,
+     *     fiscal_month: int,
+     *     month_name: string,
+     *     scope: array{
+     *         department_id: ?int,
+     *         section_id: ?int
+     *     }
+     * }
+     */
+    public function getDayTypeBreakdown(User $user, ?string $date = null, ?int $departmentId = null, ?int $sectionId = null): array
+    {
+        $now = Carbon::now('Asia/Jakarta');
+        try {
+            $selectedCarbon = $date ? Carbon::parse($date, 'Asia/Jakarta') : $now;
+        } catch (\Throwable) {
+            $selectedCarbon = $now;
+        }
+
+        $fiscalYear = (int) $selectedCarbon->year;
+        $fiscalMonth = (int) $selectedCarbon->month;
+        $daysInMonth = (int) $selectedCarbon->daysInMonth;
+        $startOfMonth = $selectedCarbon->copy()->startOfMonth()->toDateString();
+        $endOfMonth = $selectedCarbon->copy()->endOfMonth()->toDateString();
+
+        [$scopedDepartmentId, $scopedSectionId] = $this->resolveScoping($user, $departmentId, $sectionId);
+
+        $query = OvertimeItem::query()
+            ->join('overtime_submissions', 'overtime_items.overtime_submission_id', '=', 'overtime_submissions.id')
+            ->where('overtime_items.status', 'APPROVED')
+            ->whereBetween('overtime_submissions.operational_date', [$startOfMonth, $endOfMonth]);
+
+        if ($scopedSectionId) {
+            $query->where('overtime_submissions.section_id', $scopedSectionId);
+        } elseif ($scopedDepartmentId) {
+            $query->where('overtime_submissions.department_id', $scopedDepartmentId);
+        }
+
+        $rows = $query
+            ->selectRaw('
+                overtime_submissions.operational_date,
+                overtime_submissions.day_type,
+                SUM(overtime_items.total_hours) as total_hours
+            ')
+            ->groupBy('overtime_submissions.operational_date', 'overtime_submissions.day_type')
+            ->get();
+
+        $hknWeeks = [0.0, 0.0, 0.0, 0.0, 0.0];
+        $hlrWeeks = [0.0, 0.0, 0.0, 0.0, 0.0];
+
+        foreach ($rows as $r) {
+            $dayNum = Carbon::parse($r->operational_date)->day;
+            $weekIdx = min(4, (int) floor(($dayNum - 1) / 7));
+            $hours = (float) $r->total_hours;
+            if (strtoupper((string) $r->day_type) === 'HLR') {
+                $hlrWeeks[$weekIdx] += $hours;
+            } else {
+                $hknWeeks[$weekIdx] += $hours;
+            }
+        }
+
+        $hknSeries = array_map(fn ($h) => round($h, 1), $hknWeeks);
+        $hlrSeries = array_map(fn ($h) => round($h, 1), $hlrWeeks);
+
+        $totalHkn = round(array_sum($hknSeries), 1);
+        $totalHlr = round(array_sum($hlrSeries), 1);
+        $grandTotal = round($totalHkn + $totalHlr, 1);
+        $hlrRatioPct = $grandTotal > 0 ? round(($totalHlr / $grandTotal) * 100, 1) : 0.0;
+
+        $labels = [
+            'M1 (1–7)',
+            'M2 (8–14)',
+            'M3 (15–21)',
+            'M4 (22–28)',
+            'M5 (29–'.$daysInMonth.')',
+        ];
+
+        return [
+            'labels' => $labels,
+            'hkn_hours' => $hknSeries,
+            'hlr_hours' => $hlrSeries,
+            'total_hkn' => $totalHkn,
+            'total_hlr' => $totalHlr,
+            'grand_total' => $grandTotal,
+            'hlr_ratio_pct' => $hlrRatioPct,
+            'fiscal_year' => $fiscalYear,
+            'fiscal_month' => $fiscalMonth,
+            'month_name' => $selectedCarbon->translatedFormat('F Y'),
+            'scope' => [
+                'department_id' => $scopedDepartmentId,
+                'section_id' => $scopedSectionId,
+            ],
         ];
     }
 }

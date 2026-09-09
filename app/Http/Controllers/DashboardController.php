@@ -42,6 +42,11 @@ class DashboardController extends Controller
         $kpiCards = $this->kpiService->getKpiCards($user, $date, $departmentId);
         $dailyBurnChart = $this->kpiService->getDailyBurnChart($user, $date, $departmentId, $sectionId);
         $sectionBurnComparison = $this->kpiService->getSectionBurnComparison($user, $date, $departmentId);
+        $leaderboard = $this->kpiService->getOvertimeLeaderboard($user, $date, $departmentId, $sectionId);
+        $categoryDistribution = $this->kpiService->getCategoryDistribution($user, $date, $departmentId, $sectionId);
+        $trendWorkingTime = $this->kpiService->getTrendWorkingTime($user, $date, $departmentId, $sectionId);
+        $dailyIndexTrend = $this->kpiService->getDailyIndexTrend($user, $date, $departmentId, $sectionId);
+        $dayTypeBreakdown = $this->kpiService->getDayTypeBreakdown($user, $date, $departmentId, $sectionId);
 
         $departments = Department::query()
             ->where('is_active', true)
@@ -52,6 +57,11 @@ class DashboardController extends Controller
             'kpiCards' => $kpiCards,
             'dailyBurnChart' => $dailyBurnChart,
             'sectionBurnComparison' => $sectionBurnComparison,
+            'leaderboard' => $leaderboard,
+            'categoryDistribution' => $categoryDistribution,
+            'trendWorkingTime' => $trendWorkingTime,
+            'dailyIndexTrend' => $dailyIndexTrend,
+            'dayTypeBreakdown' => $dayTypeBreakdown,
             'departments' => $departments,
             'selectedDepartmentId' => $kpiCards['scope']['department_id'],
             'selectedSectionId' => $dailyBurnChart['scope']['section_id'],
@@ -134,5 +144,120 @@ class DashboardController extends Controller
         $data = $this->kpiService->getSectionBurnComparison($user, $date, $departmentId);
 
         return response()->json($data);
+    }
+
+    /**
+     * Return JSON endpoint for overtime leaderboard chart (E09-04).
+     */
+    public function leaderboard(Request $request): JsonResponse
+    {
+        /** @var User|null $user */
+        $user = $request->user();
+
+        if ($user?->isUser()) {
+            return response()->json(['error' => 'Unauthorized for operational dashboard'], 403);
+        }
+
+        [$date, $departmentId, $sectionId] = $this->extractFilterParams($request);
+
+        $data = $this->kpiService->getOvertimeLeaderboard($user, $date, $departmentId, $sectionId);
+
+        return response()->json($data);
+    }
+
+    /**
+     * Return JSON endpoint for category distribution donut chart (E09-04).
+     */
+    public function categoryDistribution(Request $request): JsonResponse
+    {
+        /** @var User|null $user */
+        $user = $request->user();
+
+        if ($user?->isUser()) {
+            return response()->json(['error' => 'Unauthorized for operational dashboard'], 403);
+        }
+
+        [$date, $departmentId, $sectionId] = $this->extractFilterParams($request);
+
+        $data = $this->kpiService->getCategoryDistribution($user, $date, $departmentId, $sectionId);
+
+        return response()->json($data);
+    }
+
+    /**
+     * Return JSON endpoint for 12-month working time trend chart (E09-04).
+     */
+    public function trendWorkingTime(Request $request): JsonResponse
+    {
+        /** @var User|null $user */
+        $user = $request->user();
+
+        if ($user?->isUser()) {
+            return response()->json(['error' => 'Unauthorized for operational dashboard'], 403);
+        }
+
+        [$date, $departmentId, $sectionId] = $this->extractFilterParams($request);
+
+        $data = $this->kpiService->getTrendWorkingTime($user, $date, $departmentId, $sectionId);
+
+        return response()->json($data);
+    }
+
+    /**
+     * Return JSON endpoint for daily burn index contribution trend chart (E09-04).
+     */
+    public function dailyIndexTrend(Request $request): JsonResponse
+    {
+        /** @var User|null $user */
+        $user = $request->user();
+
+        if ($user?->isUser()) {
+            return response()->json(['error' => 'Unauthorized for operational dashboard'], 403);
+        }
+
+        [$date, $departmentId, $sectionId] = $this->extractFilterParams($request);
+
+        $data = $this->kpiService->getDailyIndexTrend($user, $date, $departmentId, $sectionId);
+
+        return response()->json($data);
+    }
+
+    /**
+     * Return JSON endpoint for weekly day type breakdown chart (E09-04).
+     */
+    public function dayTypeBreakdown(Request $request): JsonResponse
+    {
+        /** @var User|null $user */
+        $user = $request->user();
+
+        if ($user?->isUser()) {
+            return response()->json(['error' => 'Unauthorized for operational dashboard'], 403);
+        }
+
+        [$date, $departmentId, $sectionId] = $this->extractFilterParams($request);
+
+        $data = $this->kpiService->getDayTypeBreakdown($user, $date, $departmentId, $sectionId);
+
+        return response()->json($data);
+    }
+
+    /**
+     * Extract filter parameters from request.
+     *
+     * @return array{0: ?string, 1: ?int, 2: ?int}
+     */
+    protected function extractFilterParams(Request $request): array
+    {
+        $date = $request->filled('date') ? $request->string('date')->value() : null;
+
+        $rawDept = $request->input('department_id');
+        $departmentId = null;
+        if ($request->has('department_id') && $rawDept !== '') {
+            $departmentId = ($rawDept === 'all' || (int) $rawDept === 0) ? 0 : (int) $rawDept;
+        }
+
+        $sectionId = $request->filled('section_id') ? $request->integer('section_id') : null;
+
+        return [$date, $departmentId, $sectionId];
     }
 }

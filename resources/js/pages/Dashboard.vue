@@ -33,6 +33,21 @@ import KpiCardWorkingDays, {
 import SectionBurnComparisonChart, {
     type SectionBurnComparisonData,
 } from '@/components/dashboard/SectionBurnComparisonChart.vue';
+import CategoryDistributionDonut, {
+    type CategoryDistributionData,
+} from '@/components/dashboard/CategoryDistributionDonut.vue';
+import DailyIndexTrendChart, {
+    type DailyIndexTrendData,
+} from '@/components/dashboard/DailyIndexTrendChart.vue';
+import DayTypeBreakdownChart, {
+    type DayTypeBreakdownData,
+} from '@/components/dashboard/DayTypeBreakdownChart.vue';
+import OvertimeLeaderboardChart, {
+    type LeaderboardData,
+} from '@/components/dashboard/OvertimeLeaderboardChart.vue';
+import TrendWorkingTimeChart, {
+    type TrendWorkingTimeData,
+} from '@/components/dashboard/TrendWorkingTimeChart.vue';
 import RoleBadge from '@/components/RoleBadge.vue';
 import {
     Card,
@@ -82,6 +97,11 @@ interface Props {
     kpiCards?: KpiCardsPayload;
     dailyBurnChart?: DailyBurnChartData;
     sectionBurnComparison?: SectionBurnComparisonData;
+    leaderboard?: LeaderboardData;
+    categoryDistribution?: CategoryDistributionData;
+    trendWorkingTime?: TrendWorkingTimeData;
+    dailyIndexTrend?: DailyIndexTrendData;
+    dayTypeBreakdown?: DayTypeBreakdownData;
     departments?: DepartmentItem[];
     selectedDepartmentId?: number | null;
     selectedSectionId?: number | null;
@@ -92,6 +112,11 @@ const props = withDefaults(defineProps<Props>(), {
     kpiCards: undefined,
     dailyBurnChart: undefined,
     sectionBurnComparison: undefined,
+    leaderboard: undefined,
+    categoryDistribution: undefined,
+    trendWorkingTime: undefined,
+    dailyIndexTrend: undefined,
+    dayTypeBreakdown: undefined,
     departments: () => [],
     selectedDepartmentId: null,
     selectedSectionId: null,
@@ -104,6 +129,12 @@ const page = usePage();
 const user = computed(() => page.props.auth?.user as User | undefined);
 
 const isFiltering = ref(false);
+const selectedCategoryFilter = ref<string | null>(null);
+
+function handleCategorySelect(catKey: string | null) {
+    selectedCategoryFilter.value = catKey;
+}
+
 const filterDept = ref(
     props.selectedDepartmentId ? String(props.selectedDepartmentId) : 'all',
 );
@@ -160,6 +191,11 @@ function applyFilters(overrideSection?: number | null | Event) {
                 'kpiCards',
                 'dailyBurnChart',
                 'sectionBurnComparison',
+                'leaderboard',
+                'categoryDistribution',
+                'trendWorkingTime',
+                'dailyIndexTrend',
+                'dayTypeBreakdown',
                 'selectedDepartmentId',
                 'selectedSectionId',
                 'selectedDate',
@@ -463,6 +499,42 @@ const roleCapabilities = computed(() => {
             :data="sectionBurnComparison"
             :loading="isFiltering"
         />
+
+        <!-- Band 4: Multi-Chart Analytics Grid (Story E09-04) -->
+        <div class="space-y-4" data-test="multi-chart-grid-band">
+            <!-- Top Row: Leaderboard, Category Donut, 12-Month Trend (3 columns on lg) -->
+            <div class="grid gap-4 lg:grid-cols-3">
+                <OvertimeLeaderboardChart
+                    :data="leaderboard"
+                    :loading="isFiltering"
+                />
+
+                <CategoryDistributionDonut
+                    :data="categoryDistribution"
+                    :loading="isFiltering"
+                    :selected-category="selectedCategoryFilter"
+                    @select-category="handleCategorySelect"
+                />
+
+                <TrendWorkingTimeChart
+                    :data="trendWorkingTime"
+                    :loading="isFiltering"
+                />
+            </div>
+
+            <!-- Bottom Row: Daily Index Trend & Day Type Breakdown (2 columns on lg) -->
+            <div class="grid gap-4 lg:grid-cols-2">
+                <DailyIndexTrendChart
+                    :data="dailyIndexTrend"
+                    :loading="isFiltering"
+                />
+
+                <DayTypeBreakdownChart
+                    :data="dayTypeBreakdown"
+                    :loading="isFiltering"
+                />
+            </div>
+        </div>
 
         <!-- Assignment & Identity Cards -->
         <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

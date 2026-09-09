@@ -86,6 +86,7 @@ Technical specifications and decision records for the engineering implementation
     - [Supervised Machine Learning Analytics](./dev-docs/features/ml-predictive-analytics.md)
     - [Executive Operational Dashboard & KPI Cards (E09-00 - E09-01)](./dev-docs/features/executive-dashboard-kpi.md)
     - [Daily Burn Chart Index & Section Burn Comparison (E09-02 & E09-03)](./dev-docs/features/daily-burn-and-section-comparison.md)
+    - [Executive Dashboard Multi-Chart Analytics Grid (E09-04)](./dev-docs/features/executive-dashboard-multi-chart-grid.md)
 - **API Reference Design:**
     - [Calendar Classification & Management API](./dev-docs/api/calendar-endpoints.md)
     - [Overtime Policy Check API](./dev-docs/api/overtime-policy-check.md)
@@ -140,6 +141,7 @@ Plain-language operating guides for factory supervisors, team leaders, and opera
     - [CapEx Project Labor & Portfolio Monitoring Guide](./user-docs/guides/capex-project-labor.md)
     - [Executive Operational Dashboard & KPI Cards Guide](./user-docs/guides/executive-dashboard-kpi.md)
     - [Daily Burn Chart Index & Section Comparison Guide](./user-docs/guides/daily-burn-and-section-comparison.md)
+    - [Executive Dashboard Multi-Chart Analytics Grid Guide](./user-docs/guides/executive-dashboard-multi-chart-grid.md)
 
 ---
 

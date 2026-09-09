@@ -25,7 +25,7 @@
 | [Epic-06](./Epic-06.md) | Individual Employee Reporting & Welfare               | P2 – Should Have  | 30 SP       | Sprint 6    | 🟢 Completed (30/30 SP)   |
 | [Epic-07](./Epic-07.md) | CapEx Project Labor Management                        | P2 – Should Have  | 35 SP       | Sprint 6–7  | 🟢 Completed (35/35 SP)   |
 | [Epic-08](./Epic-08.md) | Supervised ML Analytics & Predictive Intelligence     | P3 – Nice to Have | 58 SP       | Sprint 7–8  | 🔴 Not Started            |
-| [Epic-09](./Epic-09.md) | Executive Dashboard & Analytics Decision Intelligence | P0 – Critical     | 63 SP       | Sprint 9–10 | 🟡 In Progress (26/63 SP) |
+| [Epic-09](./Epic-09.md) | Executive Dashboard & Analytics Decision Intelligence | P0 – Critical     | 63 SP       | Sprint 9–10 | 🟡 In Progress (34/63 SP) |
 
 **Total Estimated Effort:** ~413 Story Points  
 **Estimated Duration:** 10 Sprints × 2-Week Cycles = ~20 Weeks

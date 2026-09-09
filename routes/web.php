@@ -32,6 +32,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard/kpi-cards', [DashboardController::class, 'kpiCards'])->name('dashboard.kpi-cards');
     Route::get('dashboard/charts/daily-burn', [DashboardController::class, 'dailyBurnChart'])->name('dashboard.charts.daily-burn');
     Route::get('dashboard/charts/section-burn', [DashboardController::class, 'sectionBurnComparison'])->name('dashboard.charts.section-burn');
+    Route::get('dashboard/charts/leaderboard', [DashboardController::class, 'leaderboard'])->name('dashboard.charts.leaderboard');
+    Route::get('dashboard/charts/category', [DashboardController::class, 'categoryDistribution'])->name('dashboard.charts.category');
+    Route::get('dashboard/charts/trend-working', [DashboardController::class, 'trendWorkingTime'])->name('dashboard.charts.trend-working');
+    Route::get('dashboard/charts/daily-index', [DashboardController::class, 'dailyIndexTrend'])->name('dashboard.charts.daily-index');
+    Route::get('dashboard/charts/day-type', [DashboardController::class, 'dayTypeBreakdown'])->name('dashboard.charts.day-type');
     Route::get('my/dashboard', [EmployeeSelfServiceController::class, 'index'])->name('my.dashboard');
 
     // Dashboard Burn Index & Budget Analytics (E05 - Admin, Manager, Team Leader)

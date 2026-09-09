@@ -211,44 +211,44 @@ Before any chart story begins, the chart infrastructure must be in place.
 
 **Leaderboard Chart (top-left of bottom section):**
 
-- [ ] Horizontal bar chart: top 10 employees by approved overtime hours this month
-- [ ] Bars show employee name (or NPK if role is User) + total hours
-- [ ] Color: gradient from green (low) to red (high), crossing the soft limit threshold
-- [ ] Date filter: same month selector
+- [x] Horizontal bar chart: top 10 employees by approved overtime hours this month
+- [x] Bars show employee name (or NPK if role is User) + total hours
+- [x] Color: gradient from green (low) to red (high), crossing the soft limit threshold
+- [x] Date filter: same month selector
 
 **Category Overtime Chart (center of bottom section):**
 
-- [ ] Donut chart: Production | TPM | Project (CapEx) | Others — proportional to total hours
-- [ ] Legend shows absolute hours + percentage for each category
-- [ ] Clicking a segment filters the summary table below to show only employees with that category
+- [x] Donut chart: Production | TPM | Project (CapEx) | Others — proportional to total hours
+- [x] Legend shows absolute hours + percentage for each category
+- [x] Clicking a segment filters the summary table below to show only employees with that category
 
 **Trend Working Time Chart (right of bottom section):**
 
-- [ ] Line chart: 12-month rolling total overtime hours trend (one point per month)
-- [ ] Shows two lines: HKN total and HLR total — compares normal vs holiday overtime trends
+- [x] Line chart: 12-month rolling total overtime hours trend (one point per month)
+- [x] Shows two lines: HKN total and HLR total — compares normal vs holiday overtime trends
 
 **Daily Index Trend Chart (bottom-left):**
 
-- [ ] Line chart: daily Burn Index value (not cumulative — just that day's contribution index)
-- [ ] Overlays the policy soft threshold as a horizontal line
+- [x] Line chart: daily Burn Index value (not cumulative — just that day's contribution index)
+- [x] Overlays the policy soft threshold as a horizontal line
 
 **Overtime Day Type Chart (bottom-right):**
 
-- [ ] Grouped bar chart: for each week of the month, shows HKN hours vs HLR hours side by side
-- [ ] Shows whether holiday overtime is increasing or decreasing
+- [x] Grouped bar chart: for each week of the month, shows HKN hours vs HLR hours side by side
+- [x] Shows whether holiday overtime is increasing or decreasing
 
 #### Technical Tasks
 
-- [ ] `DashboardController@leaderboard` — top 10 employees by approved hours, scoped to dept
-- [ ] `DashboardController@categoryDistribution` — SUM hours by category for current month
-- [ ] `DashboardController@trendWorkingTime` — 12-month rolling monthly totals, split HKN/HLR
-- [ ] `DashboardController@dailyIndexTrend` — per-day Burn Index contribution
-- [ ] `DashboardController@dayTypeBreakdown` — weekly HKN vs HLR split
-- [ ] Create `resources/js/Components/Dashboard/OvertimeLeaderboardChart.vue`
-- [ ] Create `resources/js/Components/Dashboard/CategoryDistributionDonut.vue`
-- [ ] Create `resources/js/Components/Dashboard/TrendWorkingTimeChart.vue`
-- [ ] Create `resources/js/Components/Dashboard/DailyIndexTrendChart.vue`
-- [ ] Create `resources/js/Components/Dashboard/DayTypeBreakdownChart.vue`
+- [x] `DashboardController@leaderboard` — top 10 employees by approved hours, scoped to dept
+- [x] `DashboardController@categoryDistribution` — SUM hours by category for current month
+- [x] `DashboardController@trendWorkingTime` — 12-month rolling monthly totals, split HKN/HLR
+- [x] `DashboardController@dailyIndexTrend` — per-day Burn Index contribution
+- [x] `DashboardController@dayTypeBreakdown` — weekly HKN vs HLR split
+- [x] Create `resources/js/Components/Dashboard/OvertimeLeaderboardChart.vue`
+- [x] Create `resources/js/Components/Dashboard/CategoryDistributionDonut.vue`
+- [x] Create `resources/js/Components/Dashboard/TrendWorkingTimeChart.vue`
+- [x] Create `resources/js/Components/Dashboard/DailyIndexTrendChart.vue`
+- [x] Create `resources/js/Components/Dashboard/DayTypeBreakdownChart.vue`
 
 ---
 

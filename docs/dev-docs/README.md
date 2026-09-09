@@ -44,6 +44,7 @@ Deep-dive technical documentation detailing architecture flows, data models, key
 | **[Supervised Machine Learning Analytics](./features/ml-predictive-analytics.md)**                         | [Epic-08](../../scrum/Epic-08.md) | Overtime demand forecasting, Burn Index trajectory ribbon charts, anomaly detection, and cold-start fallback.                                      |
 | **[Executive Operational Dashboard & KPI Cards](./features/executive-dashboard-kpi.md)**                   | [Epic-09](../../scrum/Epic-09.md) | Operational command center (/dashboard), 4 header KPI cards, Vue Chart.js library, and defensive ERP integration fallback.                         |
 | **[Daily Burn Chart Index & Section Burn Comparison](./features/daily-burn-and-section-comparison.md)**    | [Epic-09](../../scrum/Epic-09.md) | Hero line chart with ceiling threshold and red shading (E09-02), horizontal section comparison bar chart (E09-03), and drill-down navigation.      |
+| **[Executive Dashboard Multi-Chart Analytics Grid](./features/executive-dashboard-multi-chart-grid.md)**   | [Epic-09](../../scrum/Epic-09.md) | Multi-chart grid (E09-04): Top 10 Overtime Leaderboard, Category Donut, 12-Month HKN/HLR Trend, Daily Index Pacing, and Weekly Day Type Breakdown. |
 
 ---
 
