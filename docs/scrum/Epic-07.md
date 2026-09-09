@@ -146,26 +146,27 @@ Business Rule **BR-08** is the foundation: any overtime hour categorized as "Pro
 **So that** I can produce the capitalization schedule required by the accounting/tax team.
 
 **Story Points:** 8  
-**Priority:** Should Have
+**Priority:** Should Have  
+**Status:** 🟢 Completed (Sprint 7)
 
 #### Acceptance Criteria
 
-- [ ] Detailed report: one row per overtime item with `capex_project_id` not null
-- [ ] Report columns: `Project Code`, `Project Name`, `Asset Code`, `Date`, `Employee NPK`, `Employee Name`, `Hours`, `Hourly Rate Snapshot (Rp)`, `Cost (Rp)`, `Submission Code`, `Approval Date`, `Approved By`
-- [ ] Filterable by: project code, department, date range
-- [ ] Totals row: total hours + total cost per project at bottom of each project group
-- [ ] Grand total row at report bottom
-- [ ] Export to Excel (`.xlsx`) with the above format — suitable for direct submission to accounting
-- [ ] Report only includes `APPROVED` items (status = 'APPROVED')
-- [ ] Rate snapshot and cost are the **immutable values** stored at submission time — no recalculation
+- [x] Detailed report: one row per overtime item with `capex_project_id` not null
+- [x] Report columns: `Project Code`, `Project Name`, `Asset Code`, `Date`, `Employee NPK`, `Employee Name`, `Hours`, `Hourly Rate Snapshot (Rp)`, `Cost (Rp)`, `Submission Code`, `Approval Date`, `Approved By`
+- [x] Filterable by: project code, department, date range
+- [x] Totals row: total hours + total cost per project at bottom of each project group
+- [x] Grand total row at report bottom
+- [x] Export to Excel (`.xlsx`) with the above format — suitable for direct submission to accounting
+- [x] Report only includes `APPROVED` items (status = 'APPROVED')
+- [x] Rate snapshot and cost are the **immutable values** stored at submission time — no recalculation
 
 #### Technical Tasks
 
-- [ ] `CapexLaborReportController@index` — `GET /reports/capex-labor`
-- [ ] Query: `overtime_items` joined to `overtime_submissions`, `employees`, `capex_projects`, `users (reviewer)` where `capex_project_id IS NOT NULL AND status = 'APPROVED'`
-- [ ] Create `resources/js/Pages/Reports/CapexLaborReport.vue` — filterable report table
-- [ ] `CapexLaborExport` implements `FromQuery`, `WithHeadings`, `WithGrouping` from `maatwebsite/excel`
-- [ ] Export route: `GET /reports/capex-labor/export`
+- [x] `CapexProjectController@index` with `?tab=attribution` + `exportAttribution` (Legacy redirect from `/reports/capex-labor`)
+- [x] Query: `CapExAccountingService@buildAttributionQuery` joining `overtime_submissions`, `employees`, `capex_projects`, `users (reviewer)` where `capex_project_id IS NOT NULL AND status = 'APPROVED'`
+- [x] Create `resources/js/components/capex/CapexLaborAttributionTable.vue` and mount on Tab 2 of `Index.vue`
+- [x] `CapexLaborExportService` native OpenXML (`ZipArchive` + `XMLWriter`) zero-memory streaming `.xlsx` and `.csv` export with project subtotals and grand totals
+- [x] Export routes: `GET /admin/capex-projects/export-attribution` and `GET /reports/capex-labor/export`
 
 ---
 
@@ -204,7 +205,7 @@ Business Rule **BR-08** is the foundation: any overtime hour categorized as "Pro
 | Sprint 6, Day 6–7  | CapEx project master data management               | E07-01         | 🟢 Completed |
 | Sprint 6, Day 8–10 | CapEx project detail dashboard + physical progress | E07-02, E07-05 | 🟢 Completed |
 | Sprint 7, Day 1–3  | Multi-project portfolio overview                   | E07-03         | 🟢 Completed |
-| Sprint 7, Day 4–6  | CapEx labor attribution report + Excel export      | E07-04         | ⏳ Pending   |
+| Sprint 7, Day 4–6  | CapEx labor attribution report + Excel export      | E07-04         | 🟢 Completed |
 
 ---
 
@@ -234,7 +235,7 @@ Business Rule **BR-08** is the foundation: any overtime hour categorized as "Pro
 - [x] Only ACTIVE projects appear in the overtime form's project dropdown
 - [x] Project detail shows correct burn index and milestone burn ratio
 - [x] Portfolio table shows all active CapEx projects with burn status
-- [ ] Labor attribution report exports correct Excel with immutable cost snapshots
+- [x] Labor attribution report exports correct Excel with immutable cost snapshots
 - [x] Physical progress update is logged in audit trail
 - [x] `pnpm lint` passes
 - [x] `pnpm build` succeeds

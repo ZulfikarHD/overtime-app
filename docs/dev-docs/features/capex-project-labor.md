@@ -8,6 +8,8 @@ Story **[E07-02]** expands this capability with an executive and managerial **Ca
 
 Story **[E07-03]** adds the **Multi-Project Portfolio Overview**, providing consolidated portfolio monitoring with high-density tabular presentation, sortable columns, risk color-coding, at-risk flags (⚠️), date range filtering on target completion schedules, and department summary KPI metrics directly on Tab 1 of the CapEx Project Hub.
 
+Story **[E07-04]** implements the **CapEx Project Labor Attribution Report & Excel Export**, providing an itemized financial audit schedule on Tab 2 of the CapEx Project Hub. It lists every approved overtime item with project allocation, immutable rate and cost snapshots, project group subtotals, grand totals, and native OpenXML (`.xlsx`) spreadsheet streaming for fixed asset capitalization compliance (PSAK 16 / IAS 16).
+
 ## Architecture Diagram
 
 ```mermaid
@@ -71,6 +73,7 @@ erDiagram
 | Sidebar Menu        | `Proyek CapEx` (`/admin/capex-projects`)                         | Master list and capital tracking for managers and admins (`FolderKanban`) |
 | Page Component      | `resources/js/pages/admin/CapexProjects/Index.vue`               | Unified hub: Tab 1 (Portfolio & Master Data) + Tab 2 (Financial Report)   |
 | Portfolio Table     | `resources/js/components/capex/CapexPortfolioTable.vue`          | Sortable, color-coded multi-project portfolio table with milestone ratio  |
+| Attribution Table   | `resources/js/components/capex/CapexLaborAttributionTable.vue`   | Grouped attribution audit table with subtotals, grand totals, and filters |
 | Drawer Comp         | `resources/js/components/admin/CapexProjectDrawer.vue`           | Ergonomic slide-in sheet for creating and updating projects               |
 | Modal Comp          | `resources/js/components/admin/ProjectStatusTransitionModal.vue` | State machine transition dialog with audit warnings & target preselection |
 | Detail Cockpit Page | `resources/js/pages/admin/CapexProjects/Show.vue`                | Capital labor burn cockpit, macro KPI cards, timeline, team roster        |
@@ -79,9 +82,10 @@ erDiagram
 | Timeline Chart      | `resources/js/components/capex/CapexLaborTimelineChart.vue`      | Weekly burndown curve (Target linear curve vs Approved actuals)           |
 | Contribution Table  | `resources/js/components/capex/CapexTeamContributionTable.vue`   | Ranked list of technicians with approved hours and cost snapshot          |
 | Notification Bell   | `resources/js/components/NotificationBell.vue`                   | Renders `capex_burn_alert` notification items with 1-click cockpit route  |
-| Accounting Service  | `app/Services/CapExAccountingService.php`                        | Metric aggregations, timeline bucketing, burn alert evaluation            |
+| Accounting Service  | `app/Services/CapExAccountingService.php`                        | Metric aggregations, timeline bucketing, burn alert, attribution report   |
+| Export Service      | `app/Services/CapexLaborExportService.php`                       | Native OpenXML (.xlsx) streaming export with zero external packages       |
 | Project Service     | `app/Services/CapexProjectService.php`                           | Project management, department scoping, audit logging (`PROGRESS_UPDATE`) |
-| Controller          | `app/Http/Controllers/Admin/CapexProjectController.php`          | Resource CRUD management, progress updates, sorting, and filtering        |
+| Controller          | `app/Http/Controllers/Admin/CapexProjectController.php`          | Resource CRUD management, progress updates, sorting, and attribution      |
 | Notification        | `app/Notifications/CapexBurnAlertNotification.php`               | Queued database notification dispatched on >80% burn thresholds           |
 
 ## Metric Calculations & Business Logic
@@ -122,24 +126,34 @@ erDiagram
     - **Dedicated Milestone Burn Ratio Column**: Renders computed `Milestone Burn Ratio` with prominent amber highlighting if > 1.20, and gracefully falls back to `N/A` if physical progress is 0% to prevent division-by-zero artifacts.
     - **Dedicated Risk Flag Column**: Displays `⚠️` icon for projects where `Milestone Burn Ratio > 1.20` or `CapEx Burn Index > 90%`.
     - **Target Completion Date Range Filter**: Filters projects by `target_end_date` between `date_from` and `date_to`.
+9. **Financial Labor Attribution Schedule & OpenXML Streaming (E07-04)**:
+    - **Grouping & Subtotals**: All approved overtime items (`status = 'APPROVED'`) with `capex_project_id IS NOT NULL` are grouped by CapEx Project. Each project card displays subtotal hours and subtotal capitalized cost.
+    - **Grand Totals**: The executive summary card aggregates grand total hours and grand total capitalized cost across all filtered projects.
+    - **Audit Parity**: Costs and hourly rates strictly use immutable `total_cost_snapshot` and `hourly_rate_snapshot` stamped at submission time, guaranteeing complete consistency with accounting ledgers without recalculation.
+    - **Native OpenXML Export**: `CapexLaborExportService` streams native OpenXML `.xlsx` using PHP's `ZipArchive` and `XMLWriter`, eliminating heavy dependencies (e.g. PhpSpreadsheet) and memory spikes while providing bold subtotals, grand totals, and true numeric values (`<c t="n">`).
+    - **Department Scoping**: Department Managers can only view and export attribution records for their own department. Cross-department export requests by non-admins are rejected with 403 Forbidden.
 
 ## API Endpoints & Routes
 
-| Method   | URI                                   | Controller Action                         | Purpose                                    | Auth / Middleware            |
-| -------- | ------------------------------------- | ----------------------------------------- | ------------------------------------------ | ---------------------------- |
-| GET      | `/admin/capex-projects`               | `CapexProjectController@index`            | Project portfolio list and burn status     | `auth`, `role:admin,manager` |
-| POST     | `/admin/capex-projects`               | `CapexProjectController@store`            | Create new CapEx project                   | `auth`, `role:admin,manager` |
-| GET      | `/admin/capex-projects/{id}`          | `CapexProjectController@show`             | Project labor burn cockpit                 | `auth`, `role:admin,manager` |
-| PUT      | `/admin/capex-projects/{id}`          | `CapexProjectController@update`           | Update project master attributes           | `auth`, `role:admin,manager` |
-| DELETE   | `/admin/capex-projects/{id}`          | `CapexProjectController@destroy`          | Delete project (only if 0 overtime items)  | `auth`, `role:admin,manager` |
-| PATCH    | `/admin/capex-projects/{id}/status`   | `CapexProjectController@updateStatus`     | Transition project lifecycle status        | `auth`, `role:admin,manager` |
-| PATCH    | `/admin/capex-projects/{id}/progress` | `CapexProjectController@updateProgress`   | Update physical progress in-place (E07-02) | `auth`, `role:admin,manager` |
-| REDIRECT | `/reports/capex-projects/portfolio`   | → `/admin/capex-projects?tab=portfolio`   | Legacy alias redirect to Portfolio Hub     | Public / Web                 |
-| REDIRECT | `/reports/capex-labor`                | → `/admin/capex-projects?tab=attribution` | Legacy alias redirect to Attribution Tab   | Public / Web                 |
+| Method   | URI                                        | Controller Action                          | Purpose                                     | Auth / Middleware            |
+| -------- | ------------------------------------------ | ------------------------------------------ | ------------------------------------------- | ---------------------------- |
+| GET      | `/admin/capex-projects`                    | `CapexProjectController@index`             | Project portfolio list and burn status      | `auth`, `role:admin,manager` |
+| POST     | `/admin/capex-projects`                    | `CapexProjectController@store`             | Create new CapEx project                    | `auth`, `role:admin,manager` |
+| GET      | `/admin/capex-projects/export-attribution` | `CapexProjectController@exportAttribution` | Stream CapEx labor attribution (.xlsx/.csv) | `auth`, `role:admin,manager` |
+| GET      | `/admin/capex-projects/{id}`               | `CapexProjectController@show`              | Project labor burn cockpit                  | `auth`, `role:admin,manager` |
+| PUT      | `/admin/capex-projects/{id}`               | `CapexProjectController@update`            | Update project master attributes            | `auth`, `role:admin,manager` |
+| DELETE   | `/admin/capex-projects/{id}`               | `CapexProjectController@destroy`           | Delete project (only if 0 overtime items)   | `auth`, `role:admin,manager` |
+| PATCH    | `/admin/capex-projects/{id}/status`        | `CapexProjectController@updateStatus`      | Transition project lifecycle status         | `auth`, `role:admin,manager` |
+| PATCH    | `/admin/capex-projects/{id}/progress`      | `CapexProjectController@updateProgress`    | Update physical progress in-place (E07-02)  | `auth`, `role:admin,manager` |
+| REDIRECT | `/reports/capex-projects/portfolio`        | → `/admin/capex-projects?tab=portfolio`    | Legacy alias redirect to Portfolio Hub      | Public / Web                 |
+| REDIRECT | `/reports/capex-labor`                     | → `/admin/capex-projects?tab=attribution`  | Legacy alias redirect to Attribution Tab    | Public / Web                 |
+| GET      | `/reports/capex-labor/export`              | `CapexProjectController@exportAttribution` | Legacy alias route for attribution export   | `auth`, `role:admin,manager` |
 
 ## Decisions & Trade-offs
 
 - **Single Cockpit Route Footprint**: All labor tracking, burndown visualization, team rosters, and in-place progress adjustments live exclusively on `/admin/capex-projects/{id}`, adhering strictly to the UX plan constraint against route bloat.
+- **Unified Hub Surfaces via Tabs**: Story E07-04 lives entirely on Tab 2 of `/admin/capex-projects?tab=attribution`, avoiding redundant standalone reporting pages.
+- **Native OpenXML Streaming (.xlsx)**: Avoiding third-party spreadsheet packages prevents memory exhaustion on large fiscal datasets and dependencies drift, utilizing native `ZipArchive` and `XMLWriter`.
 - **Monthly Notification Deduplication**: Querying `notifications` table `data->project_id` and `created_at >= startOfMonth()` provides zero-DDL risk deduplication without altering table schemas.
 - **Immutable Historical Snapshots**: Labor cost calculations strictly sum `total_cost_snapshot` from approved items, guaranteeing immutable financial figures that mirror official accounting ledger statements.
 
@@ -148,3 +162,4 @@ erDiagram
 - [Epic-07: CapEx Project Labor Management](../../scrum/Epic-07.md)
 - [Epic-07 UX Plan](../../scrum/Epic-07-ux-plan.md)
 - [ADR-002: Immutable Rate Snapshotting](../decisions/002-immutable-labor-rate-snapshotting.md)
+- [ADR-026: Financial Labor Attribution Schedule & Native OpenXML Streaming Export](../decisions/026-financial-labor-attribution-report-and-native-xlsx-streaming.md)

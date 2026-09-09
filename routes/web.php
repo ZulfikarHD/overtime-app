@@ -49,7 +49,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         return redirect()->route('admin.capex-projects.index', $query);
     });
-    Route::redirect('/reports/capex-labor', '/admin/capex-projects?tab=attribution');
+    Route::get('/reports/capex-labor', function (Request $request) {
+        $query = $request->query();
+        $query['tab'] = 'attribution';
+
+        return redirect()->route('admin.capex-projects.index', $query);
+    });
+    Route::get('/reports/capex-labor/export', [CapexProjectController::class, 'exportAttribution'])
+        ->middleware(['role:admin,manager'])
+        ->name('reports.capex-labor.export');
 
     // Individual Employee Reporting & Welfare Tracking (E06 - Admin, Manager, Team Leader, User)
     Route::middleware(['role:admin,manager,team_leader,user'])->prefix('reports')->name('reports.')->group(function () {
@@ -115,6 +123,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // CapEx Project Master Data & Portfolio Hub (E07-01 - Admin & Manager)
     Route::middleware(['role:admin,manager'])->prefix('admin')->name('admin.')->group(function () {
+        Route::get('/capex-projects/export-attribution', [CapexProjectController::class, 'exportAttribution'])->name('capex-projects.export-attribution');
         Route::get('/capex-projects', [CapexProjectController::class, 'index'])->name('capex-projects.index');
         Route::post('/capex-projects', [CapexProjectController::class, 'store'])->name('capex-projects.store');
         Route::get('/capex-projects/{capex_project}', [CapexProjectController::class, 'show'])->name('capex-projects.show');

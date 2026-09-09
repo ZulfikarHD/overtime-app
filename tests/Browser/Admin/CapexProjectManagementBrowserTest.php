@@ -97,5 +97,5 @@ test('admin can navigate capex hub, create a new project via drawer, and transit
         // Switch to Tab 2
         ->click('[data-test="tab-attribution"]')
         ->assertVisible('[data-test="attribution-tab-content"]')
-        ->assertSee('CapEx Financial Attribution Report');
+        ->assertVisible('[data-test="capex-attribution-container"]');
 });

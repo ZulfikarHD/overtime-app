@@ -22,6 +22,10 @@ import {
 } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
 import CapexPortfolioTable from '@/components/capex/CapexPortfolioTable.vue';
+import CapexLaborAttributionTable, {
+    type AttributionReportData,
+    type CapexProjectOption,
+} from '@/components/capex/CapexLaborAttributionTable.vue';
 import ConfirmationDialog from '@/components/admin/ConfirmationDialog.vue';
 import CapexProjectDrawer, {
     type CapexProjectRecord,
@@ -95,6 +99,15 @@ const props = defineProps<{
         sort_dir?: 'asc' | 'desc';
     };
     activeTab?: string;
+    attribution?: AttributionReportData | null;
+    attributionFilters?: {
+        project_id?: string | number | null;
+        department_id?: string | number | null;
+        search?: string;
+        date_from?: string;
+        date_to?: string;
+    };
+    capexProjectsList?: CapexProjectOption[];
 }>();
 
 const { __ } = useTrans();
@@ -106,6 +119,14 @@ const isAdmin = computed(() => {
 });
 
 const currentTab = ref(props.activeTab ?? 'portfolio');
+
+watch(
+    () => props.activeTab,
+    (val) => {
+        if (val) currentTab.value = val;
+    },
+);
+
 const searchInput = ref(props.filters.search ?? '');
 const selectedDepartmentId = ref(
     props.filters.department_id ? String(props.filters.department_id) : '',
@@ -152,21 +173,68 @@ const statusFilterChips = [
 
 function switchTab(tab: string) {
     currentTab.value = tab;
+    if (tab === 'attribution') {
+        router.get(
+            capexProjectsRoute.index.url({
+                query: {
+                    tab: 'attribution',
+                    project_id: props.attributionFilters?.project_id
+                        ? String(props.attributionFilters.project_id)
+                        : undefined,
+                    department_id: selectedDepartmentId.value || undefined,
+                    date_from: dateFrom.value || undefined,
+                    date_to: dateTo.value || undefined,
+                    search: searchInput.value || undefined,
+                },
+            }),
+            {},
+            { preserveState: true, preserveScroll: true, replace: true },
+        );
+    } else {
+        router.get(
+            capexProjectsRoute.index.url({
+                query: {
+                    tab: 'portfolio',
+                    status:
+                        activeStatusFilter.value !== 'ALL'
+                            ? activeStatusFilter.value
+                            : undefined,
+                    department_id: selectedDepartmentId.value || undefined,
+                    search: searchInput.value || undefined,
+                    date_from: dateFrom.value || undefined,
+                    date_to: dateTo.value || undefined,
+                    sort_by:
+                        sortBy.value !== 'created_at'
+                            ? sortBy.value
+                            : undefined,
+                    sort_dir:
+                        sortDir.value !== 'desc' ? sortDir.value : undefined,
+                },
+            }),
+            {},
+            { preserveState: true, preserveScroll: true, replace: true },
+        );
+    }
+}
+
+function handleAttributionFilter(filters: Record<string, any>) {
     router.get(
         capexProjectsRoute.index.url({
             query: {
-                tab,
-                status:
-                    activeStatusFilter.value !== 'ALL'
-                        ? activeStatusFilter.value
-                        : undefined,
-                department_id: selectedDepartmentId.value || undefined,
-                search: searchInput.value || undefined,
-                date_from: dateFrom.value || undefined,
-                date_to: dateTo.value || undefined,
-                sort_by:
-                    sortBy.value !== 'created_at' ? sortBy.value : undefined,
-                sort_dir: sortDir.value !== 'desc' ? sortDir.value : undefined,
+                tab: 'attribution',
+                ...filters,
+            },
+        }),
+        {},
+        { preserveState: true, preserveScroll: true, replace: true },
+    );
+}
+
+function handleAttributionReset() {
+    router.get(
+        capexProjectsRoute.index.url({
+            query: {
+                tab: 'attribution',
             },
         }),
         {},
@@ -810,49 +878,21 @@ function getBurnIndexBadgeClass(index: number) {
             />
         </div>
 
-        <!-- TAB 2: Laporan Atribusi Finansial (Placeholder / Hook for E07-04) -->
+        <!-- TAB 2: Laporan Atribusi Finansial (Story E07-04) -->
         <div
             v-else-if="currentTab === 'attribution'"
             class="space-y-6"
             data-test="attribution-tab-content"
         >
-            <Card class="border-border bg-card p-8 text-center">
-                <div class="mx-auto max-w-md space-y-4">
-                    <div
-                        class="mx-auto flex size-14 items-center justify-center rounded-full border border-sky-300 bg-sky-50 text-sky-600 dark:border-sky-800 dark:bg-sky-950/60 dark:text-sky-400"
-                    >
-                        <FileSpreadsheet class="size-7" />
-                    </div>
-                    <div class="space-y-1">
-                        <h3 class="text-foreground text-base font-bold">
-                            {{
-                                __(
-                                    'Laporan Atribusi Finansial CapEx & Ekspor Excel (.xlsx)',
-                                )
-                            }}
-                        </h3>
-                        <p
-                            class="text-muted-foreground text-xs leading-relaxed"
-                        >
-                            {{
-                                __(
-                                    'Fitur laporan audit item lembur terkapitalisasi dan ekspor spreadsheet PSAK 16 dijadwalkan pada Sprint 7 (Story E07-04). Anda dapat memantau data master dan portofolio proyek pada tab Portofolio & Master Data.',
-                                )
-                            }}
-                        </p>
-                    </div>
-                    <div>
-                        <Button
-                            variant="outline"
-                            class="gap-1.5 text-xs font-semibold"
-                            @click="switchTab('portfolio')"
-                        >
-                            <ArrowRight class="size-3.5 rotate-180" />
-                            {{ __('Kembali ke Portofolio & Master Data') }}
-                        </Button>
-                    </div>
-                </div>
-            </Card>
+            <CapexLaborAttributionTable
+                :attribution="attribution ?? null"
+                :departments="departments"
+                :capex-projects-list="capexProjectsList ?? []"
+                :filters="attributionFilters ?? {}"
+                :is-admin="isAdmin"
+                @filter="handleAttributionFilter"
+                @reset="handleAttributionReset"
+            />
         </div>
 
         <!-- Slide-in Drawer: CapexProjectDrawer -->

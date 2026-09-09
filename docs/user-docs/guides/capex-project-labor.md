@@ -95,6 +95,32 @@ Click any Project Code or the **Detail** (`→`) action icon to navigate to `/ad
 
 ---
 
+## 6. Financial Attribution Report & Excel Export (Tab 2)
+
+For accounting, tax compliance, and statutory fixed asset audit under PSAK 16 / IAS 16, switch to the **Financial Attribution Report** tab (`Laporan Atribusi Finansial`) on the CapEx Projects Hub.
+
+### Features & Capabilities
+
+1. **Project-Grouped Audit Ledger**:
+    - Every approved overtime record associated with a CapEx project is organized into structured project groups.
+    - Shows authoritative metadata: Project Code (`CPX-...`), Fixed Asset Tag (`AST-...`), and Sponsoring Department.
+    - Detailed line items list: Date, Technician NPK (clickable to view Employee Dossier), Full Name, Project Hours, Snapshot Rate/Hour, Capitalized Total Cost, SPKL Submission Code, Approval Timestamp, and Approver Name.
+2. **Project Subtotals & Grand Totals**:
+    - Each project group displays a dedicated subtotal row summing total capitalized hours and cost in IDR.
+    - The top executive summary card highlights the overall portfolio **Grand Total Hours** and **Grand Total Capitalized Cost**.
+3. **Audit-Proof Immutable Snapshots**:
+    - Labor costs are never recalculated using current employee wages; they strictly present the permanent rate snapshot recorded at the time of approval.
+4. **Interactive Filters & Presets**:
+    - **Project Selector**: Filter to examine an individual project or view all projects.
+    - **Department Filter** (Admin): Scope to a specific operational department.
+    - **Date Range & Presets**: Choose start and end dates or click **This Month** (`Bulan Ini`), **YTD** (`YTD (Tahun Ini)`), or **All Time** (`Semua Waktu`).
+    - **Search Input**: Type an NPK, employee name, SPKL submission code, or project name to filter entries.
+5. **Direct Streaming Excel Export (.xlsx)**:
+    - Click the green **Download Excel (.xlsx)** (`Unduh Excel (.xlsx)`) button in the toolbar.
+    - Generates an open standard OpenXML spreadsheet with complete project groupings, bold subtotal rows, and grand totals, formatted with true numeric cells ready for direct submission to corporate finance and external auditors.
+
+---
+
 ## Frequently Asked Questions (FAQ)
 
 **Q: Why does the Milestone Burn Ratio show N/A for some projects?**  
@@ -105,3 +131,9 @@ A: In accordance with IAS 16 and PSAK 16 statutory audit requirements, project c
 
 **Q: When does a project get flagged with the ⚠️ warning?**  
 A: A project is flagged as at-risk if it is active or on hold and its Milestone Burn Ratio exceeds 1.20 (labor burning faster than physical build) or its CapEx Burn Index exceeds 90%.
+
+**Q: Why are only approved overtime items displayed in the Financial Attribution Report?**  
+A: Under PSAK 16 / IAS 16, unapproved (pending) or rejected overtime hours cannot be capitalized into asset cost bases. Only hours with formal management approval (`APPROVED`) qualify for capitalization.
+
+**Q: Will editing an employee's salary update past CapEx labor attribution costs?**  
+A: No. All financial attribution ledgers strictly rely on immutable snapshots captured at the exact moment of SPKL submission and approval to comply with corporate audit standards.

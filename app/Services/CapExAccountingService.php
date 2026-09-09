@@ -7,6 +7,7 @@ use App\Models\CapexProject;
 use App\Models\OvertimeItem;
 use App\Models\User;
 use App\Notifications\CapexBurnAlertNotification;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -308,5 +309,172 @@ class CapExAccountingService
         return $admins->concat($managers)
             ->unique('id')
             ->values();
+    }
+
+    /**
+     * Build the scoped, filtered query for CapEx labor attribution items.
+     *
+     * @param  array<string, mixed>  $filters
+     * @return Builder<OvertimeItem>
+     */
+    public function buildAttributionQuery(array $filters, User $user): Builder
+    {
+        /** @var Builder<OvertimeItem> $query */
+        $query = OvertimeItem::query()
+            ->whereNotNull('overtime_items.capex_project_id')
+            ->where('overtime_items.status', 'APPROVED')
+            ->join('capex_projects', 'capex_projects.id', '=', 'overtime_items.capex_project_id')
+            ->join('overtime_submissions', 'overtime_submissions.id', '=', 'overtime_items.overtime_submission_id')
+            ->select('overtime_items.*')
+            ->with([
+                'capexProject:id,project_code,name,asset_code,department_id',
+                'capexProject.department:id,code,name',
+                'employee:id,npk,full_name',
+                'overtimeSubmission:id,submission_code,operational_date,department_id,section_id',
+                'reviewedBy:id,name',
+            ]);
+
+        // Scoping: Manager is strictly scoped to their department
+        if ($user->isManager() && $user->department_id) {
+            $query->where('capex_projects.department_id', (int) $user->department_id);
+        } elseif ($user->isAdmin() && ! empty($filters['department_id'])) {
+            $query->where('capex_projects.department_id', (int) $filters['department_id']);
+        }
+
+        // Filter by specific CapEx project
+        if (! empty($filters['project_id']) || ! empty($filters['capex_project_id'])) {
+            $projectId = (int) ($filters['project_id'] ?? $filters['capex_project_id']);
+            $query->where('overtime_items.capex_project_id', $projectId);
+        }
+
+        // Date range filtering on operational_date
+        if (! empty($filters['date_from'])) {
+            $query->whereDate('overtime_submissions.operational_date', '>=', (string) $filters['date_from']);
+        }
+
+        if (! empty($filters['date_to'])) {
+            $query->whereDate('overtime_submissions.operational_date', '<=', (string) $filters['date_to']);
+        }
+
+        // Search filter: NPK, full name, submission code, project code, name, asset code
+        if (! empty($filters['search'])) {
+            $search = trim((string) $filters['search']);
+            $query->where(function (Builder $q) use ($search) {
+                $q->whereHas('employee', function (Builder $eq) use ($search) {
+                    $eq->where('npk', 'like', "%{$search}%")
+                        ->orWhere('full_name', 'like', "%{$search}%");
+                })
+                    ->orWhere('overtime_items.npk_snapshot', 'like', "%{$search}%")
+                    ->orWhere('overtime_submissions.submission_code', 'like', "%{$search}%")
+                    ->orWhere('capex_projects.project_code', 'like', "%{$search}%")
+                    ->orWhere('capex_projects.name', 'like', "%{$search}%")
+                    ->orWhere('capex_projects.asset_code', 'like', "%{$search}%");
+            });
+        }
+
+        $query->orderBy('capex_projects.project_code', 'asc')
+            ->orderBy('overtime_submissions.operational_date', 'desc')
+            ->orderBy('overtime_items.id', 'asc');
+
+        return $query;
+    }
+
+    /**
+     * Compute grouped CapEx labor attribution schedule with project subtotals and grand totals.
+     *
+     * @param  array<string, mixed>  $filters
+     * @return array{
+     *     groups: list<array{
+     *         project_id: int,
+     *         project_code: string,
+     *         project_name: string,
+     *         asset_code: string|null,
+     *         department_id: int|null,
+     *         department_name: string,
+     *         items: list<array{
+     *             id: int,
+     *             date: string,
+     *             employee_id: int,
+     *             npk: string,
+     *             employee_name: string,
+     *             hours_project: float,
+     *             hourly_rate_snapshot: float,
+     *             total_cost_snapshot: float,
+     *             submission_code: string,
+     *             reviewed_at: string|null,
+     *             reviewed_by_name: string
+     *         }>,
+     *         subtotal_hours: float,
+     *         subtotal_cost: float,
+     *         item_count: int
+     *     }>,
+     *     grand_total_hours: float,
+     *     grand_total_cost: float,
+     *     total_items: int,
+     *     total_projects: int
+     * }
+     */
+    public function getLaborAttributionReport(array $filters, User $user): array
+    {
+        $items = $this->buildAttributionQuery($filters, $user)->get();
+
+        $groups = [];
+        $grandTotalHours = 0.0;
+        $grandTotalCost = 0.0;
+        $totalItems = $items->count();
+
+        /** @var Collection<int, Collection<int, OvertimeItem>> $grouped */
+        $grouped = $items->groupBy('capex_project_id');
+
+        foreach ($grouped as $projectId => $projectItems) {
+            /** @var OvertimeItem $firstItem */
+            $firstItem = $projectItems->first();
+            $project = $firstItem->capexProject;
+
+            $subtotalHours = (float) $projectItems->sum('hours_project');
+            $subtotalCost = (float) $projectItems->sum('total_cost_snapshot');
+
+            $grandTotalHours += $subtotalHours;
+            $grandTotalCost += $subtotalCost;
+
+            $mappedItems = $projectItems->map(function (OvertimeItem $item) {
+                return [
+                    'id' => (int) $item->id,
+                    'date' => $item->overtimeSubmission?->operational_date?->format('Y-m-d') ?? '',
+                    'employee_id' => (int) $item->employee_id,
+                    'npk' => $item->npk_snapshot ?: ($item->employee?->npk ?? ''),
+                    'employee_name' => $item->employee?->full_name ?? '',
+                    'hours_project' => (float) $item->hours_project,
+                    'hourly_rate_snapshot' => (float) $item->hourly_rate_snapshot,
+                    'total_cost_snapshot' => (float) $item->total_cost_snapshot,
+                    'submission_code' => $item->overtimeSubmission?->submission_code ?? '',
+                    'reviewed_at' => $item->reviewed_at
+                        ? Carbon::parse($item->reviewed_at)->setTimezone('Asia/Jakarta')->format('Y-m-d H:i')
+                        : null,
+                    'reviewed_by_name' => $item->reviewedBy?->name ?? 'System',
+                ];
+            })->values()->all();
+
+            $groups[] = [
+                'project_id' => (int) $projectId,
+                'project_code' => $project?->project_code ?? '',
+                'project_name' => $project?->name ?? '',
+                'asset_code' => $project?->asset_code,
+                'department_id' => $project?->department_id,
+                'department_name' => $project?->department?->name ?? '',
+                'items' => $mappedItems,
+                'subtotal_hours' => round($subtotalHours, 2),
+                'subtotal_cost' => round($subtotalCost, 2),
+                'item_count' => $projectItems->count(),
+            ];
+        }
+
+        return [
+            'groups' => $groups,
+            'grand_total_hours' => round($grandTotalHours, 2),
+            'grand_total_cost' => round($grandTotalCost, 2),
+            'total_items' => $totalItems,
+            'total_projects' => count($groups),
+        ];
     }
 }
