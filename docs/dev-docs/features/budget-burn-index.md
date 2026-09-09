@@ -45,22 +45,26 @@ erDiagram
 
 ## Key Files & UI Mapping
 
-| Layer               | File / Route / Menu                                          | Purpose                                                       |
-| ------------------- | ------------------------------------------------------------ | ------------------------------------------------------------- |
-| Sidebar Menu        | `Burn Index` (`/dashboard/burn-index`)                       | Operational health dashboard for Managers and Admins          |
-| Page Component      | `resources/js/pages/dashboard/BurnIndex.vue`                 | Analytical hub with KPI summary, filters, and section grid    |
-| Card Component      | `resources/js/components/dashboard/BurnIndexCard.vue`        | Section card with large burn %, zone badge, and velocity      |
-| Drawer Component    | `resources/js/components/dashboard/SectionBurndownSheet.vue` | Slide-in drawer with 5-week burndown, breakdown, and matrix   |
-| Burndown Chart      | `resources/js/components/dashboard/BurndownLineChart.vue`    | Chart.js 5-week line chart with zone corridor shading plugin  |
-| Breakdown Table     | `resources/js/components/dashboard/WeeklyBreakdownTable.vue` | High-density table with weekly planned, actual, HKN, HLR      |
-| Scatter Matrix      | `resources/js/components/dashboard/BudgetMatrixScatter.vue`  | Chart.js 4-quadrant budget control matrix scatter plot        |
-| Bar Component       | `resources/js/components/dashboard/CapexOpexSplitBar.vue`    | High-density horizontal bar displaying CapEx vs OpEx hours    |
-| Controller          | `app/Http/Controllers/DashboardBurnIndexController.php`      | Controller querying snapshots and handling manual refresh     |
-| Snapshot Service    | `app/Services/Analytics/MonthlySnapshotService.php`          | Read-layer service fetching or lazily calculating snapshots   |
-| Calculation Service | `app/Services/Analytics/BurnIndexCalculatorService.php`      | Domain engine executing formulas `CALC-02` through `CALC-08`  |
-| Queue Job           | `app/Jobs/RecalculateMonthlyBurnSnapshotJob.php`             | Async queue job recalculating section snapshots post-approval |
-| Model               | `app/Models/MonthlyBurnSnapshot.php`                         | Denormalized snapshot entity with velocity and projection     |
-| Predictive Model    | `app/Models/MlPrediction.php`                                | Supervised ML predictions for month-end trajectory comparison |
+| Layer               | File / Route / Menu                                              | Purpose                                                       |
+| ------------------- | ---------------------------------------------------------------- | ------------------------------------------------------------- |
+| Sidebar Menu        | `Burn Index` (`/dashboard/burn-index`)                           | Operational health dashboard for Managers and Admins          |
+| Page Component      | `resources/js/pages/dashboard/BurnIndex.vue`                     | Analytical hub with KPI summary, filters, and section grid    |
+| Card Component      | `resources/js/components/dashboard/BurnIndexCard.vue`            | Section card with large burn %, zone badge, and velocity      |
+| Drawer Component    | `resources/js/components/dashboard/SectionBurndownSheet.vue`     | Slide-in drawer with 5-week burndown, breakdown, and matrix   |
+| Burndown Chart      | `resources/js/components/dashboard/BurndownLineChart.vue`        | Chart.js 5-week line chart with zone corridor shading plugin  |
+| Breakdown Table     | `resources/js/components/dashboard/WeeklyBreakdownTable.vue`     | High-density table with weekly planned, actual, HKN, HLR      |
+| Scatter Matrix      | `resources/js/components/dashboard/BudgetMatrixScatter.vue`      | Chart.js 4-quadrant budget control matrix scatter plot        |
+| Bar Component       | `resources/js/components/dashboard/CapexOpexSplitBar.vue`        | High-density horizontal bar displaying CapEx vs OpEx hours    |
+| CapEx/OpEx Tab      | `resources/js/components/dashboard/CapexOpexTab.vue`             | Financial tab for CapEx vs OpEx labor capitalization (E05-03) |
+| Donut Chart         | `resources/js/components/dashboard/CapexOpexDonutChart.vue`      | Chart.js doughnut chart for CapEx vs OpEx hour & cost split   |
+| Section Bar Chart   | `resources/js/components/dashboard/CapexOpexSectionBarChart.vue` | Side-by-side section comparison bar chart for CapEx vs OpEx   |
+| Project Table       | `resources/js/components/dashboard/CapexProjectTable.vue`        | CapEx project labor performance and variance tracking table   |
+| Controller          | `app/Http/Controllers/DashboardBurnIndexController.php`          | Controller querying snapshots and handling manual refresh     |
+| Snapshot Service    | `app/Services/Analytics/MonthlySnapshotService.php`              | Read-layer service fetching or lazily calculating snapshots   |
+| Calculation Service | `app/Services/Analytics/BurnIndexCalculatorService.php`          | Domain engine executing formulas `CALC-02` through `CALC-08`  |
+| Queue Job           | `app/Jobs/RecalculateMonthlyBurnSnapshotJob.php`                 | Async queue job recalculating section snapshots post-approval |
+| Model               | `app/Models/MonthlyBurnSnapshot.php`                             | Denormalized snapshot entity with velocity and projection     |
+| Predictive Model    | `app/Models/MlPrediction.php`                                    | Supervised ML predictions for month-end trajectory comparison |
 
 ## Formulas & Calculation Engine (Story E05-06)
 
@@ -79,6 +83,11 @@ The calculation engine (`BurnIndexCalculatorService`) implements the following c
 - **CALC-05: Projected Period-End Total Hours (`projected_total_hours`)**:
   $$\text{Projected Total Hours} = \text{Burn Velocity} \times 4.3$$
     - Dynamically calculated on demand and exposed via `MonthlyBurnSnapshot` accessor `$snapshot->projected_total_hours` and service payload.
+- **CALC-07: CapEx Labor Ratio (`capex_ratio_pct`)**:
+  $$\text{CapEx Labor Ratio (\%)} = \left(\frac{\text{Total CapEx Project Hours}}{\text{Total Overtime Hours}}\right) \times 100\%$$
+    - Measures capitalized overtime labor for balance sheet capitalization compliance.
+- **CALC-08: OpEx Labor Ratio (`opex_ratio_pct`)**:
+  $$\text{OpEx Labor Ratio (\%)} = 100\% - \text{CapEx Labor Ratio (\%)} = \left(\frac{\text{Routine Production + TPM + Other Hours}}{\text{Total Overtime Hours}}\right) \times 100\%$$
 - **Trajectory Indicator (`trajectory`)**:
     - `on_pace`: $\text{Projected Total} \le 100\%$ of planned budget hours (`→ Aman (On Pace)`).
     - `trending_over`: $100\% < \text{Projected Total} \le 120\%$ of planned budget hours (`↗ Waspada (Trending Over)`).
@@ -152,23 +161,57 @@ Standardized on Chart.js v4 and `vue-chartjs` per [ADR-004](../decisions/004-cha
 - Implemented using `@/components/ui/sheet` (`SectionBurndownSheet.vue`) on `/dashboard/burn-index`.
 - **Deep-linking**: Visiting `/dashboard/burn-index?tab=sections&section={id}` automatically opens the burndown drawer for that section upon mount. When the drawer is closed, the URL query parameter is cleanly stripped without triggering a full page reload (`window.history.replaceState`).
 
+## CapEx vs OpEx Distribution & Capitalization Panel (Story E05-03)
+
+In accordance with the [Epic-05 UX Plan](../../scrum/Epic-05-ux-plan.md) hard constraints, the CapEx vs OpEx distribution is implemented as an integrated financial tab on `/dashboard/burn-index?tab=capex-opex` rather than a fragmented report controller.
+
+### 1. Data Aggregation & Scoping Architecture
+
+- **Service Method**: `MonthlySnapshotService::getCapexOpexBreakdown()` computes period metrics directly from approved `overtime_items` joined with `overtime_submissions` and `capex_projects`.
+- **Date Granularity (`range_type`)**:
+    - `month` (default): 1st to last day of selected month.
+    - `ytd`: 1st day of year to last day of selected month.
+    - `custom`: Parsed user-specified `start_date` and `end_date` in `Asia/Jakarta (WIB)`.
+- **Role-Based Data Scoping**:
+    - `Team Leader`: Strictly scoped to their section's approved items.
+    - `Manager`: Scoped to all sections within their assigned department.
+    - `Admin`: Plant-wide or scoped to selected department.
+
+### 2. High-Density Industrial UI Components
+
+- **Capitalization Summary KPI Cards**:
+    - **Total Overtime Hours**: Realized hours and total financial labor cost formatted with `formatRupiah()`.
+    - **CapEx Project Hours**: Hours logged to capital projects with formula hover tooltip (`(Total Jam Proyek ÷ Total Seluruh Jam) × 100%`) and capitalized asset value in Rupiah.
+    - **OpEx Routine Hours**: Routine production, maintenance, and support hours with operational cost in Rupiah.
+    - **Capitalization Compliance**: Visual badge indicating asset segregation health.
+- **Empty State**: Friendly banner (`Belum ada jam lembur CapEx pada periode ini.`) displayed when CapEx hours equal zero.
+- **Chart.js Visualizations**:
+    - `CapexOpexDonutChart.vue`: Donut chart rendered with Chart.js Doughnut plugin, Sky Blue (`#0284c7`) for CapEx and Slate (`#64748b`) for OpEx, center CapEx ratio percentage and total hours readout, and interactive hover tooltips with formatted Rupiah currency.
+    - `CapexOpexSectionBarChart.vue`: Side-by-side grouped bar chart comparing CapEx and OpEx hours across all sections within scope.
+- **CapEx Project Variance Table (`CapexProjectTable.vue`)**:
+    - High-density table featuring monospace project codes, asset tags, period logged hours, cumulative hours, allocated budget hours, physical progress bar, and project status badge.
+    - **Variance Badge**: $\text{Variance} = \text{Cumulative Logged Hours} - \text{Allocated Labor Hours}$. Green badge with down trend for under budget (e.g. `-30.0 jam`), ISUZU Red badge with up trend for over budget (e.g. `+15.0 jam`).
+    - Client-side real-time search filtering across project codes, names, asset codes, and department names.
+
 ## API Endpoints & Routes
 
 | Method | URI                                 | Controller Action                          | Purpose                                    | Auth / Middleware                        |
 | ------ | ----------------------------------- | ------------------------------------------ | ------------------------------------------ | ---------------------------------------- |
-| GET    | `/dashboard/burn-index`             | `DashboardBurnIndexController@index`       | Main multi-section overview                | `auth`, `role:admin,manager,team_leader` |
+| GET    | `/dashboard/burn-index`             | `DashboardBurnIndexController@index`       | Main multi-section overview & CapEx tab    | `auth`, `role:admin,manager,team_leader` |
 | POST   | `/dashboard/burn-index/recalculate` | `DashboardBurnIndexController@recalculate` | Force on-demand refresh for current period | `auth`, `role:admin,manager`             |
 | GET    | `/dashboard/burn-index/{section}`   | `DashboardBurnIndexController@show`        | Weekly burndown & scatter matrix payload   | `auth`, `role:admin,manager,team_leader` |
+| GET    | `/reports/capex-opex`               | `Route::redirect`                          | Legacy/Scrum alias redirect to tab         | `auth`, `role:admin,manager,team_leader` |
 
 ## Decisions & Trade-offs
 
 - **Denormalized Snapshot Architecture**: Sourcing dashboard reads from `monthly_burn_snapshots` prevents slow aggregation scans over hundreds of thousands of raw timesheet rows during morning standups (see [ADR-005](../decisions/005-denormalized-monthly-burn-snapshots.md)).
-- **Unified Single-Page Analytical Command Center**: Section cards, consolidated department table, and CapEx vs OpEx distribution live on `/dashboard/burn-index` organized by tabs rather than fragmented routes.
+- **Unified Single-Page Analytical Command Center**: Section cards, consolidated department table, and CapEx vs OpEx distribution live on `/dashboard/burn-index` organized by tabs rather than fragmented routes (see [ADR-019](../decisions/019-single-hub-tab-based-capex-opex-distribution.md)).
 - **Jakarta Elapsed Weeks Calculation**: Burn velocity calculates elapsed weeks using `Asia/Jakarta` timezone, clamping to a minimum of 1.0 week to eliminate skew during the first week of the month.
 
 ## Related
 
 - [ADR-005: Denormalized Monthly Burn Snapshots](../decisions/005-denormalized-monthly-burn-snapshots.md)
+- [ADR-019: Single-Hub Tab-Based CapEx vs OpEx Distribution Panel](../decisions/019-single-hub-tab-based-capex-opex-distribution.md)
 - [Epic-05: Budget Management & Burn Index Dashboard](../../scrum/Epic-05.md)
 - [Epic-05 UX Plan](../../scrum/Epic-05-ux-plan.md)
 - [User Guide: Budget Management & Burn Index Dashboard](../../user-docs/guides/budget-burn-index.md)

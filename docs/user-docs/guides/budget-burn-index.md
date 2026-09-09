@@ -133,6 +133,49 @@ To analyze overtime trends across the 5 weeks of the month without losing your d
       `/dashboard/burn-index?tab=sections&section=14`
     - Opening this URL automatically opens the drawer for section 14 while preserving active period and department filters.
 
+### 6. CapEx vs OpEx Distribution & Capitalization Tab
+
+For financial controllers, accounting teams, and department managers tracking labor capitalization compliance, click the **Distribusi CapEx vs OpEx** tab in the navigation bar.
+
+#### Time Range Granularity (Rentang Waktu)
+
+At the top of the tab, use the filter pills to switch time boundaries:
+
+- **Bulan Ini (Default)**: Summarizes hours approved within the selected calendar month.
+- **Tahun Berjalan (YTD)**: Aggregates hours from January 1st through the end of the selected month.
+- **Kustom**: Enables start and end date pickers to inspect custom audit intervals (e.g., project installation milestones). Click **Terapkan** to run the query.
+
+#### Capitalization KPI Summary Cards
+
+Four executive summary cards give instant visibility into labor classification:
+
+1. **Total Jam Lembur (Total Hours)**: All approved overtime hours with the total financial labor cost in Rupiah (`Rp`).
+2. **Jam CapEx Proyek (CapEx Project Hours)**: Overtime spent on approved capital projects. Hover over the **CapEx Ratio %** badge to view the calculation formula:
+   $$\text{Formula} = (\text{Total Jam Proyek} \div \text{Total Seluruh Jam}) \times 100\%$$
+   Also shows total capitalized labor value in Rupiah (`Rp`).
+3. **Jam OpEx Rutin (OpEx Routine Hours)**: Routine line production overruns, tooling maintenance, and shopfloor support with corresponding operating expense in Rupiah.
+4. **Kepatuhan Kapitalisasi (Capitalization Compliance)**: Status indicator verifying whether labor has been separated into capitalized asset additions or routine operating expense.
+
+#### Visual Distribution Charts
+
+- **Distribusi CapEx vs OpEx (Donut Chart)**: Visual breakdown of CapEx (Sky Blue `#0284c7`) versus OpEx (Neutral Slate `#64748b`) with center percentage readout and interactive hover tooltips detailing hours, percentage, and Rupiah amount.
+- **Perbandingan Jam per Seksi (Section Comparison Bar Chart)**: Side-by-side grouped bar chart displaying CapEx project hours and OpEx routine hours for each manufacturing section.
+
+#### CapEx Project Performance Table (Kinerja Jam Tenaga Kerja Proyek CapEx)
+
+A high-density table tracking progress and overtime consumption across all active capital projects:
+
+- **Kode & Aset**: Monospace project code (e.g. `CPX-2026-ASSY-001`) and fixed asset tag.
+- **Nama Proyek & Dept**: Project description and owning department.
+- **Jam Periode & Total Akumulasi**: Hours logged in the selected filter period versus cumulative hours across all time.
+- **Alokasi Kuota**: Target labor hours budget authorized for the project.
+- **Deviasi (Variance)**:
+    - **Emerald Green Badge**: Cumulative hours are under budget (e.g. `-30.0 jam`).
+    - **ISUZU Red Badge**: Cumulative hours have overrun allocated budget (e.g. `+15.0 jam`).
+- **Progress Fisik**: Visual progress bar indicating percentage completion of project milestones.
+- **Status**: Operational status badge (`ACTIVE`, `PLANNING`, `COMPLETED`, `ON_HOLD`).
+- **Live Search**: Use the search input at the top right to filter by project code, asset code, or project name.
+
 ---
 
 ## Frequently Asked Questions (FAQ)

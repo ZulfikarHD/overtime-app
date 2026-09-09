@@ -18,6 +18,9 @@ import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import BurnIndexCard, {
     type SectionSnapshotData,
 } from '@/components/dashboard/BurnIndexCard.vue';
+import CapexOpexTab, {
+    type CapexOpexData,
+} from '@/components/dashboard/CapexOpexTab.vue';
 import SectionBurndownSheet from '@/components/dashboard/SectionBurndownSheet.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -60,6 +63,7 @@ const props = defineProps<{
     current_tab: string;
     snapshots: SectionSnapshotData[];
     summary: DepartmentSummary;
+    capex_opex?: CapexOpexData;
 }>();
 
 const { __ } = useTrans();
@@ -78,6 +82,9 @@ const statusFilter = ref<
     'all' | 'safe' | 'on_track' | 'warning' | 'danger' | 'unconfigured'
 >('all');
 const isRefreshing = ref(false);
+const activeRangeType = ref(props.capex_opex?.summary?.range_type || 'month');
+const activeStartDate = ref(props.capex_opex?.summary?.start_date || '');
+const activeEndDate = ref(props.capex_opex?.summary?.end_date || '');
 
 // Month names list
 const months = [
@@ -130,12 +137,23 @@ watch(
 );
 
 // Navigation / Filter Apply
-function applyFilters(overrideDepartmentId?: string, overrideTab?: string) {
+function applyFilters(
+    overrideDepartmentId?: string,
+    overrideTab?: string,
+    overrideRange?: { rangeType: string; startDate?: string; endDate?: string },
+) {
     const targetDept =
         overrideDepartmentId !== undefined
             ? overrideDepartmentId
             : selectedDepartmentId.value;
     const targetTab = overrideTab !== undefined ? overrideTab : activeTab.value;
+    const rangeType = overrideRange?.rangeType ?? activeRangeType.value;
+    const startDate =
+        overrideRange?.startDate ??
+        (rangeType === 'custom' ? activeStartDate.value : undefined);
+    const endDate =
+        overrideRange?.endDate ??
+        (rangeType === 'custom' ? activeEndDate.value : undefined);
 
     router.get(
         burnIndex.url(),
@@ -144,6 +162,15 @@ function applyFilters(overrideDepartmentId?: string, overrideTab?: string) {
             month: selectedMonth.value,
             department_id: targetDept || undefined,
             tab: targetTab,
+            range_type: targetTab === 'capex-opex' ? rangeType : undefined,
+            start_date:
+                targetTab === 'capex-opex' && rangeType === 'custom'
+                    ? startDate
+                    : undefined,
+            end_date:
+                targetTab === 'capex-opex' && rangeType === 'custom'
+                    ? endDate
+                    : undefined,
         },
         {
             preserveState: true,
@@ -179,11 +206,22 @@ function handleTabChange(tabKey: string) {
     applyFilters(undefined, tabKey);
 }
 
+function handleCapexOpexRangeFilter(payload: {
+    rangeType: string;
+    startDate?: string;
+    endDate?: string;
+}) {
+    activeRangeType.value = payload.rangeType;
+    if (payload.startDate) activeStartDate.value = payload.startDate;
+    if (payload.endDate) activeEndDate.value = payload.endDate;
+    applyFilters(undefined, 'capex-opex', payload);
+}
+
 // Manual Refresh
 function manualRefresh() {
     isRefreshing.value = true;
     router.reload({
-        only: ['snapshots', 'summary'],
+        only: ['snapshots', 'summary', 'capex_opex'],
         onFinish: () => {
             isRefreshing.value = false;
         },
@@ -231,7 +269,7 @@ onMounted(() => {
 
     pollingInterval = setInterval(() => {
         router.reload({
-            only: ['snapshots', 'summary'],
+            only: ['snapshots', 'summary', 'capex_opex'],
         });
     }, 60000);
 });
@@ -848,23 +886,12 @@ const deptZoneLabel = computed(() => {
             </p>
         </div>
 
-        <!-- TAB 3 PLACEHOLDER (E05-03 Future Story) -->
-        <div
-            v-else-if="activeTab === 'capex-opex'"
-            class="bg-card space-y-2 rounded-xl border border-dashed p-8 text-center"
-        >
-            <PieChart class="text-muted-foreground mx-auto size-8" />
-            <h3 class="text-sm font-bold">
-                {{ __('Distribusi CapEx vs OpEx') }}
-            </h3>
-            <p class="text-muted-foreground mx-auto max-w-md text-xs">
-                {{
-                    __(
-                        'Panel perincian kapitalisasi tenaga kerja dan grafik rasio CapEx/OpEx akan diaktifkan pada Story E05-03.',
-                    )
-                }}
-            </p>
-        </div>
+        <!-- TAB 3: CAPEX VS OPEX DISTRIBUTION (E05-03 CORE) -->
+        <CapexOpexTab
+            v-else-if="activeTab === 'capex-opex' && capex_opex"
+            :capex-opex="capex_opex"
+            @filter-range="handleCapexOpexRangeFilter"
+        />
 
         <!-- Section Burndown & Control Matrix Slide-in Sheet (E05-02) -->
         <SectionBurndownSheet

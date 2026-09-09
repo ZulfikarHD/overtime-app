@@ -27,10 +27,16 @@ function createSubmissionWithSpkl(array $submissionAttrs = [], array $spklAttrs 
     $section = Section::factory()->create(['department_id' => $dept->id, 'is_active' => true]);
     $tl = User::factory()->teamLeader($section->id, $dept->id)->create();
 
+    $opDate = $submissionAttrs['operational_date'] ?? '2026-09-08';
+    OperationalCalendar::firstOrCreate(
+        ['calendar_date' => $opDate],
+        ['day_type' => 'HKN', 'is_holiday' => false]
+    );
+
     $submission = OvertimeSubmission::create(array_merge([
         'submission_code' => 'OT-20260908-SEC-'.uniqid(),
-        'submission_date' => '2026-09-08',
-        'operational_date' => '2026-09-08',
+        'submission_date' => $opDate,
+        'operational_date' => $opDate,
         'day_type' => 'HKN',
         'department_id' => $dept->id,
         'section_id' => $section->id,

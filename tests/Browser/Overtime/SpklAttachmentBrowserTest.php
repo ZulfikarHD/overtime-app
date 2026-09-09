@@ -13,6 +13,10 @@ beforeEach(function () {
         ['calendar_date' => $todayWib],
         ['day_type' => 'HKN', 'is_holiday' => false]
     );
+    OperationalCalendar::firstOrCreate(
+        ['calendar_date' => '2026-09-08'],
+        ['day_type' => 'HKN', 'is_holiday' => false]
+    );
 });
 
 test('team leader can open spkl sheet from history table and attach spkl reference number', function () {

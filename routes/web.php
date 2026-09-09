@@ -32,6 +32,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/burn-index/{section}', [DashboardBurnIndexController::class, 'show'])->name('burn-index.show');
     });
 
+    // Legacy/Scrum alias redirect for CapEx vs OpEx tab (E05-03 per UX Plan Section 1.3 & 5.1)
+    Route::redirect('/reports/capex-opex', '/dashboard/burn-index?tab=capex-opex');
+
     // Role-protected routes for authorization verification and testing
     Route::middleware(['role:admin'])->prefix('admin')->name('admin.')->group(function () {
         Route::get('/overview', fn () => response()->json(['status' => 'admin-access-granted']))->name('overview');

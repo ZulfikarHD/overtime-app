@@ -77,6 +77,7 @@ Durable technical decisions and trade-offs:
 - **[ADR-016: Streaming Overtime Export and Audit Logging](./decisions/016-streaming-overtime-export-and-audit-logging.md)**
 - **[ADR-017: Immutable Overtime Item Audit Ledger and Lifecycle History](./decisions/017-immutable-overtime-item-audit-ledger.md)**
 - **[ADR-018: Approved Records Modification Lock and Admin Force-Unlock](./decisions/018-approved-records-modification-lock-and-admin-force-unlock.md)**
+- **[ADR-019: Single-Hub Tab-Based CapEx vs OpEx Distribution Panel](./decisions/019-single-hub-tab-based-capex-opex-distribution.md)**
 
 ---
 

@@ -2,6 +2,7 @@
 
 namespace App\Services\Analytics;
 
+use App\Models\CapexProject;
 use App\Models\Department;
 use App\Models\MlPrediction;
 use App\Models\MonthlyBurnSnapshot;
@@ -10,6 +11,7 @@ use App\Models\OvertimeItem;
 use App\Models\Section;
 use App\Models\User;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 
 class MonthlySnapshotService
 {
@@ -114,8 +116,16 @@ class MonthlySnapshotService
      *     }
      * }
      */
-    public function getDashboardData(User $user, int $year, int $month, ?int $departmentId = null, string $tab = 'sections'): array
-    {
+    public function getDashboardData(
+        User $user,
+        int $year,
+        int $month,
+        ?int $departmentId = null,
+        string $tab = 'sections',
+        string $rangeType = 'month',
+        ?string $startDate = null,
+        ?string $endDate = null
+    ): array {
         // 1. Resolve accessible departments based on role
         if ($user->isManager() || $user->isTeamLeader()) {
             $departmentsQuery = Department::where('id', $user->department_id)->where('is_active', true);
@@ -174,6 +184,23 @@ class MonthlySnapshotService
                     'danger_sections_count' => 0,
                     'configured_sections_count' => 0,
                     'total_sections_count' => 0,
+                ],
+                'capex_opex' => [
+                    'summary' => [
+                        'total_hours' => 0.0,
+                        'capex_hours' => 0.0,
+                        'opex_hours' => 0.0,
+                        'capex_ratio_pct' => 0.0,
+                        'opex_ratio_pct' => 0.0,
+                        'capex_cost_idr' => 0.0,
+                        'opex_cost_idr' => 0.0,
+                        'total_cost_idr' => 0.0,
+                        'range_type' => $rangeType,
+                        'start_date' => Carbon::create($year, $month, 1, 0, 0, 0, 'Asia/Jakarta')->startOfMonth()->toDateString(),
+                        'end_date' => Carbon::create($year, $month, 1, 23, 59, 59, 'Asia/Jakarta')->endOfMonth()->toDateString(),
+                    ],
+                    'sections' => [],
+                    'projects' => [],
                 ],
             ];
         }
@@ -313,6 +340,17 @@ class MonthlySnapshotService
             default => 'ZONE_4_POOR',
         };
 
+        $capexOpex = $this->getCapexOpexBreakdown(
+            $user,
+            $year,
+            $month,
+            $targetDeptId,
+            $sections,
+            $rangeType,
+            $startDate,
+            $endDate,
+        );
+
         return [
             'departments' => $departments,
             'selected_department' => $selectedDepartment,
@@ -331,6 +369,262 @@ class MonthlySnapshotService
                 'configured_sections_count' => $configuredCount,
                 'total_sections_count' => count($sections),
             ],
+            'capex_opex' => $capexOpex,
+        ];
+    }
+
+    /**
+     * Compute CapEx vs OpEx distribution, section breakdown, and CapEx projects performance table.
+     *
+     * @param  Collection<int, Section>  $sections
+     * @return array{
+     *     summary: array{
+     *         total_hours: float,
+     *         capex_hours: float,
+     *         opex_hours: float,
+     *         capex_ratio_pct: float,
+     *         opex_ratio_pct: float,
+     *         capex_cost_idr: float,
+     *         opex_cost_idr: float,
+     *         total_cost_idr: float,
+     *         range_type: string,
+     *         start_date: string,
+     *         end_date: string,
+     *     },
+     *     sections: list<array{
+     *         section_id: int,
+     *         section_code: string,
+     *         section_name: string,
+     *         capex_hours: float,
+     *         opex_hours: float,
+     *         total_hours: float,
+     *         capex_ratio_pct: float,
+     *     }>,
+     *     projects: list<array{
+     *         id: int,
+     *         project_code: string,
+     *         asset_code: string|null,
+     *         name: string,
+     *         department_id: int,
+     *         department_name: string,
+     *         department_code: string,
+     *         period_logged_hours: float,
+     *         cumulative_logged_hours: float,
+     *         allocated_labor_hours: float,
+     *         allocated_labor_budget_idr: float,
+     *         period_cost_idr: float,
+     *         cumulative_cost_idr: float,
+     *         variance_hours: float,
+     *         physical_progress_pct: float,
+     *         status: string,
+     *         start_date: string|null,
+     *         target_end_date: string|null,
+     *         has_logged_hours: bool,
+     *     }>
+     * }
+     */
+    public function getCapexOpexBreakdown(
+        User $user,
+        int $year,
+        int $month,
+        ?int $targetDeptId,
+        $sections,
+        string $rangeType = 'month',
+        ?string $startDate = null,
+        ?string $endDate = null
+    ): array {
+        // Resolve date boundaries
+        if ($rangeType === 'ytd') {
+            $resolvedStartDate = Carbon::create($year, 1, 1, 0, 0, 0, 'Asia/Jakarta')->startOfYear()->toDateString();
+            $resolvedEndDate = Carbon::create($year, $month, 1, 23, 59, 59, 'Asia/Jakarta')->endOfMonth()->toDateString();
+        } elseif ($rangeType === 'custom' && $startDate && $endDate) {
+            try {
+                $resolvedStartDate = Carbon::parse($startDate, 'Asia/Jakarta')->toDateString();
+                $resolvedEndDate = Carbon::parse($endDate, 'Asia/Jakarta')->toDateString();
+            } catch (\Throwable) {
+                $rangeType = 'month';
+                $resolvedStartDate = Carbon::create($year, $month, 1, 0, 0, 0, 'Asia/Jakarta')->startOfMonth()->toDateString();
+                $resolvedEndDate = Carbon::create($year, $month, 1, 23, 59, 59, 'Asia/Jakarta')->endOfMonth()->toDateString();
+            }
+        } else {
+            $rangeType = 'month';
+            $resolvedStartDate = Carbon::create($year, $month, 1, 0, 0, 0, 'Asia/Jakarta')->startOfMonth()->toDateString();
+            $resolvedEndDate = Carbon::create($year, $month, 1, 23, 59, 59, 'Asia/Jakarta')->endOfMonth()->toDateString();
+        }
+
+        if ($sections->isEmpty()) {
+            return [
+                'summary' => [
+                    'total_hours' => 0.0,
+                    'capex_hours' => 0.0,
+                    'opex_hours' => 0.0,
+                    'capex_ratio_pct' => 0.0,
+                    'opex_ratio_pct' => 0.0,
+                    'capex_cost_idr' => 0.0,
+                    'opex_cost_idr' => 0.0,
+                    'total_cost_idr' => 0.0,
+                    'range_type' => $rangeType,
+                    'start_date' => $resolvedStartDate,
+                    'end_date' => $resolvedEndDate,
+                ],
+                'sections' => [],
+                'projects' => [],
+            ];
+        }
+
+        $sectionIds = $sections->pluck('id');
+
+        // Base query for approved items in date range for these sections
+        $itemsQuery = OvertimeItem::query()
+            ->join('overtime_submissions', 'overtime_items.overtime_submission_id', '=', 'overtime_submissions.id')
+            ->where('overtime_items.status', 'APPROVED')
+            ->whereBetween('overtime_submissions.operational_date', [$resolvedStartDate, $resolvedEndDate])
+            ->whereIn('overtime_submissions.section_id', $sectionIds);
+
+        // 1. Macro KPI aggregations
+        $macroMetrics = (clone $itemsQuery)
+            ->selectRaw('
+                COALESCE(SUM(overtime_items.hours_project), 0) as capex_hours,
+                COALESCE(SUM(overtime_items.hours_production + overtime_items.hours_tpm + overtime_items.hours_others), 0) as opex_hours,
+                COALESCE(SUM(overtime_items.total_hours), 0) as total_hours,
+                COALESCE(SUM(overtime_items.hours_project * overtime_items.hourly_rate_snapshot), 0) as capex_cost_idr,
+                COALESCE(SUM((overtime_items.hours_production + overtime_items.hours_tpm + overtime_items.hours_others) * overtime_items.hourly_rate_snapshot), 0) as opex_cost_idr,
+                COALESCE(SUM(overtime_items.total_cost_snapshot), 0) as total_cost_idr
+            ')
+            ->first();
+
+        $capexHours = round((float) ($macroMetrics->capex_hours ?? 0.0), 2);
+        $opexHours = round((float) ($macroMetrics->opex_hours ?? 0.0), 2);
+        $totalHours = round((float) ($macroMetrics->total_hours ?? 0.0), 2);
+        $capexRatio = $totalHours > 0 ? round(($capexHours / $totalHours) * 100, 2) : 0.0;
+        $opexRatio = $totalHours > 0 ? round(($opexHours / $totalHours) * 100, 2) : 0.0;
+        $capexCostIdr = round((float) ($macroMetrics->capex_cost_idr ?? 0.0), 2);
+        $opexCostIdr = round((float) ($macroMetrics->opex_cost_idr ?? 0.0), 2);
+        $totalCostIdr = round((float) ($macroMetrics->total_cost_idr ?? 0.0), 2);
+
+        // 2. Section comparison breakdown
+        $sectionMetrics = (clone $itemsQuery)
+            ->selectRaw('
+                overtime_submissions.section_id,
+                COALESCE(SUM(overtime_items.hours_project), 0) as capex_hours,
+                COALESCE(SUM(overtime_items.hours_production + overtime_items.hours_tpm + overtime_items.hours_others), 0) as opex_hours,
+                COALESCE(SUM(overtime_items.total_hours), 0) as total_hours
+            ')
+            ->groupBy('overtime_submissions.section_id')
+            ->get()
+            ->keyBy('section_id');
+
+        $sectionsBreakdown = [];
+        foreach ($sections as $section) {
+            $metric = $sectionMetrics->get($section->id);
+            $secCapex = round((float) ($metric->capex_hours ?? 0.0), 2);
+            $secOpex = round((float) ($metric->opex_hours ?? 0.0), 2);
+            $secTotal = round((float) ($metric->total_hours ?? 0.0), 2);
+            $secCapexRatio = $secTotal > 0 ? round(($secCapex / $secTotal) * 100, 2) : 0.0;
+
+            $sectionsBreakdown[] = [
+                'section_id' => $section->id,
+                'section_code' => $section->code,
+                'section_name' => $section->name,
+                'capex_hours' => $secCapex,
+                'opex_hours' => $secOpex,
+                'total_hours' => $secTotal,
+                'capex_ratio_pct' => $secCapexRatio,
+            ];
+        }
+
+        // 3. CapEx Projects Performance Table
+        $projectsQuery = CapexProject::query()->with('department');
+        if ($user->isTeamLeader() && $user->department_id) {
+            $projectsQuery->where('department_id', $user->department_id);
+        } elseif ($targetDeptId) {
+            $projectsQuery->where('department_id', $targetDeptId);
+        }
+        $capexProjects = $projectsQuery->orderBy('project_code')->get();
+
+        // Hours logged in period per project for these sections
+        $projectPeriodHours = (clone $itemsQuery)
+            ->whereNotNull('overtime_items.capex_project_id')
+            ->selectRaw('
+                overtime_items.capex_project_id,
+                COALESCE(SUM(overtime_items.hours_project), 0) as logged_hours,
+                COALESCE(SUM(overtime_items.hours_project * overtime_items.hourly_rate_snapshot), 0) as logged_cost_idr
+            ')
+            ->groupBy('overtime_items.capex_project_id')
+            ->get()
+            ->keyBy('capex_project_id');
+
+        // Cumulative hours across all time per project
+        $projectCumulativeHours = OvertimeItem::query()
+            ->where('status', 'APPROVED')
+            ->whereNotNull('capex_project_id')
+            ->selectRaw('
+                capex_project_id,
+                COALESCE(SUM(hours_project), 0) as cumulative_hours,
+                COALESCE(SUM(hours_project * hourly_rate_snapshot), 0) as cumulative_cost_idr
+            ')
+            ->groupBy('capex_project_id')
+            ->get()
+            ->keyBy('capex_project_id');
+
+        // Include any project that had logged hours in period even if under different department scope
+        $loggedProjectIds = $projectPeriodHours->keys()->toArray();
+        $missingProjectIds = array_diff($loggedProjectIds, $capexProjects->pluck('id')->toArray());
+        if (! empty($missingProjectIds)) {
+            $extraProjects = CapexProject::with('department')->whereIn('id', $missingProjectIds)->get();
+            $capexProjects = $capexProjects->concat($extraProjects);
+        }
+
+        $projectsList = [];
+        foreach ($capexProjects as $project) {
+            $periodLogged = round((float) ($projectPeriodHours->get($project->id)?->logged_hours ?? 0.0), 2);
+            $cumLogged = round((float) ($projectCumulativeHours->get($project->id)?->cumulative_hours ?? 0.0), 2);
+            $allocatedHours = round((float) $project->allocated_labor_hours, 2);
+            $allocatedBudget = round((float) $project->allocated_labor_budget_idr, 2);
+            $varianceHours = round($cumLogged - $allocatedHours, 2);
+            $periodCostIdr = round((float) ($projectPeriodHours->get($project->id)?->logged_cost_idr ?? 0.0), 2);
+            $cumCostIdr = round((float) ($projectCumulativeHours->get($project->id)?->cumulative_cost_idr ?? 0.0), 2);
+            $progressPct = round((float) $project->physical_progress_pct, 1);
+
+            $projectsList[] = [
+                'id' => $project->id,
+                'project_code' => $project->project_code,
+                'asset_code' => $project->asset_code,
+                'name' => $project->name,
+                'department_id' => $project->department_id,
+                'department_name' => $project->department?->name ?? '',
+                'department_code' => $project->department?->code ?? '',
+                'period_logged_hours' => $periodLogged,
+                'cumulative_logged_hours' => $cumLogged,
+                'allocated_labor_hours' => $allocatedHours,
+                'allocated_labor_budget_idr' => $allocatedBudget,
+                'period_cost_idr' => $periodCostIdr,
+                'cumulative_cost_idr' => $cumCostIdr,
+                'variance_hours' => $varianceHours,
+                'physical_progress_pct' => $progressPct,
+                'status' => $project->status,
+                'start_date' => $project->start_date?->toDateString(),
+                'target_end_date' => $project->target_end_date?->toDateString(),
+                'has_logged_hours' => $periodLogged > 0 || $cumLogged > 0,
+            ];
+        }
+
+        return [
+            'summary' => [
+                'total_hours' => $totalHours,
+                'capex_hours' => $capexHours,
+                'opex_hours' => $opexHours,
+                'capex_ratio_pct' => $capexRatio,
+                'opex_ratio_pct' => $opexRatio,
+                'capex_cost_idr' => $capexCostIdr,
+                'opex_cost_idr' => $opexCostIdr,
+                'total_cost_idr' => $totalCostIdr,
+                'range_type' => $rangeType,
+                'start_date' => $resolvedStartDate,
+                'end_date' => $resolvedEndDate,
+            ],
+            'sections' => $sectionsBreakdown,
+            'projects' => $projectsList,
         ];
     }
 

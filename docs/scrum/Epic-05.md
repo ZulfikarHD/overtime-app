@@ -118,28 +118,30 @@ This epic builds the analytical dashboard that answers that question in real tim
 **So that** capitalized labor can be tracked for accounting compliance and CapEx project progress can be verified.
 
 **Story Points:** 8  
-**Priority:** Must Have
+**Priority:** Must Have  
+**Status:** 🟢 Completed (Sprint 5)
 
 #### Acceptance Criteria
 
-- [ ] Department-level panel shows:
+- [x] Department-level panel shows:
     - Total overtime hours: OpEx | CapEx split (pie or donut chart + summary table)
     - CapEx Labor Ratio % (CALC-07): `(Total Project Hours / Total Hours) × 100%`
     - OpEx Labor Ratio %
-- [ ] Drill-down by section: bar chart showing each section's CapEx vs OpEx hours side by side
-- [ ] Drill-down by CapEx project: table showing each CapEx project's total hours logged, allocated budget hours, variance
-- [ ] Date range filter: current month (default), custom range, year-to-date
-- [ ] Formula display: hovering over "CapEx Ratio" shows tooltip with formula: `Project Hours / Total Hours × 100%`
-- [ ] If no CapEx hours in period: show `"No CapEx labor recorded this period"` state
+- [x] Drill-down by section: bar chart showing each section's CapEx vs OpEx hours side by side
+- [x] Drill-down by CapEx project: table showing each CapEx project's total hours logged, allocated budget hours, variance
+- [x] Date range filter: current month (default), custom range, year-to-date
+- [x] Formula display: hovering over "CapEx Ratio" shows tooltip with formula: `Project Hours / Total Hours × 100%`
+- [x] If no CapEx hours in period: show `"No CapEx labor recorded this period"` state
 
 #### Technical Tasks
 
-- [ ] `CapexOpexReportController@index` — aggregates `hours_project` vs total from approved items
-- [ ] Route: `GET /reports/capex-opex` → `CapexOpexReportController@index`
-- [ ] Query: `SUM(hours_project)`, `SUM(hours_production + hours_tpm + hours_others)` per section per month
-- [ ] Create `resources/js/Pages/Reports/CapexOpex.vue`
-- [ ] Create `resources/js/Components/Reports/CapexOpexDonutChart.vue`
-- [ ] Create `resources/js/Components/Reports/CapexProjectTable.vue` — links to Epic-07 CapEx project detail
+- [x] Backend aggregation in `MonthlySnapshotService::getCapexOpexBreakdown` aggregating `hours_project` vs OpEx hours from approved items
+- [x] Unified Hub Tab Route: `/dashboard/burn-index?tab=capex-opex` and legacy redirect `/reports/capex-opex` (per UX Plan)
+- [x] Multi-period queries: `month`, `ytd`, and `custom` with section and CapEx project breakdown
+- [x] Create `resources/js/components/dashboard/CapexOpexTab.vue` integrated into `BurnIndex.vue`
+- [x] Create `resources/js/components/dashboard/CapexOpexDonutChart.vue`
+- [x] Create `resources/js/components/dashboard/CapexOpexSectionBarChart.vue`
+- [x] Create `resources/js/components/dashboard/CapexProjectTable.vue` with variance tracking and search
 
 ---
 

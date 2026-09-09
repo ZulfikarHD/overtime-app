@@ -33,8 +33,20 @@ class DashboardBurnIndexController extends Controller
             ? $request->integer('department_id')
             : null;
         $tab = $request->string('tab', 'sections')->value();
+        $rangeType = $request->string('range_type', 'month')->value();
+        $startDate = $request->filled('start_date') ? $request->string('start_date')->value() : null;
+        $endDate = $request->filled('end_date') ? $request->string('end_date')->value() : null;
 
-        $data = $this->snapshotService->getDashboardData($user, $year, $month, $departmentId, $tab);
+        $data = $this->snapshotService->getDashboardData(
+            $user,
+            $year,
+            $month,
+            $departmentId,
+            $tab,
+            $rangeType,
+            $startDate,
+            $endDate,
+        );
 
         return Inertia::render('dashboard/BurnIndex', $data);
     }
