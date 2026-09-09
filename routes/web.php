@@ -115,6 +115,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::put('/capex-projects/{capex_project}', [CapexProjectController::class, 'update'])->name('capex-projects.update');
         Route::delete('/capex-projects/{capex_project}', [CapexProjectController::class, 'destroy'])->name('capex-projects.destroy');
         Route::patch('/capex-projects/{capex_project}/status', [CapexProjectController::class, 'updateStatus'])->name('capex-projects.status.update');
+        Route::patch('/capex-projects/{capex_project}/progress', [CapexProjectController::class, 'updateProgress'])->name('capex-projects.progress.update');
     });
 
     // Calendar Classification API for timesheet and general auto-classification (E02-03)

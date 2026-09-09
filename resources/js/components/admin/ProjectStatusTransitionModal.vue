@@ -34,6 +34,13 @@ export interface CapexProjectTransitionTarget {
 const props = defineProps<{
     open: boolean;
     project: CapexProjectTransitionTarget | null;
+    initialTargetStatus?:
+        | 'PLANNING'
+        | 'ACTIVE'
+        | 'ON_HOLD'
+        | 'COMPLETED'
+        | 'CLOSED'
+        | null;
 }>();
 
 const emit = defineEmits<{
@@ -110,11 +117,19 @@ const availableTransitions = computed(() => {
 });
 
 watch(
-    () => props.project,
-    (proj) => {
-        if (proj) {
+    [() => props.project, () => props.open],
+    ([proj, isOpen]) => {
+        if (proj && isOpen) {
             const transitions = allowedTransitionsMap[proj.status] ?? [];
-            form.status = transitions.length > 0 ? transitions[0].status : '';
+            if (
+                props.initialTargetStatus &&
+                transitions.some((t) => t.status === props.initialTargetStatus)
+            ) {
+                form.status = props.initialTargetStatus;
+            } else {
+                form.status =
+                    transitions.length > 0 ? transitions[0].status : '';
+            }
             form.notes = '';
             form.clearErrors();
         }

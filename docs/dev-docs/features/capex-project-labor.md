@@ -4,21 +4,50 @@
 
 The **CapEx Project Labor Management & Capitalization** module governs overtime labor dedicated to fixed asset creation, machine fabrication, tooling construction, and major facility overhauls. It ensures that capitalized project labor is strictly isolated from standard operational expenses (OpEx), directly traceable to authoritative project codes (`CPX-YYYY-DEPT-NNN`), and compliant with corporate tax depreciation and statutory audit requirements.
 
+Story **[E07-02]** expands this capability with an executive and managerial **CapEx Project Labor Burn Tracking Dashboard** featuring real-time burn index computations, weekly labor burndown timeline charts, shopfloor team contribution rosters, in-place physical progress editing, automated burn alert notifications, and completion milestone transitions.
+
 ## Architecture Diagram
 
 ```mermaid
 flowchart TD
-    PM[CapEx Manager / Admin] -->|Create / Update Project| CPC[CapexProjectController]
-    CPC -->|Validate Code & Budget| CPR[StoreCapexProjectRequest]
-    CPR --> CPMOD[CapexProject Model]
-    CPMOD --> DB[(Database: capex_projects)]
+    subgraph UI ["Vue 3 Cockpit Surface (Show.vue)"]
+        KPI[CapexBurnIndexPanel: 4 Macro KPI Cards]
+        Editor[InlineProgressEditor: In-Place 0-100% Slider & Input]
+        Chart[CapexLaborTimelineChart: Weekly Cumulative Burndown]
+        Team[CapexTeamContributionTable: Ranked NPK Roster]
+        Banner[CompletionMilestonePrompt: 100% Milestone Banner]
+    end
 
-    TL[Team Leader - Timesheet] -->|hours_project > 0| SOA[SubmitOvertimeAction]
-    SOA -->|Verify Project is ACTIVE| VAL[Validate BR-08 Constraint]
-    VAL --> OTI[(overtime_items: capex_project_id)]
+    subgraph Backend ["Laravel Backend Services & Controllers"]
+        Ctrl[CapexProjectController]
+        CAS[CapExAccountingService]
+        CPS[CapexProjectService]
+        Req[UpdateCapexProjectProgressRequest]
+        Audit[OvertimeItemAudit]
+        Notif[CapexBurnAlertNotification]
+    end
 
-    FIN[Finance / Cost Auditor] -->|Audit Project Burn| CAS[CapExAccountingService]
-    CAS -->|Aggregate Hours & Snapshots| CHRT[CapexProjectBurnChart.vue - Chart.js]
+    subgraph DB ["Database Storage"]
+        CP[(capex_projects: physical_progress_pct)]
+        OTI[(overtime_items: APPROVED, hours_project, total_cost_snapshot)]
+        OTS[(overtime_submissions: operational_date)]
+        NOTIFS[(notifications: capex_burn_alert)]
+    end
+
+    UI -->|GET /admin/capex-projects/{id}| Ctrl
+    Ctrl --> CAS
+    CAS -->|Query approved hours & snapshot costs| OTI
+    CAS -->|Join operational dates for weekly intervals| OTS
+    CAS --> CP
+
+    Editor -->|PATCH /admin/capex-projects/{id}/progress| Ctrl
+    Ctrl --> Req
+    Ctrl --> CPS
+    CPS -->|Update physical_progress_pct| CP
+    CPS -->|Log action PROGRESS_UPDATE| Audit
+    CPS -->|Check burn_index_pct > 80%| CAS
+    CAS -->|Dispatch if not alerted this month| Notif
+    Notif --> NOTIFS
 ```
 
 ## Data Model
@@ -27,62 +56,82 @@ flowchart TD
 erDiagram
     DEPARTMENTS ||--o{ CAPEX_PROJECTS : owns
     CAPEX_PROJECTS ||--o{ OVERTIME_ITEMS : capitalizes_labor
-    USERS ||--o{ CAPEX_PROJECTS : manages
+    OVERTIME_ITEMS }o--|| OVERTIME_SUBMISSIONS : belongs_to
+    OVERTIME_ITEMS }o--|| EMPLOYEES : attributed_to
+    USERS ||--o{ OVERTIME_ITEM_AUDITS : logs_action
+    USERS ||--o{ NOTIFICATIONS : receives
 ```
 
 ## Key Files & UI Mapping
 
-| Layer          | File / Route / Menu                                              | Purpose                                                                   |
-| -------------- | ---------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| Sidebar Menu   | `Proyek CapEx` (`/admin/capex-projects`)                         | Master list and capital tracking for managers and admins (`FolderKanban`) |
-| Page Component | `resources/js/pages/admin/CapexProjects/Index.vue`               | Unified hub: Tab 1 (Portfolio & Master Data) + Tab 2 (Financial Report)   |
-| Drawer Comp    | `resources/js/components/admin/CapexProjectDrawer.vue`           | Ergonomic slide-in sheet for creating and updating projects               |
-| Modal Comp     | `resources/js/components/admin/ProjectStatusTransitionModal.vue` | State machine transition dialog with audit warnings                       |
-| Detail Page    | `resources/js/pages/admin/CapexProjects/Show.vue`                | Capital labor burn cockpit, macro KPI cards, and master audit params      |
-| Controller     | `app/Http/Controllers/Admin/CapexProjectController.php`          | Resource CRUD management, status transitions, and redirects               |
-| Service        | `app/Services/CapexProjectService.php`                           | Project scoping, burn calculation, CRUD, and state transitions            |
-| Requests       | `app/Http/Requests/Admin/*CapexProject*.php`                     | Validation rules, regex CPX format, and project_code immutability guard   |
-| Model          | `App\Models\CapexProject`                                        | Master project record with allocated hours and Rupiah budget              |
+| Layer               | File / Route / Menu                                              | Purpose                                                                   |
+| ------------------- | ---------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| Sidebar Menu        | `Proyek CapEx` (`/admin/capex-projects`)                         | Master list and capital tracking for managers and admins (`FolderKanban`) |
+| Page Component      | `resources/js/pages/admin/CapexProjects/Index.vue`               | Unified hub: Tab 1 (Portfolio & Master Data) + Tab 2 (Financial Report)   |
+| Drawer Comp         | `resources/js/components/admin/CapexProjectDrawer.vue`           | Ergonomic slide-in sheet for creating and updating projects               |
+| Modal Comp          | `resources/js/components/admin/ProjectStatusTransitionModal.vue` | State machine transition dialog with audit warnings & target preselection |
+| Detail Cockpit Page | `resources/js/pages/admin/CapexProjects/Show.vue`                | Capital labor burn cockpit, macro KPI cards, timeline, team roster        |
+| KPI Macro Cards     | `resources/js/components/capex/CapexBurnIndexPanel.vue`          | 4 executive KPI cards (Labor Hours, Cost, CapEx Burn Index, Milestone)    |
+| In-Place Editor     | `resources/js/components/capex/InlineProgressEditor.vue`         | 0-100% slider + number input for instant in-place progress updates        |
+| Timeline Chart      | `resources/js/components/capex/CapexLaborTimelineChart.vue`      | Weekly burndown curve (Target linear curve vs Approved actuals)           |
+| Contribution Table  | `resources/js/components/capex/CapexTeamContributionTable.vue`   | Ranked list of technicians with approved hours and cost snapshot          |
+| Notification Bell   | `resources/js/components/NotificationBell.vue`                   | Renders `capex_burn_alert` notification items with 1-click cockpit route  |
+| Accounting Service  | `app/Services/CapExAccountingService.php`                        | Metric aggregations, timeline bucketing, burn alert evaluation            |
+| Project Service     | `app/Services/CapexProjectService.php`                           | Project management, department scoping, audit logging (`PROGRESS_UPDATE`) |
+| Controller          | `app/Http/Controllers/Admin/CapexProjectController.php`          | Resource CRUD management, progress updates, and redirects                 |
+| Notification        | `app/Notifications/CapexBurnAlertNotification.php`               | Queued database notification dispatched on >80% burn thresholds           |
 
-## Flow Explanation
+## Metric Calculations & Business Logic
 
-1. **Project creation**: An Admin or CapEx Manager creates a project under **Proyek CapEx** specifying:
-    - Unique, immutable `project_code` (e.g., `CPX-2026-ASSY-001`).
-    - Fixed asset reference code (`asset_code`).
-    - Allocated capitalized labor hours and budget in Rupiah (`allocated_labor_budget_idr`).
-    - Target milestones and active date range.
-2. **Shop-floor timesheet binding**:
-    - When a Team Leader enters hours in the **Project** category, `hours_project > 0` triggers validation rule `BR-08`.
-    - The user must select an `ACTIVE` project from the dropdown. Inactive or closed projects are rejected.
-3. **Financial cost accumulation**:
-    - As overtime items are approved, their `total_cost_snapshot` is linked to the CapEx project.
-    - The system accumulates both total capitalized hours and total capitalized financial cost.
-4. **Labor burn vs. physical progress tracking**:
-    - `CapexProjectBurnChart.vue` (Chart.js) renders a comparative curve: cumulative labor burn percentage against reported physical project progress (`physical_progress_pct`).
-    - If labor burn reaches 80% while physical progress is only 40%, the system flags a **Capital Overrun Risk**.
-5. **Closure & audit locking**:
-    - When the project reaches completion, its status transitions to `COMPLETED` and subsequently `CLOSED`.
-    - Closed projects are permanently locked against any new overtime attributions.
+1. **Consumed Labor Hours**:
+   $$\text{Consumed Hours} = \sum \text{overtime\_items.hours\_project} \quad (\text{where } \text{status} = \text{'APPROVED'})$$
+2. **Consumed Capitalized Cost (IDR)**:
+   $$\text{Consumed Cost} = \sum \text{overtime\_items.total\_cost\_snapshot} \quad (\text{where } \text{status} = \text{'APPROVED'})$$
+3. **CapEx Burn Index (%)**:
+   $$\text{CapEx Burn Index} = \frac{\text{Consumed Hours}}{\text{Allocated Labor Hours}} \times 100\%$$
+    - **Thresholds**:
+        - `< 85%`: Normal / Controlled (Emerald)
+        - `85% - 100%`: Approaching Cap (Sky Blue)
+        - `> 100%`: Overrun Warning (Amber)
+        - `> 115%`: Deficit Overrun (ISUZU Red `#cc0000`)
+4. **Milestone Burn Ratio**:
+   $$\text{Milestone Burn Ratio} = \frac{\text{CapEx Burn Index}}{\text{Physical Progress \%}}$$
+    - If `Milestone Burn Ratio > 1.20`, the cockpit renders a prominent warning badge:
+      `⚠️ Pembakaran jam lebih cepat dibanding kemajuan fisik!`
+5. **Burn Alert Notification & Monthly Deduplication**:
+    - Triggers when `CapEx Burn Index > 80%`.
+    - Checks the `notifications` table for prior dispatches for the same project in the current calendar month.
+    - If unnotified, dispatches `CapexBurnAlertNotification` to the Department Manager and active Admins.
+6. **In-Place Physical Progress Update & Audit Trail**:
+    - Sends `PATCH /admin/capex-projects/{id}/progress` with `physical_progress_pct` (0.0 to 100.0).
+    - Validates boundaries and logs an audit trail in `overtime_item_audits` with action `PROGRESS_UPDATE`.
+    - When progress reaches 100%, displays a celebratory prompt offering 1-click status transition to `COMPLETED`.
+7. **Zero-Hours Graceful State**:
+    - When `consumed_hours === 0`, displays the standard fallback:
+      `Belum ada jam lembur tercatat — Proyek dalam tahap alokasi anggaran.`
 
 ## API Endpoints & Routes
 
-| Method   | URI                                 | Controller Action                         | Purpose                                         | Auth / Middleware            |
-| -------- | ----------------------------------- | ----------------------------------------- | ----------------------------------------------- | ---------------------------- |
-| GET      | `/admin/capex-projects`             | `CapexProjectController@index`            | Project portfolio list and burn status          | `auth`, `role:admin,manager` |
-| POST     | `/admin/capex-projects`             | `CapexProjectController@store`            | Create new CapEx project                        | `auth`, `role:admin,manager` |
-| GET      | `/admin/capex-projects/{id}`        | `CapexProjectController@show`             | Project labor audit cockpit                     | `auth`, `role:admin,manager` |
-| PUT      | `/admin/capex-projects/{id}`        | `CapexProjectController@update`           | Update project attributes (project_code locked) | `auth`, `role:admin,manager` |
-| DELETE   | `/admin/capex-projects/{id}`        | `CapexProjectController@destroy`          | Delete project (only if 0 overtime items)       | `auth`, `role:admin,manager` |
-| PATCH    | `/admin/capex-projects/{id}/status` | `CapexProjectController@updateStatus`     | Transition project lifecycle status             | `auth`, `role:admin,manager` |
-| REDIRECT | `/reports/capex-projects/portfolio` | → `/admin/capex-projects?tab=portfolio`   | Legacy alias redirect to Portfolio Hub          | Public / Web                 |
-| REDIRECT | `/reports/capex-labor`              | → `/admin/capex-projects?tab=attribution` | Legacy alias redirect to Attribution Tab        | Public / Web                 |
+| Method   | URI                                   | Controller Action                         | Purpose                                    | Auth / Middleware            |
+| -------- | ------------------------------------- | ----------------------------------------- | ------------------------------------------ | ---------------------------- |
+| GET      | `/admin/capex-projects`               | `CapexProjectController@index`            | Project portfolio list and burn status     | `auth`, `role:admin,manager` |
+| POST     | `/admin/capex-projects`               | `CapexProjectController@store`            | Create new CapEx project                   | `auth`, `role:admin,manager` |
+| GET      | `/admin/capex-projects/{id}`          | `CapexProjectController@show`             | Project labor burn cockpit                 | `auth`, `role:admin,manager` |
+| PUT      | `/admin/capex-projects/{id}`          | `CapexProjectController@update`           | Update project master attributes           | `auth`, `role:admin,manager` |
+| DELETE   | `/admin/capex-projects/{id}`          | `CapexProjectController@destroy`          | Delete project (only if 0 overtime items)  | `auth`, `role:admin,manager` |
+| PATCH    | `/admin/capex-projects/{id}/status`   | `CapexProjectController@updateStatus`     | Transition project lifecycle status        | `auth`, `role:admin,manager` |
+| PATCH    | `/admin/capex-projects/{id}/progress` | `CapexProjectController@updateProgress`   | Update physical progress in-place (E07-02) | `auth`, `role:admin,manager` |
+| REDIRECT | `/reports/capex-projects/portfolio`   | → `/admin/capex-projects?tab=portfolio`   | Legacy alias redirect to Portfolio Hub     | Public / Web                 |
+| REDIRECT | `/reports/capex-labor`                | → `/admin/capex-projects?tab=attribution` | Legacy alias redirect to Attribution Tab   | Public / Web                 |
 
 ## Decisions & Trade-offs
 
-- **Strict Database Integrity**: We enforce `chk_capex_attribution` at the database level (`hours_project = 0 OR capex_project_id IS NOT NULL`). This ensures no orphaned project labor exists, satisfying strict external financial audits.
-- **Immutable Project Codes**: Similar to employee NPKs, project codes cannot be edited after creation to preserve financial ledger traceability.
+- **Single Cockpit Route Footprint**: All labor tracking, burndown visualization, team rosters, and in-place progress adjustments live exclusively on `/admin/capex-projects/{id}`, adhering strictly to the UX plan constraint against route bloat.
+- **Monthly Notification Deduplication**: Querying `notifications` table `data->project_id` and `created_at >= startOfMonth()` provides zero-DDL risk deduplication without altering table schemas.
+- **Immutable Historical Snapshots**: Labor cost calculations strictly sum `total_cost_snapshot` from approved items, guaranteeing immutable financial figures that mirror official accounting ledger statements.
 
 ## Related
 
 - [Epic-07: CapEx Project Labor Management](../../scrum/Epic-07.md)
+- [Epic-07 UX Plan](../../scrum/Epic-07-ux-plan.md)
 - [ADR-002: Immutable Rate Snapshotting](../decisions/002-immutable-labor-rate-snapshotting.md)

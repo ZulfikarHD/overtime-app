@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreCapexProjectRequest;
+use App\Http\Requests\Admin\UpdateCapexProjectProgressRequest;
 use App\Http\Requests\Admin\UpdateCapexProjectRequest;
 use App\Http\Requests\Admin\UpdateCapexProjectStatusRequest;
 use App\Models\CapexProject;
@@ -116,6 +117,25 @@ class CapexProjectController extends Controller
         return redirect()
             ->back()
             ->with('success', __('Status proyek CapEx berhasil diperbarui.'));
+    }
+
+    /**
+     * Update the physical progress percentage of the specified CapEx project.
+     */
+    public function updateProgress(UpdateCapexProjectProgressRequest $request, CapexProject $capexProject): RedirectResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+
+        $this->capexProjectService->updateProgress(
+            $capexProject,
+            (float) $request->validated('physical_progress_pct'),
+            $user
+        );
+
+        return redirect()
+            ->back()
+            ->with('success', __('Kemajuan fisik proyek berhasil diperbarui.'));
     }
 
     /**

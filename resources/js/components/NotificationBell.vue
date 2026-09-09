@@ -8,6 +8,7 @@ import {
     CheckCheck,
     Clock,
     FileText,
+    FolderKanban,
     HeartPulse,
 } from '@lucide/vue';
 import { computed, onMounted, ref, watch } from 'vue';
@@ -23,6 +24,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Spinner } from '@/components/ui/spinner';
 import { useTrans } from '@/composables/useTrans';
+import capexProjectsRoute from '@/routes/admin/capex-projects';
 import { burnIndex } from '@/routes/dashboard';
 import {
     index as notificationsIndexRoute,
@@ -33,6 +35,7 @@ import { show as showEmployeeDossier } from '@/routes/reports/employees';
 import type {
     AppNotification,
     BudgetThresholdNotificationData,
+    CapexBurnAlertNotificationData,
     FatigueAlertNotificationData,
     NotificationsPayload,
     SpklNotificationData,
@@ -149,6 +152,13 @@ function isFatigueAlert(item: AppNotification): boolean {
     );
 }
 
+function isCapexAlert(item: AppNotification): boolean {
+    return (
+        (item.data as any)?.notification_type === 'capex_burn_alert' ||
+        Boolean(item.type?.includes('CapexBurnAlertNotification'))
+    );
+}
+
 function asBudgetData(item: AppNotification): BudgetThresholdNotificationData {
     return item.data as BudgetThresholdNotificationData;
 }
@@ -157,8 +167,23 @@ function asFatigueData(item: AppNotification): FatigueAlertNotificationData {
     return item.data as FatigueAlertNotificationData;
 }
 
+function asCapexData(item: AppNotification): CapexBurnAlertNotificationData {
+    return item.data as CapexBurnAlertNotificationData;
+}
+
 function asSpklData(item: AppNotification): SpklNotificationData {
     return item.data as SpklNotificationData;
+}
+
+function handleCapexNotificationClick(item: AppNotification) {
+    void markAsRead(item.id);
+    isOpen.value = false;
+    const data = asCapexData(item);
+    router.visit(
+        capexProjectsRoute.show.url({
+            capex_project: data.project_id,
+        }),
+    );
 }
 
 function handleBudgetNotificationClick(item: AppNotification) {
@@ -565,6 +590,111 @@ const displayCount = computed(() => {
                                                     class="mr-1 size-3"
                                                 />
                                                 {{ __('Buka Dossier') }}
+                                            </Button>
+
+                                            <Button
+                                                size="icon"
+                                                variant="ghost"
+                                                class="text-muted-foreground hover:text-foreground h-6 w-6 cursor-pointer"
+                                                data-test="btn-mark-read"
+                                                :title="
+                                                    __('Tandai sudah dibaca')
+                                                "
+                                                @click.stop="
+                                                    markAsRead(item.id)
+                                                "
+                                            >
+                                                <Check class="size-3" />
+                                            </Button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- CapEx Burn Alert Notification Item (E07-02) -->
+                            <div
+                                v-else-if="isCapexAlert(item)"
+                                class="flex cursor-pointer items-start gap-2.5"
+                                data-test="notification-capex-item"
+                                @click="handleCapexNotificationClick(item)"
+                            >
+                                <!-- Type Icon -->
+                                <div
+                                    class="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full bg-sky-100 text-sky-800 dark:bg-sky-950/60 dark:text-sky-300"
+                                >
+                                    <FolderKanban class="size-3.5" />
+                                </div>
+
+                                <!-- Body -->
+                                <div class="min-w-0 flex-1">
+                                    <div
+                                        class="flex items-center justify-between gap-1"
+                                    >
+                                        <span
+                                            class="text-foreground font-mono text-xs font-semibold"
+                                        >
+                                            {{ asCapexData(item).project_code }}
+                                        </span>
+                                        <Badge
+                                            variant="outline"
+                                            class="border-amber-300 px-1.5 py-0 text-[10px] text-amber-600 dark:text-amber-400"
+                                            data-test="badge-capex-burn-warning"
+                                        >
+                                            {{
+                                                __('Burn > 80% (:pct%)', {
+                                                    pct: Number(
+                                                        asCapexData(item)
+                                                            .burn_index_pct,
+                                                    ).toFixed(1),
+                                                })
+                                            }}
+                                        </Badge>
+                                    </div>
+
+                                    <p
+                                        class="text-foreground mt-0.5 truncate text-xs font-medium"
+                                    >
+                                        {{ asCapexData(item).project_name }}
+                                    </p>
+
+                                    <p
+                                        class="text-muted-foreground mt-0.5 line-clamp-2 text-xs"
+                                    >
+                                        {{
+                                            asCapexData(item).message ||
+                                            asCapexData(item).title
+                                        }}
+                                    </p>
+
+                                    <div
+                                        class="border-border/40 mt-2 flex items-center justify-between border-t pt-1"
+                                    >
+                                        <span
+                                            class="text-muted-foreground text-[11px]"
+                                        >
+                                            {{
+                                                asCapexData(item)
+                                                    .department_name ||
+                                                __('Proyek CapEx')
+                                            }}
+                                        </span>
+
+                                        <div class="flex items-center gap-1">
+                                            <Button
+                                                size="sm"
+                                                variant="outline"
+                                                class="h-6 cursor-pointer border-sky-300 px-2 text-[11px] font-medium text-sky-700 hover:bg-sky-50 dark:border-sky-800 dark:hover:bg-sky-950/40"
+                                                data-test="btn-view-capex-from-notif"
+                                                @click.stop="
+                                                    handleCapexNotificationClick(
+                                                        item,
+                                                    )
+                                                "
+                                            >
+                                                <FolderKanban
+                                                    class="mr-1 size-3"
+                                                />
+                                                {{ __('Buka Proyek') }}
                                             </Button>
 
                                             <Button

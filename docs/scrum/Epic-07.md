@@ -77,11 +77,12 @@ Business Rule **BR-08** is the foundation: any overtime hour categorized as "Pro
 **So that** I can identify projects that are at risk of exceeding their capitalized labor allowance before it happens.
 
 **Story Points:** 10  
-**Priority:** Must Have
+**Priority:** Must Have  
+**Status:** 🟢 Completed (Sprint 6)
 
 #### Acceptance Criteria
 
-- [ ] CapEx project detail page shows:
+- [x] CapEx project detail page shows:
     - `Allocated Labor Hours` vs `Consumed Labor Hours` (from approved "Project" items)
     - `Allocated Budget (Rp)` vs `Consumed Labor Cost (Rp)` (sum of `total_cost_snapshot` where `capex_project_id = X`)
     - **CapEx Burn Index** = `(Consumed Hours / Allocated Hours) × 100%` — same formula as section Burn Index, applied to project
@@ -89,23 +90,23 @@ Business Rule **BR-08** is the foundation: any overtime hour categorized as "Pro
     - **Milestone Burn Ratio** = `CapEx Burn Index / Physical Progress %` — if > 1.0, labor is burning faster than physical progress (warning signal)
     - Labor hours timeline chart: cumulative hours by week
     - Team composition: list of employees who contributed hours, sorted by hours descending
-- [ ] Manager can update `physical_progress_pct` (0–100) directly from the project detail page
-- [ ] Warning badge shown if `Milestone Burn Ratio > 1.2`: `⚠️ Labor consuming faster than project progress`
-- [ ] Alert notification sent to Project Manager when CapEx Burn Index > 80% (configurable)
-- [ ] Zero hours case: if no hours logged yet, show "No labor recorded — project is in allocation phase"
+- [x] Manager can update `physical_progress_pct` (0–100) directly from the project detail page
+- [x] Warning badge shown if `Milestone Burn Ratio > 1.2`: `⚠️ Labor consuming faster than project progress`
+- [x] Alert notification sent to Project Manager when CapEx Burn Index > 80% (configurable)
+- [x] Zero hours case: if no hours logged yet, show "No labor recorded — project is in allocation phase"
 
 #### Technical Tasks
 
-- [ ] `CapExAccountingService::getProjectLaborMetrics(int $projectId): array`
-- [ ] Returns: `allocated_hours`, `consumed_hours`, `remaining_hours`, `burn_index_pct`, `physical_progress_pct`, `milestone_burn_ratio`, `consumed_cost_idr`, `top_contributors`
-- [ ] Consumed hours query: `SUM(overtime_items.total_hours)` + `SUM(overtime_items.hours_project)` where `capex_project_id = X` and `status = 'APPROVED'`
-- [ ] Team composition query: group by `employee_id`, sum hours, join employees for name
-- [ ] PATCH `/admin/capex-projects/{id}/progress` → `CapexProjectController@updateProgress`
-- [ ] `php artisan make:notification CapexBurnAlertNotification`
-- [ ] Create `resources/js/Pages/Admin/CapexProjects/Show.vue` (content layer from E07-01 skeleton)
-- [ ] Create `resources/js/Components/CapEx/CapexBurnIndexPanel.vue` — summary cards
-- [ ] Create `resources/js/Components/CapEx/CapexLaborTimelineChart.vue` — cumulative hours by week (vue-chartjs)
-- [ ] Create `resources/js/Components/CapEx/CapexTeamContributionTable.vue`
+- [x] `CapExAccountingService::getProjectLaborMetrics(int $projectId): array`
+- [x] Returns: `allocated_hours`, `consumed_hours`, `remaining_hours`, `burn_index_pct`, `physical_progress_pct`, `milestone_burn_ratio`, `consumed_cost_idr`, `top_contributors`
+- [x] Consumed hours query: `SUM(overtime_items.total_hours)` + `SUM(overtime_items.hours_project)` where `capex_project_id = X` and `status = 'APPROVED'`
+- [x] Team composition query: group by `employee_id`, sum hours, join employees for name
+- [x] PATCH `/admin/capex-projects/{id}/progress` → `CapexProjectController@updateProgress`
+- [x] `php artisan make:notification CapexBurnAlertNotification`
+- [x] Create `resources/js/Pages/Admin/CapexProjects/Show.vue` (content layer from E07-01 skeleton)
+- [x] Create `resources/js/Components/CapEx/CapexBurnIndexPanel.vue` — summary cards
+- [x] Create `resources/js/Components/CapEx/CapexLaborTimelineChart.vue` — cumulative hours by week (vue-chartjs)
+- [x] Create `resources/js/Components/CapEx/CapexTeamContributionTable.vue`
 
 ---
 
@@ -174,23 +175,24 @@ Business Rule **BR-08** is the foundation: any overtime hour categorized as "Pro
 **So that** the system can calculate the Milestone Burn Ratio and alert me if labor is running ahead of physical work.
 
 **Story Points:** 2  
-**Priority:** Must Have
+**Priority:** Must Have  
+**Status:** 🟢 Completed (Sprint 6)
 
 #### Acceptance Criteria
 
-- [ ] Manager can update `physical_progress_pct` (0.0 to 100.0) directly from the project detail page
-- [ ] Updating `physical_progress_pct` **does not require a full page reload** — in-place edit with instant save
-- [ ] Each update to `physical_progress_pct` is logged in `overtime_item_audits` (or a `capex_project_audits` table): `{ action: 'PROGRESS_UPDATE', previous_pct: X, new_pct: Y, actor_user_id: Z }`
-- [ ] When `physical_progress_pct` reaches 100%, a confirmation prompt: "Mark this project as COMPLETED?" — Manager can choose Yes or Later
-- [ ] Milestone Burn Ratio re-evaluates immediately after update
+- [x] Manager can update `physical_progress_pct` (0.0 to 100.0) directly from the project detail page
+- [x] Updating `physical_progress_pct` **does not require a full page reload** — in-place edit with instant save
+- [x] Each update to `physical_progress_pct` is logged in `overtime_item_audits` (or a `capex_project_audits` table): `{ action: 'PROGRESS_UPDATE', previous_pct: X, new_pct: Y, actor_user_id: Z }`
+- [x] When `physical_progress_pct` reaches 100%, a confirmation prompt: "Mark this project as COMPLETED?" — Manager can choose Yes or Later
+- [x] Milestone Burn Ratio re-evaluates immediately after update
 
 #### Technical Tasks
 
-- [ ] `PATCH /admin/capex-projects/{id}/progress` → `CapexProjectController@updateProgress`
-- [ ] Request: `{ physical_progress_pct: 0-100 }` with validation `between:0,100`
-- [ ] Inline edit: Vue `<InlineEditableField>` component — shows current value as text, click to edit in-place
-- [ ] Audit log: write to `overtime_item_audits` or dedicated `capex_project_logs` table with action `PROGRESS_UPDATE`
-- [ ] Reactive milestone ratio update: Inertia `router.patch(...)` + partial reload of project data
+- [x] `PATCH /admin/capex-projects/{id}/progress` → `CapexProjectController@updateProgress`
+- [x] Request: `{ physical_progress_pct: 0-100 }` with validation `between:0,100`
+- [x] Inline edit: Vue `<InlineProgressEditor>` component — shows current value as text, click to edit in-place
+- [x] Audit log: write to `overtime_item_audits` or dedicated `capex_project_logs` table with action `PROGRESS_UPDATE`
+- [x] Reactive milestone ratio update: Inertia `router.patch(...)` + partial reload of project data
 
 ---
 
@@ -199,7 +201,7 @@ Business Rule **BR-08** is the foundation: any overtime hour categorized as "Pro
 | Sprint Day         | Focus                                              | Stories        | Status       |
 | ------------------ | -------------------------------------------------- | -------------- | ------------ |
 | Sprint 6, Day 6–7  | CapEx project master data management               | E07-01         | 🟢 Completed |
-| Sprint 6, Day 8–10 | CapEx project detail dashboard + physical progress | E07-02, E07-05 | ⏳ Pending   |
+| Sprint 6, Day 8–10 | CapEx project detail dashboard + physical progress | E07-02, E07-05 | 🟢 Completed |
 | Sprint 7, Day 1–3  | Multi-project portfolio overview                   | E07-03         | ⏳ Pending   |
 | Sprint 7, Day 4–6  | CapEx labor attribution report + Excel export      | E07-04         | ⏳ Pending   |
 
@@ -232,6 +234,6 @@ Business Rule **BR-08** is the foundation: any overtime hour categorized as "Pro
 - [x] Project detail shows correct burn index and milestone burn ratio
 - [ ] Portfolio table shows all active CapEx projects with burn status
 - [ ] Labor attribution report exports correct Excel with immutable cost snapshots
-- [ ] Physical progress update is logged in audit trail
+- [x] Physical progress update is logged in audit trail
 - [x] `pnpm lint` passes
 - [x] `pnpm build` succeeds

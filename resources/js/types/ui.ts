@@ -61,6 +61,21 @@ export type FatigueAlertNotificationData = {
     url: string;
 };
 
+export type CapexBurnAlertNotificationData = {
+    notification_type: 'capex_burn_alert';
+    project_id: number;
+    project_code: string;
+    project_name: string;
+    department_id: number;
+    department_name: string;
+    burn_index_pct: number;
+    allocated_hours: number;
+    consumed_hours: number;
+    title: string;
+    message: string;
+    url: string;
+};
+
 export type WelfareRollingWeekItem = {
     week_key: string;
     week_label: string;
@@ -96,6 +111,7 @@ export type NotificationData =
     | SpklNotificationData
     | BudgetThresholdNotificationData
     | FatigueAlertNotificationData
+    | CapexBurnAlertNotificationData
     | Record<string, any>;
 
 export type AppNotification = {

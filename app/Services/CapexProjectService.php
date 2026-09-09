@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\CapexProject;
+use App\Models\OvertimeItemAudit;
 use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
@@ -11,6 +12,10 @@ use Illuminate\Validation\ValidationException;
 
 class CapexProjectService
 {
+    public function __construct(
+        public CapExAccountingService $capexAccountingService,
+    ) {}
+
     /**
      * Map of valid lifecycle status transitions.
      *
@@ -291,6 +296,44 @@ class CapexProjectService
     }
 
     /**
+     * Update the physical progress percentage of the specified CapEx project.
+     * Logs the modification in the audit trail (OvertimeItemAudit) and checks burn alert thresholds.
+     */
+    public function updateProgress(CapexProject $project, float $newProgress, User $user): CapexProject
+    {
+        $this->ensureDepartmentAccess($project, $user);
+
+        $previousProgress = (float) $project->physical_progress_pct;
+        $newProgress = round($newProgress, 2);
+
+        $project->update([
+            'physical_progress_pct' => $newProgress,
+        ]);
+
+        OvertimeItemAudit::create([
+            'overtime_item_id' => null,
+            'action' => 'PROGRESS_UPDATE',
+            'actor_user_id' => $user->id,
+            'previous_state' => [
+                'capex_project_id' => $project->id,
+                'physical_progress_pct' => $previousProgress,
+            ],
+            'new_state' => [
+                'capex_project_id' => $project->id,
+                'physical_progress_pct' => $newProgress,
+            ],
+            'notes' => "Kemajuan fisik proyek {$project->project_code} diperbarui dari {$previousProgress}% menjadi {$newProgress}%",
+            'ip_address' => request()->ip(),
+            'created_at' => Carbon::now('Asia/Jakarta'),
+        ]);
+
+        // Evaluate CapEx Burn Alert if applicable
+        $this->capexAccountingService->evaluateAndNotifyBurnAlert($project);
+
+        return $project->fresh(['department']);
+    }
+
+    /**
      * Get detailed metrics and attributes for project detail cockpit.
      *
      * @return array{
@@ -307,7 +350,26 @@ class CapexProjectService
      *         milestone_burn_ratio: float,
      *         days_remaining: int,
      *         is_at_risk: bool,
-     *         is_overdue: bool
+     *         is_overdue: bool,
+     *         top_contributors: list<array{
+     *             employee_id: int,
+     *             npk: string,
+     *             name: string,
+     *             section: string,
+     *             hours: float,
+     *             cost_idr: float,
+     *             percentage: float
+     *         }>,
+     *         weekly_timeline: list<array{
+     *             week_number: int,
+     *             label: string,
+     *             date_range: string,
+     *             actual_hours: float,
+     *             cumulative_actual_hours: float|null,
+     *             planned_cumulative_hours: float,
+     *             is_current: bool,
+     *             is_future: bool
+     *         }>
      *     }
      * }
      */
@@ -316,42 +378,11 @@ class CapexProjectService
         $this->ensureDepartmentAccess($project, $user);
 
         $project->load('department:id,code,name');
-        $project->loadSum(['overtimeItems as consumed_hours' => fn ($q) => $q->where('status', 'APPROVED')], 'hours_project');
-        $project->loadSum(['overtimeItems as consumed_cost' => fn ($q) => $q->where('status', 'APPROVED')], 'total_cost_snapshot');
-
-        $allocatedHours = (float) $project->allocated_labor_hours;
-        $consumedHours = (float) ($project->consumed_hours ?? 0);
-        $allocatedBudget = (float) $project->allocated_labor_budget_idr;
-        $consumedCost = (float) ($project->consumed_cost ?? 0);
-        $physicalPct = (float) $project->physical_progress_pct;
-
-        $burnIndexPct = $allocatedHours > 0 ? round(($consumedHours / $allocatedHours) * 100, 1) : 0.0;
-        $milestoneBurnRatio = $physicalPct > 0 ? round($burnIndexPct / $physicalPct, 2) : 0.0;
-
-        $now = Carbon::now('Asia/Jakarta')->startOfDay();
-        $targetDate = $project->target_end_date ? Carbon::parse($project->target_end_date)->startOfDay() : null;
-        $daysRemaining = $targetDate ? (int) $now->diffInDays($targetDate, false) : 0;
-        $isOverdue = $targetDate ? $now->greaterThan($targetDate) && ! in_array($project->status, ['COMPLETED', 'CLOSED'], true) : false;
-
-        $isAtRisk = in_array($project->status, ['ACTIVE', 'ON_HOLD'], true)
-            && ($milestoneBurnRatio > 1.20 || $burnIndexPct > 90.0);
+        $metrics = $this->capexAccountingService->getProjectLaborMetrics($project);
 
         return [
             'project' => $project,
-            'metrics' => [
-                'allocated_hours' => $allocatedHours,
-                'consumed_hours' => $consumedHours,
-                'remaining_hours' => max(0.0, round($allocatedHours - $consumedHours, 2)),
-                'allocated_budget_idr' => $allocatedBudget,
-                'consumed_cost_idr' => $consumedCost,
-                'remaining_budget_idr' => max(0.0, round($allocatedBudget - $consumedCost, 2)),
-                'burn_index_pct' => $burnIndexPct,
-                'physical_progress_pct' => $physicalPct,
-                'milestone_burn_ratio' => $milestoneBurnRatio,
-                'days_remaining' => $daysRemaining,
-                'is_at_risk' => $isAtRisk,
-                'is_overdue' => $isOverdue,
-            ],
+            'metrics' => $metrics,
         ];
     }
 
