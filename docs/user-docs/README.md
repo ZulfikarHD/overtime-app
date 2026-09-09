@@ -28,6 +28,7 @@ Step-by-step instructions for everyday plant operations:
 | **[SPKL Pending Reminders & Notifications](./guides/spkl-pending-reminders.md)**          | Team Leaders & Admins   | In-app notification bell alerts, 1-click SPKL attachment drawer resolution, and reminder preference management.                                                                                                       |
 | **[Overtime Approvals Queue](./guides/overtime-approvals.md)**                            | Managers & Admins       | Morning standup approval queue, item approvals, bulk processing, CSV/Excel data export, immutable audit trail, and modification lock / force unlock.                                                                  |
 | **[Individual Employee Dossier & Welfare](./guides/individual-employee-dossier.md)**      | All Plant Supervisors   | Fast debounced employee search by NPK or name, recent lookups, roster quick-pick, dossier header, period filtering, peer benchmarking, welfare monitoring, chronological audit timesheet, and zero-memory CSV export. |
+| **[Employee Self-Service Dashboard](./guides/employee-self-service.md)**                  | Line Operators (User)   | Mobile-first personal summary (/my/dashboard), monthly hours, estimated gross earnings, welfare safety status, recent 5 submissions, and rejection feedback.                                                          |
 
 ---
 
@@ -35,7 +36,7 @@ Step-by-step instructions for everyday plant operations:
 
 All navigation in the OT-CapEx system corresponds directly to your assigned sidebar items:
 
-- **Dashboard**: High-level shift summary, operational clock, and role capability status.
+- **Dashboard**: High-level shift summary, operational clock, and role capability status (Admin, Manager, Team Leader). For Line Operators (`User` role), automatically resolves to the personal self-service dashboard (`/my/dashboard`).
 - **Burn Index**: Operational health command center for real-time section burn rates, budget control matrix zones, and velocity (Admin and Manager roles).
 - **Master Data**: Consolidated administrative hub for plant departments, sections, employee rosters, and operational calendars (Admin role).
 - **Administration**: Consolidated administrative hub for plant-wide policy thresholds and user accounts (Admin role).

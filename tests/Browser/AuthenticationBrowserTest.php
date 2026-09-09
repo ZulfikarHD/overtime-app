@@ -90,7 +90,7 @@ test('user can sign out safely and return to home', function () {
         ->fill('email', 'budi.santoso@factory.com')
         ->fill('password', 'password')
         ->click('Log in to System')
-        ->assertPathIs('/dashboard')
+        ->assertPathIs('/my/dashboard')
         ->click('Budi Santoso')
         ->click('[data-test="logout-button"]')
         ->click('[data-test="confirm-logout-button"]')
@@ -109,10 +109,10 @@ test('unauthorized user receives friendly access restricted 403 page and can ret
         ->fill('email', 'operator.joko@factory.com')
         ->fill('password', 'password')
         ->click('Log in to System')
-        ->assertPathIs('/dashboard')
+        ->assertPathIs('/my/dashboard')
         ->navigate('/admin/overview')
         ->assertSee('Access Restricted')
         ->assertSee('Return to Dashboard')
         ->click('Return to Dashboard')
-        ->assertPathIs('/dashboard');
+        ->assertPathIs('/my/dashboard');
 });

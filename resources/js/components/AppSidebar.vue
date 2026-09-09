@@ -25,6 +25,7 @@ import {
 } from '@/components/ui/sidebar';
 import { useTrans } from '@/composables/useTrans';
 import { dashboard } from '@/routes';
+import { dashboard as myDashboard } from '@/routes/my';
 import { administration, masterData } from '@/routes/admin';
 import { planning } from '@/routes/budgets';
 import { burnIndex } from '@/routes/dashboard';
@@ -41,10 +42,11 @@ const pendingApprovalsCount = computed(
 );
 
 const mainNavItems = computed<NavItem[]>(() => {
+    const isOperator = user.value?.role === 'user';
     const items: NavItem[] = [
         {
             title: __('Dashboard'),
-            href: dashboard(),
+            href: isOperator ? myDashboard() : dashboard(),
             icon: LayoutGrid,
         },
     ];
@@ -114,7 +116,13 @@ const mainNavItems = computed<NavItem[]>(() => {
             <SidebarMenu>
                 <SidebarMenuItem>
                     <SidebarMenuButton size="lg" as-child>
-                        <Link :href="dashboard()">
+                        <Link
+                            :href="
+                                user?.role === 'user'
+                                    ? myDashboard()
+                                    : dashboard()
+                            "
+                        >
                             <AppLogo />
                         </Link>
                     </SidebarMenuButton>

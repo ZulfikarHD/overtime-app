@@ -6,7 +6,7 @@ use App\Models\User;
 use Inertia\Testing\AssertableInertia as Assert;
 
 test('handle inertia requests shares flash message bag and toasts correctly', function () {
-    $user = User::factory()->create();
+    $user = User::factory()->admin()->create();
 
     $response = $this->actingAs($user)
         ->withSession([

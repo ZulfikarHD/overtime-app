@@ -4,7 +4,7 @@
 **Priority:** P2 – Should Have  
 **Estimated Total:** 30 Story Points  
 **Target Sprints:** Sprint 6 (Weeks 11–12, parallel with Epic-07)  
-**Status:** 🟡 In Progress (23/30 SP completed)  
+**Status:** 🟢 Completed (30/30 SP completed)  
 **Dependencies:** Epic-01, Epic-02 (Employee master data), Epic-03 (Submissions exist), Epic-04 (Approved items exist)  
 **Lead Area:** Backend (`EmployeeReportController`, `BurnIndexCalculatorService` extension) + Vue 3 Report Pages
 
@@ -162,7 +162,8 @@ This module serves four audiences:
 **So that** I can verify my records are correct and track which ones have been approved or rejected.
 
 **Story Points:** 5  
-**Priority:** Must Have
+**Priority:** Must Have  
+**Status:** 🟢 Completed (Sprint 6)
 
 #### Acceptance Criteria
 
@@ -193,21 +194,22 @@ This module serves four audiences:
 **So that** I can quickly see my current overtime status without navigating complex admin screens.
 
 **Story Points:** 2  
-**Priority:** Nice to Have
+**Priority:** Nice to Have  
+**Status:** 🟢 Completed (Sprint 6)
 
 #### Acceptance Criteria
 
-- [ ] When a User role logs in, they land on a personal summary page (not the full manager dashboard)
-- [ ] Shows: this month's total hours, year-to-date hours, latest 5 timesheet entries with status badges
-- [ ] Quick navigation links: "View Full Timesheet", "View Peer Comparison"
-- [ ] No access to other employees' data, approval queues, budgets, or admin screens
+- [x] When a User role logs in, they land on a personal summary page (not the full manager dashboard)
+- [x] Shows: this month's total hours, year-to-date hours, latest 5 timesheet entries with status badges
+- [x] Quick navigation links: "View Full Timesheet", "View Peer Comparison"
+- [x] No access to other employees' data, approval queues, budgets, or admin screens
 
 #### Technical Tasks
 
-- [ ] `DashboardController` — check auth user role and redirect accordingly on login
-- [ ] If `role === 'user'`: redirect to `GET /my/dashboard` → `EmployeeSelfServiceController@index`
-- [ ] Create `resources/js/Pages/Dashboard/EmployeeSelfService.vue` — simple 3-card layout
-- [ ] Update `HandleInertiaRequests` to include `auth.user.employee_id` in shared props
+- [x] `DashboardController` — check auth user role and redirect accordingly on login
+- [x] If `role === 'user'`: redirect to `GET /my/dashboard` → `EmployeeSelfServiceController@index`
+- [x] Create `resources/js/Pages/Dashboard/EmployeeSelfService.vue` — simple 3-card layout
+- [x] Update `HandleInertiaRequests` to include `auth.user.employee_id` in shared props
 
 ---
 
@@ -240,7 +242,7 @@ This module serves four audiences:
 - [x] KPI cards show correct current month and YTD hours from approved items only
 - [x] Peer variance (CALC-06) calculates correctly
 - [x] Fatigue consecutive-week alert correctly detects 3+ weeks over limit
-- [ ] Timesheet table is paginated, filterable, and sortable
+- [x] Timesheet table is paginated, filterable, and sortable
 - [x] User (Employee) role is strictly scoped to their own data
 - [x] `pnpm lint` passes
 - [x] `pnpm build` succeeds

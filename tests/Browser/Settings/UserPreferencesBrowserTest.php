@@ -13,7 +13,7 @@ test('authenticated user can navigate to preferences and update preferences', fu
         ->fill('email', 'pref.browser.user@factory.com')
         ->fill('password', 'password')
         ->click('Log in to System')
-        ->assertPathIs('/dashboard')
+        ->assertPathIs('/my/dashboard')
         ->click('Budi Santoso')
         ->click('Settings')
         ->assertPathIs('/settings/profile')

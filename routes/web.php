@@ -13,6 +13,8 @@ use App\Http\Controllers\Api\CalendarController;
 use App\Http\Controllers\Budgets\OvertimeBudgetController;
 use App\Http\Controllers\Budgets\OvertimeBudgetImportController;
 use App\Http\Controllers\DashboardBurnIndexController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\EmployeeSelfServiceController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\Overtime\OvertimeApprovalController;
 use App\Http\Controllers\Overtime\OvertimeItemAuditController;
@@ -24,7 +26,8 @@ use Illuminate\Support\Facades\Route;
 Route::inertia('/', 'Welcome')->name('home');
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::inertia('dashboard', 'Dashboard')->name('dashboard');
+    Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('my/dashboard', [EmployeeSelfServiceController::class, 'index'])->name('my.dashboard');
 
     // Dashboard Burn Index & Budget Analytics (E05 - Admin, Manager, Team Leader)
     Route::middleware(['role:admin,manager,team_leader'])->prefix('dashboard')->name('dashboard.')->group(function () {

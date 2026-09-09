@@ -7,6 +7,7 @@ use App\Enums\UserRole;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -68,6 +69,13 @@ class User extends Authenticatable implements PasskeyUser
     ];
 
     /**
+     * @var list<string>
+     */
+    protected $appends = [
+        'employee_id',
+    ];
+
+    /**
      * Get the attributes that should be cast.
      *
      * @return array<string, string>
@@ -124,6 +132,20 @@ class User extends Authenticatable implements PasskeyUser
     public function employee(): HasOne
     {
         return $this->hasOne(Employee::class, 'npk', 'npk');
+    }
+
+    /**
+     * Get the associated employee record's ID if available.
+     *
+     * @return Attribute<?int, never>
+     */
+    public function employeeId(): Attribute
+    {
+        return Attribute::make(
+            get: fn (): ?int => $this->relationLoaded('employee')
+                ? $this->employee?->id
+                : ($this->npk ? $this->employee()->value('id') : null),
+        );
     }
 
     /**

@@ -76,6 +76,7 @@ Technical specifications and decision records for the engineering implementation
     - [Budget Management & Burn Index Dashboard](./dev-docs/features/budget-burn-index.md)
     - [Budget Threshold Alert System & In-App Warnings (E05-04)](./dev-docs/features/budget-threshold-alerts.md)
     - [Individual Employee Reporting & Welfare](./dev-docs/features/employee-welfare-report.md)
+    - [Employee Self-Service Personal Dashboard (E06-06)](./dev-docs/features/employee-self-service.md)
     - [CapEx Project Labor Management](./dev-docs/features/capex-project-labor.md)
     - [Supervised Machine Learning Analytics](./dev-docs/features/ml-predictive-analytics.md)
 - **API Reference Design:**
@@ -128,6 +129,7 @@ Plain-language operating guides for factory supervisors, team leaders, and opera
     - [SPKL Pending Reminders & Notifications Guide](./user-docs/guides/spkl-pending-reminders.md)
     - [Overtime Approvals Queue Guide](./user-docs/guides/overtime-approvals.md)
     - [Individual Employee Dossier & Welfare Tracking Guide](./user-docs/guides/individual-employee-dossier.md)
+    - [Employee Self-Service Personal Dashboard Guide](./user-docs/guides/employee-self-service.md)
 
 ---
 

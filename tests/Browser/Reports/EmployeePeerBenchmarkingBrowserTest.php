@@ -231,7 +231,7 @@ test('operator role viewing own dossier sees peer benchmarking with privacy mode
         ->fill('email', 'siti.operator@factory.com')
         ->fill('password', 'password')
         ->click('Log in to System')
-        ->assertPathIs('/dashboard')
+        ->assertPathIs('/my/dashboard')
         // Directly navigate to own dossier
         ->navigate('/reports/employees/OP-SITI-88?year=2026&month=9')
         ->assertPathIs('/reports/employees/OP-SITI-88')

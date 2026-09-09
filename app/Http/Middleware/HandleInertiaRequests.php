@@ -44,6 +44,7 @@ class HandleInertiaRequests extends Middleware
             $user->loadMissing([
                 'department:id,code,name',
                 'section:id,department_id,code,name',
+                'employee:id,npk',
             ]);
         }
 

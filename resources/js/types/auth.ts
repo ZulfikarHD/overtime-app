@@ -20,17 +20,24 @@ export type UserSection = {
     name: string;
 };
 
+export type UserEmployee = {
+    id: number;
+    npk: string;
+};
+
 export type User = {
     id: number;
     name: string;
     email: string;
     role: UserRole;
     npk?: string | null;
+    employee_id?: number | null;
     department_id?: number | null;
     section_id?: number | null;
     is_active?: boolean;
     department?: UserDepartment | null;
     section?: UserSection | null;
+    employee?: UserEmployee | null;
     avatar?: string;
     preferences?: UserPreferences | null;
     email_verified_at: string | null;
