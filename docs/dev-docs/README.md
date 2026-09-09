@@ -84,6 +84,7 @@ Durable technical decisions and trade-offs:
 - **[ADR-022: Unified Single-Surface Employee Dossier Hub and Client-Side Cached Lookups](./decisions/022-unified-employee-dossier-hub-and-client-cached-lookups.md)**
 - **[ADR-023: Peer Benchmarking Workload Distribution (CALC-06) and Server-Side Operator Anonymization](./decisions/023-peer-benchmarking-calc-06-and-operator-role-anonymization.md)**
 - **[ADR-024: Rolling 4-Week Welfare Indicators and Calendar-Month Fatigue Alert Deduplication](./decisions/024-rolling-4-week-welfare-indicators-and-fatigue-alert-deduplication.md)**
+- **[ADR-025: Chronological Audit Timesheet and Zero-Memory Streamed CSV Export](./decisions/025-chronological-audit-timesheet-and-zero-memory-streamed-csv-export.md)**
 
 ---
 

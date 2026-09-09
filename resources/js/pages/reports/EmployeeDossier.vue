@@ -32,6 +32,10 @@ import PeerComparisonPanel, {
 } from '@/components/reports/PeerComparisonPanel.vue';
 import RecentLookups from '@/components/reports/RecentLookups.vue';
 import SafetyScoreGauge from '@/components/reports/SafetyScoreGauge.vue';
+import PersonalTimesheetTable, {
+    type TimesheetData,
+    type TimesheetFilters,
+} from '@/components/reports/PersonalTimesheetTable.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -135,6 +139,8 @@ const props = defineProps<{
     fiscal_month: number;
     current_tab?: string;
     is_own_dossier?: boolean;
+    timesheet?: TimesheetData | null;
+    timesheet_filters?: TimesheetFilters;
 }>();
 
 const { __ } = useTrans();
@@ -146,6 +152,14 @@ const currentUser = computed(() => page.props.auth?.user as User | undefined);
 const activeTab = ref(props.current_tab || 'overview');
 const selectedYear = ref(props.fiscal_year || 2026);
 const selectedMonth = ref(props.fiscal_month || 9);
+
+watch(
+    () => props.current_tab,
+    (val) => {
+        if (val) activeTab.value = val;
+    },
+    { immediate: true },
+);
 
 watch(
     () => props.fiscal_year,
@@ -200,24 +214,6 @@ onMounted(() => {
 
 const handleTabChange = (tab: string) => {
     activeTab.value = tab;
-    if (props.employee) {
-        router.visit(
-            showEmployeeDossier.url(
-                { npk: props.employee.npk },
-                {
-                    query: {
-                        tab,
-                        year: selectedYear.value,
-                        month: selectedMonth.value,
-                    },
-                },
-            ),
-            {
-                preserveState: true,
-                preserveScroll: true,
-            },
-        );
-    }
 };
 
 const handlePeriodChange = () => {
@@ -234,7 +230,6 @@ const handlePeriodChange = () => {
                 },
             ),
             {
-                preserveState: true,
                 preserveScroll: true,
             },
         );
@@ -711,56 +706,22 @@ const filteredSections = computed(() => {
                     </div>
                 </div>
 
-                <!-- TAB 2: Chronological Timesheet Placeholder (Scaffold for E06-05) -->
+                <!-- TAB 2: Chronological Timesheet (E06-05) -->
                 <div
                     v-else-if="activeTab === 'timesheet'"
                     class="flex flex-col gap-6"
                 >
-                    <Card class="border-border shadow-xs">
-                        <CardHeader>
-                            <CardTitle
-                                class="flex items-center gap-2 text-base font-semibold"
-                            >
-                                <FileSpreadsheet class="text-primary size-4" />
-                                <span>{{
-                                    __('Buku Jam Lembur Kronologis (E06-05)')
-                                }}</span>
-                            </CardTitle>
-                            <CardDescription>
-                                {{
-                                    __(
-                                        'Tabel riwayat item lembur per tanggal kerja, status persetujuan, rincian CapEx/OpEx, dan fitur ekspor CSV.',
-                                    )
-                                }}
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <div
-                                class="border-border bg-muted/20 rounded-lg border border-dashed p-8 text-center"
-                            >
-                                <FileText
-                                    class="text-muted-foreground mx-auto mb-2 size-8"
-                                />
-                                <p class="text-foreground text-sm font-medium">
-                                    {{
-                                        __(
-                                            'Riwayat lembur kronologis karyawan: :name',
-                                            { name: employee.full_name },
-                                        )
-                                    }}
-                                </p>
-                                <p
-                                    class="text-muted-foreground mx-auto mt-1 max-w-md text-xs"
-                                >
-                                    {{
-                                        __(
-                                            'Fitur tabel timesheet detail dan ekspor CSV terjadwal diimplementasikan pada sub-epic E06-05.',
-                                        )
-                                    }}
-                                </p>
-                            </div>
-                        </CardContent>
-                    </Card>
+                    <div data-test="personal-timesheet-section">
+                        <PersonalTimesheetTable
+                            v-if="timesheet"
+                            :npk="employee.npk"
+                            :employee-name="employee.full_name"
+                            :timesheet="timesheet"
+                            :filters="timesheet_filters"
+                            :fiscal-year="selectedYear"
+                            :fiscal-month="selectedMonth"
+                        />
+                    </div>
                 </div>
             </div>
         </template>

@@ -13,6 +13,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class EmployeeReportController extends Controller
 {
@@ -82,6 +83,8 @@ class EmployeeReportController extends Controller
             'fiscal_year' => (int) $now->format('Y'),
             'fiscal_month' => (int) $now->format('n'),
             'current_tab' => 'overview',
+            'timesheet' => null,
+            'timesheet_filters' => [],
         ]);
     }
 
@@ -133,11 +136,32 @@ class EmployeeReportController extends Controller
             $fiscalMonth,
         );
 
+        $timesheetFilters = [
+            'status' => $request->string('status', 'all')->value(),
+            'category' => $request->string('category', 'all')->value(),
+            'date_from' => $request->filled('date_from') ? $request->string('date_from')->value() : null,
+            'date_to' => $request->filled('date_to') ? $request->string('date_to')->value() : null,
+            'all_time' => $request->boolean('all_time', false),
+            'search' => $request->filled('search') ? $request->string('search')->value() : null,
+            'sort_by' => $request->string('sort_by', 'operational_date')->value(),
+            'sort_dir' => $request->string('sort_dir', 'desc')->value(),
+            'fiscal_year' => $fiscalYear,
+            'fiscal_month' => $fiscalMonth,
+        ];
+
+        $timesheet = $this->employeeReportService->getTimesheet(
+            $employee['id'],
+            $timesheetFilters,
+            25,
+        );
+
         return Inertia::render('reports/EmployeeDossier', [
             'employee' => $employee,
             'summary' => $summary,
             'peer_comparison' => $peerComparison,
             'welfare_status' => $welfareStatus,
+            'timesheet' => $timesheet,
+            'timesheet_filters' => $timesheetFilters,
             'roster' => [],
             'filters' => [],
             'departments' => [],
@@ -147,5 +171,47 @@ class EmployeeReportController extends Controller
             'current_tab' => $currentTab,
             'is_own_dossier' => $user->npk === $employee['npk'],
         ]);
+    }
+
+    /**
+     * Timesheet tab shortcut redirect to unified dossier hub.
+     */
+    public function timesheet(Request $request, string $npk): RedirectResponse
+    {
+        return redirect()->route('reports.employees.show', array_merge(
+            $request->query(),
+            [
+                'npk' => $npk,
+                'tab' => 'timesheet',
+            ]
+        ));
+    }
+
+    /**
+     * Streamed personal timesheet CSV export for an individual employee.
+     */
+    public function exportTimesheet(Request $request, string $npk): StreamedResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+
+        $now = Carbon::now('Asia/Jakarta');
+        $fiscalYear = $request->integer('year', (int) $now->format('Y'));
+        $fiscalMonth = $request->integer('month', (int) $now->format('n'));
+
+        $filters = [
+            'status' => $request->string('status', 'all')->value(),
+            'category' => $request->string('category', 'all')->value(),
+            'date_from' => $request->filled('date_from') ? $request->string('date_from')->value() : null,
+            'date_to' => $request->filled('date_to') ? $request->string('date_to')->value() : null,
+            'all_time' => $request->boolean('all_time', false),
+            'search' => $request->filled('search') ? $request->string('search')->value() : null,
+            'sort_by' => $request->string('sort_by', 'operational_date')->value(),
+            'sort_dir' => $request->string('sort_dir', 'desc')->value(),
+            'fiscal_year' => $fiscalYear,
+            'fiscal_month' => $fiscalMonth,
+        ];
+
+        return $this->employeeReportService->exportTimesheetCsv($user, $npk, $filters);
     }
 }

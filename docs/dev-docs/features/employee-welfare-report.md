@@ -12,6 +12,8 @@ Sub-epic **E06-03** delivers **Peer Benchmarking & Workload Distribution Analysi
 
 Sub-epic **E06-04** delivers **Safety & Fatigue Soft Indicators**: rolling 4-week workload bar chart (Week -3 to Week 0), dynamic Safety Score % arc gauge (`100% - (overloaded weeks / 4 weeks * 100%)`), weekly limit soft badges, 3-consecutive-week fatigue alarms, database-backed calendar-month deduplicated in-app notifications for Team Leaders dispatched asynchronously post-approval (`RecalculateMonthlyBurnSnapshotJob`), and a prominent non-blocking industrial advisory notice.
 
+Sub-epic **E06-05** delivers the **Chronological Audit Timesheet**: an embedded ledger tab (`Buku Jam Lembur`) featuring server-side 25-row pagination, multi-attribute filtering (approval status, overtime category, custom date range, and text search across task descriptions/RCA notes/submission codes), column sorting, single-click inline accordion row expansion for rejection reasons and CapEx project allocations, summary metrics bar, and a zero-memory cursor-streamed CSV export with UTF-8 BOM.
+
 ## Architecture Diagram
 
 ```mermaid
@@ -62,35 +64,38 @@ erDiagram
 
 ## Key Files & UI Mapping
 
-| Layer             | File / Route / Menu                                              | Purpose                                                                                    |
-| ----------------- | ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| Sidebar Menu      | `Laporan Karyawan` (`/reports/employees`)                        | Navigation entry point for Managers, Team Leaders, and Admins                              |
-| Page Component    | `resources/js/pages/reports/EmployeeDossier.vue`                 | Master dossier page featuring search hub, quick-pick roster, header card, and tab skeleton |
-| KPI Summary       | `resources/js/components/reports/KpiSummaryCards.vue`            | 4 KPI cards (Month Hours, YTD Hours, Burn Index, Section Rank) + financial cost banner     |
-| Category Donut    | `resources/js/components/reports/CategoryDonutChart.vue`         | Chart.js Doughnut showing Production, TPM, CapEx Project, and Others hours distribution    |
-| Day-Type Bar      | `resources/js/components/reports/DayTypeBreakdownBar.vue`        | Horizontal progress split comparing HKN vs HLR hours with recovery cycle guidance          |
-| Peer Benchmark    | `resources/js/components/reports/PeerComparisonPanel.vue`        | Overview tab panel showing section average, CALC-06 variance, and Top 5 / Bottom 5 lists   |
-| Distribution Bar  | `resources/js/components/reports/SectionDistributionChart.vue`   | Chart.js Bar chart displaying section member hours with ISUZU Red highlight and average    |
-| Fatigue Chart     | `resources/js/components/reports/FatigueRollingChart.vue`        | Chart.js Bar chart for rolling 4-week hours vs soft weekly limit threshold                 |
-| Safety Gauge      | `resources/js/components/reports/SafetyScoreGauge.vue`           | SVG circular progress arc for Safety Score %, streak metrics, badges, and advisory notice  |
-| Notification Bell | `resources/js/components/NotificationBell.vue`                   | Topbar bell popover rendering fatigue alert notifications with one-click deep link         |
-| Search Component  | `resources/js/components/reports/EmployeeSearch.vue`             | Debounced search-as-you-type input with loading spinner, clear button, and dropdown        |
-| Recent Lookups    | `resources/js/components/reports/RecentLookups.vue`              | Horizontal scrollable pills displaying the last 5 viewed workers from `localStorage`       |
-| Composable        | `resources/js/composables/useRecentLookups.ts`                   | Reactive composable to read, write, and clear recent employee lookups                      |
-| Controller        | `app/Http/Controllers/Reports/EmployeeReportController.php`      | Controller handling index roster, search JSON API, and dossier show with summary & peers   |
-| Service           | `app/Services/EmployeeReportService.php`                         | Pragmatic domain service handling role scoping, search matching, summary, and peer metrics |
-| Evaluator         | `app/Services/Policy/OvertimePolicyEvaluator.php`                | Policy evaluation service calculating rolling 4-week welfare metrics and streak count      |
-| Fatigue Service   | `app/Services/FatigueAlertService.php`                           | Alert service enforcing calendar-month deduplication and dispatching notifications         |
-| Notification      | `app/Notifications/FatigueAlertNotification.php`                 | Queued database notification delivered to section Team Leaders                             |
-| DTO               | `app/DTOs/WelfareStatus.php`                                     | Data Transfer Object encapsulating rolling weeks, streak, badges, and safety score         |
-| Job               | `app/Jobs/RecalculateMonthlyBurnSnapshotJob.php`                 | Async background job evaluating fatigue alerts post-approval for the recalculated section  |
-| Feature Test      | `tests/Feature/Reports/EmployeeReportTest.php`                   | 19 automated tests verifying scoping, security, getSummary, getPeerComparison, and props   |
-| Feature Test      | `tests/Feature/Reports/EmployeeWelfareStatusTest.php`            | 5 automated tests verifying welfare Inertia props, deduplication, and notification flow    |
-| Unit Test         | `tests/Unit/OvertimePolicyEvaluatorTest.php`                     | 9 automated unit tests verifying welfare calculations, streaks, and safety score formula   |
-| Browser Test      | `tests/Browser/Reports/EmployeeDossierLookupBrowserTest.php`     | Playwright end-to-end browser tests verifying search, navigation, and local storage        |
-| Browser Test      | `tests/Browser/Reports/EmployeeDossierOverviewBrowserTest.php`   | Playwright end-to-end browser tests verifying KPI cards, category donut, and day-type bar  |
-| Browser Test      | `tests/Browser/Reports/EmployeePeerBenchmarkingBrowserTest.php`  | Playwright end-to-end browser tests verifying peer comparison, variance, and privacy mode  |
-| Browser Test      | `tests/Browser/Reports/EmployeeFatigueIndicatorsBrowserTest.php` | Playwright end-to-end browser tests verifying rolling chart, safety gauge, and notif link  |
+| Layer             | File / Route / Menu                                              | Purpose                                                                                      |
+| ----------------- | ---------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| Sidebar Menu      | `Laporan Karyawan` (`/reports/employees`)                        | Navigation entry point for Managers, Team Leaders, and Admins                                |
+| Page Component    | `resources/js/pages/reports/EmployeeDossier.vue`                 | Master dossier page featuring search hub, quick-pick roster, header card, and tab skeleton   |
+| KPI Summary       | `resources/js/components/reports/KpiSummaryCards.vue`            | 4 KPI cards (Month Hours, YTD Hours, Burn Index, Section Rank) + financial cost banner       |
+| Category Donut    | `resources/js/components/reports/CategoryDonutChart.vue`         | Chart.js Doughnut showing Production, TPM, CapEx Project, and Others hours distribution      |
+| Day-Type Bar      | `resources/js/components/reports/DayTypeBreakdownBar.vue`        | Horizontal progress split comparing HKN vs HLR hours with recovery cycle guidance            |
+| Peer Benchmark    | `resources/js/components/reports/PeerComparisonPanel.vue`        | Overview tab panel showing section average, CALC-06 variance, and Top 5 / Bottom 5 lists     |
+| Distribution Bar  | `resources/js/components/reports/SectionDistributionChart.vue`   | Chart.js Bar chart displaying section member hours with ISUZU Red highlight and average      |
+| Fatigue Chart     | `resources/js/components/reports/FatigueRollingChart.vue`        | Chart.js Bar chart for rolling 4-week hours vs soft weekly limit threshold                   |
+| Safety Gauge      | `resources/js/components/reports/SafetyScoreGauge.vue`           | SVG circular progress arc for Safety Score %, streak metrics, badges, and advisory notice    |
+| Timesheet Table   | `resources/js/components/reports/PersonalTimesheetTable.vue`     | Chronological paginated audit ledger, multi-filter toolbar, expandable rows, and CSV trigger |
+| Notification Bell | `resources/js/components/NotificationBell.vue`                   | Topbar bell popover rendering fatigue alert notifications with one-click deep link           |
+| Search Component  | `resources/js/components/reports/EmployeeSearch.vue`             | Debounced search-as-you-type input with loading spinner, clear button, and dropdown          |
+| Recent Lookups    | `resources/js/components/reports/RecentLookups.vue`              | Horizontal scrollable pills displaying the last 5 viewed workers from `localStorage`         |
+| Composable        | `resources/js/composables/useRecentLookups.ts`                   | Reactive composable to read, write, and clear recent employee lookups                        |
+| Controller        | `app/Http/Controllers/Reports/EmployeeReportController.php`      | Controller handling index, search, dossier show, timesheet redirect, and CSV export          |
+| Service           | `app/Services/EmployeeReportService.php`                         | Pragmatic domain service handling role scoping, search, summary, peers, timesheet & CSV      |
+| Evaluator         | `app/Services/Policy/OvertimePolicyEvaluator.php`                | Policy evaluation service calculating rolling 4-week welfare metrics and streak count        |
+| Fatigue Service   | `app/Services/FatigueAlertService.php`                           | Alert service enforcing calendar-month deduplication and dispatching notifications           |
+| Notification      | `app/Notifications/FatigueAlertNotification.php`                 | Queued database notification delivered to section Team Leaders                               |
+| DTO               | `app/DTOs/WelfareStatus.php`                                     | Data Transfer Object encapsulating rolling weeks, streak, badges, and safety score           |
+| Job               | `app/Jobs/RecalculateMonthlyBurnSnapshotJob.php`                 | Async background job evaluating fatigue alerts post-approval for the recalculated section    |
+| Feature Test      | `tests/Feature/Reports/EmployeeReportTest.php`                   | 19 automated tests verifying scoping, security, getSummary, getPeerComparison, and props     |
+| Feature Test      | `tests/Feature/Reports/EmployeeWelfareStatusTest.php`            | 5 automated tests verifying welfare Inertia props, deduplication, and notification flow      |
+| Feature Test      | `tests/Feature/Reports/EmployeeTimesheetTest.php`                | 9 automated tests verifying timesheet pagination, filtering, sorting, rejection, and CSV     |
+| Unit Test         | `tests/Unit/OvertimePolicyEvaluatorTest.php`                     | 9 automated unit tests verifying welfare calculations, streaks, and safety score formula     |
+| Browser Test      | `tests/Browser/Reports/EmployeeDossierLookupBrowserTest.php`     | Playwright end-to-end browser tests verifying search, navigation, and local storage          |
+| Browser Test      | `tests/Browser/Reports/EmployeeDossierOverviewBrowserTest.php`   | Playwright end-to-end browser tests verifying KPI cards, category donut, and day-type bar    |
+| Browser Test      | `tests/Browser/Reports/EmployeePeerBenchmarkingBrowserTest.php`  | Playwright end-to-end browser tests verifying peer comparison, variance, and privacy mode    |
+| Browser Test      | `tests/Browser/Reports/EmployeeFatigueIndicatorsBrowserTest.php` | Playwright end-to-end browser tests verifying rolling chart, safety gauge, and notif link    |
+| Browser Test      | `tests/Browser/Reports/EmployeeTimesheetBrowserTest.php`         | Playwright end-to-end browser tests verifying timesheet tab, row toggle, and CSV link        |
 
 ## Flow Explanation
 
@@ -115,11 +120,13 @@ erDiagram
 
 ## API Endpoints & Routes
 
-| Method | URI                         | Controller Action                 | Purpose                                                                      | Auth / Middleware                             |
-| ------ | --------------------------- | --------------------------------- | ---------------------------------------------------------------------------- | --------------------------------------------- |
-| GET    | `/reports/employees`        | `EmployeeReportController@index`  | Employee search hub & quick-pick roster (supervisors) or redirect (operator) | `auth`, `role:admin,manager,team_leader,user` |
-| GET    | `/reports/employees/search` | `EmployeeReportController@search` | Live debounced employee lookup by partial NPK or name                        | `auth`, `role:admin,manager,team_leader,user` |
-| GET    | `/reports/employees/{npk}`  | `EmployeeReportController@show`   | Complete dossier header and tab view for specified employee                  | `auth`, `role:admin,manager,team_leader,user` |
+| Method | URI                                         | Controller Action                          | Purpose                                                                      | Auth / Middleware                             |
+| ------ | ------------------------------------------- | ------------------------------------------ | ---------------------------------------------------------------------------- | --------------------------------------------- |
+| GET    | `/reports/employees`                        | `EmployeeReportController@index`           | Employee search hub & quick-pick roster (supervisors) or redirect (operator) | `auth`, `role:admin,manager,team_leader,user` |
+| GET    | `/reports/employees/search`                 | `EmployeeReportController@search`          | Live debounced employee lookup by partial NPK or name                        | `auth`, `role:admin,manager,team_leader,user` |
+| GET    | `/reports/employees/{npk}`                  | `EmployeeReportController@show`            | Complete dossier header and tab view for specified employee                  | `auth`, `role:admin,manager,team_leader,user` |
+| GET    | `/reports/employees/{npk}/timesheet`        | `EmployeeReportController@timesheet`       | Shortcut route redirecting to dossier with `tab=timesheet` parameter         | `auth`, `role:admin,manager,team_leader,user` |
+| GET    | `/reports/employees/{npk}/timesheet/export` | `EmployeeReportController@exportTimesheet` | Zero-memory cursor streamed CSV export of filtered timesheet records         | `auth`, `role:admin,manager,team_leader,user` |
 
 ## Decisions & Trade-offs
 
@@ -129,6 +136,8 @@ erDiagram
 - **CALC-06 Peer Variance & Anonymization (Anti-Envy Guardrail)**: Workload comparison computes individual variance from section average. Co-worker identities are strictly anonymized on the server side for the operator role while keeping supervisor views named for operational shift dispatch.
 - **Strictly Advisory Soft Limits (Zero Operational Roadblocks)**: Fatigue risk indicators and consecutive-week warnings do not block urgent shift overtime submissions or supervisor approvals. The system displays explicit advisory disclaimer notices to avoid paralyzing shop-floor manufacturing operations.
 - **Calendar-Month Notification Deduplication**: In-app notifications for 3-consecutive-week fatigue limits are deduplicated against the `notifications` database table, ensuring at most one alert is sent per employee per calendar month, preventing notification flooding while maintaining reactive visual badges.
+- **High-Density Chronological Audit Ledger**: Overtime items are rendered individually with day-type badges and CapEx allocation tags. Rejection reasons, supervisor notes, and RCA tags expand inline via an accordion row (`expanded-row-{id}`), strictly preserving single-modal/accordion depth.
+- **Zero-Memory Streamed CSV Export with UTF-8 BOM**: Generated via Laravel `streamDownload` and PHP cursor streaming. Injects a UTF-8 BOM (`\xEF\xBB\xBF`) for clean Indonesian character display in Excel without server memory growth.
 
 ## Related
 
@@ -137,4 +146,5 @@ erDiagram
 - [ADR-022: Unified Single-Surface Employee Dossier Hub and Client-Side Cached Lookups](../decisions/022-unified-employee-dossier-hub-and-client-cached-lookups.md)
 - [ADR-023: Peer Benchmarking Workload Distribution (CALC-06) and Server-Side Operator Anonymization](../decisions/023-peer-benchmarking-calc-06-and-operator-role-anonymization.md)
 - [ADR-024: Rolling 4-Week Welfare Indicators and Calendar-Month Fatigue Alert Deduplication](../decisions/024-rolling-4-week-welfare-indicators-and-fatigue-alert-deduplication.md)
+- [ADR-025: Chronological Audit Timesheet and Zero-Memory Streamed CSV Export](../decisions/025-chronological-audit-timesheet-and-zero-memory-streamed-csv-export.md)
 - [User Guide: Individual Employee Dossier & Welfare Tracking](../../user-docs/guides/individual-employee-dossier.md)

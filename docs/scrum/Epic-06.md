@@ -166,23 +166,23 @@ This module serves four audiences:
 
 #### Acceptance Criteria
 
-- [ ] Timesheet table shows one row per overtime item (not per submission): date, day type, total hours, category breakdown, RCA tag, task notes, approval status badge, rejection reason (if rejected)
-- [ ] Columns: `Date`, `Day`, `HKN/HLR`, `Production`, `TPM`, `CapEx`, `Others`, `Total`, `Status`, `Notes`
-- [ ] Sortable by date (default: newest first); filterable by: status, date range, category
-- [ ] Pagination: 25 rows per page, server-side
-- [ ] Rejected items show rejection reason in an expandable detail row or tooltip
-- [ ] User (Employee role) can only see their own timesheet — scoped at controller level
-- [ ] Team Leader can view timesheet for any employee in their section
-- [ ] Export to CSV: personal timesheet for a selected date range
+- [x] Timesheet table shows one row per overtime item (not per submission): date, day type, total hours, category breakdown, RCA tag, task notes, approval status badge, rejection reason (if rejected)
+- [x] Columns: `Date`, `Day`, `HKN/HLR`, `Production`, `TPM`, `CapEx`, `Others`, `Total`, `Status`, `Notes`
+- [x] Sortable by date (default: newest first); filterable by: status, date range, category
+- [x] Pagination: 25 rows per page, server-side
+- [x] Rejected items show rejection reason in an expandable detail row or tooltip
+- [x] User (Employee role) can only see their own timesheet — scoped at controller level
+- [x] Team Leader can view timesheet for any employee in their section
+- [x] Export to CSV: personal timesheet for a selected date range
 
 #### Technical Tasks
 
-- [ ] `EmployeeReportController@timesheet` — `GET /reports/employees/{npk}/timesheet`
-- [ ] Query: `OvertimeItem::with(['overtimeSubmission:id,operational_date,day_type', 'capexProject:id,name'])` filtered by `employee_id`, paginated
-- [ ] Route guard: Employee can only access `/reports/employees/{own_npk}/timesheet`
-- [ ] Create `resources/js/Components/Reports/PersonalTimesheetTable.vue` — paginated, filterable
-- [ ] CSV export: `GET /reports/employees/{npk}/timesheet/export`
-- [ ] `EmployeeTimesheetExport` using `maatwebsite/excel` with `FromQuery` cursor
+- [x] `EmployeeReportController@timesheet` — `GET /reports/employees/{npk}/timesheet`
+- [x] Query: `OvertimeItem::with(['overtimeSubmission:id,operational_date,day_type', 'capexProject:id,name'])` filtered by `employee_id`, paginated
+- [x] Route guard: Employee can only access `/reports/employees/{own_npk}/timesheet`
+- [x] Create `resources/js/Components/Reports/PersonalTimesheetTable.vue` — paginated, filterable
+- [x] CSV export: `GET /reports/employees/{npk}/timesheet/export`
+- [x] `EmployeeTimesheetExport` using streamed response cursor (`fputcsv` + `response()->streamDownload()`) with UTF-8 BOM
 
 ---
 

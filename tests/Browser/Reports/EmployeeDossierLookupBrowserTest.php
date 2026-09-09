@@ -78,7 +78,7 @@ test('team leader can navigate to employee reports, search by name, view dossier
         ->assertSee('Assembly Department')
         // Switch tab to Timesheet
         ->click('[data-test="tab-timesheet"]')
-        ->assertSee('E06-05')
+        ->assertPresent('[data-test="personal-timesheet-section"]')
         // Navigate back to Roster
         ->click('[data-test="dossier-header"] a')
         ->assertPathIs('/reports/employees')

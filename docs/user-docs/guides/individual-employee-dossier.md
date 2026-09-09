@@ -170,6 +170,63 @@ Located directly below the Peer Benchmarking panel on the **Summary & Welfare** 
 
 ---
 
+### 9. Inspect the Chronological Audit Timesheet (Timesheet Tab)
+
+Click the **Overtime Timesheet** (`Buku Jam Lembur`) tab to access the comprehensive daily audit ledger of all overtime shifts worked by the employee.
+
+#### Timesheet Summary KPI Strip
+
+Directly above the ledger, four metrics provide an instant statistical summary of the currently filtered dataset:
+
+1. **Total Items** (`Total Item`): Count of overtime item records matching the active filters.
+2. **Total Hours** (`Total Jam`): Sum of all recorded overtime hours (including approved, pending, and rejected).
+3. **Approved vs Pending vs Rejected**: Quick visual counters displaying approved hours (Emerald), pending submissions (Amber), and rejected requests (ISUZU Red).
+4. **Total Cost** (`Total Biaya Lembur`): Estimated gross overtime labor expenditure in Indonesian Rupiah (Rp) based on the employee's hourly rate snapshots.
+
+#### Filtering and Search Capabilities
+
+The timesheet includes an interactive filter toolbar:
+
+- **Approval Status Filter**: Select `All Status`, `Approved` (`Disetujui`), `Pending` (`Menunggu`), or `Rejected` (`Ditolak`).
+- **Overtime Category Filter**: Filter by `All Category`, `Production`, `TPM` (Total Productive Maintenance), `CapEx Project`, or `Others`.
+- **Date Range Picker**: Select custom Start Date (`Dari Tanggal`) and End Date (`Sampai Tanggal`) to zoom in on specific production weeks or audit periods.
+- **All Time Checkbox** (`Semua Waktu`): Check to view all historical records across multiple fiscal years without date restrictions.
+- **Search Query Input**: Live search by submission code (e.g., `OT-SUB`), task description (e.g., `Fix conveyor`), or RCA notes.
+- **Reset Filters Button** (`Reset Filter`): Reverts all filters back to the default period view in one click.
+
+#### Granular Daily Ledger Table
+
+The ledger displays 25 items per page with tabular numbers (`tabular-nums`) and clean status badges:
+
+- **Date & Day**: Shift date, Indonesian day of the week, and clickable submission reference code.
+- **Day Type**: Working Day (`HKN`), Rest Day (`HLR`), or Public Holiday (`LBR`).
+- **Category Breakdown Columns**: Separate columns for **Production**, **TPM**, **CapEx**, and **Others** hours.
+- **CapEx Project Badge**: Items billed to capital projects display a clickable project code tag (e.g., `CPX-2026-ASSY-001`).
+- **Total Hours & Total Cost**: Monospace formatted hours and exact Rupiah calculation for the shift.
+- **Status Badge**: Green `Approved`, Amber `Pending Approval`, or Red `Rejected`.
+- **Expand/Collapse Button** (`ChevronDown` / `ChevronUp`): Click the chevron on the far right of any row to toggle its inline details accordion.
+
+#### Viewing Rejection Reasons and RCA Notes (Inline Accordion)
+
+When an overtime request is rejected by a supervisor or manager:
+
+1. Click the chevron toggle button on the rejected row.
+2. An inline details container expands directly beneath the item without opening a disruptive popup dialog.
+3. The **Alasan Penolakan** (Rejection Reason) callout clearly highlights:
+    - Specific rejection rationale provided by the approver (e.g., "Salah alokasi CapEx, pekerjaan preventif bukan proyek").
+    - Root Cause Analysis (RCA) category badge (e.g., `FACILITY_MAINTENANCE`, `LINE_STOP`).
+    - Detailed RCA supervisor explanation notes.
+    - Associated CapEx project investment details (allocated budget and physical progress percentage).
+
+#### Zero-Memory CSV Export
+
+1. Set your desired filters (e.g., Status: Approved, Date Range: 2026-09-01 to 2026-09-30).
+2. Click **Export CSV** (`Ekspor CSV`) in the upper-right corner of the timesheet header.
+3. The server generates a streaming CSV file (`Timesheet-[NPK]-[Timestamp].csv`) instantly using cursor chunking.
+4. The downloaded CSV includes a UTF-8 Byte Order Mark (BOM) so Indonesian characters and currency formats open cleanly in Microsoft Excel without character encoding issues.
+
+---
+
 ## Frequently Asked Questions (FAQ)
 
 **Q: Why can't I find an employee from another department when I search?**  

@@ -42,6 +42,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/employees', [EmployeeReportController::class, 'index'])->name('employees.index');
         Route::get('/employees/search', [EmployeeReportController::class, 'search'])->name('employees.search');
         Route::get('/employees/{npk}', [EmployeeReportController::class, 'show'])->name('employees.show');
+        Route::get('/employees/{npk}/timesheet', [EmployeeReportController::class, 'timesheet'])->name('employees.timesheet');
+        Route::get('/employees/{npk}/timesheet/export', [EmployeeReportController::class, 'exportTimesheet'])->name('employees.timesheet.export');
     });
 
     // Role-protected routes for authorization verification and testing
