@@ -58,6 +58,7 @@ Technical specifications and decision records for the engineering implementation
     - [ADR-026: Financial Labor Attribution Schedule & Native OpenXML Streaming Export](./dev-docs/decisions/026-financial-labor-attribution-report-and-native-xlsx-streaming.md)
     - [ADR-027: In-Place CapEx Physical Progress Update & Audit Trail](./dev-docs/decisions/027-in-place-capex-physical-progress-update-and-audit-trail.md)
     - [ADR-028: Shared Vue Chart.js Infrastructure and Operational KPI Cards](./dev-docs/decisions/028-shared-vue-chartjs-infrastructure-and-operational-kpi-cards.md)
+    - [ADR-029: Daily Burn Line Chart and Section Burn Comparison](./dev-docs/decisions/029-daily-burn-chart-and-section-burn-comparison.md)
 - **Technical Feature Design Specifications:**
     - [Authentication & Role-Based Access Control](./dev-docs/features/authentication-rbac.md)
     - [Database Schema Migrations (Full DDL)](./dev-docs/features/database-schema-migrations.md)
@@ -84,6 +85,7 @@ Technical specifications and decision records for the engineering implementation
     - [CapEx Project Labor Management](./dev-docs/features/capex-project-labor.md)
     - [Supervised Machine Learning Analytics](./dev-docs/features/ml-predictive-analytics.md)
     - [Executive Operational Dashboard & KPI Cards (E09-00 - E09-01)](./dev-docs/features/executive-dashboard-kpi.md)
+    - [Daily Burn Chart Index & Section Burn Comparison (E09-02 & E09-03)](./dev-docs/features/daily-burn-and-section-comparison.md)
 - **API Reference Design:**
     - [Calendar Classification & Management API](./dev-docs/api/calendar-endpoints.md)
     - [Overtime Policy Check API](./dev-docs/api/overtime-policy-check.md)
@@ -137,6 +139,7 @@ Plain-language operating guides for factory supervisors, team leaders, and opera
     - [Employee Self-Service Personal Dashboard Guide](./user-docs/guides/employee-self-service.md)
     - [CapEx Project Labor & Portfolio Monitoring Guide](./user-docs/guides/capex-project-labor.md)
     - [Executive Operational Dashboard & KPI Cards Guide](./user-docs/guides/executive-dashboard-kpi.md)
+    - [Daily Burn Chart Index & Section Comparison Guide](./user-docs/guides/daily-burn-and-section-comparison.md)
 
 ---
 

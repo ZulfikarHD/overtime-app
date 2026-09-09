@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { ChartData, ChartDataset, ChartOptions } from 'chart.js';
+import type { ChartData, ChartDataset, ChartOptions, Plugin } from 'chart.js';
 import { computed } from 'vue';
 import { Line } from 'vue-chartjs';
 import ChartSkeleton from '@/components/charts/ChartSkeleton.vue';
@@ -12,6 +12,7 @@ interface Props {
     labels?: string[];
     datasets: ChartDataset<'line'>[];
     options?: ChartOptions<'line'>;
+    plugins?: Plugin<'line'>[];
     loading?: boolean;
     empty?: boolean;
     heightClass?: string;
@@ -21,6 +22,7 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {
     labels: () => [],
     options: () => ({}),
+    plugins: () => [],
     loading: false,
     empty: false,
     heightClass: 'h-64',
@@ -74,6 +76,11 @@ const mergedOptions = computed<ChartOptions<'line'>>(() => ({
             </p>
         </div>
 
-        <Line v-else :data="chartData" :options="mergedOptions" />
+        <Line
+            v-else
+            :data="chartData"
+            :options="mergedOptions"
+            :plugins="plugins"
+        />
     </div>
 </template>

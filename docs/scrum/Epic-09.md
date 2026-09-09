@@ -144,29 +144,29 @@ Before any chart story begins, the chart infrastructure must be in place.
 
 #### Acceptance Criteria (maps to `dashboard.html` "Daily Burn Chart Index Overtime")
 
-- [ ] Full-width chart area (~384px height) with two data series:
+- [x] Full-width chart area (~384px height) with two data series:
     - **Line 1 (solid blue, dashed)** — `Plan`: evenly distributed planned hours across the month (straight diagonal from 0 to `planned_hours`)
     - **Line 2 (solid, color by zone)** — `Actual`: cumulative approved hours day by day
     - **Line 3 (dotted, violet)** — `ML Projected`: projected end-of-month trajectory (from `ml_predictions`, shown only if Epic-08 is live)
-- [ ] X-axis: each day of the month (1–31)
-- [ ] Y-axis: overtime hours (0 to `planned_hours × 1.3` to leave headroom for overruns)
-- [ ] A horizontal threshold line at `planned_hours` (100% budget line) with label "Budget Ceiling"
-- [ ] A background shading: above budget ceiling = light red fill zone
-- [ ] Month selector: prev/next month navigation arrows
-- [ ] Department/Section filter: multi-select dropdown (Manager sees their sections, Admin sees all)
-- [ ] Hovering a data point shows tooltip: `Day X | Actual: Y hrs | Plan: Z hrs | Variance: ±W hrs`
-- [ ] Chart renders in < 1 second (data pre-aggregated by day in query)
+- [x] X-axis: each day of the month (1–31)
+- [x] Y-axis: overtime hours (0 to `planned_hours × 1.3` to leave headroom for overruns)
+- [x] A horizontal threshold line at `planned_hours` (100% budget line) with label "Budget Ceiling"
+- [x] A background shading: above budget ceiling = light red fill zone
+- [x] Month selector: prev/next month navigation arrows
+- [x] Department/Section filter: multi-select dropdown (Manager sees their sections, Admin sees all)
+- [x] Hovering a data point shows tooltip: `Day X | Actual: Y hrs | Plan: Z hrs | Variance: ±W hrs`
+- [x] Chart renders in < 1 second (data pre-aggregated by day in query)
 
 #### Technical Tasks
 
-- [ ] `DashboardController@dailyBurnChart` — `GET /dashboard/charts/daily-burn`
-- [ ] Query: group approved `overtime_items` by `overtime_submissions.operational_date`, cumulative SUM per day
-- [ ] Returns: `{ labels: ['1', '2', ...], actual_cumulative: [...], plan_cumulative: [...], ml_projected: [...] }`
-- [ ] Plan cumulative: `planned_hours / days_in_month * day_index` for each day
-- [ ] Create `resources/js/Components/Dashboard/DailyBurnLineChart.vue` — extends `BaseLineChart.vue`
-- [ ] Threshold annotation: use Chart.js `annotation` plugin (`pnpm add chartjs-plugin-annotation`)
-- [ ] Month navigation: reactive `selectedMonth` ref → triggers Inertia partial reload with `only: ['dailyBurnData']`
-- [ ] Background zone: Chart.js `backgroundColor` callback or annotation rectangle
+- [x] `DashboardController@dailyBurnChart` — `GET /dashboard/charts/daily-burn`
+- [x] Query: group approved `overtime_items` by `overtime_submissions.operational_date`, cumulative SUM per day
+- [x] Returns: `{ labels: ['1', '2', ...], actual_cumulative: [...], plan_cumulative: [...], ml_projected: [...] }`
+- [x] Plan cumulative: `planned_hours / days_in_month * day_index` for each day
+- [x] Create `resources/js/components/dashboard/DailyBurnLineChart.vue` — extends `BaseLineChart.vue`
+- [x] Threshold annotation: native Chart.js canvas `beforeDraw` plugin for budget ceiling and red fill zone
+- [x] Month navigation: reactive `selectedMonth` ref → triggers Inertia partial reload with `only: ['dailyBurnChart', ...]`
+- [x] Background zone: native Chart.js canvas `beforeDraw` plugin
 
 ---
 
@@ -181,20 +181,20 @@ Before any chart story begins, the chart infrastructure must be in place.
 
 #### Acceptance Criteria (maps to `dashboard.html` "Daily Burn Chart Section/Department")
 
-- [ ] Grouped bar chart — one bar group per day of the month, each bar group has N bars (one per active section)
-- [ ] OR: a simpler and more readable **horizontal bar chart** showing each section's current cumulative Burn Index % side by side
-- [ ] Bars color-coded by zone: green (< 85%), blue (85–100%), amber (101–115%), red (> 115%)
-- [ ] Each bar labeled with section code and current Burn Index %
-- [ ] Clicking a bar navigates to that section's detail page (Epic-05, E05-02)
-- [ ] Date filter: same month selector as E09-02
+- [x] Grouped bar chart — one bar group per day of the month, each bar group has N bars (one per active section)
+- [x] OR: a simpler and more readable **horizontal bar chart** showing each section's current cumulative Burn Index % side by side
+- [x] Bars color-coded by zone: green (< 85%), blue (85–100%), amber (101–115%), red (> 115%)
+- [x] Each bar labeled with section code and current Burn Index %
+- [x] Clicking a bar navigates to that section's detail page (Epic-05, E05-02)
+- [x] Date filter: same month selector as E09-02
 
 #### Technical Tasks
 
-- [ ] `DashboardController@sectionBurnComparison` — `GET /dashboard/charts/section-burn`
-- [ ] Query: `monthly_burn_snapshots` for the selected month, all sections in manager's dept
-- [ ] Returns: `{ sections: [{ code, name, burn_index_pct, zone }] }` ordered by burn_index_pct desc
-- [ ] Create `resources/js/Components/Dashboard/SectionBurnComparisonChart.vue` — horizontal bar chart
-- [ ] Click handler: `router.visit(route('dashboard.section-detail', { id: section.id }))`
+- [x] `DashboardController@sectionBurnComparison` — `GET /dashboard/charts/section-burn`
+- [x] Query: `monthly_burn_snapshots` for the selected month, all sections in manager's dept
+- [x] Returns: `{ sections: [{ code, name, burn_index_pct, zone }] }` ordered by burn_index_pct desc
+- [x] Create `resources/js/components/dashboard/SectionBurnComparisonChart.vue` — horizontal bar chart
+- [x] Click handler: `router.visit(route('dashboard.section-detail', { id: section.id }))` (navigates to `/dashboard/burn-index?section={id}`)
 
 ---
 

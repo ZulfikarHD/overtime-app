@@ -37,7 +37,11 @@ class DashboardController extends Controller
             $departmentId = ($rawDept === 'all' || (int) $rawDept === 0) ? 0 : (int) $rawDept;
         }
 
+        $sectionId = $request->filled('section_id') ? $request->integer('section_id') : null;
+
         $kpiCards = $this->kpiService->getKpiCards($user, $date, $departmentId);
+        $dailyBurnChart = $this->kpiService->getDailyBurnChart($user, $date, $departmentId, $sectionId);
+        $sectionBurnComparison = $this->kpiService->getSectionBurnComparison($user, $date, $departmentId);
 
         $departments = Department::query()
             ->where('is_active', true)
@@ -46,8 +50,11 @@ class DashboardController extends Controller
 
         return Inertia::render('Dashboard', [
             'kpiCards' => $kpiCards,
+            'dailyBurnChart' => $dailyBurnChart,
+            'sectionBurnComparison' => $sectionBurnComparison,
             'departments' => $departments,
             'selectedDepartmentId' => $kpiCards['scope']['department_id'],
+            'selectedSectionId' => $dailyBurnChart['scope']['section_id'],
             'selectedDate' => $kpiCards['scope']['selected_date'],
         ]);
     }
@@ -73,6 +80,58 @@ class DashboardController extends Controller
         }
 
         $data = $this->kpiService->getKpiCards($user, $date, $departmentId);
+
+        return response()->json($data);
+    }
+
+    /**
+     * Return JSON endpoint for daily cumulative burn line chart (E09-02).
+     */
+    public function dailyBurnChart(Request $request): JsonResponse
+    {
+        /** @var User|null $user */
+        $user = $request->user();
+
+        if ($user?->isUser()) {
+            return response()->json(['error' => 'Unauthorized for operational dashboard'], 403);
+        }
+
+        $date = $request->filled('date') ? $request->string('date')->value() : null;
+
+        $rawDept = $request->input('department_id');
+        $departmentId = null;
+        if ($request->has('department_id') && $rawDept !== '') {
+            $departmentId = ($rawDept === 'all' || (int) $rawDept === 0) ? 0 : (int) $rawDept;
+        }
+
+        $sectionId = $request->filled('section_id') ? $request->integer('section_id') : null;
+
+        $data = $this->kpiService->getDailyBurnChart($user, $date, $departmentId, $sectionId);
+
+        return response()->json($data);
+    }
+
+    /**
+     * Return JSON endpoint for section burn comparison bar chart (E09-03).
+     */
+    public function sectionBurnComparison(Request $request): JsonResponse
+    {
+        /** @var User|null $user */
+        $user = $request->user();
+
+        if ($user?->isUser()) {
+            return response()->json(['error' => 'Unauthorized for operational dashboard'], 403);
+        }
+
+        $date = $request->filled('date') ? $request->string('date')->value() : null;
+
+        $rawDept = $request->input('department_id');
+        $departmentId = null;
+        if ($request->has('department_id') && $rawDept !== '') {
+            $departmentId = ($rawDept === 'all' || (int) $rawDept === 0) ? 0 : (int) $rawDept;
+        }
+
+        $data = $this->kpiService->getSectionBurnComparison($user, $date, $departmentId);
 
         return response()->json($data);
     }

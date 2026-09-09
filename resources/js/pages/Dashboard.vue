@@ -15,6 +15,9 @@ import {
     Users,
 } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
+import DailyBurnLineChart, {
+    type DailyBurnChartData,
+} from '@/components/dashboard/DailyBurnLineChart.vue';
 import KpiCardBurnIndex, {
     type BurnIndexCardData,
 } from '@/components/dashboard/KpiCardBurnIndex.vue';
@@ -27,6 +30,9 @@ import KpiCardProduction, {
 import KpiCardWorkingDays, {
     type WorkingDaysData,
 } from '@/components/dashboard/KpiCardWorkingDays.vue';
+import SectionBurnComparisonChart, {
+    type SectionBurnComparisonData,
+} from '@/components/dashboard/SectionBurnComparisonChart.vue';
 import RoleBadge from '@/components/RoleBadge.vue';
 import {
     Card,
@@ -74,15 +80,21 @@ interface KpiCardsPayload {
 
 interface Props {
     kpiCards?: KpiCardsPayload;
+    dailyBurnChart?: DailyBurnChartData;
+    sectionBurnComparison?: SectionBurnComparisonData;
     departments?: DepartmentItem[];
     selectedDepartmentId?: number | null;
+    selectedSectionId?: number | null;
     selectedDate?: string;
 }
 
 const props = withDefaults(defineProps<Props>(), {
     kpiCards: undefined,
+    dailyBurnChart: undefined,
+    sectionBurnComparison: undefined,
     departments: () => [],
     selectedDepartmentId: null,
+    selectedSectionId: null,
     selectedDate: '',
 });
 
@@ -95,6 +107,7 @@ const isFiltering = ref(false);
 const filterDept = ref(
     props.selectedDepartmentId ? String(props.selectedDepartmentId) : 'all',
 );
+const filterSection = ref<number | null>(props.selectedSectionId ?? null);
 const filterDate = ref(
     props.selectedDate ||
         props.kpiCards?.scope?.selected_date ||
@@ -110,6 +123,13 @@ watch(
 );
 
 watch(
+    () => props.selectedSectionId,
+    (val) => {
+        filterSection.value = val ?? null;
+    },
+);
+
+watch(
     () => props.selectedDate,
     (val) => {
         if (val) {
@@ -118,24 +138,57 @@ watch(
     },
 );
 
-function applyFilters() {
+function applyFilters(overrideSection?: number | null | Event) {
     isFiltering.value = true;
+    const targetSection =
+        typeof overrideSection === 'number' || overrideSection === null
+            ? overrideSection
+            : filterSection.value;
+
     router.get(
         dashboard.url(),
         {
             date: filterDate.value,
             department_id:
                 filterDept.value === 'all' ? undefined : filterDept.value,
+            section_id: targetSection ? targetSection : undefined,
         },
         {
             preserveState: true,
             preserveScroll: true,
-            only: ['kpiCards', 'selectedDepartmentId', 'selectedDate'],
+            only: [
+                'kpiCards',
+                'dailyBurnChart',
+                'sectionBurnComparison',
+                'selectedDepartmentId',
+                'selectedSectionId',
+                'selectedDate',
+            ],
             onFinish: () => {
                 isFiltering.value = false;
             },
         },
     );
+}
+
+function handleMonthNavigation(direction: 'prev' | 'next') {
+    const current = new Date(
+        filterDate.value || new Date().toISOString().slice(0, 10),
+    );
+    if (direction === 'prev') {
+        current.setMonth(current.getMonth() - 1);
+    } else {
+        current.setMonth(current.getMonth() + 1);
+    }
+    const year = current.getFullYear();
+    const month = String(current.getMonth() + 1).padStart(2, '0');
+    filterDate.value = `${year}-${month}-01`;
+    applyFilters();
+}
+
+function handleSectionSelect(secId: number | null) {
+    filterSection.value = secId;
+    applyFilters(secId);
 }
 
 function resetFilters() {
@@ -146,7 +199,8 @@ function resetFilters() {
             : user.value?.department_id
               ? String(user.value.department_id)
               : 'all';
-    applyFilters();
+    filterSection.value = null;
+    applyFilters(null);
 }
 
 const roleCapabilities = computed(() => {
@@ -394,6 +448,21 @@ const roleCapabilities = computed(() => {
                 :loading="isFiltering"
             />
         </div>
+
+        <!-- Hero Section: Daily Cumulative Burn Line Chart (Story E09-02) -->
+        <DailyBurnLineChart
+            :data="dailyBurnChart"
+            :loading="isFiltering"
+            :selected-section-id="filterSection"
+            @navigate-month="handleMonthNavigation"
+            @select-section="handleSectionSelect"
+        />
+
+        <!-- Mid Section: Section Burn Comparison Bar Chart (Story E09-03) -->
+        <SectionBurnComparisonChart
+            :data="sectionBurnComparison"
+            :loading="isFiltering"
+        />
 
         <!-- Assignment & Identity Cards -->
         <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

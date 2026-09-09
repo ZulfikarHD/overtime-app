@@ -43,6 +43,7 @@ Deep-dive technical documentation detailing architecture flows, data models, key
 | **[CapEx Project Labor Management](./features/capex-project-labor.md)**                                    | [Epic-07](../../scrum/Epic-07.md) | Fixed asset labor capitalization, project codes, progress vs. burn curves, and statutory audit integrity.                                          |
 | **[Supervised Machine Learning Analytics](./features/ml-predictive-analytics.md)**                         | [Epic-08](../../scrum/Epic-08.md) | Overtime demand forecasting, Burn Index trajectory ribbon charts, anomaly detection, and cold-start fallback.                                      |
 | **[Executive Operational Dashboard & KPI Cards](./features/executive-dashboard-kpi.md)**                   | [Epic-09](../../scrum/Epic-09.md) | Operational command center (/dashboard), 4 header KPI cards, Vue Chart.js library, and defensive ERP integration fallback.                         |
+| **[Daily Burn Chart Index & Section Burn Comparison](./features/daily-burn-and-section-comparison.md)**    | [Epic-09](../../scrum/Epic-09.md) | Hero line chart with ceiling threshold and red shading (E09-02), horizontal section comparison bar chart (E09-03), and drill-down navigation.      |
 
 ---
 
@@ -90,6 +91,7 @@ Durable technical decisions and trade-offs:
 - **[ADR-026: Financial Labor Attribution Schedule & Native OpenXML Streaming Export](./decisions/026-financial-labor-attribution-report-and-native-xlsx-streaming.md)**
 - **[ADR-027: In-Place CapEx Physical Progress Update & Audit Trail](./decisions/027-in-place-capex-physical-progress-update-and-audit-trail.md)**
 - **[ADR-028: Shared Vue Chart.js Infrastructure and Operational KPI Cards](./decisions/028-shared-vue-chartjs-infrastructure-and-operational-kpi-cards.md)**
+- **[ADR-029: Daily Burn Line Chart and Section Burn Comparison](./decisions/029-daily-burn-chart-and-section-burn-comparison.md)**
 
 ---
 
