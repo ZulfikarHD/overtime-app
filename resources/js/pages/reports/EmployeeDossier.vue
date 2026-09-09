@@ -23,6 +23,7 @@ import RoleBadge from '@/components/RoleBadge.vue';
 import CategoryDonutChart from '@/components/reports/CategoryDonutChart.vue';
 import DayTypeBreakdownBar from '@/components/reports/DayTypeBreakdownBar.vue';
 import EmployeeSearch from '@/components/reports/EmployeeSearch.vue';
+import FatigueRollingChart from '@/components/reports/FatigueRollingChart.vue';
 import KpiSummaryCards, {
     type EmployeeSummaryMetrics,
 } from '@/components/reports/KpiSummaryCards.vue';
@@ -30,6 +31,7 @@ import PeerComparisonPanel, {
     type PeerComparisonData,
 } from '@/components/reports/PeerComparisonPanel.vue';
 import RecentLookups from '@/components/reports/RecentLookups.vue';
+import SafetyScoreGauge from '@/components/reports/SafetyScoreGauge.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -57,6 +59,7 @@ import {
     show as showEmployeeDossier,
 } from '@/routes/reports/employees';
 import type { BreadcrumbItem, User } from '@/types';
+import type { WelfareStatusData } from '@/types/ui';
 
 defineOptions({
     layout: {
@@ -114,6 +117,7 @@ const props = defineProps<{
     employee: DossierEmployee | null;
     summary?: EmployeeSummaryMetrics | null;
     peer_comparison?: PeerComparisonData | null;
+    welfare_status?: WelfareStatusData | null;
     roster: RosterItem[];
     filters?: {
         department_id?: string | number | null;
@@ -658,27 +662,52 @@ const filteredSections = computed(() => {
                         :peer-comparison="peer_comparison"
                     />
 
-                    <!-- Preview Architecture Card for Safety & Fatigue Indicators (E06-04) -->
+                    <!-- Safety & Fatigue Soft Indicators (E06-04) -->
                     <div
-                        class="border-border bg-card/60 flex flex-col gap-2 rounded-xl border border-dashed p-4"
+                        v-if="welfare_status"
+                        class="grid grid-cols-1 gap-6 lg:grid-cols-12"
+                        data-test="welfare-indicators-section"
                     >
-                        <div
-                            class="text-primary flex items-center gap-2 text-sm font-semibold"
-                        >
-                            <HeartPulse class="size-4" />
-                            <span>{{
-                                __(
-                                    'Indikator Kelelahan & Keselamatan Kerja (E06-04)',
-                                )
-                            }}</span>
+                        <!-- Left: Rolling 4-Week Workload Bar Chart (7 cols) -->
+                        <div class="lg:col-span-7">
+                            <FatigueRollingChart
+                                :rolling-weeks="welfare_status.rolling_weeks"
+                                :weekly-limit="welfare_status.weekly_limit"
+                                :consecutive-weeks="
+                                    welfare_status.consecutive_weeks
+                                "
+                                :consecutive-weeks-alert="
+                                    welfare_status.consecutive_weeks_alert
+                                "
+                            />
                         </div>
-                        <p class="text-muted-foreground text-xs">
-                            {{
-                                __(
-                                    'Tren rolling 4 minggu, indikator batas keselamatan kerja, dan badge peringatan kelelahan terstruktur.',
-                                )
-                            }}
-                        </p>
+
+                        <!-- Right: Safety Score Gauge & Badges (5 cols) -->
+                        <div class="lg:col-span-5">
+                            <SafetyScoreGauge
+                                :safety-score-pct="
+                                    welfare_status.safety_score_pct
+                                "
+                                :alert-level="welfare_status.alert_level"
+                                :current-week-hours="
+                                    welfare_status.current_week_hours
+                                "
+                                :weekly-limit="welfare_status.weekly_limit"
+                                :consecutive-weeks="
+                                    welfare_status.consecutive_weeks
+                                "
+                                :consecutive-weeks-alert="
+                                    welfare_status.consecutive_weeks_alert
+                                "
+                                :exceeded-weeks-count="
+                                    welfare_status.exceeded_weeks_count
+                                "
+                                :badges="welfare_status.badges"
+                                :advisory-message="
+                                    welfare_status.advisory_message
+                                "
+                            />
+                        </div>
                     </div>
                 </div>
 

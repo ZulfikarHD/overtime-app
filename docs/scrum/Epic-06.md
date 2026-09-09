@@ -4,7 +4,7 @@
 **Priority:** P2 – Should Have  
 **Estimated Total:** 30 Story Points  
 **Target Sprints:** Sprint 6 (Weeks 11–12, parallel with Epic-07)  
-**Status:** 🟡 In Progress (13/30 SP completed)  
+**Status:** 🟡 In Progress (23/30 SP completed)  
 **Dependencies:** Epic-01, Epic-02 (Employee master data), Epic-03 (Submissions exist), Epic-04 (Approved items exist)  
 **Lead Area:** Backend (`EmployeeReportController`, `BurnIndexCalculatorService` extension) + Vue 3 Report Pages
 
@@ -99,7 +99,8 @@ This module serves four audiences:
 **So that** I can identify if the workload is concentrated on a few people or distributed fairly.
 
 **Story Points:** 5  
-**Priority:** Should Have
+**Priority:** Should Have  
+**Status:** 🟢 Completed (Sprint 6)
 
 #### Acceptance Criteria
 
@@ -130,26 +131,27 @@ This module serves four audiences:
 **So that** I can proactively schedule rest and reduce industrial accident risk.
 
 **Story Points:** 5  
-**Priority:** Should Have
+**Priority:** Should Have  
+**Status:** 🟢 Completed (Sprint 6)
 
 #### Acceptance Criteria
 
-- [ ] Fatigue indicator panel on dossier shows rolling 4-week workload trend: bar chart showing each week's hours
-- [ ] If the employee has exceeded `weekly_soft_limit_hours` in the current week: yellow badge `⚠️ Weekly Limit Approaching (22/20 hrs)`
-- [ ] If the employee has exceeded the weekly limit for `consecutive_weeks_alert` (default 3) consecutive weeks: red badge `🔴 Fatigue Risk: 3 consecutive weeks over limit`
-- [ ] "Safety Score" calculated: `100% − (overloaded weeks / 4 weeks × 100%)` — shown as a simple gauge (100% = perfect rest, 0% = 4 weeks overloaded)
-- [ ] All fatigue indicators are **advisory only** — no operational blocks
-- [ ] Team Leader receives an in-app notification when a direct report hits the consecutive-week alert for the first time in a month
+- [x] Fatigue indicator panel on dossier shows rolling 4-week workload trend: bar chart showing each week's hours
+- [x] If the employee has exceeded `weekly_soft_limit_hours` in the current week: yellow badge `⚠️ Weekly Limit Approaching (22/20 hrs)`
+- [x] If the employee has exceeded the weekly limit for `consecutive_weeks_alert` (default 3) consecutive weeks: red badge `🔴 Fatigue Risk: 3 consecutive weeks over limit`
+- [x] "Safety Score" calculated: `100% − (overloaded weeks / 4 weeks × 100%)` — shown as a simple gauge (100% = perfect rest, 0% = 4 weeks overloaded)
+- [x] All fatigue indicators are **advisory only** — no operational blocks
+- [x] Team Leader receives an in-app notification when a direct report hits the consecutive-week alert for the first time in a month
 
 #### Technical Tasks
 
-- [ ] `OvertimePolicyEvaluator::getEmployeeWelfareStatus(int $employeeId): WelfareStatus` — returns rolling 4-week assessment
-- [ ] Query: weekly sums for last 4 weeks from approved items
-- [ ] `WelfareStatus` DTO: `{ current_week_hours, limit, exceeded_weeks_count, safety_score_pct, badges[] }`
-- [ ] `php artisan make:notification FatigueAlertNotification` (database channel)
-- [ ] Dispatch fatigue notification from `RecalculateMonthlyBurnSnapshotJob` after approval (check per-employee thresholds)
-- [ ] Create `resources/js/Components/Reports/FatigueRollingChart.vue` — 4-week bar chart
-- [ ] Create `resources/js/Components/Reports/SafetyScoreGauge.vue` — simple arc gauge
+- [x] `OvertimePolicyEvaluator::getEmployeeWelfareStatus(int $employeeId): WelfareStatus` — returns rolling 4-week assessment
+- [x] Query: weekly sums for last 4 weeks from approved items
+- [x] `WelfareStatus` DTO: `{ current_week_hours, limit, exceeded_weeks_count, safety_score_pct, badges[] }`
+- [x] `php artisan make:notification FatigueAlertNotification` (database channel)
+- [x] Dispatch fatigue notification from `RecalculateMonthlyBurnSnapshotJob` after approval (check per-employee thresholds)
+- [x] Create `resources/js/Components/Reports/FatigueRollingChart.vue` — 4-week bar chart
+- [x] Create `resources/js/Components/Reports/SafetyScoreGauge.vue` — simple arc gauge
 
 ---
 
@@ -237,7 +239,7 @@ This module serves four audiences:
 - [x] Employee search works across NPK and name with 300ms debounce
 - [x] KPI cards show correct current month and YTD hours from approved items only
 - [x] Peer variance (CALC-06) calculates correctly
-- [ ] Fatigue consecutive-week alert correctly detects 3+ weeks over limit
+- [x] Fatigue consecutive-week alert correctly detects 3+ weeks over limit
 - [ ] Timesheet table is paginated, filterable, and sortable
 - [x] User (Employee) role is strictly scoped to their own data
 - [x] `pnpm lint` passes

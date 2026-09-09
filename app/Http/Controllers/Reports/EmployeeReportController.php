@@ -74,6 +74,7 @@ class EmployeeReportController extends Controller
             'employee' => null,
             'summary' => null,
             'peer_comparison' => null,
+            'welfare_status' => null,
             'roster' => $roster,
             'filters' => $filters,
             'departments' => $departments,
@@ -126,10 +127,17 @@ class EmployeeReportController extends Controller
             $user->isUser(),
         );
 
+        $welfareStatus = $this->employeeReportService->getWelfareStatus(
+            $employee['id'],
+            $fiscalYear,
+            $fiscalMonth,
+        );
+
         return Inertia::render('reports/EmployeeDossier', [
             'employee' => $employee,
             'summary' => $summary,
             'peer_comparison' => $peerComparison,
+            'welfare_status' => $welfareStatus,
             'roster' => [],
             'filters' => [],
             'departments' => [],

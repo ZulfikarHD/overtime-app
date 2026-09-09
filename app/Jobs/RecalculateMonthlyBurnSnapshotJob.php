@@ -5,6 +5,7 @@ namespace App\Jobs;
 use App\Models\MonthlyBurnSnapshot;
 use App\Services\Analytics\MonthlySnapshotService;
 use App\Services\BudgetAlertService;
+use App\Services\FatigueAlertService;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Queue\InteractsWithQueue;
@@ -42,9 +43,11 @@ class RecalculateMonthlyBurnSnapshotJob implements ShouldQueue
     public function handle(
         ?MonthlySnapshotService $snapshotService = null,
         ?BudgetAlertService $budgetAlertService = null,
+        ?FatigueAlertService $fatigueAlertService = null,
     ): void {
         $snapshotService ??= app(MonthlySnapshotService::class);
         $budgetAlertService ??= app(BudgetAlertService::class);
+        $fatigueAlertService ??= app(FatigueAlertService::class);
 
         $now = Carbon::now('Asia/Jakarta');
         $year = $this->fiscalYear ?? (int) $now->format('Y');
@@ -55,6 +58,7 @@ class RecalculateMonthlyBurnSnapshotJob implements ShouldQueue
             if ($snapshot !== null) {
                 $budgetAlertService->evaluateAndNotify($snapshot);
             }
+            $fatigueAlertService->evaluateAndNotifyForSection($this->sectionId, $year, $month);
         } else {
             $snapshotService->recalculateAll($year, $month);
             $snapshots = MonthlyBurnSnapshot::query()
@@ -64,6 +68,7 @@ class RecalculateMonthlyBurnSnapshotJob implements ShouldQueue
 
             foreach ($snapshots as $snapshot) {
                 $budgetAlertService->evaluateAndNotify($snapshot);
+                $fatigueAlertService->evaluateAndNotifyForSection($snapshot->section_id, $year, $month);
             }
         }
     }

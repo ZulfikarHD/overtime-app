@@ -41,9 +41,61 @@ export type BudgetThresholdNotificationData = {
     url: string;
 };
 
+export type FatigueAlertNotificationData = {
+    notification_type: 'fatigue_alert';
+    alert_level: 'danger' | 'warning';
+    employee_id: number;
+    employee_npk: string;
+    employee_name: string;
+    section_id: number;
+    section_name: string;
+    department_id: number;
+    department_name: string;
+    consecutive_weeks: number;
+    weekly_hours: number;
+    weekly_limit: number;
+    fiscal_year: number;
+    fiscal_month: number;
+    title: string;
+    message: string;
+    url: string;
+};
+
+export type WelfareRollingWeekItem = {
+    week_key: string;
+    week_label: string;
+    start_date: string;
+    end_date: string;
+    hours: number;
+    is_over_limit: boolean;
+    is_current_week: boolean;
+};
+
+export type WelfareBadge = {
+    type: 'safe' | 'warning' | 'danger';
+    label: string;
+    message: string;
+};
+
+export type WelfareStatusData = {
+    employee_id: number;
+    current_week_hours: number;
+    weekly_limit: number;
+    consecutive_weeks: number;
+    consecutive_weeks_alert: number;
+    exceeded_weeks_count: number;
+    safety_score_pct: number;
+    alert_level: 'safe' | 'warning' | 'danger';
+    badges: WelfareBadge[];
+    rolling_weeks: WelfareRollingWeekItem[];
+    is_advisory: boolean;
+    advisory_message: string;
+};
+
 export type NotificationData =
     | SpklNotificationData
     | BudgetThresholdNotificationData
+    | FatigueAlertNotificationData
     | Record<string, any>;
 
 export type AppNotification = {

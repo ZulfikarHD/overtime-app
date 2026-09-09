@@ -52,6 +52,8 @@ Technical specifications and decision records for the engineering implementation
     - [ADR-020: Budget Threshold Alert Timestamp Locking for Anti-Fatigue Deduplication](./dev-docs/decisions/020-budget-threshold-alert-deduplication.md)
     - [ADR-021: Department-Level Consolidated Dashboard and Server-Side PDF Reporting](./dev-docs/decisions/021-department-level-consolidated-dashboard-and-pdf-reporting.md)
     - [ADR-022: Unified Single-Surface Employee Dossier Hub and Client-Side Cached Lookups](./dev-docs/decisions/022-unified-employee-dossier-hub-and-client-cached-lookups.md)
+    - [ADR-023: Peer Benchmarking Workload Distribution (CALC-06) and Server-Side Operator Anonymization](./dev-docs/decisions/023-peer-benchmarking-calc-06-and-operator-role-anonymization.md)
+    - [ADR-024: Rolling 4-Week Welfare Indicators and Calendar-Month Fatigue Alert Deduplication](./dev-docs/decisions/024-rolling-4-week-welfare-indicators-and-fatigue-alert-deduplication.md)
 - **Technical Feature Design Specifications:**
     - [Authentication & Role-Based Access Control](./dev-docs/features/authentication-rbac.md)
     - [Database Schema Migrations (Full DDL)](./dev-docs/features/database-schema-migrations.md)

@@ -220,3 +220,92 @@ test('evaluateEmployee excludes specified submission id when excludeSubmissionId
     expect($warning->level)->toBe('none')
         ->and($warning->weeklyTotal)->toBe(10.0);
 });
+
+test('getEmployeeWelfareStatus returns safe status and 100% safety score when within limits', function () {
+    $dept = Department::factory()->create();
+    $section = Section::factory()->create(['department_id' => $dept->id]);
+    $employee = Employee::factory()->forDepartmentAndSection($dept, $section)->create();
+
+    PolicyThreshold::factory()->plantDefault()->create([
+        'weekly_soft_limit_hours' => 20.0,
+        'consecutive_weeks_alert' => 3,
+    ]);
+
+    // Week 0: 10 hrs approved
+    seedSubmissionWithItem($employee, '2026-09-08', 10.0, submissionStatus: 'APPROVED', itemStatus: 'APPROVED');
+
+    /** @var OvertimePolicyEvaluator $evaluator */
+    $evaluator = app(OvertimePolicyEvaluator::class);
+
+    $welfare = $evaluator->getEmployeeWelfareStatus($employee->id, '2026-09-08');
+
+    expect($welfare->alertLevel)->toBe('safe')
+        ->and($welfare->currentWeekHours)->toBe(10.0)
+        ->and($welfare->weeklyLimit)->toBe(20.0)
+        ->and($welfare->consecutiveWeeks)->toBe(0)
+        ->and($welfare->exceededWeeksCount)->toBe(0)
+        ->and($welfare->safetyScorePct)->toBe(100.0)
+        ->and($welfare->isAdvisory)->toBeTrue()
+        ->and($welfare->rollingWeeks)->toHaveCount(4);
+});
+
+test('getEmployeeWelfareStatus returns warning status when current week exceeds weekly limit', function () {
+    $dept = Department::factory()->create();
+    $section = Section::factory()->create(['department_id' => $dept->id]);
+    $employee = Employee::factory()->forDepartmentAndSection($dept, $section)->create();
+
+    PolicyThreshold::factory()->plantDefault()->create([
+        'weekly_soft_limit_hours' => 20.0,
+        'consecutive_weeks_alert' => 3,
+    ]);
+
+    // Current week: 22 hrs approved
+    seedSubmissionWithItem($employee, '2026-09-08', 22.0, submissionStatus: 'APPROVED', itemStatus: 'APPROVED');
+
+    /** @var OvertimePolicyEvaluator $evaluator */
+    $evaluator = app(OvertimePolicyEvaluator::class);
+
+    $welfare = $evaluator->getEmployeeWelfareStatus($employee->id, '2026-09-08');
+
+    expect($welfare->alertLevel)->toBe('warning')
+        ->and($welfare->currentWeekHours)->toBe(22.0)
+        ->and($welfare->exceededWeeksCount)->toBe(1)
+        ->and($welfare->safetyScorePct)->toBe(75.0)
+        ->and($welfare->consecutiveWeeks)->toBe(1);
+});
+
+test('getEmployeeWelfareStatus returns danger status and calculates correct safety score for consecutive overloads', function () {
+    $dept = Department::factory()->create();
+    $section = Section::factory()->create(['department_id' => $dept->id]);
+    $employee = Employee::factory()->forDepartmentAndSection($dept, $section)->create();
+
+    PolicyThreshold::factory()->plantDefault()->create([
+        'weekly_soft_limit_hours' => 20.0,
+        'consecutive_weeks_alert' => 3,
+    ]);
+
+    // Current week (2026-09-08): 21 hrs
+    seedSubmissionWithItem($employee, '2026-09-08', 21.0, submissionStatus: 'APPROVED', itemStatus: 'APPROVED');
+    // Week -1 (2026-09-01): 24 hrs
+    seedSubmissionWithItem($employee, '2026-09-01', 24.0, submissionStatus: 'APPROVED', itemStatus: 'APPROVED');
+    // Week -2 (2026-08-25): 23 hrs
+    seedSubmissionWithItem($employee, '2026-08-25', 23.0, submissionStatus: 'APPROVED', itemStatus: 'APPROVED');
+    // Week -3 (2026-08-18): 12 hrs (within limit)
+    seedSubmissionWithItem($employee, '2026-08-18', 12.0, submissionStatus: 'APPROVED', itemStatus: 'APPROVED');
+
+    /** @var OvertimePolicyEvaluator $evaluator */
+    $evaluator = app(OvertimePolicyEvaluator::class);
+
+    $welfare = $evaluator->getEmployeeWelfareStatus($employee->id, '2026-09-08');
+
+    // 3 out of 4 weeks exceeded limit -> safety score = 100 - (3/4 * 100) = 25.0%
+    // consecutive weeks = 3 >= 3 -> danger level
+    expect($welfare->alertLevel)->toBe('danger')
+        ->and($welfare->consecutiveWeeks)->toBe(3)
+        ->and($welfare->exceededWeeksCount)->toBe(3)
+        ->and($welfare->safetyScorePct)->toBe(25.0);
+
+    $dangerBadge = collect($welfare->badges)->firstWhere('type', 'danger');
+    expect($dangerBadge)->not->toBeNull()
+        ->and($dangerBadge['message'])->toContain('3');
+});

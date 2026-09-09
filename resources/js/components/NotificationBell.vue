@@ -8,6 +8,7 @@ import {
     CheckCheck,
     Clock,
     FileText,
+    HeartPulse,
 } from '@lucide/vue';
 import { computed, onMounted, ref, watch } from 'vue';
 import SpklUploadSheet, {
@@ -28,9 +29,11 @@ import {
     read as notificationsReadRoute,
     readAll as notificationsReadAllRoute,
 } from '@/routes/notifications';
+import { show as showEmployeeDossier } from '@/routes/reports/employees';
 import type {
     AppNotification,
     BudgetThresholdNotificationData,
+    FatigueAlertNotificationData,
     NotificationsPayload,
     SpklNotificationData,
 } from '@/types/ui';
@@ -139,8 +142,19 @@ function isBudgetAlert(item: AppNotification): boolean {
     );
 }
 
+function isFatigueAlert(item: AppNotification): boolean {
+    return (
+        (item.data as any)?.notification_type === 'fatigue_alert' ||
+        Boolean(item.type?.includes('FatigueAlertNotification'))
+    );
+}
+
 function asBudgetData(item: AppNotification): BudgetThresholdNotificationData {
     return item.data as BudgetThresholdNotificationData;
+}
+
+function asFatigueData(item: AppNotification): FatigueAlertNotificationData {
+    return item.data as FatigueAlertNotificationData;
 }
 
 function asSpklData(item: AppNotification): SpklNotificationData {
@@ -158,6 +172,22 @@ function handleBudgetNotificationClick(item: AppNotification) {
                 section: data.section_id,
             },
         }),
+    );
+}
+
+function handleFatigueNotificationClick(item: AppNotification) {
+    void markAsRead(item.id);
+    isOpen.value = false;
+    const data = item.data as FatigueAlertNotificationData;
+    router.visit(
+        showEmployeeDossier.url(
+            { npk: data.employee_npk },
+            {
+                query: {
+                    tab: 'overview',
+                },
+            },
+        ),
     );
 }
 
@@ -416,6 +446,125 @@ const displayCount = computed(() => {
                                             >
                                                 <Activity class="mr-1 size-3" />
                                                 {{ __('Lihat Burn Index') }}
+                                            </Button>
+
+                                            <Button
+                                                size="icon"
+                                                variant="ghost"
+                                                class="text-muted-foreground hover:text-foreground h-6 w-6 cursor-pointer"
+                                                data-test="btn-mark-read"
+                                                :title="
+                                                    __('Tandai sudah dibaca')
+                                                "
+                                                @click.stop="
+                                                    markAsRead(item.id)
+                                                "
+                                            >
+                                                <Check class="size-3" />
+                                            </Button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Fatigue Alert Notification Item (E06-04) -->
+                            <div
+                                v-else-if="isFatigueAlert(item)"
+                                class="flex cursor-pointer items-start gap-2.5"
+                                data-test="notification-fatigue-item"
+                                @click="handleFatigueNotificationClick(item)"
+                            >
+                                <!-- Type Icon -->
+                                <div
+                                    class="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full bg-rose-100 text-[#cc0000] dark:bg-rose-950/60 dark:text-rose-400"
+                                >
+                                    <HeartPulse class="size-3.5" />
+                                </div>
+
+                                <!-- Body -->
+                                <div class="min-w-0 flex-1">
+                                    <div
+                                        class="flex items-center justify-between gap-1"
+                                    >
+                                        <span
+                                            class="text-foreground font-mono text-xs font-semibold"
+                                        >
+                                            {{
+                                                asFatigueData(item).employee_npk
+                                            }}
+                                        </span>
+                                        <Badge
+                                            variant="destructive"
+                                            class="px-1.5 py-0 text-[10px]"
+                                            data-test="badge-fatigue-danger"
+                                        >
+                                            {{
+                                                __(
+                                                    'Risiko Kelelahan (:weeks mgg)',
+                                                    {
+                                                        weeks: asFatigueData(
+                                                            item,
+                                                        ).consecutive_weeks,
+                                                    },
+                                                )
+                                            }}
+                                        </Badge>
+                                    </div>
+
+                                    <p
+                                        class="text-foreground mt-0.5 text-xs font-medium"
+                                    >
+                                        {{ asFatigueData(item).employee_name }}
+                                    </p>
+
+                                    <p
+                                        class="text-muted-foreground mt-0.5 line-clamp-2 text-xs"
+                                    >
+                                        {{
+                                            asFatigueData(item).message ||
+                                            asFatigueData(item).title
+                                        }}
+                                    </p>
+
+                                    <div
+                                        class="border-border/40 mt-2 flex items-center justify-between border-t pt-1"
+                                    >
+                                        <span
+                                            class="text-muted-foreground text-[11px]"
+                                        >
+                                            {{
+                                                asFatigueData(item).section_name
+                                            }}
+                                            <template
+                                                v-if="
+                                                    asFatigueData(item)
+                                                        .department_name
+                                                "
+                                            >
+                                                •
+                                                {{
+                                                    asFatigueData(item)
+                                                        .department_name
+                                                }}
+                                            </template>
+                                        </span>
+
+                                        <div class="flex items-center gap-1">
+                                            <Button
+                                                size="sm"
+                                                variant="outline"
+                                                class="h-6 cursor-pointer border-red-200 px-2 text-[11px] font-medium text-red-600 hover:bg-red-50 hover:text-red-700 dark:border-red-900 dark:hover:bg-red-950/40"
+                                                data-test="btn-view-dossier-from-notif"
+                                                @click.stop="
+                                                    handleFatigueNotificationClick(
+                                                        item,
+                                                    )
+                                                "
+                                            >
+                                                <HeartPulse
+                                                    class="mr-1 size-3"
+                                                />
+                                                {{ __('Buka Dossier') }}
                                             </Button>
 
                                             <Button

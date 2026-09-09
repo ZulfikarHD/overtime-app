@@ -10,6 +10,8 @@ Sub-epic **E06-02** delivers the **Employee Personal Overtime Dashboard**: 4 KPI
 
 Sub-epic **E06-03** delivers **Peer Benchmarking & Workload Distribution Analysis**: section average comparison, CALC-06 individual variance calculation, a section distribution histogram chart highlighting the active employee in ISUZU Red, Top 5 and Bottom 5 workload lists, and role-based server-side co-worker anonymization.
 
+Sub-epic **E06-04** delivers **Safety & Fatigue Soft Indicators**: rolling 4-week workload bar chart (Week -3 to Week 0), dynamic Safety Score % arc gauge (`100% - (overloaded weeks / 4 weeks * 100%)`), weekly limit soft badges, 3-consecutive-week fatigue alarms, database-backed calendar-month deduplicated in-app notifications for Team Leaders dispatched asynchronously post-approval (`RecalculateMonthlyBurnSnapshotJob`), and a prominent non-blocking industrial advisory notice.
+
 ## Architecture Diagram
 
 ```mermaid
@@ -30,8 +32,20 @@ flowchart TD
     Page -->|Click Roster Card| DossierRoute
     DossierRoute --> ControllerShow[EmployeeReportController@show]
     ControllerShow -->|Authorize & Retrieve| DossierService[EmployeeReportService@getEmployeeDossier]
+    ControllerShow -->|Welfare Status Query| WelfareService[EmployeeReportService@getWelfareStatus]
+    WelfareService --> Evaluator[OvertimePolicyEvaluator@getEmployeeWelfareStatus]
     ControllerShow -->|Render Inertia Props| DossierView[EmployeeDossier.vue with Header]
     DossierView -->|Save Viewed Employee| RecentLookupsComp[RecentLookups.vue via localStorage]
+    DossierView --> RollingChart[FatigueRollingChart.vue]
+    DossierView --> ScoreGauge[SafetyScoreGauge.vue]
+
+    subgraph AsyncPostApproval [Async Job Post-Approval]
+        ApprovalAction[ApproveOvertimeItemsAction] -->|Dispatch| Job[RecalculateMonthlyBurnSnapshotJob]
+        Job --> FatigueService[FatigueAlertService@evaluateAndNotifyForSection]
+        FatigueService --> Evaluator
+        FatigueService -->|Deduplicate: max once/employee/month| NotifDB[(notifications Table)]
+        FatigueService -->|Send to Team Leaders| Bell[NotificationBell.vue Item]
+    end
 ```
 
 ## Data Model
@@ -48,24 +62,35 @@ erDiagram
 
 ## Key Files & UI Mapping
 
-| Layer            | File / Route / Menu                                             | Purpose                                                                                    |
-| ---------------- | --------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| Sidebar Menu     | `Laporan Karyawan` (`/reports/employees`)                       | Navigation entry point for Managers, Team Leaders, and Admins                              |
-| Page Component   | `resources/js/pages/reports/EmployeeDossier.vue`                | Master dossier page featuring search hub, quick-pick roster, header card, and tab skeleton |
-| KPI Summary      | `resources/js/components/reports/KpiSummaryCards.vue`           | 4 KPI cards (Month Hours, YTD Hours, Burn Index, Section Rank) + financial cost banner     |
-| Category Donut   | `resources/js/components/reports/CategoryDonutChart.vue`        | Chart.js Doughnut showing Production, TPM, CapEx Project, and Others hours distribution    |
-| Day-Type Bar     | `resources/js/components/reports/DayTypeBreakdownBar.vue`       | Horizontal progress split comparing HKN vs HLR hours with recovery cycle guidance          |
-| Peer Benchmark   | `resources/js/components/reports/PeerComparisonPanel.vue`       | Overview tab panel showing section average, CALC-06 variance, and Top 5 / Bottom 5 lists   |
-| Distribution Bar | `resources/js/components/reports/SectionDistributionChart.vue`  | Chart.js Bar chart displaying section member hours with ISUZU Red highlight and average    |
-| Search Component | `resources/js/components/reports/EmployeeSearch.vue`            | Debounced search-as-you-type input with loading spinner, clear button, and dropdown        |
-| Recent Lookups   | `resources/js/components/reports/RecentLookups.vue`             | Horizontal scrollable pills displaying the last 5 viewed workers from `localStorage`       |
-| Composable       | `resources/js/composables/useRecentLookups.ts`                  | Reactive composable to read, write, and clear recent employee lookups                      |
-| Controller       | `app/Http/Controllers/Reports/EmployeeReportController.php`     | Controller handling index roster, search JSON API, and dossier show with summary & peers   |
-| Service          | `app/Services/EmployeeReportService.php`                        | Pragmatic domain service handling role scoping, search matching, summary, and peer metrics |
-| Feature Test     | `tests/Feature/Reports/EmployeeReportTest.php`                  | 19 automated tests verifying scoping, security, getSummary, getPeerComparison, and props   |
-| Browser Test     | `tests/Browser/Reports/EmployeeDossierLookupBrowserTest.php`    | Playwright end-to-end browser tests verifying search, navigation, and local storage        |
-| Browser Test     | `tests/Browser/Reports/EmployeeDossierOverviewBrowserTest.php`  | Playwright end-to-end browser tests verifying KPI cards, category donut, and day-type bar  |
-| Browser Test     | `tests/Browser/Reports/EmployeePeerBenchmarkingBrowserTest.php` | Playwright end-to-end browser tests verifying peer comparison, variance, and privacy mode  |
+| Layer             | File / Route / Menu                                              | Purpose                                                                                    |
+| ----------------- | ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| Sidebar Menu      | `Laporan Karyawan` (`/reports/employees`)                        | Navigation entry point for Managers, Team Leaders, and Admins                              |
+| Page Component    | `resources/js/pages/reports/EmployeeDossier.vue`                 | Master dossier page featuring search hub, quick-pick roster, header card, and tab skeleton |
+| KPI Summary       | `resources/js/components/reports/KpiSummaryCards.vue`            | 4 KPI cards (Month Hours, YTD Hours, Burn Index, Section Rank) + financial cost banner     |
+| Category Donut    | `resources/js/components/reports/CategoryDonutChart.vue`         | Chart.js Doughnut showing Production, TPM, CapEx Project, and Others hours distribution    |
+| Day-Type Bar      | `resources/js/components/reports/DayTypeBreakdownBar.vue`        | Horizontal progress split comparing HKN vs HLR hours with recovery cycle guidance          |
+| Peer Benchmark    | `resources/js/components/reports/PeerComparisonPanel.vue`        | Overview tab panel showing section average, CALC-06 variance, and Top 5 / Bottom 5 lists   |
+| Distribution Bar  | `resources/js/components/reports/SectionDistributionChart.vue`   | Chart.js Bar chart displaying section member hours with ISUZU Red highlight and average    |
+| Fatigue Chart     | `resources/js/components/reports/FatigueRollingChart.vue`        | Chart.js Bar chart for rolling 4-week hours vs soft weekly limit threshold                 |
+| Safety Gauge      | `resources/js/components/reports/SafetyScoreGauge.vue`           | SVG circular progress arc for Safety Score %, streak metrics, badges, and advisory notice  |
+| Notification Bell | `resources/js/components/NotificationBell.vue`                   | Topbar bell popover rendering fatigue alert notifications with one-click deep link         |
+| Search Component  | `resources/js/components/reports/EmployeeSearch.vue`             | Debounced search-as-you-type input with loading spinner, clear button, and dropdown        |
+| Recent Lookups    | `resources/js/components/reports/RecentLookups.vue`              | Horizontal scrollable pills displaying the last 5 viewed workers from `localStorage`       |
+| Composable        | `resources/js/composables/useRecentLookups.ts`                   | Reactive composable to read, write, and clear recent employee lookups                      |
+| Controller        | `app/Http/Controllers/Reports/EmployeeReportController.php`      | Controller handling index roster, search JSON API, and dossier show with summary & peers   |
+| Service           | `app/Services/EmployeeReportService.php`                         | Pragmatic domain service handling role scoping, search matching, summary, and peer metrics |
+| Evaluator         | `app/Services/Policy/OvertimePolicyEvaluator.php`                | Policy evaluation service calculating rolling 4-week welfare metrics and streak count      |
+| Fatigue Service   | `app/Services/FatigueAlertService.php`                           | Alert service enforcing calendar-month deduplication and dispatching notifications         |
+| Notification      | `app/Notifications/FatigueAlertNotification.php`                 | Queued database notification delivered to section Team Leaders                             |
+| DTO               | `app/DTOs/WelfareStatus.php`                                     | Data Transfer Object encapsulating rolling weeks, streak, badges, and safety score         |
+| Job               | `app/Jobs/RecalculateMonthlyBurnSnapshotJob.php`                 | Async background job evaluating fatigue alerts post-approval for the recalculated section  |
+| Feature Test      | `tests/Feature/Reports/EmployeeReportTest.php`                   | 19 automated tests verifying scoping, security, getSummary, getPeerComparison, and props   |
+| Feature Test      | `tests/Feature/Reports/EmployeeWelfareStatusTest.php`            | 5 automated tests verifying welfare Inertia props, deduplication, and notification flow    |
+| Unit Test         | `tests/Unit/OvertimePolicyEvaluatorTest.php`                     | 9 automated unit tests verifying welfare calculations, streaks, and safety score formula   |
+| Browser Test      | `tests/Browser/Reports/EmployeeDossierLookupBrowserTest.php`     | Playwright end-to-end browser tests verifying search, navigation, and local storage        |
+| Browser Test      | `tests/Browser/Reports/EmployeeDossierOverviewBrowserTest.php`   | Playwright end-to-end browser tests verifying KPI cards, category donut, and day-type bar  |
+| Browser Test      | `tests/Browser/Reports/EmployeePeerBenchmarkingBrowserTest.php`  | Playwright end-to-end browser tests verifying peer comparison, variance, and privacy mode  |
+| Browser Test      | `tests/Browser/Reports/EmployeeFatigueIndicatorsBrowserTest.php` | Playwright end-to-end browser tests verifying rolling chart, safety gauge, and notif link  |
 
 ## Flow Explanation
 
@@ -102,6 +127,8 @@ erDiagram
 - **Client-Side Recent History**: Recent lookups are stored in browser `localStorage` rather than the database. This provides instantaneous zero-latency rendering, works offline, and avoids excessive database writes during high-frequency shift handovers.
 - **Strict Role-Based Scoping at Service Layer**: Role filtering is centralized in `EmployeeReportService@applyRoleScope` and `EmployeeReportService@authorizeDossierAccess` rather than scattered across controller endpoints, preventing accidental cross-department data exposure.
 - **CALC-06 Peer Variance & Anonymization (Anti-Envy Guardrail)**: Workload comparison computes individual variance from section average. Co-worker identities are strictly anonymized on the server side for the operator role while keeping supervisor views named for operational shift dispatch.
+- **Strictly Advisory Soft Limits (Zero Operational Roadblocks)**: Fatigue risk indicators and consecutive-week warnings do not block urgent shift overtime submissions or supervisor approvals. The system displays explicit advisory disclaimer notices to avoid paralyzing shop-floor manufacturing operations.
+- **Calendar-Month Notification Deduplication**: In-app notifications for 3-consecutive-week fatigue limits are deduplicated against the `notifications` database table, ensuring at most one alert is sent per employee per calendar month, preventing notification flooding while maintaining reactive visual badges.
 
 ## Related
 
@@ -109,4 +136,5 @@ erDiagram
 - [Epic-06 UX Plan](../../scrum/Epic-06-ux-plan.md)
 - [ADR-022: Unified Single-Surface Employee Dossier Hub and Client-Side Cached Lookups](../decisions/022-unified-employee-dossier-hub-and-client-cached-lookups.md)
 - [ADR-023: Peer Benchmarking Workload Distribution (CALC-06) and Server-Side Operator Anonymization](../decisions/023-peer-benchmarking-calc-06-and-operator-role-anonymization.md)
+- [ADR-024: Rolling 4-Week Welfare Indicators and Calendar-Month Fatigue Alert Deduplication](../decisions/024-rolling-4-week-welfare-indicators-and-fatigue-alert-deduplication.md)
 - [User Guide: Individual Employee Dossier & Welfare Tracking](../../user-docs/guides/individual-employee-dossier.md)

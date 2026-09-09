@@ -8,11 +8,18 @@ use App\Models\OvertimeBudget;
 use App\Models\OvertimeItem;
 use App\Models\Section;
 use App\Models\User;
+use App\Services\Policy\OvertimePolicyEvaluator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 
 class EmployeeReportService
 {
+    public function __construct(
+        protected ?OvertimePolicyEvaluator $evaluator = null,
+    ) {
+        $this->evaluator ??= app(OvertimePolicyEvaluator::class);
+    }
+
     /**
      * Search employees by NPK or full name scoped to the user's role and hierarchy.
      *
@@ -572,6 +579,26 @@ class EmployeeReportService
             'top_5' => $top5,
             'bottom_5' => $bottom5,
         ];
+    }
+
+    /**
+     * Compute rolling 4-week welfare and safety metrics for an employee in a given period.
+     *
+     * @return array<string, mixed>
+     */
+    public function getWelfareStatus(int $employeeId, ?int $year = null, ?int $month = null): array
+    {
+        $now = Carbon::now('Asia/Jakarta');
+        $referenceDate = null;
+
+        if ($year !== null && $month !== null) {
+            $isCurrentMonth = ($year === (int) $now->format('Y') && $month === (int) $now->format('n'));
+            if (! $isCurrentMonth) {
+                $referenceDate = Carbon::create($year, $month, 1, 23, 59, 59, 'Asia/Jakarta')->endOfMonth()->toDateString();
+            }
+        }
+
+        return $this->evaluator->getEmployeeWelfareStatus($employeeId, $referenceDate)->toArray();
     }
 
     /**
