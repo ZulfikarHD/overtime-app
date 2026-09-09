@@ -30,6 +30,7 @@ Step-by-step instructions for everyday plant operations:
 | **[Individual Employee Dossier & Welfare](./guides/individual-employee-dossier.md)**      | All Plant Supervisors   | Fast debounced employee search by NPK or name, recent lookups, roster quick-pick, dossier header, period filtering, peer benchmarking, welfare monitoring, chronological audit timesheet, and zero-memory CSV export. |
 | **[Employee Self-Service Dashboard](./guides/employee-self-service.md)**                  | Line Operators (User)   | Mobile-first personal summary (/my/dashboard), monthly hours, estimated gross earnings, welfare safety status, recent 5 submissions, and rejection feedback.                                                          |
 | **[CapEx Project Labor & Portfolio Monitoring](./guides/capex-project-labor.md)**         | Managers & Admins       | Multi-project portfolio monitoring, milestone burn ratio tracking, at-risk project alerts, burndown curves, and in-place physical progress updates.                                                                   |
+| **[Executive Operational Dashboard & KPI Cards](./guides/executive-dashboard-kpi.md)**    | Managers, Admins & TL   | Live plant command center (/dashboard), 4 header KPI cards (Production Volume, Working Days, Manpower, Burn Index), sparklines, and date/department filters.                                                          |
 
 ---
 

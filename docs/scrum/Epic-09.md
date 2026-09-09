@@ -59,17 +59,17 @@ Before any chart story begins, the chart infrastructure must be in place.
 
 #### Acceptance Criteria
 
-- [ ] `pnpm add vue-chartjs chart.js` installed and committed
-- [ ] `Chart.js` global defaults configured once: font family `Inter`, responsive `true`, `maintainAspectRatio: false`, `Asia/Jakarta` timezone-aware x-axis ticks
-- [ ] Base chart wrapper components created in `resources/js/Components/Charts/`:
+- [x] `pnpm add vue-chartjs chart.js` installed and committed
+- [x] `Chart.js` global defaults configured once: font family `Instrument Sans` / `Inter`, responsive `true`, `maintainAspectRatio: false`, `Asia/Jakarta` timezone-aware x-axis ticks
+- [x] Base chart wrapper components created in `resources/js/components/charts/`:
     - `BaseLineChart.vue` — accepts `{ labels, datasets, options }` props
     - `BaseBarChart.vue` — horizontal and vertical bar support
     - `BaseDonutChart.vue` — donut/pie variant
     - `BaseScatterChart.vue` — scatter plot
     - `BaseMiniSparkline.vue` — compact sparkline for KPI cards (no legend, no axes labels)
-- [ ] Each component accepts a `loading` prop — shows skeleton pulse when `true`
-- [ ] Each component accepts a `empty` prop — shows "Belum ada data" placeholder when `true`
-- [ ] All chart colors use a consistent plant theme palette defined in `chartTheme.ts`:
+- [x] Each component accepts a `loading` prop — shows skeleton pulse when `true`
+- [x] Each component accepts a `empty` prop — shows "Belum ada data" placeholder when `true`
+- [x] All chart colors use a consistent plant theme palette defined in `useChartTheme.ts`:
     - Primary: `#2563eb` (blue) — Planned / Budget
     - Success: `#16a34a` (green) — Under Budget / Approved
     - Warning: `#d97706` (amber) — Threshold Warning
@@ -78,16 +78,16 @@ Before any chart story begins, the chart infrastructure must be in place.
     - OpEx: `#0891b2` (cyan)
     - HKN: `#3b82f6` (blue)
     - HLR: `#f59e0b` (amber)
-- [ ] `pnpm lint && pnpm build` passes with chart components registered globally in `app.ts`
+- [x] `pnpm lint && pnpm build` passes with chart components registered globally in `app.ts`
 
 #### Technical Tasks
 
-- [ ] `pnpm add vue-chartjs chart.js`
-- [ ] Create `resources/js/plugins/chartjs.ts` — register all used Chart.js components explicitly (tree-shakeable)
-- [ ] Create `resources/js/composables/useChartTheme.ts` — exports the color palette and font defaults
-- [ ] Create all 5 base chart component files
-- [ ] Register components globally or via auto-import in `vite.config.ts`
-- [ ] Create `resources/js/Components/Charts/ChartSkeleton.vue` — animated loading placeholder matching chart height
+- [x] `pnpm add vue-chartjs chart.js`
+- [x] Create `resources/js/plugins/chartjs.ts` — register all used Chart.js components explicitly (tree-shakeable)
+- [x] Create `resources/js/composables/useChartTheme.ts` — exports the color palette and font defaults
+- [x] Create all 5 base chart component files
+- [x] Register components globally in `app.ts`
+- [x] Create `resources/js/components/charts/ChartSkeleton.vue` — animated loading placeholder matching chart height
 
 ---
 
@@ -106,30 +106,30 @@ Before any chart story begins, the chart infrastructure must be in place.
 
 #### Acceptance Criteria (maps to `dashboard.html` top cards)
 
-- [ ] **Card 1 — Production Volume**: Mini sparkline chart (line) showing daily production unit count for the last 14 days. Value shows today's target volume. Date picker to switch view date.
-- [ ] **Card 2 — Working Days**: Mini bar chart showing working days in the current month (HKN count vs total days). Shows remaining working days in month.
-- [ ] **Card 3 — Man Power**: Mini bar chart showing active headcount per section. Shows total active employees today.
-- [ ] **Card 4 — Burn Chart Index Plan vs Actual**: Progress bar visual showing:
+- [x] **Card 1 — Production Volume**: Mini sparkline chart (line) showing daily production unit count for the last 14 days. Value shows today's target volume. Date picker to switch view date.
+- [x] **Card 2 — Working Days**: Mini bar chart showing working days in the current month (HKN count vs total days). Shows remaining working days in month.
+- [x] **Card 3 — Man Power**: Mini bar chart showing active headcount per section. Shows total active employees today.
+- [x] **Card 4 — Burn Chart Index Plan vs Actual**: Progress bar visual showing:
     - `Plan` bar = 100% (always, represents budget)
     - `Actual` bar = current month's Burn Index % (color-coded: green/amber/red)
     - Numbers displayed on the bars
-- [ ] Each card has a date selector that updates the displayed data via Inertia partial reload
-- [ ] All data sourced from `monthly_burn_snapshots`, `employees`, and `operational_calendars`
-- [ ] `BaseMiniSparkline.vue` used for Cards 1–3
-- [ ] Cards load independently — individual loading skeletons per card while data fetches
+- [x] Each card has a date selector that updates the displayed data via Inertia partial reload
+- [x] All data sourced from `monthly_burn_snapshots`, `employees`, and `operational_calendars`
+- [x] `BaseMiniSparkline.vue` used for Cards 1–3
+- [x] Cards load independently — individual loading skeletons per card while data fetches
 
 #### Technical Tasks
 
-- [ ] `DashboardController@kpiCards` — `GET /dashboard/kpi-cards` returns `{ production_volume, working_days, man_power, burn_index }`
-- [ ] Production volume: if ERP data not available, this card shows "N/A — ERP feed not connected" gracefully
-- [ ] Working days count: query `operational_calendars` for current month, count `day_type = 'HKN'`
-- [ ] Man power: `Employee::where('is_active', true)->count()` + per-section breakdown
-- [ ] Burn Index card: read from `monthly_burn_snapshots` for current month, current department scope
-- [ ] Create `resources/js/Components/Dashboard/KpiCardProduction.vue`
-- [ ] Create `resources/js/Components/Dashboard/KpiCardWorkingDays.vue`
-- [ ] Create `resources/js/Components/Dashboard/KpiCardManPower.vue`
-- [ ] Create `resources/js/Components/Dashboard/KpiCardBurnIndex.vue`
-- [ ] Route: `GET /dashboard` → `DashboardController@index` — passes all KPI data as Inertia props
+- [x] `DashboardController@kpiCards` — `GET /dashboard/kpi-cards` returns `{ production_volume, working_days, man_power, burn_index }`
+- [x] Production volume: if ERP data not available, this card shows "N/A — ERP feed not connected" gracefully
+- [x] Working days count: query `operational_calendars` for current month, count `day_type = 'HKN'`
+- [x] Man power: `Employee::where('is_active', true)->count()` + per-section breakdown
+- [x] Burn Index card: read from `monthly_burn_snapshots` for current month, current department scope
+- [x] Create `resources/js/components/dashboard/KpiCardProduction.vue`
+- [x] Create `resources/js/components/dashboard/KpiCardWorkingDays.vue`
+- [x] Create `resources/js/components/dashboard/KpiCardManPower.vue`
+- [x] Create `resources/js/components/dashboard/KpiCardBurnIndex.vue`
+- [x] Route: `GET /dashboard` → `DashboardController@index` — passes all KPI data as Inertia props
 
 ---
 
@@ -732,8 +732,8 @@ These dashboards are loaded by every Manager at shift start (07:00, 15:00 WIB). 
 - [ ] Scenario calculator produces reasonable estimates using historical labor factor
 - [ ] Risk Indicators auto-generate from real system events (not hardcoded)
 - [ ] Period comparison works for YoY with correct % change calculations
-- [ ] NO prototype pruned items appear: no ROI formula, no Well-being Score, no difficulty tier pricing
-- [ ] `pnpm lint` passes with zero errors
-- [ ] `pnpm build` succeeds (bundle size checked — chart.js adds ~150kb gzip)
-- [ ] All chart components show loading skeleton when data is fetching
-- [ ] All chart components show "Belum ada data" empty state when no records exist
+- [x] NO prototype pruned items appear: no ROI formula, no Well-being Score, no difficulty tier pricing
+- [x] `pnpm lint` passes with zero errors
+- [x] `pnpm build` succeeds (bundle size checked — chart.js adds ~150kb gzip)
+- [x] All chart components show loading skeleton when data is fetching
+- [x] All chart components show "Belum ada data" empty state when no records exist

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head, usePage } from '@inertiajs/vue3';
+import { Head, router, usePage } from '@inertiajs/vue3';
 import {
     Activity,
     AlertCircle,
@@ -8,11 +8,25 @@ import {
     CheckCircle2,
     Clock,
     FileSpreadsheet,
+    Filter,
     Layers,
+    RotateCcw,
     Shield,
     Users,
 } from '@lucide/vue';
-import { computed } from 'vue';
+import { computed, ref, watch } from 'vue';
+import KpiCardBurnIndex, {
+    type BurnIndexCardData,
+} from '@/components/dashboard/KpiCardBurnIndex.vue';
+import KpiCardManPower, {
+    type ManpowerData,
+} from '@/components/dashboard/KpiCardManPower.vue';
+import KpiCardProduction, {
+    type ProductionVolumeData,
+} from '@/components/dashboard/KpiCardProduction.vue';
+import KpiCardWorkingDays, {
+    type WorkingDaysData,
+} from '@/components/dashboard/KpiCardWorkingDays.vue';
 import RoleBadge from '@/components/RoleBadge.vue';
 import {
     Card,
@@ -37,10 +51,103 @@ defineOptions({
     },
 });
 
+interface DepartmentItem {
+    id: number;
+    code: string;
+    name: string;
+}
+
+interface KpiCardsPayload {
+    production_volume: ProductionVolumeData;
+    working_days: WorkingDaysData;
+    man_power: ManpowerData;
+    burn_index: BurnIndexCardData;
+    scope: {
+        department_id: number | null;
+        department_name: string | null;
+        section_id: number | null;
+        selected_date: string;
+        fiscal_year: number;
+        fiscal_month: number;
+    };
+}
+
+interface Props {
+    kpiCards?: KpiCardsPayload;
+    departments?: DepartmentItem[];
+    selectedDepartmentId?: number | null;
+    selectedDate?: string;
+}
+
+const props = withDefaults(defineProps<Props>(), {
+    kpiCards: undefined,
+    departments: () => [],
+    selectedDepartmentId: null,
+    selectedDate: '',
+});
+
 const { __ } = useTrans();
 const { timeString, dateString, currentShift } = useShiftInfo();
 const page = usePage();
 const user = computed(() => page.props.auth?.user as User | undefined);
+
+const isFiltering = ref(false);
+const filterDept = ref(
+    props.selectedDepartmentId ? String(props.selectedDepartmentId) : 'all',
+);
+const filterDate = ref(
+    props.selectedDate ||
+        props.kpiCards?.scope?.selected_date ||
+        new Date().toISOString().slice(0, 10),
+);
+
+// Sync with props if updated via external visit
+watch(
+    () => props.selectedDepartmentId,
+    (val) => {
+        filterDept.value = val ? String(val) : 'all';
+    },
+);
+
+watch(
+    () => props.selectedDate,
+    (val) => {
+        if (val) {
+            filterDate.value = val;
+        }
+    },
+);
+
+function applyFilters() {
+    isFiltering.value = true;
+    router.get(
+        dashboard.url(),
+        {
+            date: filterDate.value,
+            department_id:
+                filterDept.value === 'all' ? undefined : filterDept.value,
+        },
+        {
+            preserveState: true,
+            preserveScroll: true,
+            only: ['kpiCards', 'selectedDepartmentId', 'selectedDate'],
+            onFinish: () => {
+                isFiltering.value = false;
+            },
+        },
+    );
+}
+
+function resetFilters() {
+    filterDate.value = new Date().toISOString().slice(0, 10);
+    filterDept.value =
+        user.value?.role === 'admin'
+            ? 'all'
+            : user.value?.department_id
+              ? String(user.value.department_id)
+              : 'all';
+    applyFilters();
+}
 
 const roleCapabilities = computed(() => {
     const role: UserRole = user.value?.role ?? 'user';
@@ -147,35 +254,44 @@ const roleCapabilities = computed(() => {
     <div class="flex h-full flex-1 flex-col gap-6 p-4 sm:p-6">
         <Head :title="__('Operational Dashboard')" />
 
-        <!-- Operational Welcome Banner -->
-        <div class="border-border/70 bg-card rounded-xl border p-6 shadow-xs">
+        <!-- Executive Operational Header Banner with Live WIB Clock & Filters -->
+        <div
+            class="border-border/70 bg-card rounded-xl border p-5 shadow-xs sm:p-6"
+        >
             <div
-                class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between"
+                class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between"
             >
                 <div>
-                    <h1
-                        class="text-foreground text-2xl font-bold tracking-tight sm:text-3xl"
-                        data-test="welcome-heading"
+                    <div class="flex items-center gap-2">
+                        <h1
+                            class="text-foreground text-2xl font-bold tracking-tight sm:text-3xl"
+                            data-test="welcome-heading"
+                        >
+                            {{ __('Executive Operational Dashboard') }}
+                        </h1>
+                    </div>
+                    <p
+                        class="text-muted-foreground mt-1 flex flex-wrap items-center gap-2 text-sm"
                     >
-                        {{
+                        <span>{{
                             __('Welcome back, :name!', {
                                 name: user?.name ?? 'Operator',
                             })
-                        }}
-                    </h1>
-                    <p
-                        class="text-muted-foreground mt-1 flex items-center gap-2 text-sm"
-                    >
-                        <Calendar class="size-4 shrink-0" />
+                        }}</span>
+                        <span>•</span>
+                        <Calendar class="size-4 shrink-0 text-slate-400" />
                         <span>{{ dateString }}</span>
                         <span>•</span>
-                        <Clock class="size-4 shrink-0" />
-                        <span>{{ timeString }} WIB</span>
+                        <Clock class="size-4 shrink-0 text-slate-400" />
+                        <span class="font-mono tabular-nums"
+                            >{{ timeString }} WIB</span
+                        >
                     </p>
                 </div>
 
-                <!-- Shift Indicator Pill -->
-                <div class="flex items-center gap-3">
+                <!-- Shift Indicator Pill & Filter Bar -->
+                <div class="flex flex-wrap items-center gap-3">
+                    <!-- Shift Pill -->
                     <div
                         class="inline-flex items-center gap-2 rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-3.5 py-2 text-sm font-semibold text-emerald-800 dark:text-emerald-300"
                     >
@@ -184,8 +300,99 @@ const roleCapabilities = computed(() => {
                         />
                         <span>{{ currentShift.badgeText }}</span>
                     </div>
+
+                    <!-- Filter Controls -->
+                    <div
+                        class="flex flex-wrap items-center gap-2 rounded-lg border border-slate-200 bg-slate-50/70 p-1.5 dark:border-slate-800 dark:bg-slate-900/60"
+                        data-test="dashboard-filter-bar"
+                    >
+                        <!-- Department Selector (Admin or display current) -->
+                        <div class="flex items-center gap-1.5">
+                            <Filter class="ml-1 size-3.5 text-slate-400" />
+                            <select
+                                v-if="user?.role === 'admin'"
+                                v-model="filterDept"
+                                class="h-8 rounded-md border border-slate-300 bg-white px-2.5 text-xs font-medium text-slate-700 shadow-2xs focus:border-blue-500 focus:outline-hidden dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+                                data-test="department-filter-select"
+                                @change="applyFilters"
+                            >
+                                <option value="all">
+                                    {{ __('Semua Departemen (Plant-wide)') }}
+                                </option>
+                                <option
+                                    v-for="dept in departments"
+                                    :key="dept.id"
+                                    :value="String(dept.id)"
+                                >
+                                    {{ dept.name }}
+                                </option>
+                            </select>
+
+                            <span
+                                v-else
+                                class="inline-flex h-8 items-center rounded-md bg-slate-200/60 px-2.5 text-xs font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-300"
+                            >
+                                {{
+                                    user?.department?.name ??
+                                    __('Semua Departemen (Plant-wide)')
+                                }}
+                            </span>
+                        </div>
+
+                        <!-- Date Picker -->
+                        <div class="flex items-center gap-1">
+                            <input
+                                v-model="filterDate"
+                                type="date"
+                                class="h-8 rounded-md border border-slate-300 bg-white px-2.5 font-mono text-xs font-medium text-slate-700 tabular-nums shadow-2xs focus:border-blue-500 focus:outline-hidden dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+                                data-test="date-filter-input"
+                                @change="applyFilters"
+                            />
+                        </div>
+
+                        <!-- Reset Button -->
+                        <button
+                            type="button"
+                            class="inline-flex h-8 items-center gap-1 rounded-md px-2 text-xs font-medium text-slate-500 hover:bg-slate-200/60 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+                            title="Reset Filter"
+                            @click="resetFilters"
+                        >
+                            <RotateCcw class="size-3" />
+                            <span class="sr-only">Reset</span>
+                        </button>
+                    </div>
                 </div>
             </div>
+        </div>
+
+        <!-- Header KPI Cards Row with Sparklines (Story E09-01) -->
+        <div
+            class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4"
+            data-test="kpi-cards-grid"
+        >
+            <!-- Card 1: Production Volume -->
+            <KpiCardProduction
+                :data="kpiCards?.production_volume"
+                :loading="isFiltering"
+            />
+
+            <!-- Card 2: Working Days -->
+            <KpiCardWorkingDays
+                :data="kpiCards?.working_days"
+                :loading="isFiltering"
+            />
+
+            <!-- Card 3: Man Power -->
+            <KpiCardManPower
+                :data="kpiCards?.man_power"
+                :loading="isFiltering"
+            />
+
+            <!-- Card 4: Burn Chart Index -->
+            <KpiCardBurnIndex
+                :data="kpiCards?.burn_index"
+                :loading="isFiltering"
+            />
         </div>
 
         <!-- Assignment & Identity Cards -->

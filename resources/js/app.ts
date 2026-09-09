@@ -4,8 +4,12 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import AuthLayout from '@/layouts/AuthLayout.vue';
 import SettingsLayout from '@/layouts/settings/Layout.vue';
 import { initializeFlashToast } from '@/lib/flashToast';
+import { registerChartDefaults } from '@/plugins/chartjs';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
+
+// Register global Chart.js defaults
+registerChartDefaults();
 
 void createInertiaApp({
     title: (title) => (title ? `${title} - ${appName}` : appName),

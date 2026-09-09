@@ -29,6 +29,7 @@ Route::inertia('/', 'Welcome')->name('home');
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('dashboard/kpi-cards', [DashboardController::class, 'kpiCards'])->name('dashboard.kpi-cards');
     Route::get('my/dashboard', [EmployeeSelfServiceController::class, 'index'])->name('my.dashboard');
 
     // Dashboard Burn Index & Budget Analytics (E05 - Admin, Manager, Team Leader)

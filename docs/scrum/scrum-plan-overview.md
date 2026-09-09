@@ -15,19 +15,20 @@
 
 ## Epic Index
 
-| Epic                    | Title                                             | Priority          | Est. Points | Sprints    | Status                  |
-| ----------------------- | ------------------------------------------------- | ----------------- | ----------- | ---------- | ----------------------- |
-| [Epic-01](./Epic-01.md) | Foundation & Infrastructure Setup                 | P0 – Critical     | 55 SP       | Sprint 1   | 🟢 Completed            |
-| [Epic-02](./Epic-02.md) | Master Data & Administration                      | P0 – Critical     | 42 SP       | Sprint 2   | 🟢 Completed            |
-| [Epic-03](./Epic-03.md) | Daily Overtime Entry & SPKL Workflow              | P1 – Must Have    | 47 SP       | Sprint 3   | 🟢 Completed            |
-| [Epic-04](./Epic-04.md) | Verification & Approval Lifecycle                 | P1 – Must Have    | 38 SP       | Sprint 4   | 🟢 Completed            |
-| [Epic-05](./Epic-05.md) | Budget Management & Burn Index Dashboard          | P1 – Must Have    | 45 SP       | Sprint 5   | 🟢 Completed (45/45 SP) |
-| [Epic-06](./Epic-06.md) | Individual Employee Reporting & Welfare           | P2 – Should Have  | 30 SP       | Sprint 6   | 🟢 Completed (30/30 SP) |
-| [Epic-07](./Epic-07.md) | CapEx Project Labor Management                    | P2 – Should Have  | 35 SP       | Sprint 6–7 | 🟢 Completed (35/35 SP) |
-| [Epic-08](./Epic-08.md) | Supervised ML Analytics & Predictive Intelligence | P3 – Nice to Have | 58 SP       | Sprint 7–8 | 🔴 Not Started          |
+| Epic                    | Title                                                 | Priority          | Est. Points | Sprints     | Status                    |
+| ----------------------- | ----------------------------------------------------- | ----------------- | ----------- | ----------- | ------------------------- |
+| [Epic-01](./Epic-01.md) | Foundation & Infrastructure Setup                     | P0 – Critical     | 55 SP       | Sprint 1    | 🟢 Completed              |
+| [Epic-02](./Epic-02.md) | Master Data & Administration                          | P0 – Critical     | 42 SP       | Sprint 2    | 🟢 Completed              |
+| [Epic-03](./Epic-03.md) | Daily Overtime Entry & SPKL Workflow                  | P1 – Must Have    | 47 SP       | Sprint 3    | 🟢 Completed              |
+| [Epic-04](./Epic-04.md) | Verification & Approval Lifecycle                     | P1 – Must Have    | 38 SP       | Sprint 4    | 🟢 Completed              |
+| [Epic-05](./Epic-05.md) | Budget Management & Burn Index Dashboard              | P1 – Must Have    | 45 SP       | Sprint 5    | 🟢 Completed (45/45 SP)   |
+| [Epic-06](./Epic-06.md) | Individual Employee Reporting & Welfare               | P2 – Should Have  | 30 SP       | Sprint 6    | 🟢 Completed (30/30 SP)   |
+| [Epic-07](./Epic-07.md) | CapEx Project Labor Management                        | P2 – Should Have  | 35 SP       | Sprint 6–7  | 🟢 Completed (35/35 SP)   |
+| [Epic-08](./Epic-08.md) | Supervised ML Analytics & Predictive Intelligence     | P3 – Nice to Have | 58 SP       | Sprint 7–8  | 🔴 Not Started            |
+| [Epic-09](./Epic-09.md) | Executive Dashboard & Analytics Decision Intelligence | P0 – Critical     | 63 SP       | Sprint 9–10 | 🟡 In Progress (13/63 SP) |
 
-**Total Estimated Effort:** ~350 Story Points  
-**Estimated Duration:** 8 Sprints × 2-Week Cycles = ~16 Weeks
+**Total Estimated Effort:** ~413 Story Points  
+**Estimated Duration:** 10 Sprints × 2-Week Cycles = ~20 Weeks
 
 ---
 
@@ -42,6 +43,8 @@ Sprint 5  │  Epic-05: Budget & Burn Index Dashboard
 Sprint 6  │  Epic-06: Employee Reporting  +  Epic-07: CapEx Projects
 Sprint 7  │  Epic-07 cont.  +  Epic-08: ML (Demand Forecasting + Burn Trajectory)
 Sprint 8  │  Epic-08 cont.: ML (CapEx Forecast + Anomaly Detection) + UAT Hardening
+Sprint 9  │  Epic-09: Executive Operational Dashboard (E09-00 to E09-05)
+Sprint 10 │  Epic-09 cont.: Analytics & Decision Intelligence Hub (E09-06 to E09-12)
 ```
 
 ---

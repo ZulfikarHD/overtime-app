@@ -57,6 +57,7 @@ Technical specifications and decision records for the engineering implementation
     - [ADR-025: Chronological Audit Timesheet and Zero-Memory Streamed CSV Export](./dev-docs/decisions/025-chronological-audit-timesheet-and-zero-memory-streamed-csv-export.md)
     - [ADR-026: Financial Labor Attribution Schedule & Native OpenXML Streaming Export](./dev-docs/decisions/026-financial-labor-attribution-report-and-native-xlsx-streaming.md)
     - [ADR-027: In-Place CapEx Physical Progress Update & Audit Trail](./dev-docs/decisions/027-in-place-capex-physical-progress-update-and-audit-trail.md)
+    - [ADR-028: Shared Vue Chart.js Infrastructure and Operational KPI Cards](./dev-docs/decisions/028-shared-vue-chartjs-infrastructure-and-operational-kpi-cards.md)
 - **Technical Feature Design Specifications:**
     - [Authentication & Role-Based Access Control](./dev-docs/features/authentication-rbac.md)
     - [Database Schema Migrations (Full DDL)](./dev-docs/features/database-schema-migrations.md)
@@ -82,6 +83,7 @@ Technical specifications and decision records for the engineering implementation
     - [Employee Self-Service Personal Dashboard (E06-06)](./dev-docs/features/employee-self-service.md)
     - [CapEx Project Labor Management](./dev-docs/features/capex-project-labor.md)
     - [Supervised Machine Learning Analytics](./dev-docs/features/ml-predictive-analytics.md)
+    - [Executive Operational Dashboard & KPI Cards (E09-00 - E09-01)](./dev-docs/features/executive-dashboard-kpi.md)
 - **API Reference Design:**
     - [Calendar Classification & Management API](./dev-docs/api/calendar-endpoints.md)
     - [Overtime Policy Check API](./dev-docs/api/overtime-policy-check.md)
@@ -134,6 +136,7 @@ Plain-language operating guides for factory supervisors, team leaders, and opera
     - [Individual Employee Dossier & Welfare Tracking Guide](./user-docs/guides/individual-employee-dossier.md)
     - [Employee Self-Service Personal Dashboard Guide](./user-docs/guides/employee-self-service.md)
     - [CapEx Project Labor & Portfolio Monitoring Guide](./user-docs/guides/capex-project-labor.md)
+    - [Executive Operational Dashboard & KPI Cards Guide](./user-docs/guides/executive-dashboard-kpi.md)
 
 ---
 

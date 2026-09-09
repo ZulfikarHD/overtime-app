@@ -42,6 +42,7 @@ Deep-dive technical documentation detailing architecture flows, data models, key
 | **[Employee Self-Service Personal Dashboard](./features/employee-self-service.md)**                        | [Epic-06](../../scrum/Epic-06.md) | Mobile-first operator self-service portal (/my/dashboard), login redirection, 3-card summary, and recent submissions with rejection callouts.      |
 | **[CapEx Project Labor Management](./features/capex-project-labor.md)**                                    | [Epic-07](../../scrum/Epic-07.md) | Fixed asset labor capitalization, project codes, progress vs. burn curves, and statutory audit integrity.                                          |
 | **[Supervised Machine Learning Analytics](./features/ml-predictive-analytics.md)**                         | [Epic-08](../../scrum/Epic-08.md) | Overtime demand forecasting, Burn Index trajectory ribbon charts, anomaly detection, and cold-start fallback.                                      |
+| **[Executive Operational Dashboard & KPI Cards](./features/executive-dashboard-kpi.md)**                   | [Epic-09](../../scrum/Epic-09.md) | Operational command center (/dashboard), 4 header KPI cards, Vue Chart.js library, and defensive ERP integration fallback.                         |
 
 ---
 
@@ -88,6 +89,7 @@ Durable technical decisions and trade-offs:
 - **[ADR-025: Chronological Audit Timesheet and Zero-Memory Streamed CSV Export](./decisions/025-chronological-audit-timesheet-and-zero-memory-streamed-csv-export.md)**
 - **[ADR-026: Financial Labor Attribution Schedule & Native OpenXML Streaming Export](./decisions/026-financial-labor-attribution-report-and-native-xlsx-streaming.md)**
 - **[ADR-027: In-Place CapEx Physical Progress Update & Audit Trail](./decisions/027-in-place-capex-physical-progress-update-and-audit-trail.md)**
+- **[ADR-028: Shared Vue Chart.js Infrastructure and Operational KPI Cards](./decisions/028-shared-vue-chartjs-infrastructure-and-operational-kpi-cards.md)**
 
 ---
 
