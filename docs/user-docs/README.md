@@ -35,6 +35,7 @@ Step-by-step instructions for everyday plant operations:
 | **[Executive Dashboard Multi-Chart Analytics Grid](./guides/executive-dashboard-multi-chart-grid.md)** | Managers, Admins & TL   | Morning standup guide for reading the Top 10 Overtime Leaderboard, Category Donut, 12-Month HKN/HLR Trend, Daily Index Pacing, and Weekly Day Type Breakdown.                                                         |
 | **[Summary Employee Overtime Table](./guides/executive-dashboard-employee-summary-table.md)**          | Managers, Admins & TL   | Standup guide for using the Band 5 summary table, live search, sortable metrics, category donut cross-filtering, and slide-in Quick Dossier Drawer.                                                                   |
 | **[Analytics & Decision Intelligence Hub](./guides/analytics-decision-intelligence.md)**               | Managers & Admins       | Strategic decision-making guide for using the 6 analytics tabs (predictive, cost, correlation, scenario, insights, comparison), global filters, and executive PDF/CSV exports.                                        |
+| **[What-If Scenario Simulation](./guides/what-if-scenario-simulation.md)**                             | Managers & Admins       | Production volume planning, -50% to +50% workload adjustment slider, budget ceiling pacing, safety risk evaluation, multi-scenario comparisons, and preset management.                                                |
 
 ---
 

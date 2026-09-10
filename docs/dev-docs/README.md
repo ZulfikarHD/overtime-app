@@ -47,6 +47,7 @@ Deep-dive technical documentation detailing architecture flows, data models, key
 | **[Executive Dashboard Multi-Chart Analytics Grid](./features/executive-dashboard-multi-chart-grid.md)**   | [Epic-09](../../scrum/Epic-09.md) | Multi-chart grid (E09-04): Top 10 Overtime Leaderboard, Category Donut, 12-Month HKN/HLR Trend, Daily Index Pacing, and Weekly Day Type Breakdown. |
 | **[Summary Employee Overtime Table](./features/executive-dashboard-employee-summary-table.md)**            | [Epic-09](../../scrum/Epic-09.md) | High-density searchable table (E09-05) at Band 5 with mini Burn Index & category bars, quick-look drawer, and dossier navigation.                  |
 | **[Analytics & Decision Intelligence Hub](./features/analytics-decision-intelligence.md)**                 | [Epic-09](../../scrum/Epic-09.md) | Strategic intelligence workspace (E09-06) at /analytics with 6 client-side tabs, global filters, and executive PDF/CSV export.                     |
+| **[What-If Scenario Simulation](./features/what-if-scenario-simulation.md)**                               | [Epic-09](../../scrum/Epic-09.md) | What-If simulation cockpit (E09-10) with target volume planning, -50% to +50% workload slider, multi-scenario comparisons, and saved presets.      |
 
 ---
 
@@ -102,6 +103,7 @@ Durable technical decisions and trade-offs:
 - **[ADR-033: Automotive Login Portal and Responsive Collapsible Sidebar Architecture](./decisions/033-automotive-login-portal-and-responsive-collapsible-sidebar.md)**
 - **[ADR-034: Cost Analysis OpEx vs CapEx Segregation and Budget Variance Architecture](./decisions/034-cost-analysis-opex-capex-segregation-and-budget-variance.md)**
 - **[ADR-035: Bivariate Correlation Matrix and Optimal Overtime Productivity Frontier Engine](./decisions/035-bivariate-correlation-matrix-and-optimal-overtime-frontier.md)**
+- **[ADR-036: What-If Scenario Simulation, Empirical Labor Factor Modeling, and Ergonomic Parameter Management](./decisions/036-what-if-scenario-simulation-and-empirical-labor-factor-modeling.md)**
 
 ---
 

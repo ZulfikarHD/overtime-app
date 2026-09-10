@@ -65,7 +65,13 @@ erDiagram
 | Component        | `resources/js/components/analytics/OvertimeProductionScatter.vue` | OT vs production units scatter with regression line (E09-09) |
 | Component        | `resources/js/components/analytics/OptimalLevelZoneChart.vue`     | 3-zone sweet spot area chart & efficiency curve (E09-09)     |
 | Component        | `resources/js/components/analytics/CorrelationMatrixTable.vue`    | Color-coded 5x5 Pearson correlation matrix (E09-09)          |
-| Sub-Tab 4        | `resources/js/pages/Analytics/TabScenario.vue`                    | Production volume & workload scenario simulator              |
+| Sub-Tab 4        | `resources/js/pages/Analytics/TabScenario.vue`                    | Production volume & workload scenario simulator (E09-10)     |
+| Component        | `resources/js/components/analytics/ProductionCalculatorPanel.vue` | Target volume -> hours, cost, headcount & category ratios    |
+| Component        | `resources/js/components/analytics/ScenarioBuilderPanel.vue`      | Overtime slider (-50% to +50%), budget, burn & safety risk   |
+| Component        | `resources/js/components/analytics/ScenarioComparisonChart.vue`   | Grouped bar comparison: baseline vs current vs saved presets |
+| Component        | `resources/js/components/analytics/SavedScenariosDrawer.vue`      | Slide-in right drawer to load, manage, and delete presets    |
+| Service Layer    | `app/Services/Analytics/ScenarioCalculatorService.php`            | Empirical labor factor, planning, simulation & preferences   |
+| Controller       | `app/Http/Controllers/AnalyticsScenarioController.php`            | Endpoints for index, calculate, save, and delete scenario    |
 | Sub-Tab 5        | `resources/js/pages/Analytics/TabInsights.vue`                    | Automated risk indicators & fatigue alerts                   |
 | Sub-Tab 6        | `resources/js/pages/Analytics/TabComparison.vue`                  | Period comparison & departmental benchmarking                |
 | Export Component | `resources/js/components/analytics/ExportReportPopover.vue`       | Dropdown trigger for PDF and CSV exports                     |

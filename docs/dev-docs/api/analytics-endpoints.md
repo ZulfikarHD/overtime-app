@@ -389,6 +389,233 @@ Session-based authentication via Laravel web guard (`auth`, `verified`, `role:ad
 - **Content-Type:** `application/pdf`
 - **Content-Disposition:** `attachment; filename="analytics-executive-summary-2026-09-10.pdf"`
 
+---
+
+### GET /analytics/scenario
+
+**Description:** Retrieve baseline metrics, section historical labor factors, category proportions, department options, and user's saved scenarios for what-if simulation (E09-10).
+
+**Query Parameters:**
+
+| Param           | Type                | Required | Default                             | Description                         |
+| :-------------- | :------------------ | :------- | :---------------------------------- | :---------------------------------- |
+| `department_id` | string \| int       | No       | `all` (Admin) / User Dept (Manager) | Department scope for simulation     |
+| `start_date`    | string (YYYY-MM-DD) | No       | First day of current month          | Start date for baseline calculation |
+| `end_date`      | string (YYYY-MM-DD) | No       | Last day of current month           | End date for baseline calculation   |
+
+**Response 200 (JSON):**
+
+```json
+{
+    "baseline": {
+        "department_id": 1,
+        "department_name": "Assembly Department",
+        "actual_hours": 420.0,
+        "actual_cost": 21000000,
+        "formatted_actual_cost": "Rp 21.000.000",
+        "budget_cost": 25000000,
+        "formatted_budget_cost": "Rp 25.000.000",
+        "budget_hours": 500.0,
+        "burn_index_pct": 84.0,
+        "active_headcount": 18,
+        "avg_hourly_rate": 50000,
+        "formatted_avg_hourly_rate": "Rp 50.000",
+        "safety_risk_score": 8.5
+    },
+    "sections": [
+        {
+            "id": 1,
+            "code": "SEC_TRIM",
+            "name": "Trim Line",
+            "department_id": 1,
+            "department_name": "Assembly",
+            "labor_factor": 0.18,
+            "hourly_rate": 50000
+        }
+    ],
+    "departments": [
+        { "id": 1, "code": "DEPT_ASSY", "name": "Assembly Department" }
+    ],
+    "policy": {
+        "weekly_soft_limit_hours": 20.0,
+        "consecutive_weeks_alert": 3
+    },
+    "correlation_r": 0.78,
+    "saved_scenarios": [],
+    "initial_calculator_result": null,
+    "initial_builder_result": {
+        "overtime_change_pct": 0,
+        "budget_allocation": 25000000,
+        "projected_hours": 420.0,
+        "projected_cost": 21000000,
+        "formatted_projected_cost": "Rp 21.000.000",
+        "cost_impact": 0,
+        "formatted_cost_impact": "Rp 0",
+        "projected_burn_index": 84.0,
+        "burn_zone": "safe",
+        "safety_risk_score": 8.5,
+        "production_volume_impact_pct": 0.0
+    },
+    "scope": {
+        "department_id": 1,
+        "department_name": "Assembly Department",
+        "start_date": "2026-09-01",
+        "end_date": "2026-09-30",
+        "fiscal_year": 2026,
+        "fiscal_month": 9
+    }
+}
+```
+
+---
+
+### POST /analytics/scenario/calculate
+
+**Description:** Executes real-time calculation for either Production Planning (units -> hours/headcount/cost/categories) or Scenario Builder (-50% to +50% slider).
+
+**Request Body (Production Planning):**
+
+```json
+{
+    "target_volume": 1500,
+    "period": "monthly",
+    "section_id": 1
+}
+```
+
+**Response 200 (Production Planning):**
+
+```json
+{
+    "type": "production_planning",
+    "target_volume": 1500,
+    "period": "monthly",
+    "period_label": "Bulanan",
+    "section_id": 1,
+    "section_name": "Trim Line",
+    "labor_factor": 0.18,
+    "estimated_hours": 270.0,
+    "estimated_cost": 13500000,
+    "formatted_cost": "Rp 13.500.000",
+    "headcount_needed": 4,
+    "efficiency_pct": 100.0,
+    "categories": [
+        {
+            "key": "production",
+            "label": "Produksi Reguler",
+            "hours": 189.0,
+            "cost": 9450000,
+            "formatted_cost": "Rp 9.450.000",
+            "percentage": 70.0
+        },
+        {
+            "key": "project",
+            "label": "Proyek CapEx",
+            "hours": 40.5,
+            "cost": 2025000,
+            "formatted_cost": "Rp 2.025.000",
+            "percentage": 15.0
+        }
+    ]
+}
+```
+
+**Request Body (Scenario Builder):**
+
+```json
+{
+    "overtime_change_pct": 20.0,
+    "budget_allocation": 30000000,
+    "department_id": 1
+}
+```
+
+**Response 200 (Scenario Builder):**
+
+```json
+{
+    "type": "scenario_builder",
+    "overtime_change_pct": 20.0,
+    "budget_allocation": 30000000,
+    "projected_hours": 504.0,
+    "projected_cost": 25200000,
+    "formatted_projected_cost": "Rp 25.200.000",
+    "cost_impact": 4200000,
+    "formatted_cost_impact": "+Rp 4.200.000",
+    "projected_burn_index": 84.0,
+    "burn_zone": "safe",
+    "safety_risk_score": 10.6,
+    "production_volume_impact_pct": 15.6
+}
+```
+
+---
+
+### POST /analytics/scenario/save
+
+**Description:** Saves a customized scenario preset into the authenticated user's preferences (`users.preferences['saved_scenarios']`, capped at 10 items).
+
+**Request Body:**
+
+```json
+{
+    "name": "Surge Produksi Q4 2026",
+    "overtime_change_pct": 20.0,
+    "budget_allocation": 30000000,
+    "projected_hours": 504.0,
+    "projected_cost": 25200000,
+    "projected_burn_index": 84.0,
+    "burn_zone": "safe",
+    "safety_risk_score": 10.6,
+    "production_volume_impact_pct": 15.6
+}
+```
+
+**Response 200 (JSON):**
+
+```json
+{
+    "message": "Skenario berhasil disimpan.",
+    "saved_scenarios": [
+        {
+            "id": "scen_66e01234abcd",
+            "name": "Surge Produksi Q4 2026",
+            "overtime_change_pct": 20.0,
+            "budget_allocation": 30000000,
+            "projected_hours": 504.0,
+            "projected_cost": 25200000,
+            "formatted_cost": "Rp 25.200.000",
+            "projected_burn_index": 84.0,
+            "burn_zone": "safe",
+            "safety_risk_score": 10.6,
+            "production_volume_impact_pct": 15.6,
+            "created_at": "10/09/2026 13:45"
+        }
+    ]
+}
+```
+
+---
+
+### DELETE /analytics/scenario/{id}
+
+**Description:** Deletes a saved scenario preset from `users.preferences['saved_scenarios']`.
+
+**Path Parameters:**
+
+| Param | Type   | Required | Description                  |
+| :---- | :----- | :------- | :--------------------------- |
+| `id`  | string | Yes      | Unique scenario ID to remove |
+
+**Response 200 (JSON):**
+
+```json
+{
+    "message": "Skenario berhasil dihapus.",
+    "saved_scenarios": []
+}
+```
+
 **Error Responses:**
 
 | Code  | Description                                                                  |

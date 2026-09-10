@@ -62,7 +62,10 @@ Click on any tab in the navigation bar to immediately view its specialized chart
         - Dynamic marker badge tracking current section/department average weekly hours.
     - **Matriks Korelasi Bivariat**:
         - 5x5 color-coded correlation matrix table measuring linear association between Overtime, Production, Quality, Efficiency, and Cost with explanatory legend.
-4. **Simulasi Skenario (Scenario Simulation)**: Interactive calculator for testing changes in production volume, headcount, and budget impact.
+4. **Simulasi Skenario (Scenario Simulation)**:
+    - **Kalkulator Perencanaan Volume Produksi**: Mengestimasi kebutuhan total jam lembur, biaya (Rp), kebutuhan tambahan tenaga kerja, dan rincian proporsi kategori beban (Produksi, TPM, CapEx, Lainnya) berdasarkan target unit kendaraan dan rasio historis seksi.
+    - **Simulator Skenario Beban Kerja**: Menyesuaikan persentase perubahan jam lembur (-50% s/d +50%) dan batas plafon anggaran untuk melihat dampak finansial ($\pm\text{Rp}$), fluktuasi output produksi ($\pm\%$), proyeksi Burn Index, serta Skor Risiko K3 keselamatan kerja.
+    - **Perbandingan Skenario & Preset**: Membandingkan baseline aktual, skenario aktif, dan hingga 3 skenario tersimpan dalam bentuk grafik batang dan tabel matriks, dilengkapi drawer slide-in untuk mengelola preset skenario.
 5. **Wawasan Kunci (Key Insights)**: Automated risk warnings, consecutive shift fatigue indicators, and compliance alerts.
 6. **Perbandingan Periode (Period Comparison)**: Cross-month benchmarking and section-by-section comparison.
 

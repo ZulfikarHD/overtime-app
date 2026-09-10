@@ -65,6 +65,7 @@ Technical specifications and decision records for the engineering implementation
     - [ADR-033: Automotive Login Portal and Responsive Collapsible Sidebar](./dev-docs/decisions/033-automotive-login-portal-and-responsive-collapsible-sidebar.md)
     - [ADR-034: Cost Analysis OpEx vs CapEx Segregation and Budget Variance Architecture](./dev-docs/decisions/034-cost-analysis-opex-capex-segregation-and-budget-variance.md)
     - [ADR-035: Bivariate Correlation Matrix and Optimal Overtime Productivity Frontier Engine](./dev-docs/decisions/035-bivariate-correlation-matrix-and-optimal-overtime-frontier.md)
+    - [ADR-036: What-If Scenario Simulation, Empirical Labor Factor Modeling, and Ergonomic Parameter Management](./dev-docs/decisions/036-what-if-scenario-simulation-and-empirical-labor-factor-modeling.md)
 - **Technical Feature Design Specifications:**
     - [Authentication & Role-Based Access Control](./dev-docs/features/authentication-rbac.md)
     - [Database Schema Migrations (Full DDL)](./dev-docs/features/database-schema-migrations.md)
@@ -95,6 +96,7 @@ Technical specifications and decision records for the engineering implementation
     - [Executive Dashboard Multi-Chart Analytics Grid (E09-04)](./dev-docs/features/executive-dashboard-multi-chart-grid.md)
     - [Summary Employee Overtime Table (E09-05)](./dev-docs/features/executive-dashboard-employee-summary-table.md)
     - [Analytics & Decision Intelligence Hub (E09-06)](./dev-docs/features/analytics-decision-intelligence.md)
+    - [What-If Scenario Simulation (E09-10)](./dev-docs/features/what-if-scenario-simulation.md)
 - **API Reference Design:**
     - [Calendar Classification & Management API](./dev-docs/api/calendar-endpoints.md)
     - [Overtime Policy Check API](./dev-docs/api/overtime-policy-check.md)
@@ -153,6 +155,7 @@ Plain-language operating guides for factory supervisors, team leaders, and opera
     - [Executive Dashboard Multi-Chart Analytics Grid Guide](./user-docs/guides/executive-dashboard-multi-chart-grid.md)
     - [Summary Employee Overtime Table Guide](./user-docs/guides/executive-dashboard-employee-summary-table.md)
     - [Analytics & Decision Intelligence Guide](./user-docs/guides/analytics-decision-intelligence.md)
+    - [What-If Scenario Simulation Guide](./user-docs/guides/what-if-scenario-simulation.md)
 
 ---
 

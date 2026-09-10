@@ -8,6 +8,7 @@ use App\Services\Analytics\AnalyticsExportService;
 use App\Services\Analytics\CorrelationAnalysisService;
 use App\Services\Analytics\CostAnalysisService;
 use App\Services\Analytics\PredictiveAnalyticsService;
+use App\Services\Analytics\ScenarioCalculatorService;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -36,6 +37,7 @@ class AnalyticsController extends Controller
         public PredictiveAnalyticsService $predictiveService,
         public CostAnalysisService $costService,
         public CorrelationAnalysisService $correlationService,
+        public ScenarioCalculatorService $scenarioService,
     ) {}
 
     /**
@@ -95,6 +97,10 @@ class AnalyticsController extends Controller
             ? $this->correlationService->getCorrelationData($user, $departmentIdInt, $startDate, $endDate)
             : null;
 
+        $scenarioData = $tab === 'scenario'
+            ? $this->scenarioService->getScenarioData($user, $departmentIdInt, $startDate, $endDate)
+            : null;
+
         return Inertia::render('Analytics/Index', [
             'currentTab' => $tab,
             'departments' => $departments,
@@ -106,6 +112,7 @@ class AnalyticsController extends Controller
             'predictiveData' => $predictiveData,
             'costData' => $costData,
             'correlationData' => $correlationData,
+            'scenarioData' => $scenarioData,
             'userRole' => is_string($user->role) ? $user->role : $user->role->value,
             'userDepartmentId' => $user->department_id,
         ]);

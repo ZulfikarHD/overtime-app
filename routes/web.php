@@ -11,6 +11,7 @@ use App\Http\Controllers\Admin\PolicyThresholdController;
 use App\Http\Controllers\Admin\SectionController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\AnalyticsController;
+use App\Http\Controllers\AnalyticsScenarioController;
 use App\Http\Controllers\Api\CalendarController;
 use App\Http\Controllers\Budgets\OvertimeBudgetController;
 use App\Http\Controllers\Budgets\OvertimeBudgetImportController;
@@ -98,6 +99,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/predictive', [AnalyticsController::class, 'predictive'])->name('predictive');
         Route::get('/cost', [AnalyticsController::class, 'costAnalysis'])->name('cost');
         Route::get('/correlation', [AnalyticsController::class, 'correlation'])->name('correlation');
+        Route::get('/scenario', [AnalyticsScenarioController::class, 'index'])->name('scenario');
+        Route::post('/scenario/calculate', [AnalyticsScenarioController::class, 'calculate'])->name('scenario.calculate');
+        Route::post('/scenario/save', [AnalyticsScenarioController::class, 'save'])->name('scenario.save');
+        Route::delete('/scenario/{id}', [AnalyticsScenarioController::class, 'destroy'])->name('scenario.destroy');
         Route::get('/export', [AnalyticsController::class, 'export'])->name('export');
     });
 

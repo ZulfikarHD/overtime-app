@@ -458,38 +458,38 @@ Before any chart story begins, the chart infrastructure must be in place.
 
 **Production Volume Planning Calculator:**
 
-- [ ] Inputs: `Target Volume Produksi (unit)`, `Periode Produksi` (weekly/monthly/quarterly), `Section Produksi`
-- [ ] On "Hitung": Uses the correlation coefficient from E09-09 to estimate required overtime hours: `estimated_hours = production_volume × labor_factor` where `labor_factor` is derived from historical average `overtime_hours / production_units` for the selected section
-- [ ] Results cards: `Total Jam Lembur (hrs)`, `Estimasi Biaya (Rp)`, `Karyawan Dibutuhkan` (hours ÷ policy soft limit per person), `Efisiensi (%)` (estimated production per labor hour vs historical baseline)
-- [ ] Results breakdown table: by category (Production/TPM/Project/Others) — proportion of estimated hours per category based on historical section average
+- [x] Inputs: `Target Volume Produksi (unit)`, `Periode Produksi` (weekly/monthly/quarterly), `Section Produksi`
+- [x] On "Hitung": Uses the correlation coefficient from E09-09 to estimate required overtime hours: `estimated_hours = production_volume × labor_factor` where `labor_factor` is derived from historical average `overtime_hours / production_units` for the selected section
+- [x] Results cards: `Total Jam Lembur (hrs)`, `Estimasi Biaya (Rp)`, `Karyawan Dibutuhkan` (hours ÷ policy soft limit per person), `Efisiensi (%)` (estimated production per labor hour vs historical baseline)
+- [x] Results breakdown table: by category (Production/TPM/Project/Others) — proportion of estimated hours per category based on historical section average
 
 **Scenario Builder:**
 
-- [ ] Slider: Overtime Change % (-50% to +50%), updates `overtimeChangeValue` label reactively
-- [ ] Input: Budget Allocation (Rp M)
-- [ ] Dropdown: Target Department
-- [ ] "Jalankan Skenario" button runs calculation
-- [ ] Scenario result cards: `Projected Cost Impact (Rp)`, `Production Volume Impact (+/- %)`, `Burn Index Projection (%)`, `Safety Risk Score` (replaces Well-being — uses consecutive-week policy threshold)
-- [ ] Scenario Comparison Chart: grouped bar chart comparing baseline vs current scenario vs up to 3 saved scenarios
+- [x] Slider: Overtime Change % (-50% to +50%), updates `overtimeChangeValue` label reactively
+- [x] Input: Budget Allocation (Rp M)
+- [x] Dropdown: Target Department
+- [x] "Jalankan Skenario" button runs calculation
+- [x] Scenario result cards: `Projected Cost Impact (Rp)`, `Production Volume Impact (+/- %)`, `Burn Index Projection (%)`, `Safety Risk Score` (replaces Well-being — uses consecutive-week policy threshold)
+- [x] Scenario Comparison Chart: grouped bar chart comparing baseline vs current scenario vs up to 3 saved scenarios
 
 **Saved Scenarios:**
 
-- [ ] Manager can save a named scenario (name + inputs) — stored in `user_saved_scenarios` table or `users.preferences` JSON
-- [ ] "Baseline Scenario" (current month actuals) always shown
-- [ ] Saved scenarios listed; click to load back into the builder
+- [x] Manager can save a named scenario (name + inputs) — stored in `user_saved_scenarios` table or `users.preferences` JSON
+- [x] "Baseline Scenario" (current month actuals) always shown
+- [x] Saved scenarios listed; click to load back into the builder
 
 #### Technical Tasks
 
-- [ ] `ScenarioCalculatorService::calculate(array $inputs): ScenarioResult` — all calculation logic server-side
-- [ ] `labor_factor` computation: `historical_ot_hours / historical_production_units` for section over last 12 months
-- [ ] `safety_risk_score`: percentage of employees projected to exceed weekly policy limit based on scenario hours
-- [ ] Route: `POST /analytics/scenario/calculate` → `AnalyticsScenarioController@calculate`
-- [ ] Route: `POST /analytics/scenario/save` → save scenario to user preferences JSON
-- [ ] Create `resources/js/Pages/Analytics/TabScenario.vue`
-- [ ] Create `resources/js/Components/Analytics/ProductionCalculatorPanel.vue`
-- [ ] Create `resources/js/Components/Analytics/ScenarioBuilderPanel.vue`
-- [ ] Create `resources/js/Components/Analytics/ScenarioComparisonChart.vue`
-- [ ] Slider reactive update: `watch(overtimeSlider, () => calculateProjectedCost())` — no server call, pure client-side math on already-loaded data
+- [x] `ScenarioCalculatorService::calculate(array $inputs): ScenarioResult` — all calculation logic server-side
+- [x] `labor_factor` computation: `historical_ot_hours / historical_production_units` for section over last 12 months
+- [x] `safety_risk_score`: percentage of employees projected to exceed weekly policy limit based on scenario hours
+- [x] Route: `POST /analytics/scenario/calculate` → `AnalyticsScenarioController@calculate`
+- [x] Route: `POST /analytics/scenario/save` → save scenario to user preferences JSON
+- [x] Create `resources/js/Pages/Analytics/TabScenario.vue`
+- [x] Create `resources/js/Components/Analytics/ProductionCalculatorPanel.vue`
+- [x] Create `resources/js/Components/Analytics/ScenarioBuilderPanel.vue`
+- [x] Create `resources/js/Components/Analytics/ScenarioComparisonChart.vue`
+- [x] Slider reactive update: `watch(overtimeSlider, () => calculateProjectedCost())` — no server call, pure client-side math on already-loaded data
 
 ---
 
