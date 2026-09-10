@@ -47,30 +47,35 @@ erDiagram
 
 ## Key Files & UI Mapping
 
-| Layer            | File / Route / Menu                                            | Purpose                                                     |
-| :--------------- | :------------------------------------------------------------- | :---------------------------------------------------------- |
-| Sidebar Menu     | `Analitik & Keputusan` (`testId: 'nav-analytics'`)             | User entry point in UI (Admin & Manager only)               |
-| Page Component   | `resources/js/pages/Analytics/Index.vue`                       | Master shell, header, filter bar, tab switcher              |
-| Sub-Tab 1        | `resources/js/pages/Analytics/TabPredictive.vue`               | Predictive analytics & ML forecasting (E09-07)              |
-| Component        | `resources/js/components/analytics/ForecastBarChart.vue`       | Next month section bar chart with error whiskers            |
-| Component        | `resources/js/components/analytics/TrendProjectionChart.vue`   | 6-month historical/projected line + CI ribbon               |
-| Component        | `resources/js/components/analytics/SeasonalPatternChart.vue`   | 12-month annual seasonality curve + peak shadow             |
-| Component        | `resources/js/components/analytics/SeasonalSummaryCards.vue`   | Peak, low season & cycle duration summary cards             |
-| Sub-Tab 2        | `resources/js/pages/Analytics/TabCostAnalysis.vue`             | Overtime financial breakdown & OpEx/CapEx audit (E09-08)    |
-| Component        | `resources/js/components/analytics/CostByDepartmentChart.vue`  | Horizontal bar chart sorted descending by spend (E09-08)    |
-| Component        | `resources/js/components/analytics/CostTrendStackedChart.vue`  | 6-month stacked OpEx vs CapEx area chart (E09-08)           |
-| Component        | `resources/js/components/analytics/BudgetVsActualBarChart.vue` | Grouped bar chart comparing planned vs actual (E09-08)      |
-| Component        | `resources/js/components/analytics/CostBreakdownTable.vue`     | Sortable high-density audit table with grand total (E09-08) |
-| Sub-Tab 3        | `resources/js/pages/Analytics/TabCorrelation.vue`              | Bivariate correlation & productivity sweet spot             |
-| Sub-Tab 4        | `resources/js/pages/Analytics/TabScenario.vue`                 | Production volume & workload scenario simulator             |
-| Sub-Tab 5        | `resources/js/pages/Analytics/TabInsights.vue`                 | Automated risk indicators & fatigue alerts                  |
-| Sub-Tab 6        | `resources/js/pages/Analytics/TabComparison.vue`               | Period comparison & departmental benchmarking               |
-| Export Component | `resources/js/components/analytics/ExportReportPopover.vue`    | Dropdown trigger for PDF and CSV exports                    |
-| Controller       | `app/Http/Controllers/AnalyticsController.php`                 | Handles page rendering, API, and export requests            |
-| Service Layer    | `app/Services/Analytics/PredictiveAnalyticsService.php`        | ML prediction query, MA-3 fallback, seasonality             |
-| Service Layer    | `app/Services/Analytics/CostAnalysisService.php`               | Financial KPI aggregation, OpEx/CapEx, budget pacing        |
-| Export Service   | `app/Services/Analytics/AnalyticsExportService.php`            | Generates executive PDF and streamed UTF-8 CSV              |
-| PDF Template     | `resources/views/pdf/analytics-executive-summary.blade.php`    | Executive A4 summary layout with ISUZU branding             |
+| Layer            | File / Route / Menu                                               | Purpose                                                      |
+| :--------------- | :---------------------------------------------------------------- | :----------------------------------------------------------- |
+| Sidebar Menu     | `Analitik & Keputusan` (`testId: 'nav-analytics'`)                | User entry point in UI (Admin & Manager only)                |
+| Page Component   | `resources/js/pages/Analytics/Index.vue`                          | Master shell, header, filter bar, tab switcher               |
+| Sub-Tab 1        | `resources/js/pages/Analytics/TabPredictive.vue`                  | Predictive analytics & ML forecasting (E09-07)               |
+| Component        | `resources/js/components/analytics/ForecastBarChart.vue`          | Next month section bar chart with error whiskers             |
+| Component        | `resources/js/components/analytics/TrendProjectionChart.vue`      | 6-month historical/projected line + CI ribbon                |
+| Component        | `resources/js/components/analytics/SeasonalPatternChart.vue`      | 12-month annual seasonality curve + peak shadow              |
+| Component        | `resources/js/components/analytics/SeasonalSummaryCards.vue`      | Peak, low season & cycle duration summary cards              |
+| Sub-Tab 2        | `resources/js/pages/Analytics/TabCostAnalysis.vue`                | Overtime financial breakdown & OpEx/CapEx audit (E09-08)     |
+| Component        | `resources/js/components/analytics/CostByDepartmentChart.vue`     | Horizontal bar chart sorted descending by spend (E09-08)     |
+| Component        | `resources/js/components/analytics/CostTrendStackedChart.vue`     | 6-month stacked OpEx vs CapEx area chart (E09-08)            |
+| Component        | `resources/js/components/analytics/BudgetVsActualBarChart.vue`    | Grouped bar chart comparing planned vs actual (E09-08)       |
+| Component        | `resources/js/components/analytics/CostBreakdownTable.vue`        | Sortable high-density audit table with grand total (E09-08)  |
+| Sub-Tab 3        | `resources/js/pages/Analytics/TabCorrelation.vue`                 | Bivariate correlation & productivity sweet spot (E09-09)     |
+| Component        | `resources/js/components/analytics/OvertimeProductionScatter.vue` | OT vs production units scatter with regression line (E09-09) |
+| Component        | `resources/js/components/analytics/OptimalLevelZoneChart.vue`     | 3-zone sweet spot area chart & efficiency curve (E09-09)     |
+| Component        | `resources/js/components/analytics/CorrelationMatrixTable.vue`    | Color-coded 5x5 Pearson correlation matrix (E09-09)          |
+| Sub-Tab 4        | `resources/js/pages/Analytics/TabScenario.vue`                    | Production volume & workload scenario simulator              |
+| Sub-Tab 5        | `resources/js/pages/Analytics/TabInsights.vue`                    | Automated risk indicators & fatigue alerts                   |
+| Sub-Tab 6        | `resources/js/pages/Analytics/TabComparison.vue`                  | Period comparison & departmental benchmarking                |
+| Export Component | `resources/js/components/analytics/ExportReportPopover.vue`       | Dropdown trigger for PDF and CSV exports                     |
+| Controller       | `app/Http/Controllers/AnalyticsController.php`                    | Handles page rendering, API, and export requests             |
+| Service Layer    | `app/Services/Analytics/PredictiveAnalyticsService.php`           | ML prediction query, MA-3 fallback, seasonality              |
+| Service Layer    | `app/Services/Analytics/CostAnalysisService.php`                  | Financial KPI aggregation, OpEx/CapEx, budget pacing         |
+| Service Layer    | `app/Services/Analytics/CorrelationAnalysisService.php`           | Bivariate metrics, optimal zones, ERP quality guard (E09-09) |
+| Service Layer    | `app/Services/Analytics/PearsonCorrelationService.php`            | Pure statistical Pearson r & linear regression engine        |
+| Export Service   | `app/Services/Analytics/AnalyticsExportService.php`               | Generates executive PDF and streamed UTF-8 CSV               |
+| PDF Template     | `resources/views/pdf/analytics-executive-summary.blade.php`       | Executive A4 summary layout with ISUZU branding              |
 
 ## Flow Explanation
 
@@ -88,18 +93,25 @@ erDiagram
     - Produces a 6-month historical stacked area chart decomposing OpEx vs CapEx labor spend.
     - Generates horizontal bar charts ranking department spend with color-coded budget compliance tags, alongside a grouped Planned vs Actual bar chart highlighting budget deficits in red.
     - Renders an interactive, sortable high-density audit table with real-time text search and grand total footer.
-5. **Tab Switching**: Clicking any tab button updates the local `activeTab` ref instantly. The URL query parameter is updated via `window.history.replaceState` without triggering a full page reload.
-6. **Filter Adjustments**: Changing the department or date filter updates query parameters and initiates an Inertia partial reload (`preserveState: true`, `preserveScroll: true`) to update server-supplied datasets while keeping the active tab intact. Alternatively, client components query `GET /analytics/cost` or `GET /analytics/predictive` asynchronously.
-7. **Exporting Reports**: Clicking **Ekspor Laporan** opens the popover displaying current filter scope. When on Tab 2, selecting PDF or CSV generates either a structured cost audit CSV or a branded executive PDF summary with financial KPI cards and department breakdown tables.
+5. **Correlation & Pattern Analysis (E09-09)**:
+    - When `tab === 'correlation'` or when querying `GET /analytics/correlation`, `CorrelationAnalysisService::getCorrelationData()` computes bivariate metrics.
+    - Generates monthly historical scatter points plotting vehicle units (X) against approved overtime hours (Y), overlaying an OLS linear regression trend line ($y = mx + c$) and Pearson correlation coefficient ($r$).
+    - Inspects `Schema::hasTable('production_quality_data')` and `services.erp.connected`. If disconnected or absent, renders a friendly status banner (`"N/A — Integrasi data produksi ERP belum terhubung"` and `"Menunggu integrasi data kualitas dari ERP"`) with zero crashes.
+    - Computes an optimal overtime sweet spot frontier (12.0–18.0 hrs/week peaking at 15.2 hrs/week) against `PolicyThreshold::weekly_soft_limit_hours` (> 20.0 hrs/week) with dynamic section average marker.
+    - Computes a 5x5 bivariate correlation matrix across Overtime, Production, Quality, Efficiency, and Cost with color-coded classification: Green ($|r| \ge 0.70$), Blue ($0.40 \le |r| < 0.70$), Gray ($|r| < 0.40$), and Amber (`ERP Pending`).
+6. **Tab Switching**: Clicking any tab button updates the local `activeTab` ref instantly. The URL query parameter is updated via `window.history.replaceState` without triggering a full page reload.
+7. **Filter Adjustments**: Changing the department or date filter updates query parameters and initiates an Inertia partial reload (`preserveState: true`, `preserveScroll: true`) to update server-supplied datasets while keeping the active tab intact. Alternatively, client components query `GET /analytics/cost`, `GET /analytics/predictive`, or `GET /analytics/correlation` asynchronously.
+8. **Exporting Reports**: Clicking **Ekspor Laporan** opens the popover displaying current filter scope. Selecting PDF or CSV generates either a structured audit CSV or a branded executive PDF summary with KPI cards and department breakdown tables.
 
 ## API Endpoints & Routes
 
-| Method | URI                     | Controller Action                  | Purpose                              | Auth / Middleware                    |
-| :----- | :---------------------- | :--------------------------------- | :----------------------------------- | :----------------------------------- |
-| `GET`  | `/analytics`            | `AnalyticsController@index`        | Render Analytics shell & active tab  | `auth, verified, role:admin,manager` |
-| `GET`  | `/analytics/predictive` | `AnalyticsController@predictive`   | Fetch predictive analytics JSON data | `auth, verified, role:admin,manager` |
-| `GET`  | `/analytics/cost`       | `AnalyticsController@costAnalysis` | Fetch cost analysis JSON data        | `auth, verified, role:admin,manager` |
-| `GET`  | `/analytics/export`     | `AnalyticsController@export`       | Export PDF or CSV report             | `auth, verified, role:admin,manager` |
+| Method | URI                      | Controller Action                  | Purpose                              | Auth / Middleware                    |
+| :----- | :----------------------- | :--------------------------------- | :----------------------------------- | :----------------------------------- |
+| `GET`  | `/analytics`             | `AnalyticsController@index`        | Render Analytics shell & active tab  | `auth, verified, role:admin,manager` |
+| `GET`  | `/analytics/predictive`  | `AnalyticsController@predictive`   | Fetch predictive analytics JSON data | `auth, verified, role:admin,manager` |
+| `GET`  | `/analytics/cost`        | `AnalyticsController@costAnalysis` | Fetch cost analysis JSON data        | `auth, verified, role:admin,manager` |
+| `GET`  | `/analytics/correlation` | `AnalyticsController@correlation`  | Fetch correlation analysis JSON data | `auth, verified, role:admin,manager` |
+| `GET`  | `/analytics/export`      | `AnalyticsController@export`       | Export PDF or CSV report             | `auth, verified, role:admin,manager` |
 
 ## Decisions & Trade-offs
 

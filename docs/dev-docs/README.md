@@ -101,6 +101,7 @@ Durable technical decisions and trade-offs:
 - **[ADR-032: Predictive Analytics ML and Moving Average Fallback Engine](./decisions/032-predictive-analytics-ml-and-moving-average-fallback.md)**
 - **[ADR-033: Automotive Login Portal and Responsive Collapsible Sidebar Architecture](./decisions/033-automotive-login-portal-and-responsive-collapsible-sidebar.md)**
 - **[ADR-034: Cost Analysis OpEx vs CapEx Segregation and Budget Variance Architecture](./decisions/034-cost-analysis-opex-capex-segregation-and-budget-variance.md)**
+- **[ADR-035: Bivariate Correlation Matrix and Optimal Overtime Productivity Frontier Engine](./decisions/035-bivariate-correlation-matrix-and-optimal-overtime-frontier.md)**
 
 ---
 

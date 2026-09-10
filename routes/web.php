@@ -17,6 +17,7 @@ use App\Http\Controllers\Budgets\OvertimeBudgetImportController;
 use App\Http\Controllers\DashboardBurnIndexController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EmployeeSelfServiceController;
+use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\Overtime\OvertimeApprovalController;
 use App\Http\Controllers\Overtime\OvertimeItemAuditController;
@@ -38,6 +39,8 @@ Route::get('/', function (Request $request) {
         'status' => $request->session()->get('status'),
     ]);
 })->name('home');
+
+Route::post('/locale', [LocaleController::class, 'update'])->name('locale.update');
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
@@ -94,6 +97,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/', [AnalyticsController::class, 'index'])->name('index');
         Route::get('/predictive', [AnalyticsController::class, 'predictive'])->name('predictive');
         Route::get('/cost', [AnalyticsController::class, 'costAnalysis'])->name('cost');
+        Route::get('/correlation', [AnalyticsController::class, 'correlation'])->name('correlation');
         Route::get('/export', [AnalyticsController::class, 'export'])->name('export');
     });
 

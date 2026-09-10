@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Department;
 use App\Models\User;
 use App\Services\Analytics\AnalyticsExportService;
+use App\Services\Analytics\CorrelationAnalysisService;
 use App\Services\Analytics\CostAnalysisService;
 use App\Services\Analytics\PredictiveAnalyticsService;
 use Carbon\Carbon;
@@ -34,6 +35,7 @@ class AnalyticsController extends Controller
         public AnalyticsExportService $exportService,
         public PredictiveAnalyticsService $predictiveService,
         public CostAnalysisService $costService,
+        public CorrelationAnalysisService $correlationService,
     ) {}
 
     /**
@@ -89,6 +91,10 @@ class AnalyticsController extends Controller
             ? $this->costService->getCostData($user, $departmentIdInt, $startDate, $endDate)
             : null;
 
+        $correlationData = $tab === 'correlation'
+            ? $this->correlationService->getCorrelationData($user, $departmentIdInt, $startDate, $endDate)
+            : null;
+
         return Inertia::render('Analytics/Index', [
             'currentTab' => $tab,
             'departments' => $departments,
@@ -99,6 +105,7 @@ class AnalyticsController extends Controller
             ],
             'predictiveData' => $predictiveData,
             'costData' => $costData,
+            'correlationData' => $correlationData,
             'userRole' => is_string($user->role) ? $user->role : $user->role->value,
             'userDepartmentId' => $user->department_id,
         ]);
@@ -148,6 +155,30 @@ class AnalyticsController extends Controller
         $endDate = $request->filled('end_date') ? (string) $request->input('end_date') : null;
 
         $data = $this->costService->getCostData($user, $departmentId, $startDate, $endDate);
+
+        return response()->json($data);
+    }
+
+    /**
+     * Return JSON endpoint for correlation analysis data (E09-09).
+     */
+    public function correlation(Request $request): JsonResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+
+        abort_unless($user && ($user->isAdmin() || $user->isManager()), 403);
+
+        $rawDept = $request->input('department_id');
+        $departmentId = null;
+        if ($request->has('department_id') && $rawDept !== '' && $rawDept !== 'all') {
+            $departmentId = (int) $rawDept;
+        }
+
+        $startDate = $request->filled('start_date') ? (string) $request->input('start_date') : null;
+        $endDate = $request->filled('end_date') ? (string) $request->input('end_date') : null;
+
+        $data = $this->correlationService->getCorrelationData($user, $departmentId, $startDate, $endDate);
 
         return response()->json($data);
     }

@@ -94,9 +94,17 @@ class User extends Authenticatable implements PasskeyUser
     }
 
     /**
+     * Get the user preferred locale, if configured.
+     */
+    public function getLocaleAttribute(): ?string
+    {
+        return is_array($this->preferences) ? ($this->preferences['locale'] ?? null) : null;
+    }
+
+    /**
      * Get user preferences with standard defaults applied.
      *
-     * @return array{theme: string, spkl_pending_reminder: bool, budget_threshold_alert: bool, approval_status_notification: bool}
+     * @return array{theme: string, locale: string, spkl_pending_reminder: bool, budget_threshold_alert: bool, approval_status_notification: bool}
      */
     public function getEffectivePreferences(): array
     {
@@ -104,6 +112,7 @@ class User extends Authenticatable implements PasskeyUser
 
         return [
             'theme' => (string) ($prefs['theme'] ?? 'system'),
+            'locale' => (string) ($prefs['locale'] ?? 'id'),
             'spkl_pending_reminder' => (bool) ($prefs['spkl_pending_reminder'] ?? true),
             'budget_threshold_alert' => (bool) data_get($prefs, 'notifications.budget_alerts', $prefs['budget_threshold_alert'] ?? true),
             'approval_status_notification' => (bool) ($prefs['approval_status_notification'] ?? true),

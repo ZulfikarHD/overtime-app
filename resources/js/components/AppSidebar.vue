@@ -14,6 +14,7 @@ import {
 } from '@lucide/vue';
 import { computed } from 'vue';
 import AppLogo from '@/components/AppLogo.vue';
+import LanguageSwitcher from '@/components/LanguageSwitcher.vue';
 import NavMain from '@/components/NavMain.vue';
 import NavUser from '@/components/NavUser.vue';
 import {
@@ -51,88 +52,93 @@ const mainNavItems = computed<NavItem[]>(() => {
     const role = user.value?.role;
     const items: NavItem[] = [];
 
-    // Group 1: Operasional & Lembur
+    // Group 1: Operations & Overtime
     items.push({
         title: __('Dashboard'),
         href: isOperator ? myDashboard() : dashboard(),
         icon: LayoutGrid,
-        group: __('Operasional & Lembur'),
+        group: __('Operations & Overtime'),
+        testId: 'nav-dashboard',
     });
 
     if (role === 'admin' || role === 'team_leader') {
         items.push({
-            title: __('Input Lembur'),
+            title: __('Overtime Entry'),
             href: overtimeCreate(),
             icon: ClipboardList,
-            group: __('Operasional & Lembur'),
+            group: __('Operations & Overtime'),
+            testId: 'nav-overtime-entry',
         });
     }
 
     if (role === 'admin' || role === 'manager') {
         items.push({
-            title: __('Persetujuan Lembur'),
+            title: __('Overtime Approvals'),
             href: overtimeApprovals(),
             icon: ClipboardCheck,
             badge: pendingApprovalsCount.value,
             testId: 'nav-overtime-approvals',
-            group: __('Operasional & Lembur'),
+            group: __('Operations & Overtime'),
         });
     }
 
     if (role === 'admin' || role === 'manager' || role === 'team_leader') {
         items.push({
-            title: __('Laporan Karyawan'),
+            title: __('Employee Reports'),
             href: reportsEmployees(),
             icon: Users,
             testId: 'nav-employee-reports',
-            group: __('Operasional & Lembur'),
+            group: __('Operations & Overtime'),
         });
     }
 
-    // Group 2: Finansial & Tata Kelola
+    // Group 2: Financial & Governance
     if (role === 'admin' || role === 'manager') {
         items.push({
-            title: __('Proyek CapEx'),
+            title: __('CapEx Projects'),
             href: capexProjects.index(),
             icon: FolderKanban,
             testId: 'nav-capex-projects',
-            group: __('Finansial & Tata Kelola'),
+            group: __('Financial & Governance'),
         });
         items.push({
             title: __('Burn Index'),
             href: burnIndex(),
             icon: Flame,
             testId: 'nav-burn-index',
-            group: __('Finansial & Tata Kelola'),
+            group: __('Financial & Governance'),
         });
         items.push({
-            title: __('Analitik & Keputusan'),
+            title: __('Analytics & Decisions'),
             href: analyticsIndex(),
             icon: TrendingUp,
             testId: 'nav-analytics',
-            group: __('Finansial & Tata Kelola'),
+            group: __('Financial & Governance'),
         });
         items.push({
             title: __('Budget Planning'),
             href: planning(),
             icon: Calculator,
-            group: __('Finansial & Tata Kelola'),
+            group: __('Financial & Governance'),
+            testId: 'nav-budget-planning',
         });
     }
 
-    // Group 3: Sistem & Konfigurasi
+    // Group 3: System & Configuration
     if (role === 'admin') {
         items.push({
             title: __('Master Data'),
             href: masterData(),
             icon: Database,
-            group: __('Sistem & Konfigurasi'),
+            group: __('System & Configuration'),
+            testId: 'nav-master-data',
         });
         items.push({
             title: __('Administration'),
             href: administration(),
             icon: ShieldCheck,
-            group: __('Sistem & Konfigurasi'),
+            group: __('System & Configuration'),
+            testId: 'nav-administration',
         });
     }
 
@@ -173,29 +179,29 @@ const mainNavItems = computed<NavItem[]>(() => {
                 class="mx-3 mt-6 mb-2 space-y-2 rounded-xl border border-slate-200 bg-slate-50/70 p-3 text-xs shadow-2xs group-data-[collapsible=icon]:hidden dark:border-slate-800 dark:bg-slate-900/60"
             >
                 <div class="flex items-center justify-between text-slate-500">
-                    <span class="text-[11px]">{{ __('Fasilitas') }}:</span>
+                    <span class="text-[11px]">{{ __('Facility') }}:</span>
                     <span
                         class="text-[11px] font-semibold text-slate-800 dark:text-slate-200"
                     >
-                        Karawang Assembly
+                        {{ __('Karawang Assembly') }}
                     </span>
                 </div>
                 <div class="flex items-center justify-between text-slate-500">
-                    <span class="text-[11px]">{{ __('Sistem Shift') }}:</span>
+                    <span class="text-[11px]">{{ __('Shift System') }}:</span>
                     <span
                         class="text-[11px] font-semibold text-slate-800 dark:text-slate-200"
                     >
-                        3 Shift / 24 Jam
+                        {{ __('3 Shifts / 24 Hours') }}
                     </span>
                 </div>
                 <div class="flex items-center justify-between text-slate-500">
                     <span class="text-[11px]"
-                        >{{ __('Ambang Depnaker') }}:</span
+                        >{{ __('Statutory Limit') }}:</span
                     >
                     <span
                         class="text-[11px] font-semibold text-[#cc0000] dark:text-red-400"
                     >
-                        Maks 14 Jam/Minggu
+                        {{ __('Max 14 Hours/Week') }}
                     </span>
                 </div>
             </div>
@@ -203,9 +209,13 @@ const mainNavItems = computed<NavItem[]>(() => {
 
         <SidebarFooter>
             <div
-                class="text-muted-foreground/70 px-3 py-1 text-[11px] group-data-[collapsible=icon]:hidden"
+                class="text-muted-foreground/70 flex items-center justify-between px-3 py-1 text-[11px] group-data-[collapsible=icon]:hidden"
             >
-                <span>OT-CapEx System v1.0.0 · Karawang</span>
+                <span>{{ __('OT-CapEx System v1.0.0 · Karawang') }}</span>
+                <LanguageSwitcher
+                    size="sm"
+                    test-id-prefix="lang-switch-sidebar"
+                />
             </div>
             <NavUser />
         </SidebarFooter>

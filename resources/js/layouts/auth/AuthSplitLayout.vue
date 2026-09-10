@@ -8,6 +8,7 @@ import {
     ShieldCheck,
     Zap,
 } from '@lucide/vue';
+import LanguageSwitcher from '@/components/LanguageSwitcher.vue';
 import { useShiftInfo } from '@/composables/useShiftInfo';
 import { useTrans } from '@/composables/useTrans';
 import { home } from '@/routes';
@@ -66,11 +67,18 @@ defineProps<{
                     </div>
                 </Link>
 
-                <div
-                    class="inline-flex items-center gap-1.5 rounded-full border border-red-200 bg-red-50 px-3 py-1 text-xs font-semibold text-[#cc0000] dark:border-red-500/30 dark:bg-red-950/60 dark:text-red-300"
-                >
-                    <span class="size-1.5 rounded-full bg-[#cc0000]" />
-                    <span>OT-CapEx Portal</span>
+                <div class="flex items-center gap-3">
+                    <LanguageSwitcher
+                        size="sm"
+                        :show-icon="true"
+                        test-id-prefix="lang-switch-desktop"
+                    />
+                    <div
+                        class="inline-flex items-center gap-1.5 rounded-full border border-red-200 bg-red-50 px-3 py-1 text-xs font-semibold text-[#cc0000] dark:border-red-500/30 dark:bg-red-950/60 dark:text-red-300"
+                    >
+                        <span class="size-1.5 rounded-full bg-[#cc0000]" />
+                        <span>{{ __('OT-CapEx Portal') }}</span>
+                    </div>
                 </div>
             </div>
 
@@ -92,7 +100,7 @@ defineProps<{
                     >
                         {{
                             __(
-                                'Sistem Manajemen Lembur & Kapitalisasi Aktiva Tetap',
+                                'Overtime Management & Fixed Asset Capitalization System',
                             )
                         }}
                     </h1>
@@ -101,7 +109,7 @@ defineProps<{
                     >
                         {{
                             __(
-                                'Presisi operasional manufaktur untuk pemantauan jam kerja shift, efisiensi rasio lembur (BBI), dan alokasi biaya CapEx/OpEx sesuai standar IATF 16949.',
+                                'Manufacturing operational precision for shift overtime tracking, burn-rate index efficiency, and CapEx/OpEx cost segregation under IATF 16949 standards.',
                             )
                         }}
                     </p>
@@ -121,14 +129,14 @@ defineProps<{
                         <div
                             class="text-xs font-bold text-slate-900 dark:text-white"
                         >
-                            {{ __('Alokasi CapEx CIP') }}
+                            {{ __('CIP CapEx Allocation') }}
                         </div>
                         <p
                             class="mt-1 text-[11px] leading-tight text-slate-600 dark:text-slate-400"
                         >
                             {{
                                 __(
-                                    'Segregasi otomatis biaya proyek aktiva tetap.',
+                                    'Automated fixed asset project cost segregation.',
                                 )
                             }}
                         </p>
@@ -146,12 +154,12 @@ defineProps<{
                         <div
                             class="text-xs font-bold text-slate-900 dark:text-white"
                         >
-                            {{ __('Ergonomi 3-Klik') }}
+                            {{ __('3-Click Ergonomics') }}
                         </div>
                         <p
                             class="mt-1 text-[11px] leading-tight text-slate-600 dark:text-slate-400"
                         >
-                            {{ __('Pengajuan cepat shift kerja Team Leader.') }}
+                            {{ __('Fast shift submissions for Team Leaders.') }}
                         </p>
                     </div>
 
@@ -167,12 +175,12 @@ defineProps<{
                         <div
                             class="text-xs font-bold text-slate-900 dark:text-white"
                         >
-                            {{ __('Batas Depnaker') }}
+                            {{ __('Statutory Overtime Limit') }}
                         </div>
                         <p
                             class="mt-1 text-[11px] leading-tight text-slate-600 dark:text-slate-400"
                         >
-                            {{ __('Proteksi batas 14 jam lembur mingguan.') }}
+                            {{ __('14-hour weekly overtime protection.') }}
                         </p>
                     </div>
                 </div>
@@ -243,13 +251,19 @@ defineProps<{
                     </div>
                 </Link>
 
-                <div
-                    class="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-1 text-[11px] font-medium text-emerald-700 dark:text-emerald-300"
-                >
-                    <span
-                        class="size-1.5 animate-pulse rounded-full bg-emerald-500"
+                <div class="flex items-center gap-2">
+                    <LanguageSwitcher
+                        size="sm"
+                        test-id-prefix="lang-switch-mobile"
                     />
-                    <span>{{ currentShift.name }}</span>
+                    <div
+                        class="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-1 text-[11px] font-medium text-emerald-700 dark:text-emerald-300"
+                    >
+                        <span
+                            class="size-1.5 animate-pulse rounded-full bg-emerald-500"
+                        />
+                        <span>{{ currentShift.name }}</span>
+                    </div>
                 </div>
             </div>
 
@@ -257,13 +271,15 @@ defineProps<{
             <div class="mx-auto my-auto w-full max-w-md py-6">
                 <!-- Header Title & Subtitle -->
                 <div class="mb-6 space-y-1.5">
-                    <div class="hidden items-center gap-2 lg:flex">
-                        <span class="size-2 rounded-full bg-[#cc0000]" />
-                        <span
-                            class="text-xs font-bold tracking-wider text-slate-400 uppercase dark:text-slate-500"
-                        >
-                            {{ __('Akses Portal Manufaktur') }}
-                        </span>
+                    <div class="hidden items-center justify-between lg:flex">
+                        <div class="flex items-center gap-2">
+                            <span class="size-2 rounded-full bg-[#cc0000]" />
+                            <span
+                                class="text-xs font-bold tracking-wider text-slate-400 uppercase dark:text-slate-500"
+                            >
+                                {{ __('Manufacturing Portal Access') }}
+                            </span>
+                        </div>
                     </div>
                     <h2
                         class="text-2xl font-bold tracking-tight text-slate-900 dark:text-white"

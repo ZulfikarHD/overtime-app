@@ -28,9 +28,11 @@ class AnalyticsExportService
     public function __construct(
         public ?PredictiveAnalyticsService $predictiveService = null,
         public ?CostAnalysisService $costService = null,
+        public ?CorrelationAnalysisService $correlationService = null,
     ) {
         $this->predictiveService = $predictiveService ?? app(PredictiveAnalyticsService::class);
         $this->costService = $costService ?? app(CostAnalysisService::class);
+        $this->correlationService = $correlationService ?? app(CorrelationAnalysisService::class);
     }
 
     /**
@@ -166,6 +168,41 @@ class AnalyticsExportService
                         strtoupper($dept['trend'])." ({$dept['trend_variance_pct']}%)",
                     ]);
                 }
+            } elseif ($tab === 'correlation') {
+                $corr = $this->correlationService->getCorrelationData($user, $departmentId, $startDate, $endDate);
+                fputcsv($handle, ['=== INDIKATOR ZONA LEMBUR OPTIMAL (E09-09) ===']);
+                fputcsv($handle, ['Indikator', 'Nilai', 'Deskripsi']);
+                fputcsv($handle, ['Zona Lembur Wajar (Sweet Spot)', "{$corr['kpi']['sweet_spot_min']} - {$corr['kpi']['sweet_spot_max']} jam/minggu", 'Batas efisiensi optimal']);
+                fputcsv($handle, ['Titik Puncak Produktivitas', "{$corr['kpi']['peak_efficiency_hours']} jam/minggu", 'Rata-rata output tertinggi']);
+                fputcsv($handle, ['Ambang Batas Kelelahan', "> {$corr['kpi']['warning_threshold_hours']} jam/minggu", 'Batas kebijakan']);
+                fputcsv($handle, ['Rata-rata Jam Mingguan Saat Ini', "{$corr['kpi']['current_weekly_avg_hours']} jam/minggu", $corr['kpi']['current_zone_label']]);
+                fputcsv($handle, []);
+                fputcsv($handle, ['=== MATRIKS KORELASI BIVARIAT ===']);
+                $headers = array_merge(['Variabel'], array_column($corr['correlation_matrix']['variables'], 'label'));
+                fputcsv($handle, $headers);
+                foreach ($corr['correlation_matrix']['matrix'] as $rowIdx => $row) {
+                    $rowVals = [$corr['correlation_matrix']['variables'][$rowIdx]['label']];
+                    foreach ($row as $cell) {
+                        $rowVals[] = $cell['r'] !== null ? (string) $cell['r'] : 'Menunggu ERP';
+                    }
+                    fputcsv($handle, $rowVals);
+                }
+                fputcsv($handle, []);
+                fputcsv($handle, ['=== DATA SCATTER LEMBUR VS PRODUKSI ===']);
+                if ($corr['overtime_vs_production']['erp_connected']) {
+                    fputcsv($handle, ['Bulan', 'Kode Seksi', 'Nama Seksi', 'Volume Produksi (Unit)', 'Jam Lembur (Jam)']);
+                    foreach ($corr['overtime_vs_production']['scatter_points'] as $sp) {
+                        fputcsv($handle, [
+                            $sp['month'],
+                            $sp['section_code'],
+                            $sp['section_name'],
+                            $sp['x'],
+                            $sp['y'],
+                        ]);
+                    }
+                } else {
+                    fputcsv($handle, [$corr['overtime_vs_production']['message']]);
+                }
             } else {
                 // Data section header
                 fputcsv($handle, ['No', 'Indikator Analitik', 'Status / Nilai', 'Catatan Kebijakan']);
@@ -200,6 +237,11 @@ class AnalyticsExportService
             $costData = $this->costService->getCostData($user, $departmentId, $startDate, $endDate);
         }
 
+        $correlationData = null;
+        if ($tab === 'correlation') {
+            $correlationData = $this->correlationService->getCorrelationData($user, $departmentId, $startDate, $endDate);
+        }
+
         $data = [
             'title' => 'Ringkasan Eksekutif Analitik & Keputusan',
             'tab' => $tab,
@@ -212,6 +254,7 @@ class AnalyticsExportService
             'role_label' => $user->isAdmin() ? 'Administrator Pabrik' : 'Kepala Departemen (Manager)',
             'predictiveData' => $predictiveData,
             'costData' => $costData,
+            'correlationData' => $correlationData,
         ];
 
         $pdf = Pdf::loadView('pdf.analytics-executive-summary', $data);

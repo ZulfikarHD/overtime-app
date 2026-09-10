@@ -58,6 +58,7 @@ We designed and implemented a unified automotive portal and responsive sidebar n
 - **Brand Consistency**: Delivers an official, professional manufacturing aesthetic aligned with PT Isuzu Astra Motor Indonesia and `public/style-guide.html`.
 - **Improved Tablet Usability**: Factory supervisors using line tablets in landscape (typically 768px–1023px width) immediately gain 208px of horizontal workspace for tables and charts without manually closing the sidebar.
 - **Seamless User Flow**: Eliminates redundant landing page clicks by bringing operators and supervisors directly to the login screen or dashboard.
+- **Strict Multilingual Compliance**: Standardizes portal translation keys to clean English phrases, removes hardcoded literals, adds `SetLocale` middleware, and enables real-time language switching (`id` / `en`) via Wayfinder routes in the login portal, sidebar footer, and user menu.
 
 ### Negative / Trade-offs
 

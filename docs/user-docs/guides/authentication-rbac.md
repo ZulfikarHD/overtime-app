@@ -26,6 +26,13 @@ Depending on whether you work on the factory floor or in the plant administratio
 
 > 💡 **Tip:** NPK entry is not case-sensitive. You can type `emp-10029` or `EMP-10029`.
 
+### Switching Application Language (ID / EN)
+
+The application supports both **Bahasa Indonesia (`ID`)** and **English (`EN`)**:
+
+- **On the Login Screen**: Use the language toggle in the top brand bar (desktop) or next to the shift pill (mobile) to switch between `ID` and `EN`.
+- **Inside the Portal**: Open the user menu or check the sidebar footer to toggle the language preference anytime. The choice is saved to your account and device cookies.
+
 ---
 
 ### Reading Your Operational Dashboard

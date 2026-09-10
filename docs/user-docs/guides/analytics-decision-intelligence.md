@@ -45,7 +45,23 @@ Click on any tab in the navigation bar to immediately view its specialized chart
     - **Tren Biaya Lembur (6 Bulan)**: Stacked area chart showing the past 6 months of OpEx (regular production & TPM) vs. CapEx (capitalized machinery and expansion projects) in Indonesian Rupiah.
     - **Anggaran vs Realisasi**: Grouped comparative bar chart per department comparing planned budget vs actual spend, highlighting deficits in red.
     - **Rincian Biaya per Departemen**: Sortable high-density audit table with real-time department search, total hours, average rate/hour (`Rp 50.000`), total cost, budget consumption percentage, month-over-month trend indicators (↑ / ↓ / →), and a consolidated Grand Total footer.
-3. **Korelasi & Pola (Correlation & Patterns)**: Analysis of the productivity sweet spot (fair overtime zone) and fatigue threshold points.
+3. **Korelasi & Pola (Correlation & Patterns)**:
+    - **3 Summary Cards**:
+        - _Zona Lembur Wajar (Sweet Spot)_: Recommended 12.0–18.0 hours/week range where productivity remains high without fatigue defects.
+        - _Titik Puncak Produktivitas_: Historical optimal output point (15.2 hours/week) delivering lowest labor cost per vehicle unit.
+        - _Ambang Batas Kelelahan_: Plant safety limit (> 20.0 hours/week) derived from corporate policy thresholds.
+    - **Lembur vs Volume Produksi (Scatter & Regresi)**:
+        - Interactive scatter plot plotting monthly vehicle production units against overtime hours.
+        - Linear regression trend line ($y = mx + c$) and Pearson correlation coefficient ($r$) badge.
+        - Section filter dropdown to isolate individual production lines (e.g. Trim Line, Chassis Line).
+        - Friendly ERP standby banner if vehicle feed is disconnected.
+    - **Lembur vs Metrik Kualitas**:
+        - External quality metric monitor with graceful fallback banner (`"Menunggu integrasi data kualitas dari ERP"`) ensuring zero system interruption during ERP maintenance.
+    - **Tingkat Lembur Optimal (Area Chart)**:
+        - 3-zone visual curve (Under-utilized `<12`h, Sweet Spot $12\text{--}18$h, Over-threshold $>20$h).
+        - Dynamic marker badge tracking current section/department average weekly hours.
+    - **Matriks Korelasi Bivariat**:
+        - 5x5 color-coded correlation matrix table measuring linear association between Overtime, Production, Quality, Efficiency, and Cost with explanatory legend.
 4. **Simulasi Skenario (Scenario Simulation)**: Interactive calculator for testing changes in production volume, headcount, and budget impact.
 5. **Wawasan Kunci (Key Insights)**: Automated risk warnings, consecutive shift fatigue indicators, and compliance alerts.
 6. **Perbandingan Periode (Period Comparison)**: Cross-month benchmarking and section-by-section comparison.

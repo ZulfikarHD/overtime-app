@@ -64,6 +64,7 @@ Technical specifications and decision records for the engineering implementation
     - [ADR-032: Predictive Analytics ML and Moving Average Fallback Engine](./dev-docs/decisions/032-predictive-analytics-ml-and-moving-average-fallback.md)
     - [ADR-033: Automotive Login Portal and Responsive Collapsible Sidebar](./dev-docs/decisions/033-automotive-login-portal-and-responsive-collapsible-sidebar.md)
     - [ADR-034: Cost Analysis OpEx vs CapEx Segregation and Budget Variance Architecture](./dev-docs/decisions/034-cost-analysis-opex-capex-segregation-and-budget-variance.md)
+    - [ADR-035: Bivariate Correlation Matrix and Optimal Overtime Productivity Frontier Engine](./dev-docs/decisions/035-bivariate-correlation-matrix-and-optimal-overtime-frontier.md)
 - **Technical Feature Design Specifications:**
     - [Authentication & Role-Based Access Control](./dev-docs/features/authentication-rbac.md)
     - [Database Schema Migrations (Full DDL)](./dev-docs/features/database-schema-migrations.md)

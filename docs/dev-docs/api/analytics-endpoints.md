@@ -247,6 +247,124 @@ Session-based authentication via Laravel web guard (`auth`, `verified`, `role:ad
 
 ---
 
+### GET /analytics/correlation
+
+**Description:** Fetch empirical bivariate correlation analysis, linear regression parameters, sweet spot zones, and correlation matrix data.
+
+**Query Parameters:**
+
+| Param           | Type                | Required | Default                             | Description                                 |
+| :-------------- | :------------------ | :------- | :---------------------------------- | :------------------------------------------ |
+| `department_id` | string \| int       | No       | `all` (Admin) / User Dept (Manager) | Filter by department ID or `all`            |
+| `start_date`    | string (YYYY-MM-DD) | No       | 5 months prior to current month     | Range start date for historical correlation |
+| `end_date`      | string (YYYY-MM-DD) | No       | Last day of current month           | Range end date for historical correlation   |
+
+**Response 200 (JSON):**
+
+```json
+{
+    "kpi": {
+        "sweet_spot_min": 12.0,
+        "sweet_spot_max": 18.0,
+        "peak_efficiency_hours": 15.2,
+        "warning_threshold_hours": 20.0,
+        "current_weekly_avg_hours": 14.8,
+        "current_zone": "sweet_spot",
+        "current_zone_label": "Zona Lembur Wajar (Sweet Spot)"
+    },
+    "overtime_vs_production": {
+        "erp_connected": true,
+        "message": null,
+        "correlation_r": 0.814,
+        "r_squared": 0.663,
+        "regression": {
+            "slope": 0.185,
+            "intercept": 42.1,
+            "formula": "y = 0.185x + 42.1"
+        },
+        "trend_line": [
+            { "x": 800.0, "y": 190.1 },
+            { "x": 1600.0, "y": 338.1 }
+        ],
+        "scatter_points": [
+            {
+                "section_id": 1,
+                "section_code": "ASY-TRIM",
+                "section_name": "Trim Line",
+                "month": "Agu 2026",
+                "year_month": "2026-08",
+                "x": 1420.0,
+                "y": 305.0
+            }
+        ],
+        "sections": [
+            { "id": "all", "code": "ALL", "name": "Semua Seksi" },
+            { "id": 1, "code": "ASY-TRIM", "name": "Trim Line" }
+        ]
+    },
+    "overtime_vs_quality": {
+        "available": false,
+        "message": "Menunggu integrasi data kualitas dari ERP",
+        "subtext": "Analisis korelasi produksi tetap aktif",
+        "correlation_r": null,
+        "scatter_points": []
+    },
+    "optimal_zone_chart": {
+        "labels": ["0.0 jam", "4.0 jam", "15.2 jam", "20.0 jam", "32.0 jam"],
+        "hours_series": [0.0, 4.0, 15.2, 20.0, 32.0],
+        "efficiency_series": [60.0, 70.5, 100.0, 82.0, 45.0],
+        "current_weekly_avg": 14.8,
+        "zones": {
+            "under_utilized": {
+                "min": 0.0,
+                "max": 12.0,
+                "color": "#10b981",
+                "label": "Di Bawah Kapasitas (< 12 jam)"
+            },
+            "sweet_spot": {
+                "min": 12.0,
+                "max": 18.0,
+                "color": "#0284c7",
+                "label": "Zona Wajar (12–18 jam)"
+            },
+            "over_threshold": {
+                "min": 20.0,
+                "max": 32.0,
+                "color": "#cc0000",
+                "label": "Ambang Kelelahan (> 20 jam)"
+            }
+        }
+    },
+    "correlation_matrix": {
+        "variables": [
+            { "key": "overtime", "label": "Jam Lembur" },
+            { "key": "production", "label": "Volume Produksi" },
+            { "key": "quality", "label": "Metrik Kualitas" },
+            { "key": "efficiency", "label": "Efisiensi Output" },
+            { "key": "cost", "label": "Biaya Lembur" }
+        ],
+        "matrix": [
+            [
+                { "r": 1.0, "strength": "strong", "color": "green" },
+                { "r": 0.81, "strength": "strong", "color": "green" },
+                { "r": null, "strength": "erp_pending", "color": "amber" },
+                { "r": -0.42, "strength": "moderate", "color": "blue" },
+                { "r": 0.98, "strength": "strong", "color": "green" }
+            ]
+        ],
+        "legend": []
+    },
+    "scope": {
+        "department_id": null,
+        "department_name": "Semua Departemen (Lintas Pabrik)",
+        "start_date": "2026-04-01",
+        "end_date": "2026-09-30"
+    }
+}
+```
+
+---
+
 ### GET /analytics/export
 
 **Description:** Export executive summary PDF or raw tab dataset as a streamed CSV file.

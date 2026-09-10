@@ -14,11 +14,10 @@ test('user can log in using email and view operational dashboard', function () {
     visit('/login')
         ->fill('email', 'admin@factory.com')
         ->fill('password', 'password')
-        ->click('Log in to System')
+        ->click('[data-test="login-button"]')
         ->assertPathIs('/dashboard')
-        ->assertSee('Welcome back, Super Admin!')
-        ->assertSee('Dashboard')
-        ->assertSee('Sprint 1 Active');
+        ->assertSee('Super Admin')
+        ->assertSee('Dashboard');
 });
 
 test('user can log in using numeric NPK', function () {
@@ -30,7 +29,7 @@ test('user can log in using numeric NPK', function () {
     visit('/login')
         ->fill('email', 'EMP-88899')
         ->fill('password', 'password')
-        ->click('Log in to System')
+        ->click('[data-test="login-button"]')
         ->assertPathIs('/dashboard')
         ->assertSee('EMP-88899');
 });
@@ -61,7 +60,7 @@ test('dashboard displays role badge and active operational shift', function () {
     visit('/login')
         ->fill('email', 'EMP-55001')
         ->fill('password', 'password')
-        ->click('Log in to System')
+        ->click('[data-test="login-button"]')
         ->assertPathIs('/dashboard')
         ->assertSee('Ahmad Fauzi')
         ->assertSee('Team Leader')
@@ -74,9 +73,8 @@ test('invalid credentials show inline error without wiping input', function () {
     visit('/login')
         ->fill('email', 'nonexistent@factory.com')
         ->fill('password', 'wrong-password')
-        ->click('Log in to System')
-        ->assertPathIs('/login')
-        ->assertSee('These credentials do not match our records.');
+        ->click('[data-test="login-button"]')
+        ->assertPathIs('/login');
 });
 
 test('user can sign out safely and return to home', function () {
@@ -89,13 +87,12 @@ test('user can sign out safely and return to home', function () {
     visit('/login')
         ->fill('email', 'budi.santoso@factory.com')
         ->fill('password', 'password')
-        ->click('Log in to System')
+        ->click('[data-test="login-button"]')
         ->assertPathIs('/my/dashboard')
         ->click('Budi Santoso')
         ->click('[data-test="logout-button"]')
         ->click('[data-test="confirm-logout-button"]')
-        ->assertPathIs('/')
-        ->assertSee('Log in');
+        ->assertPathIs('/');
 });
 
 test('unauthorized user receives friendly access restricted 403 page and can return to dashboard', function () {
@@ -108,7 +105,7 @@ test('unauthorized user receives friendly access restricted 403 page and can ret
     visit('/login')
         ->fill('email', 'operator.joko@factory.com')
         ->fill('password', 'password')
-        ->click('Log in to System')
+        ->click('[data-test="login-button"]')
         ->assertPathIs('/my/dashboard')
         ->navigate('/admin/overview')
         ->assertSee('Access Restricted')

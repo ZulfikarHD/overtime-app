@@ -105,6 +105,9 @@ erDiagram
 | **User Identity Menu**    | `resources/js/components/UserMenuContent.vue`   | Displays NPK, department, section, role badge, and inline sign-out confirmation             |
 | **Role Badge**            | `resources/js/components/RoleBadge.vue`         | Color-coded role indicator (Admin: Purple, Manager: Blue, TL: Green, User: Slate)           |
 | **Shift Composable**      | `resources/js/composables/useShiftInfo.ts`      | Reactive Asia/Jakarta clock and three-shift rotational schedule calculator                  |
+| **Language Switcher**     | `resources/js/components/LanguageSwitcher.vue`  | Interactive toggle for Indonesian (`id`) and English (`en`) via Wayfinder `/locale`         |
+| **Locale Middleware**     | `app/Http/Middleware/SetLocale.php`             | Resolves active locale from user preferences, unencrypted cookie, session, or default `id`  |
+| **Locale Controller**     | `app/Http/Controllers/LocaleController.php`     | Handles `POST /locale` to update session, 1-year cookie, and authenticated user preferences |
 | **i18n Composable**       | `resources/js/composables/useTrans.ts`          | Reactive translation function `__()` with placeholder replacement                           |
 | **Translations**          | `lang/id.json` & `lang/en.json`                 | Bilingual translation dictionaries for Indonesian and English                               |
 | **Role Enum**             | `app/Enums/UserRole.php`                        | Backed string enum (`admin`, `manager`, `team_leader`, `user`) with labels & colors         |
@@ -140,6 +143,7 @@ erDiagram
 | ------ | ----------------------- | ---------------------- | -------------------------------- | ---------------------------------------------------- |
 | GET    | `/login`                | `login`                | `guest`                          | Displays dual-identifier login screen                |
 | POST   | `/login`                | `login.store`          | `guest`, `throttle:login`        | Authenticates via Email or NPK and creates session   |
+| POST   | `/locale`               | `locale.update`        | `web`                            | Updates active language preference (`id` / `en`)     |
 | POST   | `/logout`               | `logout`               | `auth`                           | Invalidates session and returns to home/login        |
 | GET    | `/dashboard`            | `dashboard`            | `auth`, `verified`               | Renders operational dashboard and assignment status  |
 | GET    | `/admin/overview`       | `admin.overview`       | `auth`, `role:admin`             | Protected demonstration route for Administrator role |

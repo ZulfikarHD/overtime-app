@@ -2,7 +2,7 @@
 
 **Epic ID:** E-09  
 **Priority:** P0 – CRITICAL (This is the most visible screen in the entire application)  
-**Estimated Total:** 63 Story Points  
+**Estimated Total:** 87 Story Points (Module A: 39 SP, Module B: 48 SP) — Progress: 66/87 SP (E09-00 through E09-09 complete)  
 **Target Sprints:** Sprint 9–10 (Weeks 17–20)  
 **Dependencies:** Epic-01 through Epic-05 (approved overtime data must exist), Epic-07 (CapEx data), Epic-08 (ML predictions, optional but enhances charts)  
 **Prototype Source:** `Dashboard/dashboard.html` + `AnalyticDecision/analytic-and-decision.html`  
@@ -415,31 +415,31 @@ Before any chart story begins, the chart infrastructure must be in place.
 
 **Charts:**
 
-- [ ] `Lembur vs Volume Produksi` — scatter chart: each data point = one month for one section (X = production units, Y = overtime hours). Trend line overlay (linear regression). Correlation coefficient displayed below chart.
-- [ ] `Lembur vs Metrik Kualitas` — scatter chart: (X = overtime hours per week, Y = quality defect rate or quality score if available from external feed). If quality data not available: show "Quality feed not connected — chart pending ERP integration" placeholder.
-- [ ] `Level Lembur Optimal` — area chart with 3 zones: Under-utilized (< 12 hrs/week), Sweet Spot (12–18 hrs/week from BA spec), Over-threshold (> 20 hrs/week). Current section average plotted as a vertical marker.
+- [x] `Lembur vs Volume Produksi` — scatter chart: each data point = one month for one section (X = production units, Y = overtime hours). Trend line overlay (linear regression). Correlation coefficient displayed below chart.
+- [x] `Lembur vs Metrik Kualitas` — scatter chart: (X = overtime hours per week, Y = quality defect rate or quality score if available from external feed). If quality data not available: show "Quality feed not connected — chart pending ERP integration" placeholder.
+- [x] `Level Lembur Optimal` — area chart with 3 zones: Under-utilized (< 12 hrs/week), Sweet Spot (12–18 hrs/week from BA spec), Over-threshold (> 20 hrs/week). Current section average plotted as a vertical marker.
 
 **Correlation Matrix:**
 
-- [ ] Color-coded table showing correlation coefficients between: Overtime ↔ Production, Overtime ↔ Quality, Overtime ↔ Efficiency, Overtime ↔ Cost
-- [ ] Cell background: green (|r| > 0.7 = strong), blue (0.4–0.7 = moderate), gray (< 0.4 = weak)
-- [ ] Legend below table
-- [ ] Note: Correlation coefficients computed server-side using Pearson formula on historical monthly data
+- [x] Color-coded table showing correlation coefficients between: Overtime ↔ Production, Overtime ↔ Quality, Overtime ↔ Efficiency, Overtime ↔ Cost
+- [x] Cell background: green (|r| > 0.7 = strong), blue (0.4–0.7 = moderate), gray (< 0.4 = weak)
+- [x] Legend below table
+- [x] Note: Correlation coefficients computed server-side using Pearson formula on historical monthly data
 
 **Optimal Level Summary Cards:**
 
-- [ ] 3 cards: `Sweet Spot Range` (12–18 hrs/week), `Peak Efficiency Point` (computed from data or hardcoded default 15 hrs), `Warning Threshold` (from `policy_thresholds.weekly_soft_limit_hours`)
+- [x] 3 cards: `Sweet Spot Range` (12–18 hrs/week), `Peak Efficiency Point` (computed from data or hardcoded default 15 hrs), `Warning Threshold` (from `policy_thresholds.weekly_soft_limit_hours`)
 
 #### Technical Tasks
 
-- [ ] `AnalyticsController@correlation` — `GET /analytics/correlation`
-- [ ] Pearson correlation computation (PHP server-side): `PearsonCorrelationService::compute(array $x, array $y): float`
-- [ ] Linear regression for scatter trend line: compute slope/intercept from monthly historical data
-- [ ] Create `resources/js/Pages/Analytics/TabCorrelation.vue`
-- [ ] Create `resources/js/Components/Analytics/OvertimeProductionScatter.vue`
-- [ ] Create `resources/js/Components/Analytics/OptimalLevelZoneChart.vue`
-- [ ] Create `resources/js/Components/Analytics/CorrelationMatrixTable.vue`
-- [ ] Quality data guard: if `production_quality_data` table doesn't exist, render placeholder card: `"Menunggu integrasi data kualitas dari ERP"`
+- [x] `AnalyticsController@correlation` — `GET /analytics/correlation`
+- [x] Pearson correlation computation (PHP server-side): `PearsonCorrelationService::compute(array $x, array $y): float`
+- [x] Linear regression for scatter trend line: compute slope/intercept from monthly historical data
+- [x] Create `resources/js/Pages/Analytics/TabCorrelation.vue`
+- [x] Create `resources/js/Components/Analytics/OvertimeProductionScatter.vue`
+- [x] Create `resources/js/Components/Analytics/OptimalLevelZoneChart.vue`
+- [x] Create `resources/js/Components/Analytics/CorrelationMatrixTable.vue`
+- [x] Quality data guard: if `production_quality_data` table doesn't exist, render placeholder card: `"Menunggu integrasi data kualitas dari ERP"`
 
 ---
 
@@ -727,6 +727,8 @@ These dashboards are loaded by every Manager at shift start (07:00, 15:00 WIB). 
 - [ ] Executive Dashboard loads in < 1.5 seconds for a department with 12 sections
 - [ ] All 7 dashboard charts render correctly with real data from approved `overtime_items`
 - [ ] Employee summary table is searchable client-side without server round-trip
+- [x] Correlation matrix computes Pearson r values correctly between operational variables
+- [x] Optimal overtime level chart shows 3 zones with vertical marker for section average
 - [ ] Analytics page 6-tab navigation works; tab state persists in URL query param
 - [ ] Predictive tab shows next-month forecast (ML value or moving average fallback)
 - [ ] Cost tab shows correct IDR totals formatted in Indonesian locale

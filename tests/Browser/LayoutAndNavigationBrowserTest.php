@@ -30,7 +30,7 @@ test('authenticated user sees topbar indicators, live wib clock, and role badge'
     visit('/login')
         ->fill('email', 'bambang.sudirman@factory.com')
         ->fill('password', 'password')
-        ->click('Log in to System')
+        ->click('[data-test="login-button"]')
         ->assertPathIs('/dashboard')
         ->assertSee('Bambang Sudirman')
         ->assertSee('EMP-88001')
@@ -67,22 +67,23 @@ test('user dropdown displays department and section and reveals inline sign out 
     visit('/login')
         ->fill('email', 'hendra.gunawan@factory.com')
         ->fill('password', 'password')
-        ->click('Log in to System')
+        ->click('[data-test="login-button"]')
         ->assertPathIs('/dashboard')
         ->click('Dr. Hendra Gunawan')
         ->assertSee('Maintenance Department')
-        ->assertSee('Sign Out')
+        ->assertSee('Keluar')
         ->click('[data-test="logout-button"]')
-        ->assertSee('Yes, Sign Out')
-        ->click('Cancel')
-        ->assertDontSee('Yes, Sign Out');
+        ->assertSee('Ya, Keluar')
+        ->click('Batal')
+        ->assertDontSee('Ya, Keluar');
 });
 
 test('guest layout enforces centered clean authentication card with dual identifier placeholder', function () {
     visit('/login')
-        ->assertSee('Log in to System')
-        ->assertSee('Email or NPK')
-        ->assertSee('Password')
-        ->assertSee('Remember me')
-        ->assertSee('Having trouble logging in? Contact HR / IT Admin');
+        ->assertSee('PT ISUZU ASTRA MOTOR INDONESIA')
+        ->assertSee('Masuk ke Sistem')
+        ->assertSee('Email atau NPK')
+        ->assertSee('Kata Sandi')
+        ->assertSee('Ingat saya')
+        ->assertSee('Alokasi CapEx CIP');
 });

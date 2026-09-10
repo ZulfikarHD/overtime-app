@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { Link, router } from '@inertiajs/vue3';
-import { Building2, Layers, LogOut, Settings } from '@lucide/vue';
+import { Building2, Globe, Layers, LogOut, Settings } from '@lucide/vue';
 import { ref } from 'vue';
+import LanguageSwitcher from '@/components/LanguageSwitcher.vue';
 import { Button } from '@/components/ui/button';
 import {
     DropdownMenuGroup,
@@ -80,6 +81,22 @@ const handleLogout = () => {
                 </Link>
             </DropdownMenuItem>
         </DropdownMenuGroup>
+
+        <DropdownMenuSeparator />
+
+        <!-- Language Preference Section -->
+        <div
+            class="text-muted-foreground flex items-center justify-between px-2 py-1.5 text-xs"
+        >
+            <div class="flex items-center gap-1.5 font-medium">
+                <Globe class="text-muted-foreground/70 size-3.5" />
+                <span>{{ __('Language') }}</span>
+            </div>
+            <LanguageSwitcher
+                size="sm"
+                test-id-prefix="lang-switch-user-menu"
+            />
+        </div>
 
         <DropdownMenuSeparator />
 

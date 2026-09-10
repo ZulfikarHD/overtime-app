@@ -35,4 +35,8 @@ return [
         ],
     ],
 
+    'erp' => [
+        'connected' => env('ERP_CONNECTED', false),
+    ],
+
 ];

@@ -385,6 +385,64 @@
     </table>
     @endif
 
+    @if(isset($correlationData) && $tab === 'correlation')
+    <div class="section-title">Indikator Kunci Zona Lembur Optimal &amp; Efisiensi (E09-09)</div>
+    <table class="kpi-grid">
+        <tr>
+            <td class="kpi-cell">
+                <div class="kpi-title">Zona Wajar (Sweet Spot)</div>
+                <div class="kpi-value" style="color: #0284c7;">{{ $correlationData['kpi']['sweet_spot_min'] }} &ndash; {{ $correlationData['kpi']['sweet_spot_max'] }}</div>
+                <div class="kpi-sub">jam/minggu (Kapasitas ideal)</div>
+            </td>
+            <td class="kpi-cell">
+                <div class="kpi-title">Titik Puncak Produktivitas</div>
+                <div class="kpi-value" style="color: #16a34a;">{{ $correlationData['kpi']['peak_efficiency_hours'] }}</div>
+                <div class="kpi-sub">jam/minggu (Output tertinggi)</div>
+            </td>
+            <td class="kpi-cell">
+                <div class="kpi-title">Ambang Batas Kelelahan</div>
+                <div class="kpi-value" style="color: #cc0000;">&gt; {{ $correlationData['kpi']['warning_threshold_hours'] }}</div>
+                <div class="kpi-sub">jam/minggu (Batas kebijakan)</div>
+            </td>
+            <td class="kpi-cell">
+                <div class="kpi-title">Rata-rata Jam Saat Ini</div>
+                <div class="kpi-value" style="color: #475569;">{{ $correlationData['kpi']['current_weekly_avg_hours'] }}</div>
+                <div class="kpi-sub">{{ $correlationData['kpi']['current_zone_label'] }}</div>
+            </td>
+        </tr>
+    </table>
+
+    <div class="section-title">Matriks Korelasi Bivariat Antar-Variabel</div>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th style="width: 25%;">Variabel</th>
+                @foreach($correlationData['correlation_matrix']['variables'] as $var)
+                <th style="text-align: center;">{{ $var['label'] }}</th>
+                @endforeach
+            </tr>
+        </thead>
+        <tbody>
+            @foreach($correlationData['correlation_matrix']['matrix'] as $rowIdx => $row)
+            <tr>
+                <td style="font-weight: bold;">{{ $correlationData['correlation_matrix']['variables'][$rowIdx]['label'] }}</td>
+                @foreach($row as $cell)
+                <td style="text-align: center; font-family: monospace;">
+                    @if($cell['r'] !== null)
+                        <span style="font-weight: bold; {{ $cell['color'] === 'green' ? 'color: #16a34a;' : ($cell['color'] === 'blue' ? 'color: #0284c7;' : 'color: #64748b;') }}">
+                            {{ number_format($cell['r'], 2) }}
+                        </span>
+                    @else
+                        <span style="color: #d97706; font-size: 8px;">ERP Pending</span>
+                    @endif
+                </td>
+                @endforeach
+            </tr>
+            @endforeach
+        </tbody>
+    </table>
+    @endif
+
     <!-- Sign-off Block -->
     <table class="footer-table">
         <tr>
