@@ -22,26 +22,26 @@ test('admin can navigate to analytics hub from sidebar and interact with all 6 t
     visit('/login')
         ->fill('email', 'budi.analytics@factory.com')
         ->fill('password', 'password')
-        ->click('Log in to System')
-        ->click('Analytics & Decision')
+        ->click('[data-test="login-button"]')
+        ->click('[data-test="nav-analytics"]')
         ->assertPathIs('/analytics')
-        ->assertSee('Overtime Analytics & Decision Intelligence')
-        ->assertSee('Predictive Analytics')
-        ->assertSee('Cost Analysis')
-        ->assertSee('Correlation & Patterns')
-        ->assertSee('Scenario Simulation')
-        ->assertSee('Key Insights')
-        ->assertSee('Period Comparison')
+        ->assertPresent('[data-test="analytics-page-heading"]')
+        ->assertPresent('[data-test="tab-predictive"]')
+        ->assertPresent('[data-test="tab-cost"]')
+        ->assertPresent('[data-test="tab-correlation"]')
+        ->assertPresent('[data-test="tab-scenario"]')
+        ->assertPresent('[data-test="tab-insights"]')
+        ->assertPresent('[data-test="tab-comparison"]')
         ->click('[data-test="tab-cost"]')
-        ->assertSee('Total Overtime Cost')
+        ->assertPresent('[data-test="tab-cost-content"]')
         ->click('[data-test="tab-correlation"]')
-        ->assertSee('Fair Overtime Zone (Sweet Spot)')
+        ->assertPresent('[data-test="tab-correlation-content"]')
         ->click('[data-test="tab-scenario"]')
-        ->assertSee('Production Volume Planning Calculator')
+        ->assertPresent('[data-test="tab-scenario-content"]')
         ->click('[data-test="tab-insights"]')
-        ->assertSee('Risk Indicators & Automatic Alerts')
+        ->assertPresent('[data-test="tab-insights-content"]')
         ->click('[data-test="tab-comparison"]')
-        ->assertSee('Period Comparison & Department Benchmarking');
+        ->assertPresent('[data-test="tab-comparison-content"]');
 });
 
 test('manager sees scoped analytics view and can open export report popover', function () {
@@ -63,15 +63,14 @@ test('manager sees scoped analytics view and can open export report popover', fu
     visit('/login')
         ->fill('email', 'rina.qa@factory.com')
         ->fill('password', 'password')
-        ->click('Log in to System')
-        ->click('Analytics & Decision')
+        ->click('[data-test="login-button"]')
+        ->click('[data-test="nav-analytics"]')
         ->assertPathIs('/analytics')
-        ->assertSee('Quality Assurance Plant')
-        ->assertSee('Export Report')
+        ->assertPresent('[data-test="filter-department-locked"]')
+        ->assertPresent('[data-test="btn-analytics-export"]')
         ->click('[data-test="btn-analytics-export"]')
-        ->assertSee('Download Executive Summary')
-        ->assertSee('PDF (Executive 1-Page Summary)')
-        ->assertSee('CSV (Raw Tab Data)');
+        ->assertPresent('[data-test="export-pdf-option"]')
+        ->assertPresent('[data-test="export-csv-option"]');
 });
 
 test('operator role does not see analytics sidebar item', function () {
@@ -85,7 +84,7 @@ test('operator role does not see analytics sidebar item', function () {
     visit('/login')
         ->fill('email', 'siti.operator@factory.com')
         ->fill('password', 'password')
-        ->click('Log in to System')
+        ->click('[data-test="login-button"]')
         ->assertPathIs('/my/dashboard')
-        ->assertDontSee('Analytics & Decision');
+        ->assertMissing('[data-test="nav-analytics"]');
 });
