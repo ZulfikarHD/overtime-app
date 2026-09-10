@@ -1,0 +1,1 @@
+import{Dn as e,Jt as t,Pt as n,Q as r,cr as i,lt as a,tn as o}from"./wayfinder-CFFIoNtG.js";import{o as s}from"./DialogTitle-CNKDrkyz.js";var c=a({__name:`SheetClose`,props:{asChild:{type:Boolean},as:{}},setup(a){let c=a;return(a,l)=>(t(),r(i(s),n({"data-slot":`sheet-close`},c),{default:e(()=>[o(a.$slots,`default`)]),_:3},16))}});export{c as t};
