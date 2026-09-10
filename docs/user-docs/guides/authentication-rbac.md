@@ -12,14 +12,17 @@ Depending on whether you work on the factory floor or in the plant administratio
 
 ### Logging In to the System
 
-1. Open the system login page in your web browser.
-2. In the **Email or NPK** field, enter either:
-    - Your numeric NPK badge number (for example: `EMP-10029`), OR
-    - Your company email address (for example: `operator@factory.com`).
-3. In the **Password** field, enter your confidential account password.
+1. Open the system in your web browser (direct access at `/` or `/login`). The browser title tab displays the official **ISUZU** logo icon.
+2. The page presents a clean, automotive portal tailored for PT Isuzu Astra Motor Indonesia (Karawang Assembly Plant), featuring:
+    - Manufacturing highlights: CapEx Project CIP allocation, 3-Click Shift ergonomics, and statutory 14-hour Depnaker limits.
+    - Real-time plant shift indicator and live Western Indonesian Time (WIB) clock.
+3. In the **Email or NPK** field, enter either:
+    - Your alphanumeric NPK badge number (for example: `ISZ-9001` or `EMP-10029`), OR
+    - Your company email address (for example: `plant.manager@isuzu.astra.co.id`).
+4. In the **Password** field, enter your confidential account password.
     - Click the **Show / Hide Eye icon** on the right of the password field if you wish to verify your input.
-4. (Optional) Check the **Remember me** checkbox if you are using your assigned computer.
-5. Click the **Log in to System** button.
+5. (Optional) Check the **Remember me** checkbox if you are using your assigned computer.
+6. Click the red **Log in to System** button.
 
 > 💡 **Tip:** NPK entry is not case-sensitive. You can type `emp-10029` or `EMP-10029`.
 

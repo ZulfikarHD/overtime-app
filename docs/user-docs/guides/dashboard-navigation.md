@@ -8,6 +8,24 @@ The **Dashboard** is the main screen of the OT-CapEx system. Designed specifical
 
 ## How to Use
 
+### Understanding the Redesigned Sidebar
+
+The application sidebar is tailored to the **ISUZU Manufacturing Design System** (`style-guide.html`):
+
+1. **Header Branding**: Displays the official **ISUZU** logo with plant identification: _ISUZU OT-CapEx · Karawang Assembly_.
+2. **Modular Industrial Groups**:
+    - **Operasional & Lembur**: Dashboard, Input Lembur, Persetujuan Lembur, Laporan Karyawan.
+    - **Finansial & Tata Kelola**: Proyek CapEx, Burn Index, Analitik & Keputusan, Budget Planning.
+    - **Sistem & Konfigurasi**: Master Data, Administration.
+3. **Plant Telemetry Card**: Positioned above the user profile, providing quick shift intelligence:
+    - **Fasilitas**: Karawang Assembly
+    - **Sistem Shift**: 3 Shift / 24 Jam
+    - **Ambang Depnaker**: Maks 14 Jam/Minggu (highlighted in red)
+4. **Responsive Collapse & Ergonomics**:
+    - **Medium Screens / Tablets (`md` breakpoint, 768px – 1023px)**: Automatically collapses to compact icon mode by default to maximize table and chart workspace.
+    - **Desktop (`1024px` and above)**: Opens fully expanded by default.
+    - **Manual Control**: You can toggle between expanded and icon modes at any time using the topbar toggle button, dragging the right sidebar rail border, or pressing `Ctrl+B` (`Cmd+B`). Your preference is remembered automatically across visits.
+
 ### Checking Your Active Shift and Time
 
 1. Look at the top-right header of the application.

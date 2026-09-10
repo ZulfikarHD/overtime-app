@@ -93,24 +93,26 @@ erDiagram
 
 ## Key Files & UI Mapping
 
-| Layer                   | File / Route / Menu                             | Purpose                                                                                     |
-| ----------------------- | ----------------------------------------------- | ------------------------------------------------------------------------------------------- |
-| **Login Screen**        | `resources/js/pages/auth/Login.vue`             | Dual-identifier (Email/NPK) login form with password toggle and lockout countdown           |
-| **Friendly 403 View**   | `resources/js/pages/Error.vue`                  | In-layout access restricted view with non-technical guidance and return button              |
-| **Dashboard**           | `resources/js/pages/Dashboard.vue`              | Operational dashboard with welcome greeting, assignment cards, role matrix, and shift clock |
-| **Layout Shell**        | `resources/js/layouts/AuthenticatedLayout.vue`  | Authenticated layout wrapper standardizing page structure                                   |
-| **Top Header Bar**      | `resources/js/components/AppSidebarHeader.vue`  | Live WIB clock, active shift badge (`Shift 1/2/3`), and user role badge pill                |
-| **User Identity Menu**  | `resources/js/components/UserMenuContent.vue`   | Displays NPK, department, section, role badge, and inline sign-out confirmation             |
-| **Role Badge**          | `resources/js/components/RoleBadge.vue`         | Color-coded role indicator (Admin: Purple, Manager: Blue, TL: Green, User: Slate)           |
-| **Shift Composable**    | `resources/js/composables/useShiftInfo.ts`      | Reactive Asia/Jakarta clock and three-shift rotational schedule calculator                  |
-| **i18n Composable**     | `resources/js/composables/useTrans.ts`          | Reactive translation function `__()` with placeholder replacement                           |
-| **Translations**        | `lang/id.json` & `lang/en.json`                 | Bilingual translation dictionaries for Indonesian and English                               |
-| **Role Enum**           | `app/Enums/UserRole.php`                        | Backed string enum (`admin`, `manager`, `team_leader`, `user`) with labels & colors         |
-| **User Model**          | `app/Models/User.php`                           | Eloquent entity with scoping helpers (`canAccessSection`, `canAccessDepartment`)            |
-| **RBAC Middleware**     | `app/Http/Middleware/EnsureRole.php`            | Route middleware checking role membership and active status; alias: `'role'`                |
-| **Inertia Props**       | `app/Http/Middleware/HandleInertiaRequests.php` | Shares user entity with department, section, locale, and translations                       |
-| **Fortify Auth**        | `app/Providers/FortifyServiceProvider.php`      | Custom dual-identifier authentication callback and 5-attempt rate limiter                   |
-| **Authorization Gates** | `app/Providers/AppServiceProvider.php`          | Laravel Gates defining plant capability matrix and departmental/section scoping             |
+| Layer                     | File / Route / Menu                             | Purpose                                                                                     |
+| ------------------------- | ----------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| **Root & Login Route**    | `routes/web.php` (`/` & `/login`)               | Root `/` renders login directly for guests, redirects authenticated users to `/dashboard`   |
+| **Automotive Hero Shell** | `resources/js/layouts/auth/AuthSplitLayout.vue` | Automotive manufacturing split layout with `/isuzu.png`, shift telemetry, and feature pills |
+| **Login Screen**          | `resources/js/pages/auth/Login.vue`             | Dual-identifier (Email/NPK) login form with password toggle, lockout timer, and passkeys    |
+| **Friendly 403 View**     | `resources/js/pages/Error.vue`                  | In-layout access restricted view with non-technical guidance and return button              |
+| **Dashboard**             | `resources/js/pages/Dashboard.vue`              | Operational dashboard with welcome greeting, assignment cards, role matrix, and shift clock |
+| **Layout Shell**          | `resources/js/layouts/AuthenticatedLayout.vue`  | Authenticated layout wrapper standardizing page structure                                   |
+| **Top Header Bar**        | `resources/js/components/AppSidebarHeader.vue`  | Live WIB clock, active shift badge (`Shift 1/2/3`), and user role badge pill                |
+| **User Identity Menu**    | `resources/js/components/UserMenuContent.vue`   | Displays NPK, department, section, role badge, and inline sign-out confirmation             |
+| **Role Badge**            | `resources/js/components/RoleBadge.vue`         | Color-coded role indicator (Admin: Purple, Manager: Blue, TL: Green, User: Slate)           |
+| **Shift Composable**      | `resources/js/composables/useShiftInfo.ts`      | Reactive Asia/Jakarta clock and three-shift rotational schedule calculator                  |
+| **i18n Composable**       | `resources/js/composables/useTrans.ts`          | Reactive translation function `__()` with placeholder replacement                           |
+| **Translations**          | `lang/id.json` & `lang/en.json`                 | Bilingual translation dictionaries for Indonesian and English                               |
+| **Role Enum**             | `app/Enums/UserRole.php`                        | Backed string enum (`admin`, `manager`, `team_leader`, `user`) with labels & colors         |
+| **User Model**            | `app/Models/User.php`                           | Eloquent entity with scoping helpers (`canAccessSection`, `canAccessDepartment`)            |
+| **RBAC Middleware**       | `app/Http/Middleware/EnsureRole.php`            | Route middleware checking role membership and active status; alias: `'role'`                |
+| **Inertia Props**         | `app/Http/Middleware/HandleInertiaRequests.php` | Shares user entity with department, section, locale, and translations                       |
+| **Fortify Auth**          | `app/Providers/FortifyServiceProvider.php`      | Custom dual-identifier authentication callback and 5-attempt rate limiter                   |
+| **Authorization Gates**   | `app/Providers/AppServiceProvider.php`          | Laravel Gates defining plant capability matrix and departmental/section scoping             |
 
 ## Flow Explanation
 

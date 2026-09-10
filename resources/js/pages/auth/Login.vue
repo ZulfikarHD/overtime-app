@@ -200,7 +200,7 @@ onUnmounted(() => {
                 <!-- Primary Submit Action -->
                 <Button
                     type="submit"
-                    class="mt-2 h-12 w-full text-base font-medium shadow-sm transition-all"
+                    class="mt-2 h-12 w-full cursor-pointer bg-[#cc0000] text-base font-semibold text-white shadow-xs transition-all hover:bg-[#b30000] active:scale-[0.99]"
                     :tabindex="4"
                     :disabled="
                         processing ||

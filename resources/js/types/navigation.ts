@@ -15,4 +15,5 @@ export type NavItem = {
     roles?: UserRole[];
     badge?: string | number | null;
     testId?: string;
+    group?: string;
 };

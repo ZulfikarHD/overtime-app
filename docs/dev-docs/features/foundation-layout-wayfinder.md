@@ -39,16 +39,19 @@ erDiagram
 
 ## Key Files & UI Mapping
 
-| Layer              | File / Route / Menu                             | Purpose                                                                |
-| ------------------ | ----------------------------------------------- | ---------------------------------------------------------------------- |
-| Sidebar Menu       | `Dashboard`                                     | Single active navigation entry for Sprint 1                            |
-| Layout Shell       | `resources/js/layouts/AuthenticatedLayout.vue`  | Base authenticated layout wrapper                                      |
-| Guest Layout       | `resources/js/layouts/GuestLayout.vue`          | Standalone layout wrapper for guest and auth pages                     |
-| Topbar Component   | `resources/js/components/AppSidebarHeader.vue`  | Displays breadcrumbs, live WIB clock, shift badge, and role badge      |
-| Sidebar Component  | `resources/js/components/AppSidebar.vue`        | Single-entry sidebar with build version and user session popover       |
-| Toast Handler      | `resources/js/lib/flashToast.ts`                | Reactive listener for server flash events and Inertia props            |
-| Inertia Middleware | `app/Http/Middleware/HandleInertiaRequests.php` | Shares user auth state, roles, translations, and flash bags            |
-| Wayfinder Config   | `vite.config.ts`                                | Configures `@laravel/vite-plugin-wayfinder` for automated route typing |
+| Layer               | File / Route / Menu                                      | Purpose                                                                 |
+| ------------------- | -------------------------------------------------------- | ----------------------------------------------------------------------- |
+| Sidebar Menu        | `Operasional & Lembur`, `Finansial`, `Sistem`            | Grouped modular navigation adhering to `public/style-guide.html`        |
+| Brand Header        | `resources/js/components/AppLogo.vue`                    | Single-root logo displaying `/isuzu.png` and Karawang Plant identity    |
+| Telemetry Card      | `resources/js/components/AppSidebar.vue`                 | Real-time plant quick info (Karawang Assembly, 3 Shift, Depnaker limit) |
+| Sidebar Rail        | `resources/js/components/ui/sidebar/SidebarRail.vue`     | Interactive drag/click border rail to toggle expanded/collapsed states  |
+| Responsive Provider | `resources/js/components/ui/sidebar/SidebarProvider.vue` | Breakpoint-aware collapse (`md` collapsed, `md to up` open by default)  |
+| Layout Shell        | `resources/js/layouts/AuthenticatedLayout.vue`           | Base authenticated layout wrapper                                       |
+| Guest Layout        | `resources/js/layouts/AuthLayout.vue`                    | Automotive split layout wrapper for guest and auth pages                |
+| Topbar Component    | `resources/js/components/AppSidebarHeader.vue`           | Displays breadcrumbs, live WIB clock, shift badge, and role badge       |
+| Toast Handler       | `resources/js/lib/flashToast.ts`                         | Reactive listener for server flash events and Inertia props             |
+| Inertia Middleware  | `app/Http/Middleware/HandleInertiaRequests.php`          | Shares user auth state, roles, translations, and flash bags             |
+| Wayfinder Config    | `vite.config.ts`                                         | Configures `@laravel/vite-plugin-wayfinder` for automated route typing  |
 
 ## Flow Explanation
 
@@ -75,4 +78,5 @@ erDiagram
 
 - [ADR-001: Wayfinder Routing over Ziggy](../decisions/001-wayfinder-routing-over-ziggy.md)
 - [ADR-007: Role-Based Access Control and Scoping](../decisions/007-role-based-access-control-and-scoping.md)
+- [ADR-033: Automotive Login Portal and Responsive Collapsible Sidebar](../decisions/033-automotive-login-portal-and-responsive-collapsible-sidebar.md)
 - [Authentication & Role-Based Access Control](authentication-rbac.md)

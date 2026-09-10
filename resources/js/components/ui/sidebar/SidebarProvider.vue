@@ -2,7 +2,7 @@
 import type { HTMLAttributes, Ref } from "vue"
 import { defaultDocument, useEventListener, useMediaQuery, useVModel } from "@vueuse/core"
 import { TooltipProvider } from "reka-ui"
-import { computed, ref } from "vue"
+import { computed, ref, watch } from "vue"
 import { cn } from "@/lib/utils"
 import { provideSidebarContext, SIDEBAR_COOKIE_MAX_AGE, SIDEBAR_COOKIE_NAME, SIDEBAR_KEYBOARD_SHORTCUT, SIDEBAR_WIDTH, SIDEBAR_WIDTH_ICON } from "./utils"
 
@@ -11,7 +11,7 @@ const props = withDefaults(defineProps<{
   open?: boolean
   class?: HTMLAttributes["class"]
 }>(), {
-  defaultOpen: !defaultDocument?.cookie.includes(`${SIDEBAR_COOKIE_NAME}=false`),
+  defaultOpen: undefined,
   open: undefined,
 })
 
@@ -19,18 +19,58 @@ const emits = defineEmits<{
   "update:open": [open: boolean]
 }>()
 
-const isMobile = useMediaQuery("(max-width: 768px)")
+const isMobile = useMediaQuery("(max-width: 767px)")
+const isMd = useMediaQuery("(min-width: 768px) and (max-width: 1023px)")
+const isDesktop = useMediaQuery("(min-width: 1024px)")
 const openMobile = ref(false)
 
+const hasCookie = Boolean(defaultDocument?.cookie.includes(`${SIDEBAR_COOKIE_NAME}=`))
+const cookieValue = hasCookie
+  ? !defaultDocument?.cookie.includes(`${SIDEBAR_COOKIE_NAME}=false`)
+  : undefined
+
+const hasManualToggle = ref(hasCookie)
+
+const computeInitialOpen = (): boolean => {
+  if (cookieValue !== undefined) {
+    return cookieValue
+  }
+
+  if (typeof window !== "undefined") {
+    // In md breakpoint (768px - 1023px), collapse by default
+    if (window.innerWidth >= 768 && window.innerWidth < 1024) {
+      return false
+    }
+    // md to up (>= 1024px), open by default
+    if (window.innerWidth >= 1024) {
+      return true
+    }
+  }
+
+  return props.defaultOpen ?? true
+}
+
 const open = useVModel(props, "open", emits, {
-  defaultValue: props.defaultOpen ?? false,
+  defaultValue: computeInitialOpen(),
   passive: (props.open === undefined) as false,
 }) as Ref<boolean>
 
-function setOpen(value: boolean) {
-  open.value = value // emits('update:open', value)
+// Auto-adjust default state on responsive breakpoint transitions if user hasn't explicitly toggled
+watch(isMd, (val) => {
+  if (val && !hasManualToggle.value) {
+    open.value = false
+  }
+})
 
-  // This sets the cookie to keep the sidebar state.
+watch(isDesktop, (val) => {
+  if (val && !hasManualToggle.value) {
+    open.value = true
+  }
+})
+
+function setOpen(value: boolean) {
+  hasManualToggle.value = true
+  open.value = value
   document.cookie = `${SIDEBAR_COOKIE_NAME}=${open.value}; path=/; max-age=${SIDEBAR_COOKIE_MAX_AGE}`
 }
 
