@@ -8,6 +8,7 @@ use App\Services\Analytics\AnalyticsExportService;
 use App\Services\Analytics\CorrelationAnalysisService;
 use App\Services\Analytics\CostAnalysisService;
 use App\Services\Analytics\InsightAggregatorService;
+use App\Services\Analytics\PeriodComparisonService;
 use App\Services\Analytics\PredictiveAnalyticsService;
 use App\Services\Analytics\ScenarioCalculatorService;
 use Carbon\Carbon;
@@ -40,6 +41,7 @@ class AnalyticsController extends Controller
         public CorrelationAnalysisService $correlationService,
         public ScenarioCalculatorService $scenarioService,
         public InsightAggregatorService $insightService,
+        public PeriodComparisonService $comparisonService,
     ) {}
 
     /**
@@ -107,6 +109,16 @@ class AnalyticsController extends Controller
             ? $this->insightService->getInsightsData($user, $departmentIdInt, $startDate, $endDate)
             : null;
 
+        $comparisonData = $tab === 'comparison'
+            ? $this->comparisonService->getComparisonData(
+                $user,
+                $departmentIdInt,
+                $request->query('base_period') ?: $request->query('base'),
+                $request->query('compare_period') ?: $request->query('compare'),
+                (string) $request->query('type', 'yoy')
+            )
+            : null;
+
         return Inertia::render('Analytics/Index', [
             'currentTab' => $tab,
             'departments' => $departments,
@@ -120,6 +132,7 @@ class AnalyticsController extends Controller
             'correlationData' => $correlationData,
             'scenarioData' => $scenarioData,
             'insightsData' => $insightsData,
+            'comparisonData' => $comparisonData,
             'userRole' => is_string($user->role) ? $user->role : $user->role->value,
             'userDepartmentId' => $user->department_id,
         ]);
@@ -217,6 +230,37 @@ class AnalyticsController extends Controller
         $endDate = $request->filled('end_date') ? (string) $request->input('end_date') : null;
 
         $data = $this->insightService->getInsightsData($user, $departmentId, $startDate, $endDate);
+
+        return response()->json($data);
+    }
+
+    /**
+     * Return JSON endpoint for Period Comparison and Department Benchmarking data (E09-12).
+     */
+    public function comparison(Request $request): JsonResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+
+        abort_unless($user && ($user->isAdmin() || $user->isManager()), 403);
+
+        $rawDept = $request->input('department_id');
+        $departmentId = null;
+        if ($request->has('department_id') && $rawDept !== '' && $rawDept !== 'all') {
+            $departmentId = (int) $rawDept;
+        }
+
+        $basePeriod = $request->filled('base_period')
+            ? (string) $request->input('base_period')
+            : ($request->filled('base') ? (string) $request->input('base') : null);
+
+        $comparePeriod = $request->filled('compare_period')
+            ? (string) $request->input('compare_period')
+            : ($request->filled('compare') ? (string) $request->input('compare') : null);
+
+        $type = (string) $request->input('type', 'yoy');
+
+        $data = $this->comparisonService->getComparisonData($user, $departmentId, $basePeriod, $comparePeriod, $type);
 
         return response()->json($data);
     }

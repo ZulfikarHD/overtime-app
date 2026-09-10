@@ -73,9 +73,13 @@ erDiagram
 | Service Layer    | `app/Services/Analytics/ScenarioCalculatorService.php`            | Empirical labor factor, planning, simulation & preferences   |
 | Controller       | `app/Http/Controllers/AnalyticsScenarioController.php`            | Endpoints for index, calculate, save, and delete scenario    |
 | Sub-Tab 5        | `resources/js/pages/Analytics/TabInsights.vue`                    | Automated risk indicators & fatigue alerts                   |
-| Sub-Tab 6        | `resources/js/pages/Analytics/TabComparison.vue`                  | Period comparison & departmental benchmarking                |
+| Sub-Tab 6        | `resources/js/pages/Analytics/TabComparison.vue`                  | Period comparison & departmental benchmarking (E09-12)       |
+| Component        | `resources/js/components/analytics/PeriodComparisonBarChart.vue`  | Dual bar series + secondary Y-axis variance line (E09-12)    |
+| Component        | `resources/js/components/analytics/DepartmentBenchmarkChart.vue`  | Horizontal ranking bar chart with Burn Index tags (E09-12)   |
+| Component        | `resources/js/components/analytics/BestPracticeCards.vue`         | 3 Performer summary cards + 2 dynamic insight cards (E09-12) |
 | Export Component | `resources/js/components/analytics/ExportReportPopover.vue`       | Dropdown trigger for PDF and CSV exports                     |
 | Controller       | `app/Http/Controllers/AnalyticsController.php`                    | Handles page rendering, API, and export requests             |
+| Service Layer    | `app/Services/Analytics/PeriodComparisonService.php`              | YoY/MoM/QoQ aggregation, zero-baseline guard, benchmarking   |
 | Service Layer    | `app/Services/Analytics/PredictiveAnalyticsService.php`           | ML prediction query, MA-3 fallback, seasonality              |
 | Service Layer    | `app/Services/Analytics/CostAnalysisService.php`                  | Financial KPI aggregation, OpEx/CapEx, budget pacing         |
 | Service Layer    | `app/Services/Analytics/CorrelationAnalysisService.php`           | Bivariate metrics, optimal zones, ERP quality guard (E09-09) |
@@ -86,7 +90,7 @@ erDiagram
 ## Flow Explanation
 
 1. **User triggers navigation**: An Admin or Manager clicks **Analitik & Keputusan** in the sidebar. (Team Leaders and Operators do not have this link and receive HTTP 403 if navigating directly).
-2. **Request handling**: `AnalyticsController@index` intercepts the request, validates the requested `tab` (defaulting to `predictive`), scopes the department list based on role (full list for Admin, single assigned department for Manager), and renders `Analytics/Index`. When `tab === 'predictive'`, `PredictiveAnalyticsService::getPredictiveData()` is executed and hydrated as the initial `predictiveData` prop.
+2. **Request handling**: `AnalyticsController@index` intercepts the request, validates the requested `tab` (defaulting to `predictive`), scopes the department list based on role (full list for Admin, single assigned department for Manager), and renders `Analytics/Index`. When `tab === 'predictive'`, `PredictiveAnalyticsService::getPredictiveData()` is executed and hydrated as the initial `predictiveData` prop. When `tab === 'comparison'`, `PeriodComparisonService::getComparisonData()` hydrates `comparisonData`.
 3. **Predictive Analytics Computation (E09-07)**:
     - Evaluates active `MlModel` (`DEMAND_FORECAST`) and queries `MlPrediction` (`MONTH_NEXT`) for next month's section and department forecasts.
     - If ML predictions are uninitialized (cold-start), seamlessly computes a 3-month Simple Moving Average ($MA_3$) from approved historical `overtime_items` and attaches a prominent "Moving Average" baseline badge.
@@ -105,9 +109,19 @@ erDiagram
     - Inspects `Schema::hasTable('production_quality_data')` and `services.erp.connected`. If disconnected or absent, renders a friendly status banner (`"N/A — Integrasi data produksi ERP belum terhubung"` and `"Menunggu integrasi data kualitas dari ERP"`) with zero crashes.
     - Computes an optimal overtime sweet spot frontier (12.0–18.0 hrs/week peaking at 15.2 hrs/week) against `PolicyThreshold::weekly_soft_limit_hours` (> 20.0 hrs/week) with dynamic section average marker.
     - Computes a 5x5 bivariate correlation matrix across Overtime, Production, Quality, Efficiency, and Cost with color-coded classification: Green ($|r| \ge 0.70$), Blue ($0.40 \le |r| < 0.70$), Gray ($|r| < 0.40$), and Amber (`ERP Pending`).
-6. **Tab Switching**: Clicking any tab button updates the local `activeTab` ref instantly. The URL query parameter is updated via `window.history.replaceState` without triggering a full page reload.
-7. **Filter Adjustments**: Changing the department or date filter updates query parameters and initiates an Inertia partial reload (`preserveState: true`, `preserveScroll: true`) to update server-supplied datasets while keeping the active tab intact. Alternatively, client components query `GET /analytics/cost`, `GET /analytics/predictive`, or `GET /analytics/correlation` asynchronously.
-8. **Exporting Reports**: Clicking **Ekspor Laporan** opens the popover displaying current filter scope. Selecting PDF or CSV generates either a structured audit CSV or a branded executive PDF summary with KPI cards and department breakdown tables.
+6. **Period Comparison & Benchmarking (E09-12)**:
+    - When `tab === 'comparison'` or asynchronously querying `GET /analytics/comparison`, `PeriodComparisonService::getComparisonData()` compares base vs compare periods across four modes: Year-over-Year (YoY), Month-over-Month (MoM), Quarter-over-Quarter (QoQ), or Department Benchmarking.
+    - Computes 4 Comparison KPI Cards with zero-baseline division protection (`is_zero_baseline`, formatting `+100.0% (Baru)` or `Data Pembanding Kosong` without `NaN%` or `+Infinity%`):
+        - Total Overtime Hours Delta & Direction (`up`, `down`, `stable`).
+        - Total Overtime Cost Delta & Rupiah savings/increase.
+        - Labor Efficiency Delta (units/hour) with graceful ERP degradation fallback if production units are missing.
+        - Active Overtime Headcount Delta.
+    - Renders a grouped bar chart with secondary Y-axis percentage line overlay, comparing periods side by side.
+    - Generates horizontal ranking bar chart showing all departments sorted by volume with Burn Index status zone badges (`safe`, `on_track`, `warning`, `danger`).
+    - Produces 3 Performer summary cards (Best Performer, Plant Average Benchmark, Needs Attention) and 2 dynamic natural-language Indonesian strategic insight cards based on empirical metrics.
+7. **Tab Switching**: Clicking any tab button updates the local `activeTab` ref instantly. The URL query parameter is updated via `window.history.replaceState` without triggering a full page reload.
+8. **Filter Adjustments**: Changing the department or date filter updates query parameters and initiates an Inertia partial reload (`preserveState: true`, `preserveScroll: true`) to update server-supplied datasets while keeping the active tab intact. Alternatively, client components query `GET /analytics/cost`, `GET /analytics/predictive`, `GET /analytics/correlation`, or `GET /analytics/comparison` asynchronously.
+9. **Exporting Reports**: Clicking **Ekspor Laporan** opens the popover displaying current filter scope. Selecting PDF or CSV generates either a structured audit CSV or a branded executive PDF summary with KPI cards and department breakdown tables.
 
 ## API Endpoints & Routes
 
@@ -117,6 +131,7 @@ erDiagram
 | `GET`  | `/analytics/predictive`  | `AnalyticsController@predictive`   | Fetch predictive analytics JSON data | `auth, verified, role:admin,manager` |
 | `GET`  | `/analytics/cost`        | `AnalyticsController@costAnalysis` | Fetch cost analysis JSON data        | `auth, verified, role:admin,manager` |
 | `GET`  | `/analytics/correlation` | `AnalyticsController@correlation`  | Fetch correlation analysis JSON data | `auth, verified, role:admin,manager` |
+| `GET`  | `/analytics/comparison`  | `AnalyticsController@comparison`   | Fetch period comparison JSON data    | `auth, verified, role:admin,manager` |
 | `GET`  | `/analytics/export`      | `AnalyticsController@export`       | Export PDF or CSV report             | `auth, verified, role:admin,manager` |
 
 ## Decisions & Trade-offs

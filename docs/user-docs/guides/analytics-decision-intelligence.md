@@ -67,7 +67,24 @@ Click on any tab in the navigation bar to immediately view its specialized chart
     - **Simulator Skenario Beban Kerja**: Menyesuaikan persentase perubahan jam lembur (-50% s/d +50%) dan batas plafon anggaran untuk melihat dampak finansial ($\pm\text{Rp}$), fluktuasi output produksi ($\pm\%$), proyeksi Burn Index, serta Skor Risiko K3 keselamatan kerja.
     - **Perbandingan Skenario & Preset**: Membandingkan baseline aktual, skenario aktif, dan hingga 3 skenario tersimpan dalam bentuk grafik batang dan tabel matriks, dilengkapi drawer slide-in untuk mengelola preset skenario.
 5. **Wawasan Kunci (Key Insights)**: Automated risk warnings, consecutive shift fatigue indicators, and compliance alerts.
-6. **Perbandingan Periode (Period Comparison)**: Cross-month benchmarking and section-by-section comparison.
+6. **Perbandingan Periode (Period Comparison)**:
+    - **Tipe Perbandingan**:
+        - _Year-over-Year (YoY)_: Membandingkan bulan terpilih dengan bulan yang sama pada tahun sebelumnya (misal: September 2026 vs September 2025).
+        - _Month-over-Month (MoM)_: Membandingkan bulan terpilih dengan bulan sebelumnya (misal: September 2026 vs Agustus 2026).
+        - _Quarter-over-Quarter (QoQ)_: Membandingkan kuartal berjalan dengan 3 bulan sebelumnya.
+        - _Benchmarking Departemen_: Membandingkan kinerja lembur antar seksi/departemen pada periode yang sama.
+    - **4 Kartu Ringkasan KPI Komparasi**:
+        - _Perubahan Jam Lembur_: Perbedaan jam lembur aktual vs periode pembanding dengan indikator panah kenaikan/penurunan (↑ / ↓) dan persentase perubahan.
+        - _Perubahan Biaya_: Nilai efisiensi penghematan atau peningkatan biaya lembur dalam Rupiah (Rp).
+        - _Perubahan Efisiensi_: Rasio unit kendaraan per jam lembur dengan penanda kesiapan integrasi ERP.
+        - _Headcount Lembur_: Perubahan jumlah personel aktif yang melaksanakan lembur.
+    - **Grafik Batang Perbandingan Periode**: Menampilkan perbandingan berdampingan antar bulan dengan garis persentase varians (%) pada sumbu Y sekunder.
+    - **Grafik Benchmarking Departemen**: Diagram batang horizontal yang mengurutkan seluruh departemen berdasarkan beban lembur beserta badge Burn Index zona kepatuhan (Aman, Sesuai, Peringatan, Bahaya).
+    - **Kartu Ringkasan Kinerja (3 Kartu)**:
+        - _Departemen Terbaik_: Departemen dengan efisiensi Burn Index terbaik.
+        - _Rata-rata Pabrik_: Nilai acuan benchmark tengah konsolidasi pabrik.
+        - _Perlu Perhatian_: Departemen dengan potensi risiko pembengkakan lembur tertinggi.
+    - **Praktik Terbaik Strategis (2 Kartu Insight)**: Narasi otomatis dalam bahasa Indonesia yang merangkum strategi operasional terunggul dari departemen terbaik untuk dijadikan acuan pembelajaran lintas lini.
 
 > 💡 **Tip:** When you switch tabs, the web address in your browser updates automatically. You can copy the link from your address bar to share an exact analytical view with other managers.
 

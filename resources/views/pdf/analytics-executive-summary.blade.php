@@ -507,6 +507,105 @@
     </table>
     @endif
 
+    @if(isset($comparisonData) && $tab === 'comparison')
+    <!-- Period Comparison Summary (E09-12) -->
+    <div class="section-title">Indikator Kunci Perbandingan Periode (E09-12) — {{ strtoupper($comparisonData['comparison_type']) }}</div>
+    <div style="font-size: 8.5px; color: #64748b; margin-bottom: 8px;">
+        Periode Basis: <strong>{{ $comparisonData['base_period_label'] }}</strong> vs Periode Pembanding: <strong>{{ $comparisonData['compare_period_label'] }}</strong>
+    </div>
+
+    <table class="kpi-grid-table">
+        <tr>
+            <td class="kpi-cell">
+                <div class="kpi-label">Perubahan Jam Lembur</div>
+                <div class="kpi-value {{ $comparisonData['kpi']['total_hours']['direction'] === 'down' ? 'on-track' : ($comparisonData['kpi']['total_hours']['direction'] === 'up' ? 'deficit' : '') }}">
+                    {{ ($comparisonData['kpi']['total_hours']['pct_change'] >= 0 ? '+' : '') . $comparisonData['kpi']['total_hours']['pct_change'] }}%
+                </div>
+                <div class="kpi-subtext">Varians: {{ $comparisonData['kpi']['total_hours']['formatted_diff'] }}</div>
+            </td>
+            <td class="kpi-cell">
+                <div class="kpi-label">Perubahan Biaya (Rp)</div>
+                <div class="kpi-value {{ $comparisonData['kpi']['total_cost']['direction'] === 'down' ? 'on-track' : ($comparisonData['kpi']['total_cost']['direction'] === 'up' ? 'deficit' : '') }}">
+                    {{ ($comparisonData['kpi']['total_cost']['pct_change'] >= 0 ? '+' : '') . $comparisonData['kpi']['total_cost']['pct_change'] }}%
+                </div>
+                <div class="kpi-subtext">{{ $comparisonData['kpi']['total_cost']['formatted_diff'] }}</div>
+            </td>
+            <td class="kpi-cell">
+                <div class="kpi-label">Perubahan Efisiensi</div>
+                <div class="kpi-value {{ $comparisonData['kpi']['efficiency']['direction'] === 'up' ? 'on-track' : ($comparisonData['kpi']['efficiency']['direction'] === 'down' ? 'deficit' : '') }}">
+                    {{ ($comparisonData['kpi']['efficiency']['pct_change'] <= 0 ? '-' : '+') . abs($comparisonData['kpi']['efficiency']['pct_change']) }}%
+                </div>
+                <div class="kpi-subtext">{{ $comparisonData['kpi']['efficiency']['formatted_diff'] }}</div>
+            </td>
+            <td class="kpi-cell">
+                <div class="kpi-label">Headcount Lembur</div>
+                <div class="kpi-value">
+                    {{ $comparisonData['kpi']['headcount']['formatted_diff'] }}
+                </div>
+                <div class="kpi-subtext">Total: {{ $comparisonData['kpi']['headcount']['base_value'] }} vs {{ $comparisonData['kpi']['headcount']['compare_value'] }} org</div>
+            </td>
+        </tr>
+    </table>
+
+    <div class="section-title">Benchmarking Departemen / Seksi</div>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th style="width: 5%;">No</th>
+                <th style="width: 10%;">Kode</th>
+                <th style="width: 25%;">Nama Departemen / Seksi</th>
+                <th style="width: 12%; text-align: right;">Jam Basis</th>
+                <th style="width: 12%; text-align: right;">Jam Pembanding</th>
+                <th style="width: 12%; text-align: right;">Varians (%)</th>
+                <th style="width: 12%; text-align: right;">Biaya Basis</th>
+                <th style="width: 12%; text-align: center;">Burn Index</th>
+            </tr>
+        </thead>
+        <tbody>
+            @forelse($comparisonData['department_benchmarks'] as $idx => $dept)
+            <tr>
+                <td style="text-align: center;">{{ $idx + 1 }}</td>
+                <td style="font-family: monospace;">{{ $dept['code'] }}</td>
+                <td style="font-weight: bold;">{{ $dept['name'] }}</td>
+                <td style="text-align: right; font-family: monospace;">{{ number_format($dept['base_hours'], 1, ',', '.') }} jam</td>
+                <td style="text-align: right; font-family: monospace;">{{ number_format($dept['compare_hours'], 1, ',', '.') }} jam</td>
+                <td style="text-align: right; font-family: monospace; font-weight: bold; {{ $dept['variance_pct'] > 0 ? 'color: #cc0000;' : 'color: #16a34a;' }}">
+                    {{ ($dept['variance_pct'] >= 0 ? '+' : '') . $dept['variance_pct'] }}%
+                </td>
+                <td style="text-align: right; font-family: monospace;">Rp {{ number_format($dept['base_cost'], 0, ',', '.') }}</td>
+                <td style="text-align: center; font-family: monospace; font-weight: bold;">{{ $dept['burn_index_pct'] }}%</td>
+            </tr>
+            @empty
+            <tr>
+                <td colspan="8" style="text-align: center; color: #94a3b8; padding: 10px;">Belum ada data benchmarking departemen.</td>
+            </tr>
+            @endforelse
+        </tbody>
+    </table>
+
+    <div class="section-title">Praktik Terbaik &amp; Evaluasi Performa Antar-Departemen</div>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th style="width: 20%;">Kategori Strategi</th>
+                <th style="width: 25%;">Departemen / Seksi</th>
+                <th style="width: 15%; text-align: center;">Metrik Kunci</th>
+                <th style="width: 40%;">Ringkasan Praktik Terbaik</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach($comparisonData['best_practice_cards'] as $card)
+            <tr>
+                <td style="font-weight: bold; color: #0284c7;">{{ $card['strategy_category'] }}</td>
+                <td><strong>{{ $card['department_name'] }}</strong></td>
+                <td style="text-align: center; font-family: monospace; font-weight: bold; color: #16a34a;">{{ $card['metric_value'] }}</td>
+                <td style="font-size: 8.5px;">{{ $card['description'] }}</td>
+            </tr>
+            @endforeach
+        </tbody>
+    </table>
+    @endif
+
     <!-- Sign-off Block -->
     <table class="footer-table">
         <tr>

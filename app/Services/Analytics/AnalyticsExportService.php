@@ -30,11 +30,13 @@ class AnalyticsExportService
         public ?CostAnalysisService $costService = null,
         public ?CorrelationAnalysisService $correlationService = null,
         public ?InsightAggregatorService $insightService = null,
+        public ?PeriodComparisonService $comparisonService = null,
     ) {
         $this->predictiveService = $predictiveService ?? app(PredictiveAnalyticsService::class);
         $this->costService = $costService ?? app(CostAnalysisService::class);
         $this->correlationService = $correlationService ?? app(CorrelationAnalysisService::class);
         $this->insightService = $insightService ?? app(InsightAggregatorService::class);
+        $this->comparisonService = $comparisonService ?? app(PeriodComparisonService::class);
     }
 
     /**
@@ -74,14 +76,16 @@ class AnalyticsExportService
         $baseFilename = "Analytics_{$tabSlug}_{$timestamp}";
 
         if (strtolower($format) === 'csv') {
-            return $this->exportCsv($user, $tab, $departmentName, $departmentId, $startDate, $endDate, $baseFilename.'.csv');
+            return $this->exportCsv($user, $tab, $departmentName, $departmentId, $startDate, $endDate, $baseFilename.'.csv', $params);
         }
 
-        return $this->exportPdf($user, $tab, $departmentName, $departmentId, $startDate, $endDate, $baseFilename.'.pdf');
+        return $this->exportPdf($user, $tab, $departmentName, $departmentId, $startDate, $endDate, $baseFilename.'.pdf', $params);
     }
 
     /**
      * Export analytics summary as a streamed CSV with UTF-8 BOM.
+     *
+     * @param  array<string, mixed>  $params
      */
     protected function exportCsv(
         User $user,
@@ -91,6 +95,7 @@ class AnalyticsExportService
         string $startDate,
         string $endDate,
         string $filename,
+        array $params = [],
     ): StreamedResponse {
         $headers = [
             'Content-Type' => 'text/csv; charset=UTF-8',
@@ -100,7 +105,7 @@ class AnalyticsExportService
             'Expires' => '0',
         ];
 
-        return response()->streamDownload(function () use ($user, $tab, $departmentName, $departmentId, $startDate, $endDate) {
+        return response()->streamDownload(function () use ($user, $tab, $departmentName, $departmentId, $startDate, $endDate, $params) {
             $handle = fopen('php://output', 'w');
             if ($handle === false) {
                 return;
@@ -256,6 +261,86 @@ class AnalyticsExportService
                         $act['resolution_note'] ?? '-',
                     ]);
                 }
+            } elseif ($tab === 'comparison') {
+                $basePeriod = isset($params['base_period']) ? (string) $params['base_period'] : (isset($params['base']) ? (string) $params['base'] : substr($startDate, 0, 7));
+                $comparePeriod = isset($params['compare_period']) ? (string) $params['compare_period'] : (isset($params['compare']) ? (string) $params['compare'] : null);
+                $type = isset($params['type']) ? (string) $params['type'] : 'yoy';
+
+                $comp = $this->comparisonService->getComparisonData($user, $departmentId, $basePeriod, $comparePeriod, $type);
+
+                fputcsv($handle, ['=== INDIKATOR PERBANDINGAN PERIODE (E09-12) ===']);
+                fputcsv($handle, ['Tipe Perbandingan', strtoupper($comp['comparison_type'])]);
+                fputcsv($handle, ['Periode Basis', $comp['base_period_label']." ({$comp['base_period']})"]);
+                fputcsv($handle, ['Periode Pembanding', $comp['compare_period_label']." ({$comp['compare_period']})"]);
+                fputcsv($handle, []);
+
+                fputcsv($handle, ['=== RINGKASAN METRIK PERBANDINGAN (KPI CARDS) ===']);
+                fputcsv($handle, ['Metrik', 'Periode Basis', 'Periode Pembanding', 'Varians', 'Perubahan (%)', 'Arah Tren']);
+                fputcsv($handle, [
+                    'Total Jam Lembur',
+                    $comp['kpi']['total_hours']['base_value'].' jam',
+                    $comp['kpi']['total_hours']['compare_value'].' jam',
+                    $comp['kpi']['total_hours']['formatted_diff'],
+                    "{$comp['kpi']['total_hours']['pct_change']}%",
+                    strtoupper($comp['kpi']['total_hours']['direction']),
+                ]);
+                fputcsv($handle, [
+                    'Total Biaya Lembur',
+                    $comp['kpi']['total_cost']['formatted_base'],
+                    $comp['kpi']['total_cost']['formatted_compare'],
+                    $comp['kpi']['total_cost']['formatted_diff'],
+                    "{$comp['kpi']['total_cost']['pct_change']}%",
+                    strtoupper($comp['kpi']['total_cost']['direction']),
+                ]);
+                fputcsv($handle, [
+                    'Efisiensi Lembur (Jam/Unit)',
+                    $comp['kpi']['efficiency']['base_hours_per_unit'].' jam/unit',
+                    $comp['kpi']['efficiency']['compare_hours_per_unit'].' jam/unit',
+                    $comp['kpi']['efficiency']['formatted_diff'],
+                    "{$comp['kpi']['efficiency']['pct_change']}%",
+                    strtoupper($comp['kpi']['efficiency']['direction']),
+                ]);
+                fputcsv($handle, [
+                    'Headcount Lembur',
+                    $comp['kpi']['headcount']['base_value'].' orang',
+                    $comp['kpi']['headcount']['compare_value'].' orang',
+                    $comp['kpi']['headcount']['formatted_diff'],
+                    "{$comp['kpi']['headcount']['pct_change']}%",
+                    strtoupper($comp['kpi']['headcount']['direction']),
+                ]);
+                fputcsv($handle, []);
+
+                fputcsv($handle, ['=== BENCHMARKING DEPARTEMEN / SEKSI ===']);
+                fputcsv($handle, ['No', 'Kode', 'Nama', 'Jam Basis', 'Jam Pembanding', 'Varians Jam', 'Varians (%)', 'Biaya Basis (Rp)', 'Biaya Pembanding (Rp)', 'Varians Biaya (%)', 'Burn Index (%)', 'Zona Burn']);
+                foreach ($comp['department_benchmarks'] as $idx => $dept) {
+                    fputcsv($handle, [
+                        $idx + 1,
+                        $dept['code'],
+                        $dept['name'],
+                        $dept['base_hours'],
+                        $dept['compare_hours'],
+                        $dept['variance_hours'],
+                        "{$dept['variance_pct']}%",
+                        number_format($dept['base_cost'], 0, ',', '.'),
+                        number_format($dept['compare_cost'], 0, ',', '.'),
+                        "{$dept['cost_variance_pct']}%",
+                        "{$dept['burn_index_pct']}%",
+                        strtoupper($dept['burn_zone']),
+                    ]);
+                }
+                fputcsv($handle, []);
+
+                fputcsv($handle, ['=== PRAKTIK TERBAIK & EVALUASI PERFORMA ===']);
+                fputcsv($handle, ['Kategori', 'Judul Praktik Terbaik', 'Departemen', 'Metrik Kunci', 'Rincian Strategi']);
+                foreach ($comp['best_practice_cards'] as $card) {
+                    fputcsv($handle, [
+                        $card['strategy_category'],
+                        $card['title'],
+                        $card['department_name'],
+                        $card['metric_value'],
+                        $card['description'],
+                    ]);
+                }
             } else {
                 // Data section header
                 fputcsv($handle, ['No', 'Indikator Analitik', 'Status / Nilai', 'Catatan Kebijakan']);
@@ -270,6 +355,8 @@ class AnalyticsExportService
 
     /**
      * Export analytics summary as an executive PDF document.
+     *
+     * @param  array<string, mixed>  $params
      */
     protected function exportPdf(
         User $user,
@@ -279,6 +366,7 @@ class AnalyticsExportService
         string $startDate,
         string $endDate,
         string $filename,
+        array $params = [],
     ): SymfonyResponse {
         $predictiveData = null;
         if ($tab === 'predictive') {
@@ -300,6 +388,15 @@ class AnalyticsExportService
             $insightsData = $this->insightService->getInsightsData($user, $departmentId, $startDate, $endDate);
         }
 
+        $comparisonData = null;
+        if ($tab === 'comparison') {
+            $basePeriod = isset($params['base_period']) ? (string) $params['base_period'] : (isset($params['base']) ? (string) $params['base'] : substr($startDate, 0, 7));
+            $comparePeriod = isset($params['compare_period']) ? (string) $params['compare_period'] : (isset($params['compare']) ? (string) $params['compare'] : null);
+            $type = isset($params['type']) ? (string) $params['type'] : 'yoy';
+
+            $comparisonData = $this->comparisonService->getComparisonData($user, $departmentId, $basePeriod, $comparePeriod, $type);
+        }
+
         $data = [
             'title' => 'Ringkasan Eksekutif Analitik & Keputusan',
             'tab' => $tab,
@@ -314,6 +411,7 @@ class AnalyticsExportService
             'costData' => $costData,
             'correlationData' => $correlationData,
             'insightsData' => $insightsData,
+            'comparisonData' => $comparisonData,
         ];
 
         $pdf = Pdf::loadView('pdf.analytics-executive-summary', $data);

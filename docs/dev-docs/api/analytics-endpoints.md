@@ -622,3 +622,149 @@ Session-based authentication via Laravel web guard (`auth`, `verified`, `role:ad
 | :---- | :--------------------------------------------------------------------------- |
 | `401` | Unauthenticated                                                              |
 | `403` | Forbidden (Role not permitted or Manager attempting cross-department export) |
+
+---
+
+### GET /analytics/comparison
+
+**Description:** Fetch period comparison and departmental benchmarking analytics data across two selected periods (YoY, MoM, QoQ, or Department Benchmarking), including 4 comparison KPI cards with division-by-zero guards, period comparison bar chart series with percentage variance overlay, department benchmarking rankings, 3 performer summaries, and 2 dynamic natural-language best practice insights.
+
+**Query Parameters:**
+
+| Param             | Type          | Required | Default                             | Description                                         |
+| :---------------- | :------------ | :------- | :---------------------------------- | :-------------------------------------------------- |
+| `department_id`   | string \| int | No       | `all` (Admin) / User Dept (Manager) | Filter by department ID or `all`                    |
+| `base_period`     | string        | No       | Current month (`YYYY-MM`)           | Base analysis period                                |
+| `compare_period`  | string        | No       | Calculated based on `type`          | Comparison target period (`YYYY-MM`)                |
+| `comparison_type` | string        | No       | `yoy`                               | Comparison mode (`yoy`, `mom`, `qoq`, `department`) |
+
+**Response 200 (JSON):**
+
+```json
+{
+    "comparison_type": "yoy",
+    "base_period": "2026-09",
+    "compare_period": "2025-09",
+    "kpis": {
+        "hours": {
+            "base_value": 450.0,
+            "compare_value": 400.0,
+            "delta": 50.0,
+            "pct_change": 12.5,
+            "formatted_change": "+12.5%",
+            "direction": "up",
+            "is_zero_baseline": false
+        },
+        "cost": {
+            "base_value": 22500000,
+            "compare_value": 20000000,
+            "delta": 2500000,
+            "pct_change": 12.5,
+            "formatted_change": "+12.5%",
+            "formatted_delta": "Rp 2.500.000",
+            "direction": "up",
+            "is_zero_baseline": false
+        },
+        "efficiency": {
+            "base_ratio": 0.45,
+            "compare_ratio": 0.4,
+            "delta": 0.05,
+            "pct_change": 12.5,
+            "formatted_change": "+12.5%",
+            "direction": "up",
+            "erp_connected": true,
+            "is_zero_baseline": false
+        },
+        "headcount": {
+            "base_value": 25,
+            "compare_value": 22,
+            "delta": 3,
+            "pct_change": 13.6,
+            "formatted_change": "+13.6%",
+            "direction": "up",
+            "is_zero_baseline": false
+        }
+    },
+    "period_chart": {
+        "labels": [
+            "Jan",
+            "Feb",
+            "Mar",
+            "Apr",
+            "Mei",
+            "Jun",
+            "Jul",
+            "Agu",
+            "Sep",
+            "Okt",
+            "Nov",
+            "Des"
+        ],
+        "base_series": [320, 310, 350, 390, 410, 420, 430, 440, 450, 0, 0, 0],
+        "compare_series": [
+            300, 290, 340, 360, 390, 400, 410, 420, 400, 380, 370, 390
+        ],
+        "variance_series": [
+            6.7, 6.9, 2.9, 8.3, 5.1, 5.0, 4.9, 4.8, 12.5, 0, 0, 0
+        ]
+    },
+    "department_benchmarking": {
+        "departments": [
+            {
+                "department_id": 1,
+                "department_code": "DEPT_ASSY",
+                "department_name": "Assembly Department",
+                "base_hours": 450.0,
+                "compare_hours": 400.0,
+                "variance_hours": 50.0,
+                "variance_pct": 12.5,
+                "formatted_variance_pct": "+12.5%",
+                "burn_index_pct": 82.5,
+                "burn_zone": "safe",
+                "is_zero_baseline": false
+            }
+        ]
+    },
+    "performers": {
+        "best": {
+            "department_id": 1,
+            "department_name": "Assembly Department",
+            "burn_index_pct": 82.5,
+            "burn_zone": "safe",
+            "variance_pct": 12.5
+        },
+        "average": {
+            "department_id": null,
+            "department_name": "Rata-rata Pabrik",
+            "burn_index_pct": 82.5,
+            "burn_zone": "safe",
+            "variance_pct": 12.5
+        },
+        "worst": {
+            "department_id": 1,
+            "department_name": "Assembly Department",
+            "burn_index_pct": 82.5,
+            "burn_zone": "safe",
+            "variance_pct": 12.5
+        }
+    },
+    "best_practices": [
+        {
+            "id": "bp-efficiency",
+            "type": "efficiency",
+            "title": "Optimasi Jam Lembur per Unit",
+            "department_name": "Assembly Department",
+            "description": "Departemen Assembly Department mencatatkan rasio lembur paling efisien dengan burn index 82.5%.",
+            "metric_label": "Burn Index",
+            "metric_value": "82.5%"
+        }
+    ]
+}
+```
+
+**Error Responses:**
+
+| Code  | Description                                 |
+| :---- | :------------------------------------------ |
+| `401` | Unauthenticated (redirects to `/login`)     |
+| `403` | Forbidden (User is Operator or Team Leader) |

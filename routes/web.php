@@ -105,6 +105,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::delete('/scenario/{id}', [AnalyticsScenarioController::class, 'destroy'])->name('scenario.destroy');
         Route::get('/insights', [AnalyticsController::class, 'insights'])->name('insights');
         Route::post('/action-items/{id}/status', [AnalyticsController::class, 'updateActionItemStatus'])->name('action-items.status');
+        Route::get('/comparison', [AnalyticsController::class, 'comparison'])->name('comparison');
         Route::get('/export', [AnalyticsController::class, 'export'])->name('export');
     });
 

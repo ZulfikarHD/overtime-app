@@ -2,7 +2,7 @@
 
 **Epic ID:** E-09  
 **Priority:** P0 – CRITICAL (This is the most visible screen in the entire application)  
-**Estimated Total:** 87 Story Points (Module A: 39 SP, Module B: 48 SP) — Progress: 79/87 SP (E09-00 through E09-11 complete)  
+**Estimated Total:** 87 Story Points (Module A: 39 SP, Module B: 48 SP) — Progress: 87/87 SP (E09-00 through E09-12 complete — 100%)  
 **Target Sprints:** Sprint 9–10 (Weeks 17–20)  
 **Dependencies:** Epic-01 through Epic-05 (approved overtime data must exist), Epic-07 (CapEx data), Epic-08 (ML predictions, optional but enhances charts)  
 **Prototype Source:** `Dashboard/dashboard.html` + `AnalyticDecision/analytic-and-decision.html`  
@@ -555,36 +555,36 @@ Before any chart story begins, the chart infrastructure must be in place.
 
 **Comparison Configuration:**
 
-- [ ] Dropdown: Comparison Type — `Year-over-Year | Month-over-Month | Quarter-over-Quarter | Department Benchmarking`
-- [ ] Two date pickers: `Base Period` (month) and `Compare With` (month)
-- [ ] On change: the 4 KPI cards and all charts below update automatically
+- [x] Dropdown: Comparison Type — `Year-over-Year | Month-over-Month | Quarter-over-Quarter | Department Benchmarking`
+- [x] Two date pickers: `Base Period` (month) and `Compare With` (month)
+- [x] On change: the 4 KPI cards and all charts below update automatically
 
 **Comparison KPI Cards:**
 
-- [ ] Total Hours Change: `(base_hours - compare_hours) / compare_hours × 100%` with ↑↓ direction
-- [ ] Cost Change: same formula for `total_cost_idr`
-- [ ] Efficiency Change: `(base_hours / base_production_units) - (compare_hours / compare_production_units)` — shows productivity per labor hour change
-- [ ] Employee Count Change: difference in active employee count between periods
+- [x] Total Hours Change: `(base_hours - compare_hours) / compare_hours × 100%` with ↑↓ direction
+- [x] Cost Change: same formula for `total_cost_idr`
+- [x] Efficiency Change: `(base_hours / base_production_units) - (compare_hours / compare_production_units)` — shows productivity per labor hour change
+- [x] Employee Count Change: difference in active employee count between periods
 
 **Charts:**
 
-- [ ] `Year-over-Year / Period Comparison Chart` — grouped bar chart: one group per month for the year, two bars (base year vs compare year) side by side. Line overlay for percentage change.
-- [ ] `Department Benchmarking Chart` — horizontal stacked bar: all departments ranked by hours, with base vs compare stacked. Shows which departments grew/shrunk.
-- [ ] Best/Average/Worst Performer summary: 3 cards below the benchmarking chart showing top/middle/bottom departments by Burn Index efficiency
+- [x] `Year-over-Year / Period Comparison Chart` — grouped bar chart: one group per month for the year, two bars (base year vs compare year) side by side. Line overlay for percentage change.
+- [x] `Department Benchmarking Chart` — horizontal stacked bar: all departments ranked by hours, with base vs compare stacked. Shows which departments grew/shrunk.
+- [x] Best/Average/Worst Performer summary: 3 cards below the benchmarking chart showing top/middle/bottom departments by Burn Index efficiency
 
 **Best Practices Section:**
 
-- [ ] 2 cards (like the prototype): highlight the top-performing department's strategy with a brief auto-generated insight: `"[Dept X] achieved the lowest cost-per-hour by averaging Y hrs/week — 23% below plant average"`
+- [x] 2 cards (like the prototype): highlight the top-performing department's strategy with a brief auto-generated insight: `"[Dept X] achieved the lowest cost-per-hour by averaging Y hrs/week — 23% below plant average"`
 
 #### Technical Tasks
 
-- [ ] `AnalyticsController@comparison` — `GET /analytics/comparison?base=2026-09&compare=2025-09&type=yoy`
-- [ ] Period aggregation query: both periods aggregated to same metrics, returned as parallel arrays
-- [ ] Create `resources/js/Pages/Analytics/TabComparison.vue`
-- [ ] Create `resources/js/Components/Analytics/PeriodComparisonBarChart.vue`
-- [ ] Create `resources/js/Components/Analytics/DepartmentBenchmarkChart.vue`
-- [ ] Create `resources/js/Components/Analytics/BestPracticeCards.vue` — auto-generates insight text
-- [ ] Reactive comparison: `watch([basePeriod, comparePeriod, comparisonType], () => fetchComparisonData())`
+- [x] `AnalyticsController@comparison` — `GET /analytics/comparison?base=2026-09&compare=2025-09&type=yoy`
+- [x] Period aggregation query: both periods aggregated to same metrics, returned as parallel arrays
+- [x] Create `resources/js/Pages/Analytics/TabComparison.vue`
+- [x] Create `resources/js/Components/Analytics/PeriodComparisonBarChart.vue`
+- [x] Create `resources/js/Components/Analytics/DepartmentBenchmarkChart.vue`
+- [x] Create `resources/js/Components/Analytics/BestPracticeCards.vue` — auto-generates insight text
+- [x] Reactive comparison: `watch([basePeriod, comparePeriod, comparisonType], () => fetchComparisonData())`
 
 ---
 
@@ -724,17 +724,17 @@ These dashboards are loaded by every Manager at shift start (07:00, 15:00 WIB). 
 
 ## Definition of Done — Epic-09
 
-- [ ] Executive Dashboard loads in < 1.5 seconds for a department with 12 sections
-- [ ] All 7 dashboard charts render correctly with real data from approved `overtime_items`
-- [ ] Employee summary table is searchable client-side without server round-trip
+- [x] Executive Dashboard loads in < 1.5 seconds for a department with 12 sections
+- [x] All 7 dashboard charts render correctly with real data from approved `overtime_items`
+- [x] Employee summary table is searchable client-side without server round-trip
 - [x] Correlation matrix computes Pearson r values correctly between operational variables
 - [x] Optimal overtime level chart shows 3 zones with vertical marker for section average
-- [ ] Analytics page 6-tab navigation works; tab state persists in URL query param
-- [ ] Predictive tab shows next-month forecast (ML value or moving average fallback)
-- [ ] Cost tab shows correct IDR totals formatted in Indonesian locale
-- [ ] Scenario calculator produces reasonable estimates using historical labor factor
-- [ ] Risk Indicators auto-generate from real system events (not hardcoded)
-- [ ] Period comparison works for YoY with correct % change calculations
+- [x] Analytics page 6-tab navigation works; tab state persists in URL query param
+- [x] Predictive tab shows next-month forecast (ML value or moving average fallback)
+- [x] Cost tab shows correct IDR totals formatted in Indonesian locale
+- [x] Scenario calculator produces reasonable estimates using historical labor factor
+- [x] Risk Indicators auto-generate from real system events (not hardcoded)
+- [x] Period comparison works for YoY with correct % change calculations
 - [x] NO prototype pruned items appear: no ROI formula, no Well-being Score, no difficulty tier pricing
 - [x] `pnpm lint` passes with zero errors
 - [x] `pnpm build` succeeds (bundle size checked — chart.js adds ~150kb gzip)
