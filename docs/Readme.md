@@ -60,6 +60,7 @@ Technical specifications and decision records for the engineering implementation
     - [ADR-028: Shared Vue Chart.js Infrastructure and Operational KPI Cards](./dev-docs/decisions/028-shared-vue-chartjs-infrastructure-and-operational-kpi-cards.md)
     - [ADR-029: Daily Burn Line Chart and Section Burn Comparison](./dev-docs/decisions/029-daily-burn-chart-and-section-burn-comparison.md)
     - [ADR-030: Executive Dashboard Tabbed Progressive Disclosure Architecture](./dev-docs/decisions/030-executive-dashboard-tabbed-progressive-disclosure.md)
+    - [ADR-031: Analytics Page Shell and Client-Side Tab Navigation Architecture](./dev-docs/decisions/031-analytics-shell-and-tab-navigation-architecture.md)
 - **Technical Feature Design Specifications:**
     - [Authentication & Role-Based Access Control](./dev-docs/features/authentication-rbac.md)
     - [Database Schema Migrations (Full DDL)](./dev-docs/features/database-schema-migrations.md)
@@ -89,12 +90,14 @@ Technical specifications and decision records for the engineering implementation
     - [Daily Burn Chart Index & Section Burn Comparison (E09-02 & E09-03)](./dev-docs/features/daily-burn-and-section-comparison.md)
     - [Executive Dashboard Multi-Chart Analytics Grid (E09-04)](./dev-docs/features/executive-dashboard-multi-chart-grid.md)
     - [Summary Employee Overtime Table (E09-05)](./dev-docs/features/executive-dashboard-employee-summary-table.md)
+    - [Analytics & Decision Intelligence Hub (E09-06)](./dev-docs/features/analytics-decision-intelligence.md)
 - **API Reference Design:**
     - [Calendar Classification & Management API](./dev-docs/api/calendar-endpoints.md)
     - [Overtime Policy Check API](./dev-docs/api/overtime-policy-check.md)
     - [Overtime Submissions & Approvals API](./dev-docs/api/overtime-submissions.md)
     - [In-App Notifications API](./dev-docs/api/notifications.md)
     - [Analytics, Burn Index & Machine Learning API](./dev-docs/api/analytics-reports.md)
+    - [Analytics & Decision Intelligence API](./dev-docs/api/analytics-endpoints.md)
 
 ---
 
@@ -145,6 +148,7 @@ Plain-language operating guides for factory supervisors, team leaders, and opera
     - [Daily Burn Chart Index & Section Comparison Guide](./user-docs/guides/daily-burn-and-section-comparison.md)
     - [Executive Dashboard Multi-Chart Analytics Grid Guide](./user-docs/guides/executive-dashboard-multi-chart-grid.md)
     - [Summary Employee Overtime Table Guide](./user-docs/guides/executive-dashboard-employee-summary-table.md)
+    - [Analytics & Decision Intelligence Guide](./user-docs/guides/analytics-decision-intelligence.md)
 
 ---
 

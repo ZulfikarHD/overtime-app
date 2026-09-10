@@ -10,6 +10,7 @@ use App\Http\Controllers\Admin\OperationalCalendarController;
 use App\Http\Controllers\Admin\PolicyThresholdController;
 use App\Http\Controllers\Admin\SectionController;
 use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\AnalyticsController;
 use App\Http\Controllers\Api\CalendarController;
 use App\Http\Controllers\Budgets\OvertimeBudgetController;
 use App\Http\Controllers\Budgets\OvertimeBudgetImportController;
@@ -75,6 +76,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/employees/{npk}', [EmployeeReportController::class, 'show'])->name('employees.show');
         Route::get('/employees/{npk}/timesheet', [EmployeeReportController::class, 'timesheet'])->name('employees.timesheet');
         Route::get('/employees/{npk}/timesheet/export', [EmployeeReportController::class, 'exportTimesheet'])->name('employees.timesheet.export');
+    });
+
+    // Strategic Analytics & Decision Intelligence Hub (E09-06 - Admin & Manager)
+    Route::middleware(['role:admin,manager'])->prefix('analytics')->name('analytics.')->group(function () {
+        Route::get('/', [AnalyticsController::class, 'index'])->name('index');
+        Route::get('/export', [AnalyticsController::class, 'export'])->name('export');
     });
 
     // Role-protected routes for authorization verification and testing

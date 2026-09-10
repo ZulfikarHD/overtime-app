@@ -9,6 +9,7 @@ import {
     FolderKanban,
     LayoutGrid,
     ShieldCheck,
+    TrendingUp,
     Users,
 } from '@lucide/vue';
 import { computed } from 'vue';
@@ -31,6 +32,7 @@ import { administration, masterData } from '@/routes/admin';
 import capexProjects from '@/routes/admin/capex-projects';
 import { planning } from '@/routes/budgets';
 import { burnIndex } from '@/routes/dashboard';
+import { index as analyticsIndex } from '@/routes/analytics';
 import { approvals as overtimeApprovals } from '@/routes/overtime';
 import { index as reportsEmployees } from '@/routes/reports/employees';
 import { create as overtimeCreate } from '@/routes/overtime/submissions';
@@ -78,6 +80,12 @@ const mainNavItems = computed<NavItem[]>(() => {
             href: burnIndex(),
             icon: Flame,
             testId: 'nav-burn-index',
+        });
+        items.push({
+            title: __('Analitik & Keputusan'),
+            href: analyticsIndex(),
+            icon: TrendingUp,
+            testId: 'nav-analytics',
         });
         items.push({
             title: __('Budget Planning'),

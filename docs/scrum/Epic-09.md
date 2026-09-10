@@ -298,22 +298,22 @@ Before any chart story begins, the chart infrastructure must be in place.
 
 #### Acceptance Criteria (maps to `analytic-and-decision.html` tab structure)
 
-- [ ] Inertia page: `resources/js/Pages/Analytics/Index.vue`
-- [ ] 6 tabs: `Prediksi Lembur` | `Analisis Biaya` | `Korelasi & Pola` | `Simulasi Skenario` | `Wawasan Kunci` | `Perbandingan Periode`
-- [ ] Tab switching is **client-side** (no page reload) — use a `activeTab` ref with `v-show` or `<Transition>`
-- [ ] Active tab persists in URL query param (`?tab=cost`) so links can be shared directly
-- [ ] Global filter bar at the top: Department selector + Date Range (applies to all tabs)
-- [ ] "Export Report" button at top right — exports the current tab's data as PDF or CSV
-- [ ] Page header: title "Analitik & Keputusan Lembur" with subtitle
+- [x] Inertia page: `resources/js/Pages/Analytics/Index.vue`
+- [x] 6 tabs: `Prediksi Lembur` | `Analisis Biaya` | `Korelasi & Pola` | `Simulasi Skenario` | `Wawasan Kunci` | `Perbandingan Periode`
+- [x] Tab switching is **client-side** (no page reload) — use a `activeTab` ref with `v-show` or `<Transition>`
+- [x] Active tab persists in URL query param (`?tab=cost`) so links can be shared directly
+- [x] Global filter bar at the top: Department selector + Date Range (applies to all tabs)
+- [x] "Export Report" button at top right — exports the current tab's data as PDF or CSV
+- [x] Page header: title "Analitik & Keputusan Lembur" with subtitle
 
 #### Technical Tasks
 
-- [ ] `AnalyticsController@index` — single page load, passes all filter options as Inertia props
-- [ ] Route: `GET /analytics` → `AnalyticsController@index` (middleware: `auth`, `role:admin,manager`)
-- [ ] Create `resources/js/Pages/Analytics/Index.vue` — tab shell with `<component :is="activeTabComponent" />`
-- [ ] Create tab sub-components as lazy-loaded Vue components: `TabPredictive.vue`, `TabCostAnalysis.vue`, `TabCorrelation.vue`, `TabScenario.vue`, `TabInsights.vue`, `TabComparison.vue`
-- [ ] URL sync: `watch(activeTab, (tab) => router.replace({ query: { tab } }), { immediate: true })`
-- [ ] Global filter passed down to all tab components via `provide/inject` or Inertia shared data
+- [x] `AnalyticsController@index` — single page load, passes all filter options as Inertia props
+- [x] Route: `GET /analytics` → `AnalyticsController@index` (middleware: `auth`, `role:admin,manager`)
+- [x] Create `resources/js/Pages/Analytics/Index.vue` — tab shell with `<component :is="activeTabComponent" />`
+- [x] Create tab sub-components as lazy-loaded Vue components: `TabPredictive.vue`, `TabCostAnalysis.vue`, `TabCorrelation.vue`, `TabScenario.vue`, `TabInsights.vue`, `TabComparison.vue`
+- [x] URL sync: `watch(activeTab, (tab) => router.replace({ query: { tab } }), { immediate: true })`
+- [x] Global filter passed down to all tab components via `provide/inject` or Inertia shared data
 
 ---
 

@@ -34,6 +34,7 @@ Step-by-step instructions for everyday plant operations:
 | **[Daily Burn Chart Index & Section Comparison](./guides/daily-burn-and-section-comparison.md)**       | Managers, Admins & TL   | Interactive daily cumulative burn line chart with budget ceiling, month navigation, section ranking horizontal bar chart, and 1-click drill-down.                                                                     |
 | **[Executive Dashboard Multi-Chart Analytics Grid](./guides/executive-dashboard-multi-chart-grid.md)** | Managers, Admins & TL   | Morning standup guide for reading the Top 10 Overtime Leaderboard, Category Donut, 12-Month HKN/HLR Trend, Daily Index Pacing, and Weekly Day Type Breakdown.                                                         |
 | **[Summary Employee Overtime Table](./guides/executive-dashboard-employee-summary-table.md)**          | Managers, Admins & TL   | Standup guide for using the Band 5 summary table, live search, sortable metrics, category donut cross-filtering, and slide-in Quick Dossier Drawer.                                                                   |
+| **[Analytics & Decision Intelligence Hub](./guides/analytics-decision-intelligence.md)**               | Managers & Admins       | Strategic decision-making guide for using the 6 analytics tabs (predictive, cost, correlation, scenario, insights, comparison), global filters, and executive PDF/CSV exports.                                        |
 
 ---
 
@@ -42,6 +43,7 @@ Step-by-step instructions for everyday plant operations:
 All navigation in the OT-CapEx system corresponds directly to your assigned sidebar items:
 
 - **Dashboard**: High-level shift summary, operational clock, and role capability status (Admin, Manager, Team Leader). For Line Operators (`User` role), automatically resolves to the personal self-service dashboard (`/my/dashboard`).
+- **Analitik & Keputusan (Analytics & Decision)**: Strategic intelligence hub with 6 interactive tabs covering predictive ML forecasts, financial OpEx/CapEx breakdowns, sweet-spot correlation curves, what-if simulators, fatigue alerts, and period comparisons (Admin and Manager roles).
 - **Burn Index**: Operational health command center for real-time section burn rates, budget control matrix zones, and velocity (Admin and Manager roles).
 - **Master Data**: Consolidated administrative hub for plant departments, sections, employee rosters, and operational calendars (Admin role).
 - **Administration**: Consolidated administrative hub for plant-wide policy thresholds and user accounts (Admin role).

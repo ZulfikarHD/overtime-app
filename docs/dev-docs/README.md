@@ -46,6 +46,7 @@ Deep-dive technical documentation detailing architecture flows, data models, key
 | **[Daily Burn Chart Index & Section Burn Comparison](./features/daily-burn-and-section-comparison.md)**    | [Epic-09](../../scrum/Epic-09.md) | Hero line chart with ceiling threshold and red shading (E09-02), horizontal section comparison bar chart (E09-03), and drill-down navigation.      |
 | **[Executive Dashboard Multi-Chart Analytics Grid](./features/executive-dashboard-multi-chart-grid.md)**   | [Epic-09](../../scrum/Epic-09.md) | Multi-chart grid (E09-04): Top 10 Overtime Leaderboard, Category Donut, 12-Month HKN/HLR Trend, Daily Index Pacing, and Weekly Day Type Breakdown. |
 | **[Summary Employee Overtime Table](./features/executive-dashboard-employee-summary-table.md)**            | [Epic-09](../../scrum/Epic-09.md) | High-density searchable table (E09-05) at Band 5 with mini Burn Index & category bars, quick-look drawer, and dossier navigation.                  |
+| **[Analytics & Decision Intelligence Hub](./features/analytics-decision-intelligence.md)**                 | [Epic-09](../../scrum/Epic-09.md) | Strategic intelligence workspace (E09-06) at /analytics with 6 client-side tabs, global filters, and executive PDF/CSV export.                     |
 
 ---
 
@@ -58,6 +59,7 @@ HTTP request, query parameter, and payload specifications:
 - **[Overtime Submissions & Approvals API](./api/overtime-submissions.md)** — Timesheet batch submissions, SPKL document uploads, and item-level approval/rejection payloads.
 - **[In-App Notifications API](./api/notifications.md)** — Fetch unread notifications, mark individual notifications as read, and bulk mark all as read.
 - **[Analytics, Burn Index & Machine Learning API](./api/analytics-reports.md)** — Monthly burn snapshot queries, employee dossier endpoints, and ML predictive horizons.
+- **[Analytics & Decision Intelligence API](./api/analytics-endpoints.md)** — Hub shell render props, filter parameters, and executive summary PDF/CSV export streaming.
 
 ---
 
@@ -95,6 +97,7 @@ Durable technical decisions and trade-offs:
 - **[ADR-028: Shared Vue Chart.js Infrastructure and Operational KPI Cards](./decisions/028-shared-vue-chartjs-infrastructure-and-operational-kpi-cards.md)**
 - **[ADR-029: Daily Burn Line Chart and Section Burn Comparison](./decisions/029-daily-burn-chart-and-section-burn-comparison.md)**
 - **[ADR-030: Executive Dashboard Tabbed Progressive Disclosure Architecture](./decisions/030-executive-dashboard-tabbed-progressive-disclosure.md)**
+- **[ADR-031: Analytics Page Shell and Client-Side Tab Navigation Architecture](./decisions/031-analytics-shell-and-tab-navigation-architecture.md)**
 
 ---
 
