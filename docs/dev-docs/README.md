@@ -98,6 +98,7 @@ Durable technical decisions and trade-offs:
 - **[ADR-029: Daily Burn Line Chart and Section Burn Comparison](./decisions/029-daily-burn-chart-and-section-burn-comparison.md)**
 - **[ADR-030: Executive Dashboard Tabbed Progressive Disclosure Architecture](./decisions/030-executive-dashboard-tabbed-progressive-disclosure.md)**
 - **[ADR-031: Analytics Page Shell and Client-Side Tab Navigation Architecture](./decisions/031-analytics-shell-and-tab-navigation-architecture.md)**
+- **[ADR-032: Predictive Analytics ML and Moving Average Fallback Engine](./decisions/032-predictive-analytics-ml-and-moving-average-fallback.md)**
 
 ---
 

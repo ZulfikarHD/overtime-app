@@ -61,6 +61,7 @@ Technical specifications and decision records for the engineering implementation
     - [ADR-029: Daily Burn Line Chart and Section Burn Comparison](./dev-docs/decisions/029-daily-burn-chart-and-section-burn-comparison.md)
     - [ADR-030: Executive Dashboard Tabbed Progressive Disclosure Architecture](./dev-docs/decisions/030-executive-dashboard-tabbed-progressive-disclosure.md)
     - [ADR-031: Analytics Page Shell and Client-Side Tab Navigation Architecture](./dev-docs/decisions/031-analytics-shell-and-tab-navigation-architecture.md)
+    - [ADR-032: Predictive Analytics ML and Moving Average Fallback Engine](./dev-docs/decisions/032-predictive-analytics-ml-and-moving-average-fallback.md)
 - **Technical Feature Design Specifications:**
     - [Authentication & Role-Based Access Control](./dev-docs/features/authentication-rbac.md)
     - [Database Schema Migrations (Full DDL)](./dev-docs/features/database-schema-migrations.md)

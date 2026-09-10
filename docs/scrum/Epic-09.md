@@ -330,30 +330,30 @@ Before any chart story begins, the chart infrastructure must be in place.
 
 **KPI Cards Row:**
 
-- [ ] **Prediksi Bulan Depan**: `ml_predictions` value for `prediction_horizon = 'MONTH_NEXT'` — shows `predicted_value ± confidence_interval` in hrs. Falls back to moving average if ML not available.
-- [ ] **Tingkat Akurasi (Forecast Accuracy)**: Shows model MAPE from `ml_models.metrics->mape`. If fallback: shows "Moving Average" badge instead.
-- [ ] **Pola Musiman (Seasonal Pattern)**: Auto-detected: compares current month's historical average to overall average — "Puncak" if above average, "Normal" if within 10%, "Rendah" if below average.
-- [ ] **Arah Tren (Trend Direction)**: 3-month rolling trend direction: ↑ Meningkat | → Stabil | ↓ Menurun
+- [x] **Prediksi Bulan Depan**: `ml_predictions` value for `prediction_horizon = 'MONTH_NEXT'` — shows `predicted_value ± confidence_interval` in hrs. Falls back to moving average if ML not available.
+- [x] **Tingkat Akurasi (Forecast Accuracy)**: Shows model MAPE from `ml_models.metrics->mape`. If fallback: shows "Moving Average" badge instead.
+- [x] **Pola Musiman (Seasonal Pattern)**: Auto-detected: compares current month's historical average to overall average — "Puncak" if above average, "Normal" if within 10%, "Rendah" if below average.
+- [x] **Arah Tren (Trend Direction)**: 3-month rolling trend direction: ↑ Meningkat | → Stabil | ↓ Menurun
 
 **Charts:**
 
-- [ ] `Prediksi Jam Lembur Bulan Depan` — bar chart: each section's predicted hours for next month, with confidence interval error bars
-- [ ] `Prediksi Tren (6 Bulan)` — line chart: 3 months historical + 3 months projected. Historical = solid line, Projected = dashed. Optional: 90% confidence band shading.
-- [ ] `Analisis Pola Musiman` — line chart: all 12 months of average overtime hours (averaged across all years of history), showing the annual cycle. Highlight peak quarter (Q4 Oct–Dec typically).
+- [x] `Prediksi Jam Lembur Bulan Depan` — bar chart: each section's predicted hours for next month, with confidence interval error bars
+- [x] `Prediksi Tren (6 Bulan)` — line chart: 3 months historical + 3 months projected. Historical = solid line, Projected = dashed. Optional: 90% confidence band shading.
+- [x] `Analisis Pola Musiman` — line chart: all 12 months of average overtime hours (averaged across all years of history), showing the annual cycle. Highlight peak quarter (Q4 Oct–Dec typically).
 
 **Seasonal Analysis Summary:**
 
-- [ ] 3 info cards: `Musim Puncak` (highest historical month on average), `Musim Rendah` (lowest), `Siklus Pola` ("12 Bulan" if pattern is annual, else "N/A")
+- [x] 3 info cards: `Musim Puncak` (highest historical month on average), `Musim Rendah` (lowest), `Siklus Pola` ("12 Bulan" if pattern is annual, else "N/A")
 
 #### Technical Tasks
 
-- [ ] `AnalyticsController@predictive` — `GET /analytics/predictive`
-- [ ] Seasonal pattern: `SELECT MONTH(operational_date) as month, AVG(monthly_total) FROM (monthly aggregation subquery) GROUP BY month`
-- [ ] Trend direction: `SELECT AVG(total) as avg FROM monthly_totals WHERE month >= now - 3 months`
-- [ ] Create `resources/js/Pages/Analytics/TabPredictive.vue`
-- [ ] Create `resources/js/Components/Analytics/ForecastBarChart.vue` — with error bars using Chart.js `errorBars` plugin or custom dataset
-- [ ] Create `resources/js/Components/Analytics/TrendProjectionChart.vue` — mixed historical + projected line
-- [ ] Create `resources/js/Components/Analytics/SeasonalPatternChart.vue` — 12-point annual cycle
+- [x] `AnalyticsController@predictive` — `GET /analytics/predictive`
+- [x] Seasonal pattern: `SELECT MONTH(operational_date) as month, AVG(monthly_total) FROM (monthly aggregation subquery) GROUP BY month`
+- [x] Trend direction: `SELECT AVG(total) as avg FROM monthly_totals WHERE month >= now - 3 months`
+- [x] Create `resources/js/Pages/Analytics/TabPredictive.vue`
+- [x] Create `resources/js/Components/Analytics/ForecastBarChart.vue` — with error bars using Chart.js `errorBars` plugin or custom dataset
+- [x] Create `resources/js/Components/Analytics/TrendProjectionChart.vue` — mixed historical + projected line
+- [x] Create `resources/js/Components/Analytics/SeasonalPatternChart.vue` — 12-point annual cycle
 
 ---
 

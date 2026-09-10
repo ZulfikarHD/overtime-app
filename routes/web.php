@@ -81,6 +81,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Strategic Analytics & Decision Intelligence Hub (E09-06 - Admin & Manager)
     Route::middleware(['role:admin,manager'])->prefix('analytics')->name('analytics.')->group(function () {
         Route::get('/', [AnalyticsController::class, 'index'])->name('index');
+        Route::get('/predictive', [AnalyticsController::class, 'predictive'])->name('predictive');
         Route::get('/export', [AnalyticsController::class, 'export'])->name('export');
     });
 

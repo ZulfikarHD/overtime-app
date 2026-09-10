@@ -47,35 +47,47 @@ erDiagram
 
 ## Key Files & UI Mapping
 
-| Layer            | File / Route / Menu                                         | Purpose                                         |
-| :--------------- | :---------------------------------------------------------- | :---------------------------------------------- |
-| Sidebar Menu     | `Analitik & Keputusan` (`testId: 'nav-analytics'`)          | User entry point in UI (Admin & Manager only)   |
-| Page Component   | `resources/js/pages/Analytics/Index.vue`                    | Master shell, header, filter bar, tab switcher  |
-| Sub-Tab 1        | `resources/js/pages/Analytics/TabPredictive.vue`            | Predictive analytics & ML forecasting           |
-| Sub-Tab 2        | `resources/js/pages/Analytics/TabCostAnalysis.vue`          | Overtime financial breakdown & OpEx/CapEx audit |
-| Sub-Tab 3        | `resources/js/pages/Analytics/TabCorrelation.vue`           | Bivariate correlation & productivity sweet spot |
-| Sub-Tab 4        | `resources/js/pages/Analytics/TabScenario.vue`              | Production volume & workload scenario simulator |
-| Sub-Tab 5        | `resources/js/pages/Analytics/TabInsights.vue`              | Automated risk indicators & fatigue alerts      |
-| Sub-Tab 6        | `resources/js/pages/Analytics/TabComparison.vue`            | Period comparison & departmental benchmarking   |
-| Export Component | `resources/js/components/analytics/ExportReportPopover.vue` | Dropdown trigger for PDF and CSV exports        |
-| Controller       | `app/Http/Controllers/AnalyticsController.php`              | Handles page rendering and export requests      |
-| Export Service   | `app/Services/Analytics/AnalyticsExportService.php`         | Generates executive PDF and streamed UTF-8 CSV  |
-| PDF Template     | `resources/views/pdf/analytics-executive-summary.blade.php` | Executive A4 summary layout with ISUZU branding |
+| Layer            | File / Route / Menu                                          | Purpose                                          |
+| :--------------- | :----------------------------------------------------------- | :----------------------------------------------- |
+| Sidebar Menu     | `Analitik & Keputusan` (`testId: 'nav-analytics'`)           | User entry point in UI (Admin & Manager only)    |
+| Page Component   | `resources/js/pages/Analytics/Index.vue`                     | Master shell, header, filter bar, tab switcher   |
+| Sub-Tab 1        | `resources/js/pages/Analytics/TabPredictive.vue`             | Predictive analytics & ML forecasting (E09-07)   |
+| Component        | `resources/js/components/analytics/ForecastBarChart.vue`     | Next month section bar chart with error whiskers |
+| Component        | `resources/js/components/analytics/TrendProjectionChart.vue` | 6-month historical/projected line + CI ribbon    |
+| Component        | `resources/js/components/analytics/SeasonalPatternChart.vue` | 12-month annual seasonality curve + peak shadow  |
+| Component        | `resources/js/components/analytics/SeasonalSummaryCards.vue` | Peak, low season & cycle duration summary cards  |
+| Sub-Tab 2        | `resources/js/pages/Analytics/TabCostAnalysis.vue`           | Overtime financial breakdown & OpEx/CapEx audit  |
+| Sub-Tab 3        | `resources/js/pages/Analytics/TabCorrelation.vue`            | Bivariate correlation & productivity sweet spot  |
+| Sub-Tab 4        | `resources/js/pages/Analytics/TabScenario.vue`               | Production volume & workload scenario simulator  |
+| Sub-Tab 5        | `resources/js/pages/Analytics/TabInsights.vue`               | Automated risk indicators & fatigue alerts       |
+| Sub-Tab 6        | `resources/js/pages/Analytics/TabComparison.vue`             | Period comparison & departmental benchmarking    |
+| Export Component | `resources/js/components/analytics/ExportReportPopover.vue`  | Dropdown trigger for PDF and CSV exports         |
+| Controller       | `app/Http/Controllers/AnalyticsController.php`               | Handles page rendering, API, and export requests |
+| Service Layer    | `app/Services/Analytics/PredictiveAnalyticsService.php`      | ML prediction query, MA-3 fallback, seasonality  |
+| Export Service   | `app/Services/Analytics/AnalyticsExportService.php`          | Generates executive PDF and streamed UTF-8 CSV   |
+| PDF Template     | `resources/views/pdf/analytics-executive-summary.blade.php`  | Executive A4 summary layout with ISUZU branding  |
 
 ## Flow Explanation
 
 1. **User triggers navigation**: An Admin or Manager clicks **Analitik & Keputusan** in the sidebar. (Team Leaders and Operators do not have this link and receive HTTP 403 if navigating directly).
-2. **Request handling**: `AnalyticsController@index` intercepts the request, validates the requested `tab` (defaulting to `predictive`), scopes the department list based on role (full list for Admin, single assigned department for Manager), and renders `Analytics/Index`.
-3. **Tab Switching**: Clicking any tab button updates the local `activeTab` ref instantly. The URL query parameter is updated via `window.history.replaceState` without triggering a full page reload.
-4. **Filter Adjustments**: Changing the department or date filter updates query parameters and initiates an Inertia partial reload (`preserveState: true`, `preserveScroll: true`) to update server-supplied datasets while keeping the active tab intact.
-5. **Exporting Reports**: Clicking **Ekspor Laporan** opens the popover displaying current filter scope. Selecting PDF or CSV sends a GET request to `/analytics/export`, returning either a streamed CSV download or an executive 1-page PDF summary.
+2. **Request handling**: `AnalyticsController@index` intercepts the request, validates the requested `tab` (defaulting to `predictive`), scopes the department list based on role (full list for Admin, single assigned department for Manager), and renders `Analytics/Index`. When `tab === 'predictive'`, `PredictiveAnalyticsService::getPredictiveData()` is executed and hydrated as the initial `predictiveData` prop.
+3. **Predictive Analytics Computation (E09-07)**:
+    - Evaluates active `MlModel` (`DEMAND_FORECAST`) and queries `MlPrediction` (`MONTH_NEXT`) for next month's section and department forecasts.
+    - If ML predictions are uninitialized (cold-start), seamlessly computes a 3-month Simple Moving Average ($MA_3$) from approved historical `overtime_items` and attaches a prominent "Moving Average" baseline badge.
+    - Decomposes historical hours into a 12-month calendar seasonal cycle, identifying peak quarters (e.g. Q4), lowest months, and variance deltas against grand annual averages.
+    - Generates a 6-month continuous trend trajectory: 3 solid historical months and 3 dashed projected months with a 90% confidence interval shaded ribbon.
+    - Whisker plugins on Chart.js bar charts compute and draw physical confidence intervals for each section.
+4. **Tab Switching**: Clicking any tab button updates the local `activeTab` ref instantly. The URL query parameter is updated via `window.history.replaceState` without triggering a full page reload.
+5. **Filter Adjustments**: Changing the department or date filter updates query parameters and initiates an Inertia partial reload (`preserveState: true`, `preserveScroll: true`) to update server-supplied datasets while keeping the active tab intact. Alternatively, client components can query `GET /analytics/predictive` asynchronously.
+6. **Exporting Reports**: Clicking **Ekspor Laporan** opens the popover displaying current filter scope. Selecting PDF or CSV sends a GET request to `/analytics/export?tab=predictive`, generating either a streamed CSV download with section-by-section confidence intervals or an executive PDF summary with KPI cards and forecast tables.
 
 ## API Endpoints & Routes
 
-| Method | URI                 | Controller Action            | Purpose                             | Auth / Middleware                    |
-| :----- | :------------------ | :--------------------------- | :---------------------------------- | :----------------------------------- |
-| `GET`  | `/analytics`        | `AnalyticsController@index`  | Render Analytics shell & active tab | `auth, verified, role:admin,manager` |
-| `GET`  | `/analytics/export` | `AnalyticsController@export` | Export PDF or CSV report            | `auth, verified, role:admin,manager` |
+| Method | URI                     | Controller Action                | Purpose                              | Auth / Middleware                    |
+| :----- | :---------------------- | :------------------------------- | :----------------------------------- | :----------------------------------- |
+| `GET`  | `/analytics`            | `AnalyticsController@index`      | Render Analytics shell & active tab  | `auth, verified, role:admin,manager` |
+| `GET`  | `/analytics/predictive` | `AnalyticsController@predictive` | Fetch predictive analytics JSON data | `auth, verified, role:admin,manager` |
+| `GET`  | `/analytics/export`     | `AnalyticsController@export`     | Export PDF or CSV report             | `auth, verified, role:admin,manager` |
 
 ## Decisions & Trade-offs
 

@@ -22,7 +22,15 @@ The **Analytics & Decision Intelligence** hub is an executive workspace for Depa
 
 Click on any tab in the navigation bar to immediately view its specialized charts and indicators:
 
-1. **Prediksi Lembur (Predictive Analytics)**: Machine learning forecasts of next month's overtime demand, seasonal peaks, and 6-month trajectory.
+1. **Prediksi Lembur (Predictive Analytics)**:
+    - **4 KPI Cards**:
+        - _Prediksi Bulan Depan_: Total estimated overtime hours with uncertainty margins (e.g. `380.0 jam ± 30.0 jam`).
+        - _Tingkat Akurasi (MAPE)_: Reliability metric based on Machine Learning validation scores (or tagged with a _Moving Average_ badge during initial baseline periods).
+        - _Pola Musiman_: Identifies whether the upcoming month is Peak (_Puncak_), Normal (_Normal_), or Low (_Rendah_) relative to annual historical averages.
+        - _Arah Tren_: 3-month rolling velocity indicator (Increasing, Stable, or Decreasing).
+    - **Section Forecast Bar Chart**: Displays predicted hours per section with visual error whiskers representing lower and upper confidence limits.
+    - **6-Month Trend Projection Line**: Compares the last 3 months of actual overtime against 3 months of projected workload with a 90% confidence ribbon.
+    - **Seasonal Analysis & Summary**: 12-month annual curve highlighting the historical peak quarter alongside summary cards (_Musim Puncak_, _Musim Rendah_, _Siklus Pola_).
 2. **Analisis Biaya (Cost Analysis)**: Overtime financial audit, remaining budget pacing, average cost per employee, and OpEx vs. CapEx ratios.
 3. **Korelasi & Pola (Correlation & Patterns)**: Analysis of the productivity sweet spot (fair overtime zone) and fatigue threshold points.
 4. **Simulasi Skenario (Scenario Simulation)**: Interactive calculator for testing changes in production volume, headcount, and budget impact.

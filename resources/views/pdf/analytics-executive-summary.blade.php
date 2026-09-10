@@ -151,6 +151,70 @@
             font-size: 8px;
             color: #64748b;
         }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 9px;
+            margin-bottom: 16px;
+        }
+
+        .data-table th {
+            background-color: #f1f5f9;
+            color: #334155;
+            font-weight: bold;
+            text-align: left;
+            padding: 5px 6px;
+            border: 1px solid #cbd5e1;
+            text-transform: uppercase;
+            font-size: 8px;
+        }
+
+        .data-table td {
+            padding: 4px 6px;
+            border: 1px solid #e2e8f0;
+            color: #0f172a;
+        }
+
+        .data-table tr:nth-child(even) td {
+            background-color: #f8fafc;
+        }
+
+        .kpi-grid {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 14px;
+        }
+
+        .kpi-cell {
+            width: 25%;
+            padding: 8px;
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 4px;
+            vertical-align: top;
+        }
+
+        .kpi-title {
+            font-size: 8px;
+            color: #64748b;
+            text-transform: uppercase;
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+
+        .kpi-value {
+            font-size: 13px;
+            font-weight: bold;
+            color: #0f172a;
+            font-family: monospace;
+        }
+
+        .kpi-sub {
+            font-size: 7.5px;
+            color: #64748b;
+            margin-top: 2px;
+        }
     </style>
 </head>
 <body>
@@ -198,6 +262,68 @@
         <p><strong>Cakupan Evaluasi:</strong> Analisis mencakup data realisasi lembur terverifikasi, perbandingan jam kerja normal (HKN) vs hari libur (HLR), dan pemisahan beban CapEx vs OpEx untuk departemen <em>{{ $department_name }}</em> pada periode <em>{{ $start_date }}</em> sampai dengan <em>{{ $end_date }}</em>.</p>
         <p><strong>Tindakan Manajemen:</strong> Rekomendasi operasional wajib ditindaklanjuti pada rapat koordinasi manajemen pabrik dan disinkronisasikan dengan sistem perencanaan produksi (ERP) serta kartu kontrol jam lembur masing-masing seksi.</p>
     </div>
+
+    @if(isset($predictiveData) && $tab === 'predictive')
+    <div class="section-title">Indikator Kunci Proyeksi &amp; Pola Musiman</div>
+    <table class="kpi-grid">
+        <tr>
+            <td class="kpi-cell">
+                <div class="kpi-title">Prediksi Bulan Depan</div>
+                <div class="kpi-value">{{ $predictiveData['kpi']['formatted_prediction'] }}</div>
+                <div class="kpi-sub">{{ $predictiveData['kpi']['model_name'] }}</div>
+            </td>
+            <td class="kpi-cell">
+                <div class="kpi-title">Tingkat Akurasi</div>
+                <div class="kpi-value" style="color: #16a34a;">{{ $predictiveData['kpi']['accuracy_label'] }}</div>
+                <div class="kpi-sub">{{ $predictiveData['kpi']['accuracy_description'] }}</div>
+            </td>
+            <td class="kpi-cell">
+                <div class="kpi-title">Pola Musiman</div>
+                <div class="kpi-value" style="color: #d97706;">{{ $predictiveData['kpi']['seasonal_pattern'] }}</div>
+                <div class="kpi-sub">{{ $predictiveData['kpi']['seasonal_description'] }}</div>
+            </td>
+            <td class="kpi-cell">
+                <div class="kpi-title">Arah Tren</div>
+                <div class="kpi-value" style="color: #0284c7;">{{ $predictiveData['kpi']['trend_label'] }}</div>
+                <div class="kpi-sub">{{ $predictiveData['kpi']['trend_description'] }}</div>
+            </td>
+        </tr>
+    </table>
+
+    <div class="section-title">Rincian Prediksi Jam Lembur per Seksi ({{ $predictiveData['scope']['target_month_name'] }})</div>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th style="width: 5%;">No</th>
+                <th style="width: 15%;">Kode Seksi</th>
+                <th style="width: 30%;">Nama Seksi</th>
+                <th style="width: 15%; text-align: right;">Prediksi (Jam)</th>
+                <th style="width: 20%; text-align: right;">Rentang Keyakinan</th>
+                <th style="width: 15%;">Metode</th>
+            </tr>
+        </thead>
+        <tbody>
+            @forelse($predictiveData['section_forecast']['sections'] as $idx => $sec)
+            <tr>
+                <td style="text-align: center;">{{ $idx + 1 }}</td>
+                <td style="font-family: monospace; font-weight: bold;">{{ $sec['section_code'] }}</td>
+                <td>{{ $sec['section_name'] }}</td>
+                <td style="text-align: right; font-family: monospace; font-weight: bold;">{{ number_format($sec['predicted_hours'], 1, ',', '.') }}</td>
+                <td style="text-align: right; font-family: monospace;">{{ number_format($sec['ci_lower'], 1, ',', '.') }} &ndash; {{ number_format($sec['ci_upper'], 1, ',', '.') }}</td>
+                <td>
+                    <span style="font-size: 7.5px; padding: 1px 4px; border-radius: 2px; {{ $sec['fallback_used'] ? 'background-color: #f1f5f9; color: #475569;' : 'background-color: #f0fdf4; color: #166534;' }}">
+                        {{ $sec['fallback_used'] ? 'Moving Average' : 'Supervised ML' }}
+                    </span>
+                </td>
+            </tr>
+            @empty
+            <tr>
+                <td colspan="6" style="text-align: center; color: #94a3b8;">Belum ada seksi aktif dalam cakupan.</td>
+            </tr>
+            @endforelse
+        </tbody>
+    </table>
+    @endif
 
     <!-- Sign-off Block -->
     <table class="footer-table">

@@ -5,7 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\Department;
 use App\Models\User;
 use App\Services\Analytics\AnalyticsExportService;
+use App\Services\Analytics\PredictiveAnalyticsService;
 use Carbon\Carbon;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -29,6 +31,7 @@ class AnalyticsController extends Controller
 
     public function __construct(
         public AnalyticsExportService $exportService,
+        public PredictiveAnalyticsService $predictiveService,
     ) {}
 
     /**
@@ -75,6 +78,11 @@ class AnalyticsController extends Controller
             }
         }
 
+        $departmentIdInt = $selectedDepartmentId === 'all' ? null : (int) $selectedDepartmentId;
+        $predictiveData = $tab === 'predictive'
+            ? $this->predictiveService->getPredictiveData($user, $departmentIdInt, $startDate, $endDate)
+            : null;
+
         return Inertia::render('Analytics/Index', [
             'currentTab' => $tab,
             'departments' => $departments,
@@ -83,9 +91,34 @@ class AnalyticsController extends Controller
                 'start_date' => $startDate,
                 'end_date' => $endDate,
             ],
+            'predictiveData' => $predictiveData,
             'userRole' => is_string($user->role) ? $user->role : $user->role->value,
             'userDepartmentId' => $user->department_id,
         ]);
+    }
+
+    /**
+     * Return JSON endpoint for predictive analytics data (E09-07).
+     */
+    public function predictive(Request $request): JsonResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+
+        abort_unless($user && ($user->isAdmin() || $user->isManager()), 403);
+
+        $rawDept = $request->input('department_id');
+        $departmentId = null;
+        if ($request->has('department_id') && $rawDept !== '' && $rawDept !== 'all') {
+            $departmentId = (int) $rawDept;
+        }
+
+        $startDate = $request->filled('start_date') ? (string) $request->input('start_date') : null;
+        $endDate = $request->filled('end_date') ? (string) $request->input('end_date') : null;
+
+        $data = $this->predictiveService->getPredictiveData($user, $departmentId, $startDate, $endDate);
+
+        return response()->json($data);
     }
 
     /**
