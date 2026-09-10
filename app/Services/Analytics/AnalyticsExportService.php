@@ -29,10 +29,12 @@ class AnalyticsExportService
         public ?PredictiveAnalyticsService $predictiveService = null,
         public ?CostAnalysisService $costService = null,
         public ?CorrelationAnalysisService $correlationService = null,
+        public ?InsightAggregatorService $insightService = null,
     ) {
         $this->predictiveService = $predictiveService ?? app(PredictiveAnalyticsService::class);
         $this->costService = $costService ?? app(CostAnalysisService::class);
         $this->correlationService = $correlationService ?? app(CorrelationAnalysisService::class);
+        $this->insightService = $insightService ?? app(InsightAggregatorService::class);
     }
 
     /**
@@ -203,6 +205,57 @@ class AnalyticsExportService
                 } else {
                     fputcsv($handle, [$corr['overtime_vs_production']['message']]);
                 }
+            } elseif ($tab === 'insights') {
+                $insights = $this->insightService->getInsightsData($user, $departmentId, $startDate, $endDate);
+                fputcsv($handle, ['=== INDIKATOR RISIKO & PERINGATAN OTOMATIS (E09-11) ===']);
+                fputcsv($handle, ['Total Risiko Teridentifikasi', $insights['risk_indicators']['total_risks']]);
+                fputcsv($handle, ['Status Kritis', $insights['risk_indicators']['critical_count']]);
+                fputcsv($handle, ['Status Peringatan', $insights['risk_indicators']['warning_count']]);
+                fputcsv($handle, ['Status Evaluasi', $insights['risk_indicators']['all_normal'] ? 'Semua metrik dalam batas normal' : 'Perlu Mitigasi Manajemen']);
+                fputcsv($handle, []);
+                fputcsv($handle, ['No', 'ID Risiko', 'Tingkat', 'Judul Risiko', 'Deskripsi']);
+                foreach ($insights['risk_indicators']['items'] as $idx => $risk) {
+                    fputcsv($handle, [
+                        $idx + 1,
+                        $risk['id'],
+                        $risk['severity_label'],
+                        $risk['title'],
+                        $risk['description'],
+                    ]);
+                }
+                fputcsv($handle, []);
+                fputcsv($handle, ['=== STATISTIK DETEKSI ANOMALI 30 HARI ===']);
+                fputcsv($handle, ['Rata-rata Jam Harian (Mean)', $insights['anomaly_detection']['mean'].' jam']);
+                fputcsv($handle, ['Batas Atas (+1 StdDev)', $insights['anomaly_detection']['upper_band'].' jam']);
+                fputcsv($handle, ['Batas Bawah (-1 StdDev)', $insights['anomaly_detection']['lower_band'].' jam']);
+                fputcsv($handle, ['Pola Anomali Terdeteksi', $insights['anomaly_detection']['unusual_patterns_count']]);
+                fputcsv($handle, []);
+                fputcsv($handle, ['Tanggal', 'Jam Lembur Aktual', 'Status Anomali']);
+                foreach ($insights['anomaly_detection']['dates'] as $idx => $dateStr) {
+                    $hours = $insights['anomaly_detection']['daily_hours'][$idx];
+                    $isAnom = in_array($dateStr, array_column($insights['anomaly_detection']['anomalies'], 'date'), true);
+                    fputcsv($handle, [
+                        $dateStr,
+                        $hours,
+                        $isAnom ? 'ANOMALI TERDETEKSI' : 'Normal',
+                    ]);
+                }
+                fputcsv($handle, []);
+                fputcsv($handle, ['=== DAFTAR TINDAKAN MANAJEMEN (MANAGEMENT ACTION PLAN) ===']);
+                fputcsv($handle, ['No', 'ID Tindakan', 'Prioritas', 'Tindakan Manajemen', 'Departemen', 'Dampak', 'Batas Waktu', 'Status', 'Catatan Resolusi']);
+                foreach ($insights['action_items'] as $idx => $act) {
+                    fputcsv($handle, [
+                        $idx + 1,
+                        $act['id'],
+                        $act['priority_label'],
+                        $act['action_item'],
+                        $act['department'],
+                        $act['impact'],
+                        $act['deadline'],
+                        $act['status_label'],
+                        $act['resolution_note'] ?? '-',
+                    ]);
+                }
             } else {
                 // Data section header
                 fputcsv($handle, ['No', 'Indikator Analitik', 'Status / Nilai', 'Catatan Kebijakan']);
@@ -242,6 +295,11 @@ class AnalyticsExportService
             $correlationData = $this->correlationService->getCorrelationData($user, $departmentId, $startDate, $endDate);
         }
 
+        $insightsData = null;
+        if ($tab === 'insights') {
+            $insightsData = $this->insightService->getInsightsData($user, $departmentId, $startDate, $endDate);
+        }
+
         $data = [
             'title' => 'Ringkasan Eksekutif Analitik & Keputusan',
             'tab' => $tab,
@@ -255,6 +313,7 @@ class AnalyticsExportService
             'predictiveData' => $predictiveData,
             'costData' => $costData,
             'correlationData' => $correlationData,
+            'insightsData' => $insightsData,
         ];
 
         $pdf = Pdf::loadView('pdf.analytics-executive-summary', $data);

@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Services\Analytics\AnalyticsExportService;
 use App\Services\Analytics\CorrelationAnalysisService;
 use App\Services\Analytics\CostAnalysisService;
+use App\Services\Analytics\InsightAggregatorService;
 use App\Services\Analytics\PredictiveAnalyticsService;
 use App\Services\Analytics\ScenarioCalculatorService;
 use Carbon\Carbon;
@@ -38,6 +39,7 @@ class AnalyticsController extends Controller
         public CostAnalysisService $costService,
         public CorrelationAnalysisService $correlationService,
         public ScenarioCalculatorService $scenarioService,
+        public InsightAggregatorService $insightService,
     ) {}
 
     /**
@@ -101,6 +103,10 @@ class AnalyticsController extends Controller
             ? $this->scenarioService->getScenarioData($user, $departmentIdInt, $startDate, $endDate)
             : null;
 
+        $insightsData = $tab === 'insights'
+            ? $this->insightService->getInsightsData($user, $departmentIdInt, $startDate, $endDate)
+            : null;
+
         return Inertia::render('Analytics/Index', [
             'currentTab' => $tab,
             'departments' => $departments,
@@ -113,6 +119,7 @@ class AnalyticsController extends Controller
             'costData' => $costData,
             'correlationData' => $correlationData,
             'scenarioData' => $scenarioData,
+            'insightsData' => $insightsData,
             'userRole' => is_string($user->role) ? $user->role : $user->role->value,
             'userDepartmentId' => $user->department_id,
         ]);
@@ -188,6 +195,59 @@ class AnalyticsController extends Controller
         $data = $this->correlationService->getCorrelationData($user, $departmentId, $startDate, $endDate);
 
         return response()->json($data);
+    }
+
+    /**
+     * Return JSON endpoint for Key Insights and Management Actions (E09-11).
+     */
+    public function insights(Request $request): JsonResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+
+        abort_unless($user && ($user->isAdmin() || $user->isManager()), 403);
+
+        $rawDept = $request->input('department_id');
+        $departmentId = null;
+        if ($request->has('department_id') && $rawDept !== '' && $rawDept !== 'all') {
+            $departmentId = (int) $rawDept;
+        }
+
+        $startDate = $request->filled('start_date') ? (string) $request->input('start_date') : null;
+        $endDate = $request->filled('end_date') ? (string) $request->input('end_date') : null;
+
+        $data = $this->insightService->getInsightsData($user, $departmentId, $startDate, $endDate);
+
+        return response()->json($data);
+    }
+
+    /**
+     * Update status and optional remarks of an action item for the authenticated manager (E09-11).
+     */
+    public function updateActionItemStatus(Request $request, string $id): JsonResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+
+        abort_unless($user && ($user->isAdmin() || $user->isManager()), 403);
+
+        $validated = $request->validate([
+            'status' => ['required', 'string', 'in:pending,in_progress,resolved'],
+            'resolution_note' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        $result = $this->insightService->updateActionItemStatus(
+            $user,
+            $id,
+            $validated['status'],
+            $validated['resolution_note'] ?? null
+        );
+
+        return response()->json([
+            'success' => true,
+            'message' => __('Status tindakan manajemen berhasil diperbarui.'),
+            'action_item' => $result,
+        ]);
     }
 
     /**

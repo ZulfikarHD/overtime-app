@@ -62,6 +62,7 @@ interface Props {
     costData?: unknown;
     correlationData?: unknown;
     scenarioData?: unknown;
+    insightsData?: unknown;
     userRole?: string;
     userDepartmentId?: number | null;
 }
@@ -435,7 +436,9 @@ watch(
                                 ? correlationData
                                 : activeTab === 'scenario'
                                   ? scenarioData
-                                  : undefined
+                                  : activeTab === 'insights'
+                                    ? insightsData
+                                    : undefined
                     "
                 />
             </Transition>

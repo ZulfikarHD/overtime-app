@@ -2,7 +2,7 @@
 
 **Epic ID:** E-09  
 **Priority:** P0 – CRITICAL (This is the most visible screen in the entire application)  
-**Estimated Total:** 87 Story Points (Module A: 39 SP, Module B: 48 SP) — Progress: 66/87 SP (E09-00 through E09-09 complete)  
+**Estimated Total:** 87 Story Points (Module A: 39 SP, Module B: 48 SP) — Progress: 79/87 SP (E09-00 through E09-11 complete)  
 **Target Sprints:** Sprint 9–10 (Weeks 17–20)  
 **Dependencies:** Epic-01 through Epic-05 (approved overtime data must exist), Epic-07 (CapEx data), Epic-08 (ML predictions, optional but enhances charts)  
 **Prototype Source:** `Dashboard/dashboard.html` + `AnalyticDecision/analytic-and-decision.html`  
@@ -506,39 +506,39 @@ Before any chart story begins, the chart infrastructure must be in place.
 
 **Risk Indicators Panel:**
 
-- [ ] Shows automatically generated risk items from system data — NOT hardcoded:
+- [x] Shows automatically generated risk items from system data — NOT hardcoded:
     - Budget Overrun Risk: auto-generated when any section has `burn_index_pct > burn_warning_pct`
     - Employee Burnout Alert: auto-generated when `consecutive_weeks_alert` threshold is exceeded (from Epic-06 `OvertimePolicyEvaluator`)
     - Efficiency Drop: auto-generated when anomaly detection flags a spike pattern (from Epic-08)
-- [ ] Each risk item has: severity badge (Critical/Warning/Info), title, description, "View Details →" link to the relevant module
-- [ ] Count badge at panel header: "X Critical, Y Warning"
-- [ ] If no risks: "✅ Semua metrik dalam batas normal" green card
+- [x] Each risk item has: severity badge (Critical/Warning/Info), title, description, "View Details →" link to the relevant module
+- [x] Count badge at panel header: "X Critical, Y Warning"
+- [x] If no risks: "✅ Semua metrik dalam batas normal" green card
 
 **Anomaly Detection Chart:**
 
-- [ ] Line chart: daily overtime hours for the last 30 days with anomaly markers (red dots) on flagged days
-- [ ] Horizontal band: mean ± 1 standard deviation shown as shaded band
-- [ ] Points above the band = anomaly markers
-- [ ] Summary below chart: "X unusual patterns detected in the last 30 days"
+- [x] Line chart: daily overtime hours for the last 30 days with anomaly markers (red dots) on flagged days
+- [x] Horizontal band: mean ± 1 standard deviation shown as shaded band
+- [x] Points above the band = anomaly markers
+- [x] Summary below chart: "X unusual patterns detected in the last 30 days"
 
 **Management Action Items Table:**
 
-- [ ] Auto-generated list from system events (budget alerts, SPKL overdue, anomalies, burnout alerts)
-- [ ] Columns: `Priority` (High/Medium/Low), `Action Item`, `Department`, `Impact`, `Deadline`, `Status`
-- [ ] Status: `Pending | In Progress | Resolved`
-- [ ] Manager can mark items as "In Progress" or "Resolved" — stored per user
-- [ ] "Export Action Plan" button → CSV of current action items
+- [x] Auto-generated list from system events (budget alerts, SPKL overdue, anomalies, burnout alerts)
+- [x] Columns: `Priority` (High/Medium/Low), `Action Item`, `Department`, `Impact`, `Deadline`, `Status`
+- [x] Status: `Pending | In Progress | Resolved`
+- [x] Manager can mark items as "In Progress" or "Resolved" — stored per user
+- [x] "Export Action Plan" button → CSV of current action items
 
 #### Technical Tasks
 
-- [ ] `AnalyticsController@insights` — `GET /analytics/insights` — aggregates risks from multiple sources
-- [ ] `InsightAggregatorService::generate(int $departmentId, int $year, int $month): array` — queries `monthly_burn_snapshots`, `ml_anomaly_logs`, policy evaluator
-- [ ] Route: `POST /analytics/action-items/{id}/status` → update manager's action item status (stored in `user_action_item_states` table or preferences JSON)
-- [ ] Anomaly chart data: `ml_anomaly_logs` joined to `overtime_items` and `overtime_submissions`, last 30 days, group by date
-- [ ] Create `resources/js/Pages/Analytics/TabInsights.vue`
-- [ ] Create `resources/js/Components/Analytics/RiskIndicatorPanel.vue`
-- [ ] Create `resources/js/Components/Analytics/AnomalyDetectionChart.vue` — line chart with anomaly scatter overlay (Chart.js multi-dataset)
-- [ ] Create `resources/js/Components/Analytics/ManagementActionTable.vue`
+- [x] `AnalyticsController@insights` — `GET /analytics/insights` — aggregates risks from multiple sources
+- [x] `InsightAggregatorService::generate(int $departmentId, int $year, int $month): array` — queries `monthly_burn_snapshots`, `ml_anomaly_logs`, policy evaluator
+- [x] Route: `POST /analytics/action-items/{id}/status` → update manager's action item status (stored in `user_action_item_states` table or preferences JSON)
+- [x] Anomaly chart data: `ml_anomaly_logs` joined to `overtime_items` and `overtime_submissions`, last 30 days, group by date
+- [x] Create `resources/js/Pages/Analytics/TabInsights.vue`
+- [x] Create `resources/js/Components/Analytics/RiskIndicatorPanel.vue`
+- [x] Create `resources/js/Components/Analytics/AnomalyDetectionChart.vue` — line chart with anomaly scatter overlay (Chart.js multi-dataset)
+- [x] Create `resources/js/Components/Analytics/ManagementActionTable.vue`
 
 ---
 

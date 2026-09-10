@@ -103,6 +103,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/scenario/calculate', [AnalyticsScenarioController::class, 'calculate'])->name('scenario.calculate');
         Route::post('/scenario/save', [AnalyticsScenarioController::class, 'save'])->name('scenario.save');
         Route::delete('/scenario/{id}', [AnalyticsScenarioController::class, 'destroy'])->name('scenario.destroy');
+        Route::get('/insights', [AnalyticsController::class, 'insights'])->name('insights');
+        Route::post('/action-items/{id}/status', [AnalyticsController::class, 'updateActionItemStatus'])->name('action-items.status');
         Route::get('/export', [AnalyticsController::class, 'export'])->name('export');
     });
 

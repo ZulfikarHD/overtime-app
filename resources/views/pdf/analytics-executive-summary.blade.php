@@ -443,6 +443,70 @@
     </table>
     @endif
 
+    @if(isset($insightsData) && $tab === 'insights')
+    <!-- Insights & Risk Triage Summary -->
+    <div class="section-title">Indikator Risiko Operasional &amp; Peringatan Otomatis (E09-11)</div>
+    <table class="kpi-grid-table">
+        <tr>
+            <td class="kpi-cell">
+                <div class="kpi-label">Total Risiko Aktif</div>
+                <div class="kpi-value {{ $insightsData['risk_indicators']['total_risks'] > 0 ? 'deficit' : 'on-track' }}">{{ $insightsData['risk_indicators']['total_risks'] }}</div>
+                <div class="kpi-subtext">Item Perlu Ditindaklanjuti</div>
+            </td>
+            <td class="kpi-cell">
+                <div class="kpi-label">Status Kritis</div>
+                <div class="kpi-value deficit">{{ $insightsData['risk_indicators']['critical_count'] }}</div>
+                <div class="kpi-subtext">Prioritas Tindakan Segera</div>
+            </td>
+            <td class="kpi-cell">
+                <div class="kpi-label">Status Peringatan</div>
+                <div class="kpi-value caution">{{ $insightsData['risk_indicators']['warning_count'] }}</div>
+                <div class="kpi-subtext">Perlu Pengawasan Shift</div>
+            </td>
+            <td class="kpi-cell">
+                <div class="kpi-label">Deteksi Anomali 30 Hari</div>
+                <div class="kpi-value">{{ $insightsData['anomaly_detection']['unusual_patterns_count'] }}</div>
+                <div class="kpi-subtext">Rata-rata: {{ $insightsData['anomaly_detection']['mean'] }} jam/hari</div>
+            </td>
+        </tr>
+    </table>
+
+    <div class="section-title">Daftar Tindakan Manajemen (Management Action Plan)</div>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th style="width: 5%;">No</th>
+                <th style="width: 12%;">Prioritas</th>
+                <th style="width: 33%;">Tindakan Manajemen</th>
+                <th style="width: 18%;">Departemen</th>
+                <th style="width: 17%;">Batas Waktu</th>
+                <th style="width: 15%;">Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            @forelse($insightsData['action_items'] as $idx => $act)
+            <tr>
+                <td style="text-align: center;">{{ $idx + 1 }}</td>
+                <td style="text-align: center; font-weight: bold;">{{ strtoupper($act['priority_label']) }}</td>
+                <td>
+                    <strong>{{ $act['action_item'] }}</strong>
+                    <div style="font-size: 8px; color: #64748b;">{{ $act['impact'] }}</div>
+                </td>
+                <td>{{ $act['department'] }}</td>
+                <td style="text-align: center; font-family: monospace;">{{ $act['deadline'] }}</td>
+                <td style="text-align: center; font-weight: bold;">{{ $act['status_label'] }}</td>
+            </tr>
+            @empty
+            <tr>
+                <td colspan="6" style="text-align: center; color: #16a34a; padding: 12px;">
+                    Semua indikator normal. Tidak ada tindakan manajemen mendesak yang diperlukan saat ini.
+                </td>
+            </tr>
+            @endforelse
+        </tbody>
+    </table>
+    @endif
+
     <!-- Sign-off Block -->
     <table class="footer-table">
         <tr>
