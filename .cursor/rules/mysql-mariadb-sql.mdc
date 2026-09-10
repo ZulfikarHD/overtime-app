@@ -33,6 +33,15 @@ Do not use SQLite-only syntax in `whereRaw` / `havingRaw` / `selectRaw` / `order
 2. If raw SQL is required, write **MariaDB-compatible** SQL that also runs on SQLite tests when practical (ANSI: `COALESCE`, `CASE`, `SUM`, `CAST(... AS DECIMAL)`, `LOWER`).
 3. Prefer **Carbon / PHP** for date grouping (`YEAR`/`MONTH`/`strftime` divergence) instead of vendor date functions in SQL.
 4. Never add SQLite-only casts “so tests pass” — fix with portable SQL.
+5. Aggregate queries must not mix `table.*` / non-aggregated columns with `SUM`/`COUNT` without `GROUP BY`. When cloning a list query for totals, clear select + order first:
+
+```php
+// ❌ BAD — MariaDB 1140 (SQLite silently allows)
+(clone $query)->selectRaw('COUNT(*) as total, SUM(hours) as hours')->first();
+
+// ✅ GOOD
+(clone $query)->reorder()->select([])->selectRaw('COUNT(*) as total, SUM(hours) as hours')->toBase()->first();
+```
 
 ## Allowed exception
 

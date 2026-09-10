@@ -261,10 +261,14 @@ class PeriodComparisonService
             $itemsQuery->where('overtime_submissions.department_id', $departmentId);
         }
 
-        $sums = (clone $itemsQuery)->selectRaw('
-            COALESCE(SUM(overtime_items.total_hours), 0) as total_hours,
-            COALESCE(SUM(overtime_items.total_cost_snapshot), 0) as total_cost
-        ')->first();
+        $sums = (clone $itemsQuery)
+            ->select([])
+            ->selectRaw('
+                COALESCE(SUM(overtime_items.total_hours), 0) as total_hours,
+                COALESCE(SUM(overtime_items.total_cost_snapshot), 0) as total_cost
+            ')
+            ->toBase()
+            ->first();
 
         $headcount = (clone $itemsQuery)->distinct('overtime_items.employee_id')->count('overtime_items.employee_id');
 
