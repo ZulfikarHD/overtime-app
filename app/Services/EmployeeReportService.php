@@ -707,15 +707,21 @@ class EmployeeReportService
     {
         $query = $this->buildTimesheetQuery($employeeId, $filters);
 
-        // Compute summary aggregates across filtered dataset
-        $summaryRow = (clone $query)->selectRaw("
-            COUNT(overtime_items.id) as total_count,
-            COALESCE(SUM(overtime_items.total_hours), 0) as total_hours,
-            COALESCE(SUM(CASE WHEN overtime_items.status = 'APPROVED' THEN overtime_items.total_hours ELSE 0 END), 0) as approved_hours,
-            COALESCE(SUM(CASE WHEN overtime_items.status = 'PENDING' THEN overtime_items.total_hours ELSE 0 END), 0) as pending_hours,
-            COALESCE(SUM(CASE WHEN overtime_items.status = 'REJECTED' THEN overtime_items.total_hours ELSE 0 END), 0) as rejected_hours,
-            COALESCE(SUM(overtime_items.total_cost_snapshot), 0) as total_cost
-        ")->first();
+        // Aggregate-only select: cloning the ledger query would keep overtime_items.*
+        // + ORDER BY, which MariaDB rejects (error 1140 / ONLY_FULL_GROUP_BY).
+        $summaryRow = (clone $query)
+            ->reorder()
+            ->select([])
+            ->selectRaw("
+                COUNT(overtime_items.id) as total_count,
+                COALESCE(SUM(overtime_items.total_hours), 0) as total_hours,
+                COALESCE(SUM(CASE WHEN overtime_items.status = 'APPROVED' THEN overtime_items.total_hours ELSE 0 END), 0) as approved_hours,
+                COALESCE(SUM(CASE WHEN overtime_items.status = 'PENDING' THEN overtime_items.total_hours ELSE 0 END), 0) as pending_hours,
+                COALESCE(SUM(CASE WHEN overtime_items.status = 'REJECTED' THEN overtime_items.total_hours ELSE 0 END), 0) as rejected_hours,
+                COALESCE(SUM(overtime_items.total_cost_snapshot), 0) as total_cost
+            ")
+            ->toBase()
+            ->first();
 
         $paginated = $query
             ->with([
