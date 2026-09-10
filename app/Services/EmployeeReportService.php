@@ -371,7 +371,7 @@ class EmployeeReportService
                 ->whereBetween('overtime_submissions.operational_date', [$monthStartDate, $monthEndDate])
                 ->selectRaw('overtime_items.employee_id, SUM(overtime_items.total_hours) as total_approved_hours')
                 ->groupBy('overtime_items.employee_id')
-                ->havingRaw('SUM(overtime_items.total_hours) > CAST(? AS REAL)', [$currentMonthHours])
+                ->havingRaw('SUM(overtime_items.total_hours) > CAST(? AS DECIMAL(10,2))', [$currentMonthHours])
                 ->get()
                 ->count();
 

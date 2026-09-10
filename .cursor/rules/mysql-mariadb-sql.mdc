@@ -1,0 +1,39 @@
+---
+description: Ban SQLite-only SQL; target MySQL/MariaDB or portable Eloquent Query Builder
+alwaysApply: true
+---
+
+# MySQL / MariaDB SQL Compatibility
+
+Production runs **MySQL/MariaDB**. PHPUnit may use SQLite in-memory — that is a test harness detail, **not** a license to write SQLite dialect.
+
+## Hard ban (never in application queries)
+
+Do not use SQLite-only syntax in `whereRaw` / `havingRaw` / `selectRaw` / `orderByRaw` / `DB::raw` / `DB::statement` for **runtime** app code:
+
+- `CAST(... AS REAL)` → use `CAST(... AS DECIMAL(10,2))` or Eloquent bindings
+- `strftime(...)`, `datetime('now')`, `julianday(...)`, `date('now')`
+- `AUTOINCREMENT`, `INSERT OR REPLACE` / `INSERT OR IGNORE`, `WITHOUT ROWID`
+- `PRAGMA`, `sqlite_master`, `typeof(...)`, `randomblob(...)`, `GLOB`
+
+```php
+// ❌ BAD — breaks MariaDB production
+->havingRaw('SUM(total_hours) > CAST(? AS REAL)', [$hours])
+
+// ✅ GOOD — portable numeric compare
+->havingRaw('SUM(total_hours) > CAST(? AS DECIMAL(10,2))', [$hours])
+
+// ✅ BETTER — Eloquent / Query Builder, no dialect
+->having('total_approved_hours', '>', $hours)
+```
+
+## Preferred approach
+
+1. **Eloquent / Query Builder first** (`where`, `whereBetween`, `having`, `select`, `join`, aggregates).
+2. If raw SQL is required, write **MariaDB-compatible** SQL that also runs on SQLite tests when practical (ANSI: `COALESCE`, `CASE`, `SUM`, `CAST(... AS DECIMAL)`, `LOWER`).
+3. Prefer **Carbon / PHP** for date grouping (`YEAR`/`MONTH`/`strftime` divergence) instead of vendor date functions in SQL.
+4. Never add SQLite-only casts “so tests pass” — fix with portable SQL.
+
+## Allowed exception
+
+Migrations may branch on `Schema::getConnection()->getDriverName()` for DDL (partial indexes, CHECK constraints). That exception does **not** apply to Services, Actions, Controllers, or Models.
