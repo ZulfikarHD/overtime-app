@@ -27,8 +27,10 @@ class AnalyticsExportService
 
     public function __construct(
         public ?PredictiveAnalyticsService $predictiveService = null,
+        public ?CostAnalysisService $costService = null,
     ) {
         $this->predictiveService = $predictiveService ?? app(PredictiveAnalyticsService::class);
+        $this->costService = $costService ?? app(CostAnalysisService::class);
     }
 
     /**
@@ -138,6 +140,32 @@ class AnalyticsExportService
                         $sec['fallback_used'] ? 'Moving Average' : 'Supervised ML',
                     ]);
                 }
+            } elseif ($tab === 'cost') {
+                $cost = $this->costService->getCostData($user, $departmentId, $startDate, $endDate);
+                fputcsv($handle, ['=== INDIKATOR BIAYA LEMBUR (E09-08) ===']);
+                fputcsv($handle, ['Metrik', 'Nilai', 'Deskripsi']);
+                fputcsv($handle, ['Total Biaya Lembur', $cost['kpi']['formatted_total_cost'], 'Rp '.number_format($cost['kpi']['total_cost'], 0, ',', '.')]);
+                fputcsv($handle, ['Sisa Anggaran', $cost['kpi']['formatted_remaining_budget'], "Konsumsi: {$cost['kpi']['budget_consumption_pct']}%"]);
+                fputcsv($handle, ['Rata-rata Biaya / Karyawan', $cost['kpi']['formatted_avg_cost_per_employee'], "Headcount: {$cost['kpi']['active_employee_count']} orang"]);
+                fputcsv($handle, ['Rasio Biaya CapEx', "{$cost['kpi']['capex_ratio_pct']}%", 'Belanja modal terkapitalisasi']);
+                fputcsv($handle, []);
+                fputcsv($handle, ['=== RINCIAN BIAYA PER DEPARTEMEN ===']);
+                fputcsv($handle, ['No', 'Kode Departemen', 'Nama Departemen', 'Total Jam', 'Tarif Rata-rata (Rp/Jam)', 'Total Biaya (Rp)', 'Plafon Anggaran (Rp)', 'Konsumsi (%)', 'Biaya CapEx (Rp)', 'Biaya OpEx (Rp)', 'Tren MoM']);
+                foreach ($cost['department_costs'] as $idx => $dept) {
+                    fputcsv($handle, [
+                        $idx + 1,
+                        $dept['department_code'],
+                        $dept['department_name'],
+                        $dept['total_hours'],
+                        $dept['formatted_avg_rate'],
+                        number_format($dept['total_cost'], 0, ',', '.'),
+                        number_format($dept['planned_cost'], 0, ',', '.'),
+                        "{$dept['budget_consumption_pct']}%",
+                        number_format($dept['capex_cost'], 0, ',', '.'),
+                        number_format($dept['opex_cost'], 0, ',', '.'),
+                        strtoupper($dept['trend'])." ({$dept['trend_variance_pct']}%)",
+                    ]);
+                }
             } else {
                 // Data section header
                 fputcsv($handle, ['No', 'Indikator Analitik', 'Status / Nilai', 'Catatan Kebijakan']);
@@ -167,6 +195,11 @@ class AnalyticsExportService
             $predictiveData = $this->predictiveService->getPredictiveData($user, $departmentId, $startDate, $endDate);
         }
 
+        $costData = null;
+        if ($tab === 'cost') {
+            $costData = $this->costService->getCostData($user, $departmentId, $startDate, $endDate);
+        }
+
         $data = [
             'title' => 'Ringkasan Eksekutif Analitik & Keputusan',
             'tab' => $tab,
@@ -178,6 +211,7 @@ class AnalyticsExportService
             'generated_at' => Carbon::now('Asia/Jakarta')->format('d/m/Y H:i:s').' WIB',
             'role_label' => $user->isAdmin() ? 'Administrator Pabrik' : 'Kepala Departemen (Manager)',
             'predictiveData' => $predictiveData,
+            'costData' => $costData,
         ];
 
         $pdf = Pdf::loadView('pdf.analytics-executive-summary', $data);

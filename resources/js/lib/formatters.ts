@@ -53,3 +53,31 @@ export function formatDateIndo(
 
     return `${day}/${month}/${year}`;
 }
+
+/**
+ * Formats a numeric value into compact Indonesian Rupiah (IDR) format.
+ * Example: 125500000 -> "Rp 125,5 jt"
+ */
+export function formatCompactRupiah(
+    amount: number | string | null | undefined,
+): string {
+    if (amount === null || amount === undefined || amount === '') {
+        return 'Rp 0';
+    }
+
+    const numericValue =
+        typeof amount === 'string' ? parseFloat(amount) : amount;
+
+    if (isNaN(numericValue) || numericValue === 0) {
+        return 'Rp 0';
+    }
+
+    return new Intl.NumberFormat('id-ID', {
+        style: 'currency',
+        currency: 'IDR',
+        notation: 'compact',
+        maximumFractionDigits: 1,
+    })
+        .format(numericValue)
+        .replace(/\u00A0/g, ' ');
+}

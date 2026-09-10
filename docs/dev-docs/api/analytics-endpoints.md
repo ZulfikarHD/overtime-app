@@ -156,6 +156,97 @@ Session-based authentication via Laravel web guard (`auth`, `verified`, `role:ad
 
 ---
 
+### GET /analytics/cost
+
+**Description:** Fetch financial cost analysis metrics, including 4 KPI cards (Total Cost, Remaining Budget, Avg Cost/Employee, CapEx Ratio), department spend rankings, 6-month stacked OpEx vs CapEx trends, and budget vs actual comparisons.
+
+**Query Parameters:**
+
+| Param           | Type          | Required | Default                             | Description                      |
+| :-------------- | :------------ | :------- | :---------------------------------- | :------------------------------- |
+| `department_id` | string \| int | No       | `all` (Admin) / User Dept (Manager) | Filter by department ID or `all` |
+| `start_date`    | string        | No       | First day of current month          | Optional analysis start date     |
+| `end_date`      | string        | No       | Last day of current month           | Optional analysis end date       |
+
+**Response 200 (JSON):**
+
+```json
+{
+    "kpi": {
+        "total_cost": 125500000.0,
+        "formatted_total_cost": "Rp 125,5 Jt",
+        "remaining_budget": 24500000.0,
+        "formatted_remaining_budget": "Rp 24,5 Jt",
+        "budget_consumption_pct": 83.7,
+        "budget_burn_zone": "safe",
+        "is_over_budget": false,
+        "planned_budget": 150000000.0,
+        "active_employee_count": 50,
+        "avg_cost_per_employee": 2510000.0,
+        "formatted_avg_cost_per_employee": "Rp 2,5 Jt",
+        "capex_cost": 37650000.0,
+        "formatted_capex_cost": "Rp 37,7 Jt",
+        "opex_cost": 87850000.0,
+        "formatted_opex_cost": "Rp 87,9 Jt",
+        "capex_ratio_pct": 30.0
+    },
+    "department_costs": [
+        {
+            "department_id": 1,
+            "department_code": "DEPT_ASSY",
+            "department_name": "Assembly Department",
+            "total_hours": 1200.0,
+            "total_cost": 60000000.0,
+            "formatted_total_cost": "Rp 60.000.000",
+            "planned_cost": 70000000.0,
+            "formatted_planned_cost": "Rp 70.000.000",
+            "budget_consumption_pct": 85.7,
+            "is_over_budget": false,
+            "burn_zone": "on_track",
+            "avg_rate_per_hour": 50000.0,
+            "formatted_avg_rate": "Rp 50.000",
+            "capex_cost": 18000000.0,
+            "opex_cost": 42000000.0,
+            "trend": "up",
+            "trend_variance_pct": 5.2
+        }
+    ],
+    "monthly_trend_6m": {
+        "labels": [
+            "Apr 2026",
+            "Mei 2026",
+            "Jun 2026",
+            "Jul 2026",
+            "Agu 2026",
+            "Sep 2026"
+        ],
+        "opex_costs": [
+            70000000, 75000000, 80000000, 82000000, 85000000, 87850000
+        ],
+        "capex_costs": [
+            20000000, 22000000, 25000000, 30000000, 32000000, 37650000
+        ]
+    },
+    "budget_vs_actual": [
+        {
+            "department_name": "Assembly Department",
+            "planned_cost": 70000000.0,
+            "actual_cost": 60000000.0,
+            "is_over_budget": false
+        }
+    ],
+    "scope": {
+        "department_id": null,
+        "start_date": "2026-09-01",
+        "end_date": "2026-09-30",
+        "fiscal_year": 2026,
+        "fiscal_month": 6
+    }
+}
+```
+
+---
+
 ### GET /analytics/export
 
 **Description:** Export executive summary PDF or raw tab dataset as a streamed CSV file.

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Department;
 use App\Models\User;
 use App\Services\Analytics\AnalyticsExportService;
+use App\Services\Analytics\CostAnalysisService;
 use App\Services\Analytics\PredictiveAnalyticsService;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
@@ -32,6 +33,7 @@ class AnalyticsController extends Controller
     public function __construct(
         public AnalyticsExportService $exportService,
         public PredictiveAnalyticsService $predictiveService,
+        public CostAnalysisService $costService,
     ) {}
 
     /**
@@ -83,6 +85,10 @@ class AnalyticsController extends Controller
             ? $this->predictiveService->getPredictiveData($user, $departmentIdInt, $startDate, $endDate)
             : null;
 
+        $costData = $tab === 'cost'
+            ? $this->costService->getCostData($user, $departmentIdInt, $startDate, $endDate)
+            : null;
+
         return Inertia::render('Analytics/Index', [
             'currentTab' => $tab,
             'departments' => $departments,
@@ -92,6 +98,7 @@ class AnalyticsController extends Controller
                 'end_date' => $endDate,
             ],
             'predictiveData' => $predictiveData,
+            'costData' => $costData,
             'userRole' => is_string($user->role) ? $user->role : $user->role->value,
             'userDepartmentId' => $user->department_id,
         ]);
@@ -117,6 +124,30 @@ class AnalyticsController extends Controller
         $endDate = $request->filled('end_date') ? (string) $request->input('end_date') : null;
 
         $data = $this->predictiveService->getPredictiveData($user, $departmentId, $startDate, $endDate);
+
+        return response()->json($data);
+    }
+
+    /**
+     * Return JSON endpoint for cost analysis data (E09-08).
+     */
+    public function costAnalysis(Request $request): JsonResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+
+        abort_unless($user && ($user->isAdmin() || $user->isManager()), 403);
+
+        $rawDept = $request->input('department_id');
+        $departmentId = null;
+        if ($request->has('department_id') && $rawDept !== '' && $rawDept !== 'all') {
+            $departmentId = (int) $rawDept;
+        }
+
+        $startDate = $request->filled('start_date') ? (string) $request->input('start_date') : null;
+        $endDate = $request->filled('end_date') ? (string) $request->input('end_date') : null;
+
+        $data = $this->costService->getCostData($user, $departmentId, $startDate, $endDate);
 
         return response()->json($data);
     }

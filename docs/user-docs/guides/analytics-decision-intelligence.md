@@ -31,7 +31,20 @@ Click on any tab in the navigation bar to immediately view its specialized chart
     - **Section Forecast Bar Chart**: Displays predicted hours per section with visual error whiskers representing lower and upper confidence limits.
     - **6-Month Trend Projection Line**: Compares the last 3 months of actual overtime against 3 months of projected workload with a 90% confidence ribbon.
     - **Seasonal Analysis & Summary**: 12-month annual curve highlighting the historical peak quarter alongside summary cards (_Musim Puncak_, _Musim Rendah_, _Siklus Pola_).
-2. **Analisis Biaya (Cost Analysis)**: Overtime financial audit, remaining budget pacing, average cost per employee, and OpEx vs. CapEx ratios.
+2. **Analisis Biaya (Cost Analysis)**:
+    - **4 Financial KPI Cards**:
+        - _Total Biaya Lembur_: Total verified overtime expenditure for the selected period (e.g. `Rp 125,5 Jt`).
+        - _Sisa Anggaran (Rp)_: Remaining budget balance alongside a real-time progress bar showing the percentage consumed and traffic-light burn zone status.
+        - _Rata-rata Biaya per Karyawan_: Average overtime labor cost per active operator (e.g. `Rp 2,5 Jt`).
+        - _Rasio Biaya CapEx_: Percentage of overtime expenditure capitalized into project-driven investment versus ongoing operational expenses (OpEx).
+    - **Biaya Lembur per Departemen**: Horizontal ranking bar chart color-coded by budget compliance:
+        - 🟢 **< 85% Aman (Safe)**: Minimal risk of budget overrun.
+        - 🔵 **85–100% Sesuai (On Track)**: Healthy budget pacing.
+        - 🟡 **100–110% Peringatan (Warning)**: Approaching or slightly surpassing target allocation.
+        - 🔴 **> 110% Bahaya (Danger)**: Critical overrun requiring immediate management intervention.
+    - **Tren Biaya Lembur (6 Bulan)**: Stacked area chart showing the past 6 months of OpEx (regular production & TPM) vs. CapEx (capitalized machinery and expansion projects) in Indonesian Rupiah.
+    - **Anggaran vs Realisasi**: Grouped comparative bar chart per department comparing planned budget vs actual spend, highlighting deficits in red.
+    - **Rincian Biaya per Departemen**: Sortable high-density audit table with real-time department search, total hours, average rate/hour (`Rp 50.000`), total cost, budget consumption percentage, month-over-month trend indicators (↑ / ↓ / →), and a consolidated Grand Total footer.
 3. **Korelasi & Pola (Correlation & Patterns)**: Analysis of the productivity sweet spot (fair overtime zone) and fatigue threshold points.
 4. **Simulasi Skenario (Scenario Simulation)**: Interactive calculator for testing changes in production volume, headcount, and budget impact.
 5. **Wawasan Kunci (Key Insights)**: Automated risk warnings, consecutive shift fatigue indicators, and compliance alerts.

@@ -370,35 +370,35 @@ Before any chart story begins, the chart infrastructure must be in place.
 
 **KPI Cards:**
 
-- [ ] **Total Biaya Lembur**: `SUM(total_cost_snapshot)` for current month, approved items. Format: `Rp 125,5 Jt` (abbreviated millions)
-- [ ] **Sisa Anggaran (Rp)**: `planned_cost_idr - cumulative_cost_idr` from budgets. With mini progress bar (% consumed)
-- [ ] **Rata-rata Biaya per Karyawan**: `Total Cost / COUNT(DISTINCT employee_id)` — Format `Rp 2,5 Jt`
-- [ ] ~~**ROI Projection**~~ — **REMOVED per BA spec §4** — replaced with: **CapEx Ratio Cost**: `SUM(hours_project × rate) / SUM(total_cost) × 100%` in IDR terms
+- [x] **Total Biaya Lembur**: `SUM(total_cost_snapshot)` for current month, approved items. Format: `Rp 125,5 Jt` (abbreviated millions)
+- [x] **Sisa Anggaran (Rp)**: `planned_cost_idr - cumulative_cost_idr` from budgets. With mini progress bar (% consumed)
+- [x] **Rata-rata Biaya per Karyawan**: `Total Cost / COUNT(DISTINCT employee_id)` — Format `Rp 2,5 Jt`
+- [x] ~~**ROI Projection**~~ — **REMOVED per BA spec §4** — replaced with: **CapEx Ratio Cost**: `SUM(hours_project × rate) / SUM(total_cost) × 100%` in IDR terms
 
 **Charts:**
 
-- [ ] `Biaya Lembur per Departemen` — horizontal bar chart: each department's total cost this month, sorted desc. Color-coded by budget compliance.
-- [ ] `Tren Biaya Lembur (6 Bulan)` — stacked area chart: 6 months of monthly cost, stacked by OpEx + CapEx cost. Shows cost trend visually.
-- [ ] `Anggaran vs Realisasi` — grouped bar chart: for each department, two bars — Planned Cost (Rp) vs Actual Cost (Rp). Red shading if over budget.
+- [x] `Biaya Lembur per Departemen` — horizontal bar chart: each department's total cost this month, sorted desc. Color-coded by budget compliance.
+- [x] `Tren Biaya Lembur (6 Bulan)` — stacked area chart: 6 months of monthly cost, stacked by OpEx + CapEx cost. Shows cost trend visually.
+- [x] `Anggaran vs Realisasi` — grouped bar chart: for each department, two bars — Planned Cost (Rp) vs Actual Cost (Rp). Red shading if over budget.
 
 **Cost Breakdown Table:**
 
-- [ ] Columns: `Department`, `Total Hours`, `Avg Rate (Rp/jam)`, `Total Cost (Rp)`, `% of Budget`, `Tren` (sparkline or ↑↓ arrow)
-- [ ] All monetary values formatted as Rupiah (Indonesian locale)
-- [ ] Sortable columns
-- [ ] Footer row: Grand Total across all departments
+- [x] Columns: `Department`, `Total Hours`, `Avg Rate (Rp/jam)`, `Total Cost (Rp)`, `% of Budget`, `Tren` (sparkline or ↑↓ arrow)
+- [x] All monetary values formatted as Rupiah (Indonesian locale)
+- [x] Sortable columns
+- [x] Footer row: Grand Total across all departments
 
 #### Technical Tasks
 
-- [ ] `AnalyticsController@costAnalysis` — `GET /analytics/cost`
-- [ ] Aggregate: `SUM(total_cost_snapshot)` grouped by `department_id`, `fiscal_month`
-- [ ] Average rate: `SUM(total_cost_snapshot) / SUM(total_hours)` per department
-- [ ] Create `resources/js/Pages/Analytics/TabCostAnalysis.vue`
-- [ ] Create `resources/js/Components/Analytics/CostByDepartmentChart.vue`
-- [ ] Create `resources/js/Components/Analytics/CostTrendStackedChart.vue`
-- [ ] Create `resources/js/Components/Analytics/BudgetVsActualBarChart.vue`
-- [ ] Create `resources/js/Components/Analytics/CostBreakdownTable.vue`
-- [ ] Rupiah format: always use `Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', notation: 'compact', maximumFractionDigits: 1 })` for abbreviated values
+- [x] `AnalyticsController@costAnalysis` — `GET /analytics/cost`
+- [x] Aggregate: `SUM(total_cost_snapshot)` grouped by `department_id`, `fiscal_month`
+- [x] Average rate: `SUM(total_cost_snapshot) / SUM(total_hours)` per department
+- [x] Create `resources/js/Pages/Analytics/TabCostAnalysis.vue`
+- [x] Create `resources/js/Components/Analytics/CostByDepartmentChart.vue`
+- [x] Create `resources/js/Components/Analytics/CostTrendStackedChart.vue`
+- [x] Create `resources/js/Components/Analytics/BudgetVsActualBarChart.vue`
+- [x] Create `resources/js/Components/Analytics/CostBreakdownTable.vue`
+- [x] Rupiah format: always use `Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', notation: 'compact', maximumFractionDigits: 1 })` for abbreviated values
 
 ---
 

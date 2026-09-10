@@ -63,6 +63,7 @@ Technical specifications and decision records for the engineering implementation
     - [ADR-031: Analytics Page Shell and Client-Side Tab Navigation Architecture](./dev-docs/decisions/031-analytics-shell-and-tab-navigation-architecture.md)
     - [ADR-032: Predictive Analytics ML and Moving Average Fallback Engine](./dev-docs/decisions/032-predictive-analytics-ml-and-moving-average-fallback.md)
     - [ADR-033: Automotive Login Portal and Responsive Collapsible Sidebar](./dev-docs/decisions/033-automotive-login-portal-and-responsive-collapsible-sidebar.md)
+    - [ADR-034: Cost Analysis OpEx vs CapEx Segregation and Budget Variance Architecture](./dev-docs/decisions/034-cost-analysis-opex-capex-segregation-and-budget-variance.md)
 - **Technical Feature Design Specifications:**
     - [Authentication & Role-Based Access Control](./dev-docs/features/authentication-rbac.md)
     - [Database Schema Migrations (Full DDL)](./dev-docs/features/database-schema-migrations.md)

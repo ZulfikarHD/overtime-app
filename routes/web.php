@@ -93,6 +93,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::middleware(['role:admin,manager'])->prefix('analytics')->name('analytics.')->group(function () {
         Route::get('/', [AnalyticsController::class, 'index'])->name('index');
         Route::get('/predictive', [AnalyticsController::class, 'predictive'])->name('predictive');
+        Route::get('/cost', [AnalyticsController::class, 'costAnalysis'])->name('cost');
         Route::get('/export', [AnalyticsController::class, 'export'])->name('export');
     });
 

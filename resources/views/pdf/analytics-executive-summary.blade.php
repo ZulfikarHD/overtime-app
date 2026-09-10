@@ -325,6 +325,66 @@
     </table>
     @endif
 
+    @if(isset($costData) && $tab === 'cost')
+    <div class="section-title">Indikator Kunci Biaya Lembur (Financial KPIs)</div>
+    <table class="kpi-grid">
+        <tr>
+            <td class="kpi-cell">
+                <div class="kpi-title">Total Biaya Lembur</div>
+                <div class="kpi-value" style="color: #cc0000;">{{ $costData['kpi']['formatted_total_cost'] }}</div>
+                <div class="kpi-sub">Rp {{ number_format($costData['kpi']['total_cost'], 0, ',', '.') }}</div>
+            </td>
+            <td class="kpi-cell">
+                <div class="kpi-title">Sisa Anggaran</div>
+                <div class="kpi-value" style="color: #16a34a;">{{ $costData['kpi']['formatted_remaining_budget'] }}</div>
+                <div class="kpi-sub">Konsumsi: {{ $costData['kpi']['budget_consumption_pct'] }}%</div>
+            </td>
+            <td class="kpi-cell">
+                <div class="kpi-title">Rata-rata Biaya / Karyawan</div>
+                <div class="kpi-value" style="color: #0284c7;">{{ $costData['kpi']['formatted_avg_cost_per_employee'] }}</div>
+                <div class="kpi-sub">{{ $costData['kpi']['active_employee_count'] }} Karyawan Aktif</div>
+            </td>
+            <td class="kpi-cell">
+                <div class="kpi-title">Rasio Biaya CapEx</div>
+                <div class="kpi-value" style="color: #7c3aed;">{{ $costData['kpi']['capex_ratio_pct'] }}%</div>
+                <div class="kpi-sub">{{ $costData['kpi']['formatted_capex_cost'] }} Terkapitalisasi</div>
+            </td>
+        </tr>
+    </table>
+
+    <div class="section-title">Audit Biaya &amp; Kepatuhan Anggaran per Departemen</div>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th style="width: 5%;">No</th>
+                <th style="width: 15%;">Kode</th>
+                <th style="width: 25%;">Departemen</th>
+                <th style="width: 10%; text-align: right;">Total Jam</th>
+                <th style="width: 15%; text-align: right;">Tarif (Rp/Jam)</th>
+                <th style="width: 15%; text-align: right;">Total Biaya (Rp)</th>
+                <th style="width: 15%; text-align: right;">Anggaran (Rp)</th>
+            </tr>
+        </thead>
+        <tbody>
+            @forelse($costData['department_costs'] as $idx => $dept)
+            <tr>
+                <td style="text-align: center;">{{ $idx + 1 }}</td>
+                <td style="font-family: monospace; font-weight: bold;">{{ $dept['department_code'] }}</td>
+                <td>{{ $dept['department_name'] }}</td>
+                <td style="text-align: right; font-family: monospace;">{{ number_format($dept['total_hours'], 1, ',', '.') }}</td>
+                <td style="text-align: right; font-family: monospace;">{{ $dept['formatted_avg_rate'] }}</td>
+                <td style="text-align: right; font-family: monospace; font-weight: bold;">Rp {{ number_format($dept['total_cost'], 0, ',', '.') }}</td>
+                <td style="text-align: right; font-family: monospace;">Rp {{ number_format($dept['planned_cost'], 0, ',', '.') }}</td>
+            </tr>
+            @empty
+            <tr>
+                <td colspan="7" style="text-align: center; color: #94a3b8;">Belum ada data biaya untuk periode ini.</td>
+            </tr>
+            @endforelse
+        </tbody>
+    </table>
+    @endif
+
     <!-- Sign-off Block -->
     <table class="footer-table">
         <tr>

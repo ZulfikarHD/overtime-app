@@ -59,6 +59,7 @@ interface Props {
         end_date?: string;
     };
     predictiveData?: unknown;
+    costData?: unknown;
     userRole?: string;
     userDepartmentId?: number | null;
 }
@@ -424,7 +425,11 @@ watch(
                         end_date: filterEndDate,
                     }"
                     :initial-data="
-                        activeTab === 'predictive' ? predictiveData : undefined
+                        activeTab === 'predictive'
+                            ? predictiveData
+                            : activeTab === 'cost'
+                              ? costData
+                              : undefined
                     "
                 />
             </Transition>
