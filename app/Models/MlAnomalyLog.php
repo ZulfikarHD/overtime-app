@@ -2,7 +2,9 @@
 
 namespace App\Models;
 
+use Database\Factories\MlAnomalyLogFactory;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
@@ -21,6 +23,9 @@ use Illuminate\Support\Carbon;
  */
 class MlAnomalyLog extends Model
 {
+    /** @use HasFactory<MlAnomalyLogFactory> */
+    use HasFactory;
+
     /**
      * Indicates if the model should be timestamped.
      *

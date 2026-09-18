@@ -2,7 +2,9 @@
 
 namespace App\Models;
 
+use Database\Factories\OperationalCalendarFactory;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
@@ -17,6 +19,9 @@ use Illuminate\Support\Carbon;
  */
 class OperationalCalendar extends Model
 {
+    /** @use HasFactory<OperationalCalendarFactory> */
+    use HasFactory;
+
     /**
      * The primary key associated with the table.
      *

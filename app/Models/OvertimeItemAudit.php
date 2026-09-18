@@ -3,8 +3,10 @@
 namespace App\Models;
 
 use App\Observers\OvertimeItemAuditObserver;
+use Database\Factories\OvertimeItemAuditFactory;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
@@ -23,6 +25,9 @@ use Illuminate\Support\Carbon;
 #[ObservedBy([OvertimeItemAuditObserver::class])]
 class OvertimeItemAudit extends Model
 {
+    /** @use HasFactory<OvertimeItemAuditFactory> */
+    use HasFactory;
+
     /**
      * Indicates if the model should be timestamped.
      *

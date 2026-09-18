@@ -22,6 +22,7 @@ class DatabaseSeeder extends Seeder
             OperationalCalendarSeeder::class,
             PolicyThresholdSeeder::class,
             OvertimeBudgetSeeder::class,
+            DummyDataSeeder::class,
         ]);
     }
 }

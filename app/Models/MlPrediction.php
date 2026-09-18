@@ -2,7 +2,9 @@
 
 namespace App\Models;
 
+use Database\Factories\MlPredictionFactory;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
@@ -24,6 +26,9 @@ use Illuminate\Support\Carbon;
  */
 class MlPrediction extends Model
 {
+    /** @use HasFactory<MlPredictionFactory> */
+    use HasFactory;
+
     /**
      * Indicates if the model should be timestamped.
      *

@@ -62,11 +62,18 @@ class OperationalCalendarSeeder extends Seeder
             $current->addDay();
         }
 
-        foreach (array_chunk($records, 100) as $chunk) {
-            OperationalCalendar::upsert(
-                $chunk,
-                ['calendar_date'],
-                ['day_type', 'is_holiday', 'holiday_name', 'description'],
+        // Use Eloquent (not raw upsert) so date casting matches overtime_submissions FK
+        // values on SQLite, where DATE affinity is stored as text.
+        foreach ($records as $record) {
+            OperationalCalendar::query()->updateOrCreate(
+                ['calendar_date' => $record['calendar_date']],
+                [
+                    'day_type' => $record['day_type'],
+                    'is_holiday' => $record['is_holiday'],
+                    'holiday_name' => $record['holiday_name'],
+                    'description' => $record['description'],
+                    'created_at' => $record['created_at'],
+                ],
             );
         }
     }

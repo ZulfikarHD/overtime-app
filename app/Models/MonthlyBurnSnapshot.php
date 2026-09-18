@@ -2,8 +2,10 @@
 
 namespace App\Models;
 
+use Database\Factories\MonthlyBurnSnapshotFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
@@ -29,6 +31,9 @@ use Illuminate\Support\Carbon;
  */
 class MonthlyBurnSnapshot extends Model
 {
+    /** @use HasFactory<MonthlyBurnSnapshotFactory> */
+    use HasFactory;
+
     /**
      * Indicates if the model should be timestamped.
      *
