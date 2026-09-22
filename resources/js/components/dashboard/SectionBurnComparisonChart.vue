@@ -100,15 +100,12 @@ const datasets = computed<ChartDataset<'bar'>[]>(() => {
     ];
 });
 
-const chartHeightClass = computed(() => {
+/** Dynamic height string passed as inline style on the chart wrapper. */
+const chartHeightStyle = computed(() => {
     const count = props.data?.sections.length ?? 0;
-    if (count > 10) {
-        return 'h-96';
-    }
-    if (count > 5) {
-        return 'h-80';
-    }
-    return 'h-64';
+    // ~34px per bar (barThickness 16 + spacing + label) + 60px for axes & title
+    const px = Math.max(220, count * 34 + 60);
+    return `height:${px}px`;
 });
 
 const chartOptions = computed<ChartOptions<'bar'>>(() => {
@@ -285,17 +282,19 @@ const chartOptions = computed<ChartOptions<'bar'>>(() => {
         </CardHeader>
 
         <CardContent class="space-y-4 pt-0">
-            <!-- Horizontal Bar Chart -->
-            <BaseBarChart
-                :labels="chartLabels"
-                :datasets="datasets"
-                :options="chartOptions"
-                :horizontal="true"
-                :loading="loading"
-                :empty="!data || data.sections.length === 0"
-                :height-class="chartHeightClass"
-                data-test="section-burn-bar-canvas"
-            />
+            <!-- Horizontal Bar Chart: height scales with section count -->
+            <div :style="chartHeightStyle" class="relative w-full">
+                <BaseBarChart
+                    :labels="chartLabels"
+                    :datasets="datasets"
+                    :options="chartOptions"
+                    :horizontal="true"
+                    :loading="loading"
+                    :empty="!data || data.sections.length === 0"
+                    height-class="h-full"
+                    data-test="section-burn-bar-canvas"
+                />
+            </div>
 
             <!-- High-Density Quick Access Section Chips (Touch Ergonomics & Direct Click Navigation) -->
             <div

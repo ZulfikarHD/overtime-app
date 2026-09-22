@@ -40,11 +40,14 @@ class DashboardController extends Controller
         $sectionId = $request->filled('section_id') ? $request->integer('section_id') : null;
 
         $kpiCards = $this->kpiService->getKpiCards($user, $date, $departmentId);
+        $weeklyPlanningVsActual = $this->kpiService->getWeeklyPlanningVsActual($user, $date, $departmentId, $sectionId);
         $dailyBurnChart = $this->kpiService->getDailyBurnChart($user, $date, $departmentId, $sectionId);
+        $dailyBurnUpIndex = $this->kpiService->getDailyBurnUpIndex($user, $date, $departmentId, $sectionId);
         $sectionBurnComparison = $this->kpiService->getSectionBurnComparison($user, $date, $departmentId);
         $leaderboard = $this->kpiService->getOvertimeLeaderboard($user, $date, $departmentId, $sectionId);
         $categoryDistribution = $this->kpiService->getCategoryDistribution($user, $date, $departmentId, $sectionId);
         $trendWorkingTime = $this->kpiService->getTrendWorkingTime($user, $date, $departmentId, $sectionId);
+        $ytdOvertimeIndex = $this->kpiService->getYtdOvertimeIndex($user, $date, $departmentId, $sectionId);
         $dailyIndexTrend = $this->kpiService->getDailyIndexTrend($user, $date, $departmentId, $sectionId);
         $dayTypeBreakdown = $this->kpiService->getDayTypeBreakdown($user, $date, $departmentId, $sectionId);
         $employeeSummary = $this->kpiService->getEmployeeSummaryTable($user, $date, $departmentId, $sectionId);
@@ -62,11 +65,14 @@ class DashboardController extends Controller
         return Inertia::render('Dashboard', [
             'currentTab' => $tab,
             'kpiCards' => $kpiCards,
+            'weeklyPlanningVsActual' => $weeklyPlanningVsActual,
             'dailyBurnChart' => $dailyBurnChart,
+            'dailyBurnUpIndex' => $dailyBurnUpIndex,
             'sectionBurnComparison' => $sectionBurnComparison,
             'leaderboard' => $leaderboard,
             'categoryDistribution' => $categoryDistribution,
             'trendWorkingTime' => $trendWorkingTime,
+            'ytdOvertimeIndex' => $ytdOvertimeIndex,
             'dailyIndexTrend' => $dailyIndexTrend,
             'dayTypeBreakdown' => $dayTypeBreakdown,
             'employeeSummary' => $employeeSummary,

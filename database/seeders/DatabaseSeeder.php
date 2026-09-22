@@ -23,6 +23,7 @@ class DatabaseSeeder extends Seeder
             PolicyThresholdSeeder::class,
             OvertimeBudgetSeeder::class,
             DummyDataSeeder::class,
+            Ytd2026DummyDataSeeder::class,
         ]);
     }
 }

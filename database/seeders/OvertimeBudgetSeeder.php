@@ -26,6 +26,7 @@ class OvertimeBudgetSeeder extends Seeder
             $deptPlannedHours = 800.00;
             $deptPlannedCost = round($deptPlannedHours * $hourlyRate, 2);
 
+            // Department-level category breakdown (A=Produksi 55%, B=TPM 5%, C=Project 25%, D=Others 15%)
             OvertimeBudget::updateOrCreate(
                 [
                     'department_id' => $dept->id,
@@ -36,6 +37,10 @@ class OvertimeBudgetSeeder extends Seeder
                 [
                     'planned_hours' => $deptPlannedHours,
                     'planned_cost_idr' => $deptPlannedCost,
+                    'planned_production_hours' => 440.00,
+                    'planned_tpm_hours' => 40.00,
+                    'planned_project_hours' => 200.00,
+                    'planned_others_hours' => 120.00,
                     'week1_planned_hours' => 160.00,
                     'week2_planned_hours' => 180.00,
                     'week3_planned_hours' => 170.00,
@@ -59,6 +64,10 @@ class OvertimeBudgetSeeder extends Seeder
                     [
                         'planned_hours' => $secPlannedHours,
                         'planned_cost_idr' => $secPlannedCost,
+                        'planned_production_hours' => 110.00,
+                        'planned_tpm_hours' => 10.00,
+                        'planned_project_hours' => 50.00,
+                        'planned_others_hours' => 30.00,
                         'week1_planned_hours' => 40.00,
                         'week2_planned_hours' => 45.00,
                         'week3_planned_hours' => 45.00,

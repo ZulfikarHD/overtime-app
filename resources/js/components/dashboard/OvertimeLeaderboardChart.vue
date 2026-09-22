@@ -164,7 +164,7 @@ const chartOptions = computed<ChartOptions<'bar'>>(() => {
 
 <template>
     <Card
-        class="border-border/70 flex flex-col justify-between shadow-2xs"
+        class="border-border/70 flex flex-col shadow-2xs"
         data-test="overtime-leaderboard-card"
     >
         <CardHeader class="pb-3">

@@ -16,6 +16,11 @@ use Illuminate\Support\Carbon;
 
 class DashboardKpiService
 {
+    /** Overtime index multipliers per Indonesian labour law (simplified) */
+    public const HKN_MULTIPLIER = 1.5; // Normal working-day overtime
+
+    public const HLR_MULTIPLIER = 2.0; // Holiday / weekend overtime
+
     public MonthlySnapshotService $snapshotService;
 
     public PolicyThresholdService $thresholdService;
@@ -705,6 +710,12 @@ class DashboardKpiService
             ];
         }
 
+        // Filter out sections that have neither a budget nor any actual hours this month
+        // (e.g. factory/seeder-generated placeholder sections with no real OT data)
+        $sectionList = array_values(
+            array_filter($sectionList, fn ($s) => $s['planned_hours'] > 0 || $s['actual_hours'] > 0),
+        );
+
         usort($sectionList, fn ($a, $b) => $b['burn_index_pct'] <=> $a['burn_index_pct']);
 
         return [
@@ -908,15 +919,21 @@ class DashboardKpiService
     }
 
     /**
-     * Build category overtime distribution donut dataset (E09-04).
+     * Build category overtime plan vs actual dataset (E09-04).
+     *
+     * Returns per-category planned hours (from OvertimeBudget) alongside actual hours
+     * (from approved OvertimeItems) so the frontend can render grouped Plan vs Actual bars.
      *
      * @return array{
      *     total_hours: float,
+     *     total_planned: float,
      *     categories: list<array{
      *         key: 'production'|'tpm'|'project'|'others',
      *         label: string,
      *         hours: float,
+     *         planned_hours: float,
      *         percentage: float,
+     *         percentage_of_plan: float,
      *         color: string
      *     }>,
      *     fiscal_year: int,
@@ -944,6 +961,7 @@ class DashboardKpiService
 
         [$scopedDepartmentId, $scopedSectionId] = $this->resolveScoping($user, $departmentId, $sectionId);
 
+        // --- Actual hours per category ---
         $query = OvertimeItem::query()
             ->join('overtime_submissions', 'overtime_items.overtime_submission_id', '=', 'overtime_submissions.id')
             ->where('overtime_items.status', 'APPROVED')
@@ -971,39 +989,66 @@ class DashboardKpiService
         $othersHours = round((float) ($row->others_hours ?? 0.0), 1);
         $totalHours = round((float) ($row->total_hours ?? ($prodHours + $tpmHours + $capexHours + $othersHours)), 1);
 
+        // --- Planned hours per category from OvertimeBudget ---
+        $budgetQuery = OvertimeBudget::query()
+            ->where('fiscal_year', $fiscalYear)
+            ->where('fiscal_month', $fiscalMonth);
+
+        if ($scopedSectionId) {
+            $budgetQuery->where('section_id', $scopedSectionId);
+        } elseif ($scopedDepartmentId) {
+            $secIds = Section::query()->where('department_id', $scopedDepartmentId)->pluck('id');
+            $budgetQuery->whereIn('section_id', $secIds);
+        }
+
+        $planProd = round((float) $budgetQuery->clone()->sum('planned_production_hours'), 1);
+        $planTpm = round((float) $budgetQuery->clone()->sum('planned_tpm_hours'), 1);
+        $planProject = round((float) $budgetQuery->clone()->sum('planned_project_hours'), 1);
+        $planOthers = round((float) $budgetQuery->clone()->sum('planned_others_hours'), 1);
+        $totalPlanned = round($planProd + $planTpm + $planProject + $planOthers, 1);
+
         $categories = [
             [
                 'key' => 'production',
-                'label' => 'Produksi (Production)',
+                'label' => 'Produksi',
                 'hours' => $prodHours,
+                'planned_hours' => $planProd,
                 'percentage' => $totalHours > 0 ? round(($prodHours / $totalHours) * 100, 1) : 0.0,
+                'percentage_of_plan' => $planProd > 0 ? round(($prodHours / $planProd) * 100, 1) : 0.0,
                 'color' => '#3b82f6',
             ],
             [
                 'key' => 'tpm',
-                'label' => 'TPM / Maintenance',
+                'label' => 'TPM',
                 'hours' => $tpmHours,
+                'planned_hours' => $planTpm,
                 'percentage' => $totalHours > 0 ? round(($tpmHours / $totalHours) * 100, 1) : 0.0,
+                'percentage_of_plan' => $planTpm > 0 ? round(($tpmHours / $planTpm) * 100, 1) : 0.0,
                 'color' => '#10b981',
             ],
             [
                 'key' => 'project',
-                'label' => 'CapEx Project',
+                'label' => 'Project',
                 'hours' => $capexHours,
+                'planned_hours' => $planProject,
                 'percentage' => $totalHours > 0 ? round(($capexHours / $totalHours) * 100, 1) : 0.0,
+                'percentage_of_plan' => $planProject > 0 ? round(($capexHours / $planProject) * 100, 1) : 0.0,
                 'color' => '#7c3aed',
             ],
             [
                 'key' => 'others',
-                'label' => 'Lain-lain (Others)',
+                'label' => 'Others',
                 'hours' => $othersHours,
+                'planned_hours' => $planOthers,
                 'percentage' => $totalHours > 0 ? round(($othersHours / $totalHours) * 100, 1) : 0.0,
+                'percentage_of_plan' => $planOthers > 0 ? round(($othersHours / $planOthers) * 100, 1) : 0.0,
                 'color' => '#64748b',
             ],
         ];
 
         return [
             'total_hours' => $totalHours,
+            'total_planned' => $totalPlanned,
             'categories' => $categories,
             'fiscal_year' => $fiscalYear,
             'fiscal_month' => $fiscalMonth,
@@ -1728,6 +1773,487 @@ class DashboardKpiService
             'fiscal_month' => $fiscalMonth,
             'month_name' => $selectedCarbon->translatedFormat('F Y'),
             'soft_limit_hours' => $monthlySoftLimit,
+            'scope' => [
+                'department_id' => $scopedDepartmentId,
+                'section_id' => $scopedSectionId,
+            ],
+        ];
+    }
+
+    /**
+     * Weekly Planning vs Actual comparison data for the dashboard hero chart.
+     *
+     * Returns per-week totals for planned hours (from OvertimeBudget) and
+     * actual hours broken down by overtime category (Production, TPM, Project, Others).
+     *
+     * @return array{
+     *     weeks: list<array{
+     *         number: int,
+     *         label: string,
+     *         date_range: string,
+     *         planned_hours: float,
+     *         actual_production: float,
+     *         actual_tpm: float,
+     *         actual_project: float,
+     *         actual_others: float,
+     *         actual_total: float,
+     *         is_future: bool,
+     *         is_current: bool,
+     *     }>,
+     *     total_planned: float,
+     *     total_actual: float,
+     *     fiscal_year: int,
+     *     fiscal_month: int,
+     *     month_name: string,
+     *     scope: array{department_id: ?int, section_id: ?int},
+     * }
+     */
+    public function getWeeklyPlanningVsActual(User $user, ?string $date = null, ?int $departmentId = null, ?int $sectionId = null): array
+    {
+        $now = Carbon::now('Asia/Jakarta');
+        try {
+            $selectedCarbon = $date ? Carbon::parse($date, 'Asia/Jakarta') : $now;
+        } catch (\Throwable) {
+            $selectedCarbon = $now;
+        }
+
+        $fiscalYear = (int) $selectedCarbon->year;
+        $fiscalMonth = (int) $selectedCarbon->month;
+        $daysInMonth = (int) $selectedCarbon->daysInMonth;
+
+        // Role-based scoping
+        $scopedDepartmentId = $departmentId;
+        $scopedSectionId = $sectionId;
+
+        if ($user->isManager()) {
+            $scopedDepartmentId = $user->department_id ? (int) $user->department_id : null;
+        } elseif ($user->isTeamLeader()) {
+            $scopedDepartmentId = $user->department_id ? (int) $user->department_id : null;
+            $scopedSectionId = $user->section_id ? (int) $user->section_id : null;
+        } elseif (! $user->isAdmin()) {
+            $scopedDepartmentId = $user->department_id ? (int) $user->department_id : null;
+            $scopedSectionId = $user->section_id ? (int) $user->section_id : null;
+        }
+
+        // --- Planned hours per week from OvertimeBudget ---
+        $budgetQuery = OvertimeBudget::query()
+            ->where('fiscal_year', $fiscalYear)
+            ->where('fiscal_month', $fiscalMonth);
+
+        if ($scopedSectionId) {
+            $budgetQuery->where('section_id', $scopedSectionId);
+        } elseif ($scopedDepartmentId) {
+            $secIds = Section::query()->where('department_id', $scopedDepartmentId)->pluck('id');
+            $budgetQuery->whereIn('section_id', $secIds);
+        }
+
+        $weeklyPlanned = [
+            1 => (float) $budgetQuery->clone()->sum('week1_planned_hours'),
+            2 => (float) $budgetQuery->clone()->sum('week2_planned_hours'),
+            3 => (float) $budgetQuery->clone()->sum('week3_planned_hours'),
+            4 => (float) $budgetQuery->clone()->sum('week4_planned_hours'),
+            5 => (float) $budgetQuery->clone()->sum('week5_planned_hours'),
+        ];
+
+        // --- Actual hours per week per category from OvertimeItem ---
+        $startOfMonth = $selectedCarbon->copy()->startOfMonth()->toDateString();
+        $endOfMonth = $selectedCarbon->copy()->endOfMonth()->toDateString();
+
+        $actualQuery = OvertimeItem::query()
+            ->join('overtime_submissions', 'overtime_items.overtime_submission_id', '=', 'overtime_submissions.id')
+            ->where('overtime_items.status', 'APPROVED')
+            ->whereBetween('overtime_submissions.operational_date', [$startOfMonth, $endOfMonth])
+            ->selectRaw('
+                overtime_submissions.operational_date,
+                SUM(overtime_items.hours_production) as prod,
+                SUM(overtime_items.hours_tpm) as tpm,
+                SUM(overtime_items.hours_project) as project,
+                SUM(overtime_items.hours_others) as others
+            ')
+            ->groupBy('overtime_submissions.operational_date');
+
+        if ($scopedSectionId) {
+            $actualQuery->where('overtime_submissions.section_id', $scopedSectionId);
+        } elseif ($scopedDepartmentId) {
+            $actualQuery->where('overtime_submissions.department_id', $scopedDepartmentId);
+        }
+
+        // Week boundary definitions: W1=days 1-7, W2=8-14, W3=15-21, W4=22-28, W5=29-end
+        $weekRanges = [
+            1 => [1, 7],
+            2 => [8, 14],
+            3 => [15, 21],
+            4 => [22, 28],
+            5 => [29, $daysInMonth],
+        ];
+
+        $weekActuals = [];
+        foreach ($weekRanges as $wk => [$start, $end]) {
+            $weekActuals[$wk] = ['prod' => 0.0, 'tpm' => 0.0, 'project' => 0.0, 'others' => 0.0];
+        }
+
+        foreach ($actualQuery->get() as $row) {
+            $day = (int) Carbon::parse($row->operational_date)->day;
+            foreach ($weekRanges as $wk => [$start, $end]) {
+                if ($day >= $start && $day <= $end) {
+                    $weekActuals[$wk]['prod'] += (float) ($row->prod ?? 0);
+                    $weekActuals[$wk]['tpm'] += (float) ($row->tpm ?? 0);
+                    $weekActuals[$wk]['project'] += (float) ($row->project ?? 0);
+                    $weekActuals[$wk]['others'] += (float) ($row->others ?? 0);
+                    break;
+                }
+            }
+        }
+
+        $today = $now->day;
+        $currentMonth = $now->year === $fiscalYear && $now->month === $fiscalMonth;
+        $weeks = [];
+
+        foreach ($weekRanges as $wk => [$start, $end]) {
+            // Skip W5 if the month doesn't have days beyond W4
+            if ($start > $daysInMonth) {
+                continue;
+            }
+            $actualEnd = min($end, $daysInMonth);
+
+            $startDate = $selectedCarbon->copy()->day($start);
+            $endDate = $selectedCarbon->copy()->day($actualEnd);
+
+            $isFuture = $currentMonth && $today < $start;
+            $isCurrent = $currentMonth && $today >= $start && $today <= $actualEnd;
+
+            $actualProd = round($weekActuals[$wk]['prod'], 2);
+            $actualTpm = round($weekActuals[$wk]['tpm'], 2);
+            $actualProject = round($weekActuals[$wk]['project'], 2);
+            $actualOthers = round($weekActuals[$wk]['others'], 2);
+            $actualTotal = round($actualProd + $actualTpm + $actualProject + $actualOthers, 2);
+
+            $weeks[] = [
+                'number' => $wk,
+                'label' => 'W'.$wk,
+                'date_range' => $startDate->format('d').'–'.$endDate->format('d M'),
+                'planned_hours' => round($weeklyPlanned[$wk], 2),
+                'actual_production' => $actualProd,
+                'actual_tpm' => $actualTpm,
+                'actual_project' => $actualProject,
+                'actual_others' => $actualOthers,
+                'actual_total' => $actualTotal,
+                'is_future' => $isFuture,
+                'is_current' => $isCurrent,
+            ];
+        }
+
+        $totalPlanned = round(array_sum($weeklyPlanned), 2);
+        $totalActual = round(array_sum(array_column($weeks, 'actual_total')), 2);
+
+        return [
+            'weeks' => $weeks,
+            'total_planned' => $totalPlanned,
+            'total_actual' => $totalActual,
+            'fiscal_year' => $fiscalYear,
+            'fiscal_month' => $fiscalMonth,
+            'month_name' => $selectedCarbon->translatedFormat('F Y'),
+            'scope' => [
+                'department_id' => $scopedDepartmentId,
+                'section_id' => $scopedSectionId,
+            ],
+        ];
+    }
+
+    /**
+     * Build daily cumulative overtime INDEX burn-up chart (Excel: "Burn-Up Chart Index Overtime Plan × Actual").
+     *
+     * Index formula per Indonesian labour law (simplified):
+     *   HKN (normal day)   → hours × 1.5
+     *   HLR (holiday/weekend) → hours × 2.0
+     *
+     * Planned index is spread evenly across days using the month's average multiplier
+     * derived from the OperationalCalendar for the period.
+     *
+     * @return array{
+     *     labels: list<string>,
+     *     plan_index_cumulative: list<float>,
+     *     actual_index_cumulative: list<float|null>,
+     *     total_plan_index: float,
+     *     total_actual_index: float,
+     *     burn_index_pct: float,
+     *     cutoff_day: int,
+     *     days_in_month: int,
+     *     fiscal_year: int,
+     *     fiscal_month: int,
+     *     month_name: string,
+     *     scope: array{department_id: ?int, section_id: ?int}
+     * }
+     */
+    public function getDailyBurnUpIndex(User $user, ?string $date = null, ?int $departmentId = null, ?int $sectionId = null): array
+    {
+        $now = Carbon::now('Asia/Jakarta');
+        try {
+            $selectedCarbon = $date ? Carbon::parse($date, 'Asia/Jakarta') : $now;
+        } catch (\Throwable) {
+            $selectedCarbon = $now;
+        }
+
+        $fiscalYear = (int) $selectedCarbon->year;
+        $fiscalMonth = (int) $selectedCarbon->month;
+        $daysInMonth = (int) $selectedCarbon->daysInMonth;
+        $startOfMonth = $selectedCarbon->copy()->startOfMonth()->toDateString();
+        $endOfMonth = $selectedCarbon->copy()->endOfMonth()->toDateString();
+
+        [$scopedDepartmentId, $scopedSectionId] = $this->resolveScoping($user, $departmentId, $sectionId);
+
+        // Average index multiplier from OperationalCalendar for this month
+        $calendarRows = OperationalCalendar::query()
+            ->whereDate('calendar_date', '>=', $startOfMonth)
+            ->whereDate('calendar_date', '<=', $endOfMonth)
+            ->get(['calendar_date', 'day_type']);
+
+        $hknDays = $calendarRows->where('day_type', 'HKN')->count();
+        $hlrDays = $calendarRows->where('day_type', 'HLR')->count();
+        $totalCalDays = $calendarRows->count() ?: $daysInMonth;
+
+        // Build a date→multiplier map for accurate cumulative plan
+        $dayMultiplierMap = [];
+        foreach ($calendarRows as $cal) {
+            $d = Carbon::parse($cal->calendar_date)->day;
+            $dayMultiplierMap[$d] = $cal->day_type === 'HLR' ? self::HLR_MULTIPLIER : self::HKN_MULTIPLIER;
+        }
+
+        // If no calendar data, default HKN for weekdays, HLR for weekends
+        if ($calendarRows->isEmpty()) {
+            for ($d = 1; $d <= $daysInMonth; $d++) {
+                $dayCarbon = $selectedCarbon->copy()->day($d);
+                $dayMultiplierMap[$d] = $dayCarbon->isWeekend() ? self::HLR_MULTIPLIER : self::HKN_MULTIPLIER;
+            }
+            $hknDays = 0;
+            $hlrDays = 0;
+            for ($d = 1; $d <= $daysInMonth; $d++) {
+                if ($dayMultiplierMap[$d] === self::HLR_MULTIPLIER) {
+                    $hlrDays++;
+                } else {
+                    $hknDays++;
+                }
+            }
+            $totalCalDays = $daysInMonth;
+        }
+
+        // Weighted average multiplier for the month
+        $avgMultiplier = $totalCalDays > 0
+            ? round((($hknDays * self::HKN_MULTIPLIER) + ($hlrDays * self::HLR_MULTIPLIER)) / $totalCalDays, 4)
+            : self::HKN_MULTIPLIER;
+
+        // Planned budget hours and total planned index
+        $plannedHours = $this->resolvePlannedHours($fiscalYear, $fiscalMonth, $scopedDepartmentId, $scopedSectionId);
+        $totalPlanIndex = round($plannedHours * $avgMultiplier, 1);
+        $dailyPlanIndex = $totalCalDays > 0 ? ($totalPlanIndex / $totalCalDays) : 0.0;
+
+        // Cutoff day for actual data
+        if ($selectedCarbon->year === $now->year && $selectedCarbon->month === $now->month) {
+            $cutoffDay = min($now->day, $daysInMonth);
+        } elseif ($selectedCarbon->isPast()) {
+            $cutoffDay = $daysInMonth;
+        } else {
+            $cutoffDay = 0;
+        }
+
+        // Actual index per day: SUM(hours × day_type_multiplier)
+        $actualQuery = OvertimeItem::query()
+            ->join('overtime_submissions', 'overtime_items.overtime_submission_id', '=', 'overtime_submissions.id')
+            ->where('overtime_items.status', 'APPROVED')
+            ->whereBetween('overtime_submissions.operational_date', [$startOfMonth, $endOfMonth])
+            ->selectRaw('
+                overtime_submissions.operational_date,
+                overtime_submissions.day_type,
+                SUM(overtime_items.total_hours) as total_hours
+            ')
+            ->groupBy('overtime_submissions.operational_date', 'overtime_submissions.day_type');
+
+        if ($scopedSectionId) {
+            $actualQuery->where('overtime_submissions.section_id', $scopedSectionId);
+        } elseif ($scopedDepartmentId) {
+            $actualQuery->where('overtime_submissions.department_id', $scopedDepartmentId);
+        }
+
+        $dailyActualIndexMap = [];
+        foreach ($actualQuery->get() as $row) {
+            $d = Carbon::parse($row->operational_date)->day;
+            $mult = strtoupper((string) $row->day_type) === 'HLR' ? self::HLR_MULTIPLIER : self::HKN_MULTIPLIER;
+            $dailyActualIndexMap[$d] = ($dailyActualIndexMap[$d] ?? 0.0) + ((float) $row->total_hours * $mult);
+        }
+
+        $labels = [];
+        $planCumulative = [];
+        $actualCumulative = [];
+        $runningPlan = 0.0;
+        $runningActual = 0.0;
+
+        for ($d = 1; $d <= $daysInMonth; $d++) {
+            $labels[] = str_pad((string) $d, 2, '0', STR_PAD_LEFT);
+            $runningPlan += $dailyPlanIndex;
+            $planCumulative[] = round($runningPlan, 1);
+
+            if ($d <= $cutoffDay) {
+                $runningActual += round($dailyActualIndexMap[$d] ?? 0.0, 1);
+                $actualCumulative[] = round($runningActual, 1);
+            } else {
+                $actualCumulative[] = null;
+            }
+        }
+
+        $burnIndexPct = $totalPlanIndex > 0
+            ? round(($runningActual / $totalPlanIndex) * 100, 1)
+            : ($runningActual > 0 ? 100.0 : 0.0);
+
+        return [
+            'labels' => $labels,
+            'plan_index_cumulative' => $planCumulative,
+            'actual_index_cumulative' => $actualCumulative,
+            'total_plan_index' => $totalPlanIndex,
+            'total_actual_index' => round($runningActual, 1),
+            'burn_index_pct' => $burnIndexPct,
+            'cutoff_day' => $cutoffDay,
+            'days_in_month' => $daysInMonth,
+            'fiscal_year' => $fiscalYear,
+            'fiscal_month' => $fiscalMonth,
+            'month_name' => $selectedCarbon->translatedFormat('F Y'),
+            'scope' => [
+                'department_id' => $scopedDepartmentId,
+                'section_id' => $scopedSectionId,
+            ],
+        ];
+    }
+
+    /**
+     * Build Year-to-Date monthly overtime index trend (Excel: "Total Index Overtime Year to Date (YTD)").
+     *
+     * Each bar pair represents one calendar month:
+     *   Plan Index  = planned_hours × weighted_avg_multiplier_for_that_month
+     *   Actual Index = SUM(actual_hours × day_type_multiplier) for approved items
+     *
+     * @return array{
+     *     labels: list<string>,
+     *     plan_index: list<float>,
+     *     actual_index: list<float>,
+     *     man_power: list<int>,
+     *     fiscal_year: int,
+     *     scope: array{department_id: ?int, section_id: ?int}
+     * }
+     */
+    public function getYtdOvertimeIndex(User $user, ?string $date = null, ?int $departmentId = null, ?int $sectionId = null): array
+    {
+        $now = Carbon::now('Asia/Jakarta');
+        try {
+            $selectedCarbon = $date ? Carbon::parse($date, 'Asia/Jakarta') : $now;
+        } catch (\Throwable) {
+            $selectedCarbon = $now;
+        }
+
+        $fiscalYear = (int) $selectedCarbon->year;
+
+        [$scopedDepartmentId, $scopedSectionId] = $this->resolveScoping($user, $departmentId, $sectionId);
+
+        // Pre-load all OvertimeBudgets for the fiscal year
+        $budgetBase = OvertimeBudget::query()
+            ->where('fiscal_year', $fiscalYear);
+
+        if ($scopedSectionId) {
+            $budgetBase->where('section_id', $scopedSectionId);
+        } elseif ($scopedDepartmentId) {
+            $secIds = Section::query()->where('department_id', $scopedDepartmentId)->pluck('id');
+            $budgetBase->whereIn('section_id', $secIds);
+        }
+
+        $budgetsByMonth = $budgetBase->get()->groupBy('fiscal_month');
+
+        // Pre-load all approved actual items for the fiscal year
+        $yearStart = Carbon::create($fiscalYear, 1, 1)->startOfYear()->toDateString();
+        $yearEnd = Carbon::create($fiscalYear, 12, 31)->endOfYear()->toDateString();
+
+        $actualQuery = OvertimeItem::query()
+            ->join('overtime_submissions', 'overtime_items.overtime_submission_id', '=', 'overtime_submissions.id')
+            ->where('overtime_items.status', 'APPROVED')
+            ->whereBetween('overtime_submissions.operational_date', [$yearStart, $yearEnd])
+            ->selectRaw('
+                overtime_submissions.operational_date,
+                overtime_submissions.day_type,
+                SUM(overtime_items.total_hours) as total_hours
+            ')
+            ->groupBy('overtime_submissions.operational_date', 'overtime_submissions.day_type');
+
+        if ($scopedSectionId) {
+            $actualQuery->where('overtime_submissions.section_id', $scopedSectionId);
+        } elseif ($scopedDepartmentId) {
+            $actualQuery->where('overtime_submissions.department_id', $scopedDepartmentId);
+        }
+
+        // Build month→actual_index map
+        $monthActualIndex = [];
+        foreach ($actualQuery->get() as $row) {
+            $m = Carbon::parse($row->operational_date)->month;
+            $mult = strtoupper((string) $row->day_type) === 'HLR' ? self::HLR_MULTIPLIER : self::HKN_MULTIPLIER;
+            $monthActualIndex[$m] = ($monthActualIndex[$m] ?? 0.0) + ((float) $row->total_hours * $mult);
+        }
+
+        // Build month→avg_multiplier from OperationalCalendar
+        $calendarByMonth = OperationalCalendar::query()
+            ->whereBetween('calendar_date', [$yearStart, $yearEnd])
+            ->get(['calendar_date', 'day_type'])
+            ->groupBy(fn ($c) => Carbon::parse($c->calendar_date)->month);
+
+        $labels = [];
+        $planIndexSeries = [];
+        $actualIndexSeries = [];
+        $manPowerSeries = [];
+
+        for ($m = 1; $m <= 12; $m++) {
+            $monthCarbon = Carbon::create($fiscalYear, $m, 1);
+            $daysInMonth = (int) $monthCarbon->daysInMonth;
+
+            // Monthly average multiplier
+            $calRows = $calendarByMonth->get($m, collect());
+            if ($calRows->isNotEmpty()) {
+                $hkn = $calRows->where('day_type', 'HKN')->count();
+                $hlr = $calRows->where('day_type', 'HLR')->count();
+                $total = $calRows->count();
+                $avgMult = $total > 0
+                    ? (($hkn * self::HKN_MULTIPLIER) + ($hlr * self::HLR_MULTIPLIER)) / $total
+                    : self::HKN_MULTIPLIER;
+            } else {
+                // Fallback: estimate 5/7 HKN, 2/7 HLR
+                $avgMult = ((5 * self::HKN_MULTIPLIER) + (2 * self::HLR_MULTIPLIER)) / 7.0;
+            }
+
+            // Planned index from budget
+            $monthBudgets = $budgetsByMonth->get($m, collect());
+            $monthPlannedHours = (float) $monthBudgets->sum('planned_hours');
+            $planIndex = round($monthPlannedHours * $avgMult, 1);
+
+            $actualIndex = round($monthActualIndex[$m] ?? 0.0, 1);
+
+            // Man power: count of active employees at start of that month
+            $empCount = Employee::query()
+                ->where('is_active', true)
+                ->when($scopedSectionId, fn ($q) => $q->where('section_id', $scopedSectionId))
+                ->when(! $scopedSectionId && $scopedDepartmentId, fn ($q) => $q->where('department_id', $scopedDepartmentId))
+                ->count();
+
+            // Label: "January\n(20 Days)"
+            $hknCount = $calRows->isNotEmpty()
+                ? $calRows->where('day_type', 'HKN')->count()
+                : (int) round(($daysInMonth / 7) * 5);
+
+            $labels[] = $monthCarbon->translatedFormat('F').' ('.$hknCount.' Days)';
+            $planIndexSeries[] = $planIndex;
+            $actualIndexSeries[] = $actualIndex;
+            $manPowerSeries[] = $empCount;
+        }
+
+        return [
+            'labels' => $labels,
+            'plan_index' => $planIndexSeries,
+            'actual_index' => $actualIndexSeries,
+            'man_power' => $manPowerSeries,
+            'fiscal_year' => $fiscalYear,
             'scope' => [
                 'department_id' => $scopedDepartmentId,
                 'section_id' => $scopedSectionId,

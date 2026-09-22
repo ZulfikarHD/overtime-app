@@ -24,6 +24,12 @@ class OvertimeBudgetFactory extends Factory
         $plannedHours = 120.00;
         $weekly = round($plannedHours / 4.3, 2);
 
+        // Realistic production-floor category distribution (A=Produksi, B=TPM, C=Project, D=Others)
+        $prodHours = round($plannedHours * 0.55, 2);
+        $tpmHours = round($plannedHours * 0.05, 2);
+        $projectHours = round($plannedHours * 0.25, 2);
+        $othersHours = round($plannedHours - $prodHours - $tpmHours - $projectHours, 2);
+
         return [
             'department_id' => Department::factory(),
             'section_id' => null,
@@ -31,6 +37,10 @@ class OvertimeBudgetFactory extends Factory
             'fiscal_month' => 9,
             'planned_hours' => $plannedHours,
             'planned_cost_idr' => round($plannedHours * 25000, 2),
+            'planned_production_hours' => $prodHours,
+            'planned_tpm_hours' => $tpmHours,
+            'planned_project_hours' => $projectHours,
+            'planned_others_hours' => $othersHours,
             'week1_planned_hours' => $weekly,
             'week2_planned_hours' => $weekly,
             'week3_planned_hours' => $weekly,

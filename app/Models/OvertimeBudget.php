@@ -17,6 +17,10 @@ use Illuminate\Support\Carbon;
  * @property int $fiscal_month
  * @property string $planned_hours
  * @property string $planned_cost_idr
+ * @property string $planned_production_hours
+ * @property string $planned_tpm_hours
+ * @property string $planned_project_hours
+ * @property string $planned_others_hours
  * @property string $week1_planned_hours
  * @property string $week2_planned_hours
  * @property string $week3_planned_hours
@@ -40,6 +44,10 @@ class OvertimeBudget extends Model
         'fiscal_month',
         'planned_hours',
         'planned_cost_idr',
+        'planned_production_hours',
+        'planned_tpm_hours',
+        'planned_project_hours',
+        'planned_others_hours',
         'week1_planned_hours',
         'week2_planned_hours',
         'week3_planned_hours',
@@ -57,6 +65,10 @@ class OvertimeBudget extends Model
             'fiscal_month' => 'integer',
             'planned_hours' => 'decimal:2',
             'planned_cost_idr' => 'decimal:2',
+            'planned_production_hours' => 'decimal:2',
+            'planned_tpm_hours' => 'decimal:2',
+            'planned_project_hours' => 'decimal:2',
+            'planned_others_hours' => 'decimal:2',
             'week1_planned_hours' => 'decimal:2',
             'week2_planned_hours' => 'decimal:2',
             'week3_planned_hours' => 'decimal:2',

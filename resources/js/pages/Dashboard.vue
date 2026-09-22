@@ -1,26 +1,31 @@
 <script setup lang="ts">
 import { Head, router, usePage } from '@inertiajs/vue3';
 import {
-    Activity,
-    AlertCircle,
-    Building2,
     Calendar,
-    CheckCircle2,
     Clock,
-    FileSpreadsheet,
     Filter,
     Flame,
-    Layers,
     PieChart,
     RotateCcw,
-    Shield,
     Users,
 } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
 import { Badge } from '@/components/ui/badge';
+import BurnUpIndexChart, {
+    type DailyBurnUpIndexData,
+} from '@/components/dashboard/BurnUpIndexChart.vue';
+import CategoryOvertimeChart, {
+    type CategoryOvertimeInputData,
+} from '@/components/dashboard/CategoryOvertimeChart.vue';
 import DailyBurnLineChart, {
     type DailyBurnChartData,
 } from '@/components/dashboard/DailyBurnLineChart.vue';
+import WeeklyPlanningActualChart, {
+    type WeeklyPlanningActualData,
+} from '@/components/dashboard/WeeklyPlanningActualChart.vue';
+import YtdOvertimeIndexChart, {
+    type YtdOvertimeIndexData,
+} from '@/components/dashboard/YtdOvertimeIndexChart.vue';
 import KpiCardBurnIndex, {
     type BurnIndexCardData,
 } from '@/components/dashboard/KpiCardBurnIndex.vue';
@@ -36,9 +41,7 @@ import KpiCardWorkingDays, {
 import SectionBurnComparisonChart, {
     type SectionBurnComparisonData,
 } from '@/components/dashboard/SectionBurnComparisonChart.vue';
-import CategoryDistributionDonut, {
-    type CategoryDistributionData,
-} from '@/components/dashboard/CategoryDistributionDonut.vue';
+import CategoryDistributionDonut from '@/components/dashboard/CategoryDistributionDonut.vue';
 import DailyIndexTrendChart, {
     type DailyIndexTrendData,
 } from '@/components/dashboard/DailyIndexTrendChart.vue';
@@ -102,11 +105,14 @@ interface KpiCardsPayload {
 interface Props {
     currentTab?: string;
     kpiCards?: KpiCardsPayload;
+    weeklyPlanningVsActual?: WeeklyPlanningActualData;
     dailyBurnChart?: DailyBurnChartData;
+    dailyBurnUpIndex?: DailyBurnUpIndexData;
     sectionBurnComparison?: SectionBurnComparisonData;
     leaderboard?: LeaderboardData;
-    categoryDistribution?: CategoryDistributionData;
+    categoryDistribution?: CategoryOvertimeInputData;
     trendWorkingTime?: TrendWorkingTimeData;
+    ytdOvertimeIndex?: YtdOvertimeIndexData;
     dailyIndexTrend?: DailyIndexTrendData;
     dayTypeBreakdown?: DayTypeBreakdownData;
     employeeSummary?: EmployeeSummaryData;
@@ -119,11 +125,14 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {
     currentTab: 'pacing',
     kpiCards: undefined,
+    weeklyPlanningVsActual: undefined,
     dailyBurnChart: undefined,
+    dailyBurnUpIndex: undefined,
     sectionBurnComparison: undefined,
     leaderboard: undefined,
     categoryDistribution: undefined,
     trendWorkingTime: undefined,
+    ytdOvertimeIndex: undefined,
     dailyIndexTrend: undefined,
     dayTypeBreakdown: undefined,
     employeeSummary: undefined,
@@ -239,11 +248,14 @@ function applyFilters(overrideSection?: number | null | Event) {
             preserveScroll: true,
             only: [
                 'kpiCards',
+                'weeklyPlanningVsActual',
                 'dailyBurnChart',
+                'dailyBurnUpIndex',
                 'sectionBurnComparison',
                 'leaderboard',
                 'categoryDistribution',
                 'trendWorkingTime',
+                'ytdOvertimeIndex',
                 'dailyIndexTrend',
                 'dayTypeBreakdown',
                 'employeeSummary',
@@ -289,106 +301,6 @@ function resetFilters() {
     filterSection.value = null;
     applyFilters(null);
 }
-
-const roleCapabilities = computed(() => {
-    const role: UserRole = user.value?.role ?? 'user';
-
-    switch (role) {
-        case 'admin':
-            return [
-                {
-                    title: 'User Management',
-                    desc: 'Create, update, and manage plant accounts across all roles.',
-                    allowed: true,
-                },
-                {
-                    title: 'Overtime Submission',
-                    desc: 'Plant-wide emergency and master batch overtime entry.',
-                    allowed: true,
-                },
-                {
-                    title: 'Overtime Approval',
-                    desc: 'Approve or reject any timesheet line item plant-wide.',
-                    allowed: true,
-                },
-                {
-                    title: 'Department & Section Scoping',
-                    desc: 'Access all production lines and cost centers.',
-                    allowed: true,
-                },
-                {
-                    title: 'ML Predictive Analytics',
-                    desc: 'Monitor ML models, burn trajectories, and anomaly alerts.',
-                    allowed: true,
-                },
-                {
-                    title: 'Policy Configuration',
-                    desc: 'Set monthly thresholds and SPKL compliance grace periods.',
-                    allowed: true,
-                },
-            ];
-        case 'manager':
-            return [
-                {
-                    title: 'Department Overtime Approval',
-                    desc: 'Review, partial-approve, and reject section timesheets.',
-                    allowed: true,
-                },
-                {
-                    title: 'Department Scope',
-                    desc: `Supervise all sections within ${user.value?.department?.name ?? 'your department'}.`,
-                    allowed: true,
-                },
-                {
-                    title: 'ML & Budget Tracking',
-                    desc: 'Track departmental burn rates and ML cost predictions.',
-                    allowed: true,
-                },
-                {
-                    title: 'Personal Report',
-                    desc: 'Inspect individual hours, overtime logs, and historical summary.',
-                    allowed: true,
-                },
-            ];
-        case 'team_leader':
-            return [
-                {
-                    title: 'Daily Overtime Submission',
-                    desc: `Log daily shift overtime for ${user.value?.section?.name ?? 'your assigned section'}.`,
-                    allowed: true,
-                },
-                {
-                    title: 'SPKL Document Attachment',
-                    desc: 'Upload physical SPKL sign-offs or reference codes post-shift.',
-                    allowed: true,
-                },
-                {
-                    title: 'Section Roster Management',
-                    desc: 'Select active shopfloor crew members from section roster.',
-                    allowed: true,
-                },
-                {
-                    title: 'Personal Report',
-                    desc: 'Inspect individual hours, overtime logs, and historical summary.',
-                    allowed: true,
-                },
-            ];
-        case 'user':
-        default:
-            return [
-                {
-                    title: 'Personal Report',
-                    desc: 'View individual overtime records and verified hours.',
-                    allowed: true,
-                },
-                {
-                    title: 'Shift Verification',
-                    desc: 'Confirm scheduled shift and active operational line.',
-                    allowed: true,
-                },
-            ];
-    }
-});
 </script>
 
 <template>
@@ -597,21 +509,42 @@ const roleCapabilities = computed(() => {
         </div>
 
         <!-- TAB 1: PACING & SECTION HEALTH (Stories E09-02, E09-03) -->
+        <!-- Layout mirrors Excel dashboard_ot.xlsx visual structure -->
         <div
             v-show="activeTab === 'pacing'"
             class="space-y-6"
             data-test="tab-panel-pacing"
         >
-            <!-- Hero Section: Daily Cumulative Burn Line Chart (Story E09-02) -->
-            <DailyBurnLineChart
-                :data="dailyBurnChart"
+            <!-- ZONE 1 (TOP): Daily Burn-Up Index Chart — Cumulative INDEX per Day (Plan × Actual) -->
+            <!-- Excel: "Burn-Up Chart Index Overtime Plan × Actual (Day to Date)" — grouped bars -->
+            <BurnUpIndexChart :data="dailyBurnUpIndex" :loading="isFiltering" />
+
+            <!-- ZONE 2A: Leaderboard LEFT (3fr) + Category Overtime RIGHT (2fr) — same visual level -->
+            <div class="grid gap-6 lg:grid-cols-[3fr_2fr] lg:items-start">
+                <OvertimeLeaderboardChart
+                    :data="leaderboard"
+                    :loading="isFiltering"
+                />
+                <CategoryOvertimeChart
+                    :data="categoryDistribution"
+                    :loading="isFiltering"
+                />
+            </div>
+
+            <!-- ZONE 2B: Weekly Planning full-width — needs horizontal space to show W1–W5 clearly -->
+            <WeeklyPlanningActualChart
+                :data="weeklyPlanningVsActual"
                 :loading="isFiltering"
-                :selected-section-id="filterSection"
-                @navigate-month="handleMonthNavigation"
-                @select-section="handleSectionSelect"
             />
 
-            <!-- Mid Section: Section Burn Comparison Bar Chart (Story E09-03) -->
+            <!-- ZONE 3: YTD Index Trend — Monthly Plan vs Actual index for the full fiscal year -->
+            <!-- Excel: "Total Index Overtime Year to Date (YTD) 2026" -->
+            <YtdOvertimeIndexChart
+                :data="ytdOvertimeIndex"
+                :loading="isFiltering"
+            />
+
+            <!-- ZONE 4 (BOTTOM): Section Burn Comparison Bar Chart -->
             <SectionBurnComparisonChart
                 :data="sectionBurnComparison"
                 :loading="isFiltering"
@@ -674,192 +607,5 @@ const roleCapabilities = computed(() => {
                 @clear-category-filter="selectedCategoryFilter = null"
             />
         </div>
-
-        <!-- Assignment & Identity Cards -->
-        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <!-- Assignment Card -->
-            <Card>
-                <CardHeader class="pb-2">
-                    <CardDescription
-                        class="flex items-center gap-1.5 text-xs font-semibold tracking-wider uppercase"
-                    >
-                        <Building2 class="text-primary size-4" />
-                        {{ __('Assignment Overview') }}
-                    </CardDescription>
-                    <CardTitle class="text-lg font-bold">
-                        {{ user?.department?.name ?? __('Not Assigned') }}
-                    </CardTitle>
-                </CardHeader>
-                <CardContent class="space-y-1.5 pt-1 text-sm">
-                    <div
-                        class="text-muted-foreground flex items-center justify-between"
-                    >
-                        <span class="flex items-center gap-1">
-                            <Layers class="size-3.5" />
-                            {{ __('Section') }}:
-                        </span>
-                        <span class="text-foreground font-medium">
-                            {{ user?.section?.name ?? __('Not Assigned') }}
-                        </span>
-                    </div>
-                    <div
-                        class="text-muted-foreground flex items-center justify-between"
-                    >
-                        <span class="flex items-center gap-1">
-                            <Users class="size-3.5" />
-                            {{ __('NPK') }}:
-                        </span>
-                        <span class="text-foreground font-mono font-medium">
-                            {{ user?.npk ?? '-' }}
-                        </span>
-                    </div>
-                </CardContent>
-            </Card>
-
-            <!-- Role & Permission Status -->
-            <Card>
-                <CardHeader class="pb-2">
-                    <CardDescription
-                        class="flex items-center gap-1.5 text-xs font-semibold tracking-wider uppercase"
-                    >
-                        <Shield class="text-primary size-4" />
-                        {{ __('Role') }}
-                    </CardDescription>
-                    <CardTitle
-                        class="flex items-center gap-2 text-lg font-bold"
-                        data-test="user-role-card"
-                    >
-                        <RoleBadge
-                            v-if="user?.role"
-                            :role="user.role"
-                            size="md"
-                        />
-                    </CardTitle>
-                </CardHeader>
-                <CardContent class="space-y-1.5 pt-1 text-sm">
-                    <div
-                        class="text-muted-foreground flex items-center justify-between"
-                    >
-                        <span>{{ __('Account Status') }}:</span>
-                        <span
-                            class="inline-flex items-center gap-1 font-medium text-emerald-600 dark:text-emerald-400"
-                        >
-                            <CheckCircle2 class="size-3.5" />
-                            {{ user?.is_active ? 'Active' : 'Inactive' }}
-                        </span>
-                    </div>
-                    <div
-                        class="text-muted-foreground flex items-center justify-between"
-                    >
-                        <span>{{ __('Timezone') }}:</span>
-                        <span class="text-foreground font-mono"
-                            >Asia/Jakarta (WIB)</span
-                        >
-                    </div>
-                </CardContent>
-            </Card>
-
-            <!-- Operational Readiness -->
-            <Card class="sm:col-span-2 lg:col-span-1">
-                <CardHeader class="pb-2">
-                    <CardDescription
-                        class="flex items-center gap-1.5 text-xs font-semibold tracking-wider uppercase"
-                    >
-                        <Activity class="text-primary size-4" />
-                        {{ __('Active Shift') }}
-                    </CardDescription>
-                    <CardTitle class="text-lg font-bold">
-                        {{ currentShift.name }}
-                    </CardTitle>
-                </CardHeader>
-                <CardContent class="space-y-1.5 pt-1 text-sm">
-                    <div
-                        class="text-muted-foreground flex items-center justify-between"
-                    >
-                        <span>{{ __('Shift Hours') }}:</span>
-                        <span class="text-foreground font-medium">{{
-                            currentShift.hours
-                        }}</span>
-                    </div>
-                    <div
-                        class="text-muted-foreground flex items-center justify-between"
-                    >
-                        <span>{{ __('Next Handover') }}:</span>
-                        <span class="text-foreground font-mono">
-                            {{
-                                currentShift.shiftNumber === 1
-                                    ? '15:00 WIB'
-                                    : currentShift.shiftNumber === 2
-                                      ? '23:00 WIB'
-                                      : '07:00 WIB'
-                            }}
-                        </span>
-                    </div>
-                </CardContent>
-            </Card>
-        </div>
-
-        <!-- Sprint 1 System Readiness Notice -->
-        <div
-            class="flex items-start gap-3 rounded-xl border border-blue-500/20 bg-blue-500/5 p-4 text-sm text-blue-900 sm:p-5 dark:text-blue-200"
-        >
-            <AlertCircle
-                class="mt-0.5 size-5 shrink-0 text-blue-600 dark:text-blue-400"
-            />
-            <div class="space-y-1">
-                <h3 class="text-foreground font-semibold">
-                    {{
-                        __(
-                            'System Infrastructure Initialized — Sprint 1 Active. Overtime entry and SPKL workflows will activate in upcoming releases.',
-                        )
-                    }}
-                </h3>
-                <p class="text-muted-foreground text-xs leading-relaxed">
-                    Authentication, database relations, and role-based scoping
-                    have been fully established according to Epic E01
-                    specifications. The system is operating in Asia/Jakarta
-                    timezone.
-                </p>
-            </div>
-        </div>
-
-        <!-- Role Capability Matrix for current user -->
-        <Card>
-            <CardHeader>
-                <CardTitle
-                    class="flex items-center gap-2 text-base font-semibold"
-                >
-                    <FileSpreadsheet class="text-primary size-4" />
-                    {{ __('Role Capabilities') }}
-                </CardTitle>
-                <CardDescription>
-                    Authorized operational actions assigned to your account in
-                    this manufacturing plant.
-                </CardDescription>
-            </CardHeader>
-            <CardContent>
-                <div class="grid gap-3 sm:grid-cols-2">
-                    <div
-                        v-for="cap in roleCapabilities"
-                        :key="cap.title"
-                        class="border-border/50 bg-background/50 flex items-start gap-2.5 rounded-lg border p-3"
-                    >
-                        <CheckCircle2
-                            class="mt-0.5 size-4 shrink-0 text-emerald-600 dark:text-emerald-400"
-                        />
-                        <div class="space-y-0.5">
-                            <h4 class="text-foreground text-sm font-medium">
-                                {{ cap.title }}
-                            </h4>
-                            <p
-                                class="text-muted-foreground text-xs leading-relaxed"
-                            >
-                                {{ cap.desc }}
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            </CardContent>
-        </Card>
     </div>
 </template>
