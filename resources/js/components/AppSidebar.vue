@@ -38,6 +38,8 @@ import { index as analyticsIndex } from '@/routes/analytics';
 import { approvals as overtimeApprovals } from '@/routes/overtime';
 import { index as reportsEmployees } from '@/routes/reports/employees';
 import { create as overtimeCreate } from '@/routes/overtime/submissions';
+import { index as planningOtIndex } from '@/routes/overtime/planning';
+import { index as splIndex } from '@/routes/overtime/spl';
 import type { NavItem, User } from '@/types';
 
 const { __ } = useTrans();
@@ -63,11 +65,21 @@ const mainNavItems = computed<NavItem[]>(() => {
 
     if (role === 'admin' || role === 'team_leader') {
         items.push({
-            title: __('Overtime Entry'),
-            href: overtimeCreate(),
+            title: __('Planning OT'),
+            href: planningOtIndex(),
             icon: ClipboardList,
             group: __('Operations & Overtime'),
-            testId: 'nav-overtime-entry',
+            testId: 'nav-planning-ot',
+        });
+    }
+
+    if (role === 'admin' || role === 'manager') {
+        items.push({
+            title: __('Input Lembur (SPL)'),
+            href: splIndex(),
+            icon: ClipboardList,
+            group: __('Operations & Overtime'),
+            testId: 'nav-spl-import',
         });
     }
 

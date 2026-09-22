@@ -66,6 +66,7 @@ Technical specifications and decision records for the engineering implementation
     - [ADR-034: Cost Analysis OpEx vs CapEx Segregation and Budget Variance Architecture](./dev-docs/decisions/034-cost-analysis-opex-capex-segregation-and-budget-variance.md)
     - [ADR-035: Bivariate Correlation Matrix and Optimal Overtime Productivity Frontier Engine](./dev-docs/decisions/035-bivariate-correlation-matrix-and-optimal-overtime-frontier.md)
     - [ADR-036: What-If Scenario Simulation, Empirical Labor Factor Modeling, and Ergonomic Parameter Management](./dev-docs/decisions/036-what-if-scenario-simulation-and-empirical-labor-factor-modeling.md)
+    - [ADR-037: Separate Tables for Planned vs Realized Overtime](./dev-docs/decisions/037-planned-vs-realized-overtime-tables.md)
 - **Technical Feature Design Specifications:**
     - [Authentication & Role-Based Access Control](./dev-docs/features/authentication-rbac.md)
     - [Database Schema Migrations (Full DDL)](./dev-docs/features/database-schema-migrations.md)
@@ -94,9 +95,12 @@ Technical specifications and decision records for the engineering implementation
     - [Executive Operational Dashboard & KPI Cards (E09-00 - E09-01)](./dev-docs/features/executive-dashboard-kpi.md)
     - [Daily Burn Chart Index & Section Burn Comparison (E09-02 & E09-03)](./dev-docs/features/daily-burn-and-section-comparison.md)
     - [Executive Dashboard Multi-Chart Analytics Grid (E09-04)](./dev-docs/features/executive-dashboard-multi-chart-grid.md)
+    - [Dashboard Overtime Index Charts — BurnUpIndex, Category Plan/Actual, YTD Trend (E09 Enhancement)](./dev-docs/features/dashboard-overtime-index-charts.md)
     - [Summary Employee Overtime Table (E09-05)](./dev-docs/features/executive-dashboard-employee-summary-table.md)
     - [Analytics & Decision Intelligence Hub (E09-06)](./dev-docs/features/analytics-decision-intelligence.md)
     - [What-If Scenario Simulation (E09-10)](./dev-docs/features/what-if-scenario-simulation.md)
+    - [Overtime Planning OT — Monthly Grid](./dev-docs/features/overtime-planning-ot.md)
+    - [SPL Excel Import — Realized Overtime](./dev-docs/features/spl-excel-import.md)
 - **API Reference Design:**
     - [Calendar Classification & Management API](./dev-docs/api/calendar-endpoints.md)
     - [Overtime Policy Check API](./dev-docs/api/overtime-policy-check.md)
@@ -156,6 +160,8 @@ Plain-language operating guides for factory supervisors, team leaders, and opera
     - [Summary Employee Overtime Table Guide](./user-docs/guides/executive-dashboard-employee-summary-table.md)
     - [Analytics & Decision Intelligence Guide](./user-docs/guides/analytics-decision-intelligence.md)
     - [What-If Scenario Simulation Guide](./user-docs/guides/what-if-scenario-simulation.md)
+    - [Overtime Planning OT Guide](./user-docs/guides/overtime-planning-ot.md)
+    - [Input Lembur — SPL Upload Guide](./user-docs/guides/spl-excel-import.md)
 
 ---
 

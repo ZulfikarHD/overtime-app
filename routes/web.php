@@ -22,8 +22,10 @@ use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\Overtime\OvertimeApprovalController;
 use App\Http\Controllers\Overtime\OvertimeItemAuditController;
+use App\Http\Controllers\Overtime\OvertimePlanningController;
 use App\Http\Controllers\Overtime\OvertimeSubmissionController;
 use App\Http\Controllers\Overtime\SpklDocumentController;
+use App\Http\Controllers\Overtime\SplImportController;
 use App\Http\Controllers\Reports\EmployeeReportController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -184,6 +186,25 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/planning/import/preview', [OvertimeBudgetImportController::class, 'preview'])->name('import.preview');
         Route::post('/planning/import', [OvertimeBudgetImportController::class, 'import'])->name('import');
         Route::get('/planning/template', [OvertimeBudgetImportController::class, 'template'])->name('template');
+    });
+
+    // Planning Overtime (E03-P - Monthly planning grid, accessible to admin/manager/team_leader)
+    Route::middleware(['role:admin,manager,team_leader'])->prefix('overtime')->name('overtime.')->group(function () {
+        Route::get('/planning', [OvertimePlanningController::class, 'index'])->name('planning.index');
+        Route::get('/planning/create', [OvertimePlanningController::class, 'create'])->name('planning.create');
+        Route::post('/planning', [OvertimePlanningController::class, 'store'])->name('planning.store');
+        Route::get('/planning/{overtimePlan}/edit', [OvertimePlanningController::class, 'edit'])->name('planning.edit');
+        Route::put('/planning/{overtimePlan}', [OvertimePlanningController::class, 'update'])->name('planning.update');
+        Route::patch('/planning/{overtimePlan}/publish', [OvertimePlanningController::class, 'publish'])->name('planning.publish');
+        Route::delete('/planning/{overtimePlan}', [OvertimePlanningController::class, 'destroy'])->name('planning.destroy');
+        Route::get('/planning/roster/{section}', [OvertimePlanningController::class, 'roster'])->name('planning.roster');
+    });
+
+    // Input Lembur — SPL Excel Import (admin/manager only)
+    Route::middleware(['role:admin,manager'])->prefix('overtime')->name('overtime.')->group(function () {
+        Route::get('/spl', [SplImportController::class, 'index'])->name('spl.index');
+        Route::post('/spl/import', [SplImportController::class, 'import'])->name('spl.import');
+        Route::delete('/spl/{splEntry}', [SplImportController::class, 'destroy'])->name('spl.destroy');
     });
 
     // Overtime Submissions (E03 - Daily Overtime & Timesheets)
