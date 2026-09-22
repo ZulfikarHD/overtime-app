@@ -2,7 +2,8 @@
 
 Before planning or editing, find the row whose globs match the file's path and read that rule file.
 
-| Applies to              | Rule file             |
-| ----------------------- | --------------------- |
-| app/**/*.php            | .ai/rules/app.md      |
+| Applies to | Rule file |
+| --- | --- |
+| app/**/*.php | .ai/rules/app.md |
 | app/Actions/Overtime/** | .ai/rules/overtime.md |
+| app/**/*.php,database/seeders/**/*.php | .ai/rules/seeders.md |

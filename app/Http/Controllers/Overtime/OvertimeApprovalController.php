@@ -54,10 +54,11 @@ class OvertimeApprovalController extends Controller
         $statusFilter = (string) $request->input('status', 'PENDING');
 
         // --- Build grouped query ---
+        // DATE() is portable across MySQL/MariaDB and SQLite (strftime is SQLite-only).
         $query = DB::table('spl_entries')
             ->select([
                 'section_id',
-                DB::raw("strftime('%Y-%m-%d', realization_date) as date"),
+                DB::raw('DATE(realization_date) as date'),
                 DB::raw('MAX(day_type) as day_type'),
                 DB::raw('COUNT(*) as entries_count'),
                 DB::raw('ROUND(SUM(total_hours), 2) as total_hours'),
@@ -69,7 +70,7 @@ class OvertimeApprovalController extends Controller
             ->whereNotNull('section_id')
             ->whereDate('realization_date', '>=', $dateFrom)
             ->whereDate('realization_date', '<=', $dateTo)
-            ->groupBy('section_id', DB::raw("strftime('%Y-%m-%d', realization_date)"));
+            ->groupBy('section_id', DB::raw('DATE(realization_date)'));
 
         // Manager → own department only
         if ($user->isManager() && $user->department_id) {
@@ -164,10 +165,10 @@ class OvertimeApprovalController extends Controller
 
         // Pending summary (for badge)
         $pendingBase = DB::table('spl_entries')
-            ->select('section_id', DB::raw("strftime('%Y-%m-%d', realization_date) as date"))
+            ->select('section_id', DB::raw('DATE(realization_date) as date'))
             ->where('status', 'PENDING')
             ->whereNotNull('section_id')
-            ->groupBy('section_id', DB::raw("strftime('%Y-%m-%d', realization_date)"));
+            ->groupBy('section_id', DB::raw('DATE(realization_date)'));
 
         if ($user->isManager() && $user->department_id) {
             $pendingBase->whereIn('section_id', Section::where('department_id', $user->department_id)->pluck('id'));
