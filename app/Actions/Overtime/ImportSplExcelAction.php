@@ -145,6 +145,14 @@ class ImportSplExcelAction
                 $mulaiRaw = $this->cellValue($sheet, self::COL_MULAI, $row);
                 $selesaiRaw = $this->cellValue($sheet, self::COL_SELESAI, $row);
 
+                // Rows with a name but no time = employee listed but did not work OT — skip silently.
+                if (($mulaiRaw === null || $mulaiRaw === '' || $mulaiRaw === 0)
+                    && ($selesaiRaw === null || $selesaiRaw === '' || $selesaiRaw === 0)) {
+                    $skipped++;
+
+                    continue;
+                }
+
                 try {
                     $startTime = $this->parseTime($mulaiRaw);
                     $endTime = $this->parseTime($selesaiRaw);
@@ -314,9 +322,23 @@ class ImportSplExcelAction
     /**
      * Get a cell value by 1-based column and row indices.
      * PhpSpreadsheet 5.x removed getCellByColumnAndRow(); this is the portable replacement.
+     *
+     * If the cell contains a formula (starts with '=') and the formula references
+     * sheets that are not present in the uploaded file (e.g. IFERROR/VLOOKUP against
+     * a lookup sheet like db_kode_hari_ot), PhpSpreadsheet cannot recalculate it and
+     * returns the raw formula string. We fall back to the cached (last-saved) value
+     * instead so we get the result Excel computed when the file was last saved.
      */
     private function cellValue(Worksheet $sheet, int $col, int $row): mixed
     {
-        return $sheet->getCell(Coordinate::stringFromColumnIndex($col).$row)->getValue();
+        $cell = $sheet->getCell(Coordinate::stringFromColumnIndex($col).$row);
+        $value = $cell->getValue();
+
+        // Formula cell — return the cached value to avoid un-resolvable cross-sheet refs.
+        if (is_string($value) && str_starts_with($value, '=')) {
+            return $cell->getOldCalculatedValue();
+        }
+
+        return $value;
     }
 }

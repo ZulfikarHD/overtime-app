@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Overtime;
 
 use App\Actions\Overtime\ApproveOvertimeItemsAction;
+use App\Actions\Overtime\ApproveSplEntriesAction;
+use App\Actions\Overtime\BulkApproveSplEntriesAction;
 use App\Actions\Overtime\BulkApproveSubmissionsAction;
 use App\Exceptions\OptimisticLockException;
 use App\Http\Controllers\Controller;
@@ -11,13 +13,14 @@ use App\Http\Requests\Overtime\BulkApprovalRequest;
 use App\Models\Department;
 use App\Models\OvertimeSubmission;
 use App\Models\Section;
+use App\Models\SplEntry;
 use App\Models\User;
 use App\Services\OvertimeExportService;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
@@ -25,13 +28,16 @@ use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 class OvertimeApprovalController extends Controller
 {
     public function __construct(
+        public ApproveSplEntriesAction $approveSplEntriesAction,
+        public BulkApproveSplEntriesAction $bulkApproveSplEntriesAction,
+        // Kept for legacy approveItems endpoint
         public ApproveOvertimeItemsAction $approveOvertimeItemsAction,
         public BulkApproveSubmissionsAction $bulkApproveSubmissionsAction,
         public OvertimeExportService $exportService,
     ) {}
 
     /**
-     * Display the pending approval queue for Managers and Admins (E04-01).
+     * Display the SPL-based approval queue (new flow).
      */
     public function index(Request $request): Response
     {
@@ -39,153 +45,168 @@ class OvertimeApprovalController extends Controller
         $user = $request->user();
 
         $todayWib = Carbon::now('Asia/Jakarta')->toDateString();
-        $defaultDateFrom = Carbon::now('Asia/Jakarta')->subDays(6)->toDateString();
+        $defaultDateFrom = Carbon::now('Asia/Jakarta')->startOfMonth()->toDateString();
 
-        $dateFrom = $request->filled('date_from')
-            ? (string) $request->input('date_from')
-            : $defaultDateFrom;
-        $dateTo = $request->filled('date_to')
-            ? (string) $request->input('date_to')
-            : $todayWib;
-
+        $dateFrom = $request->filled('date_from') ? (string) $request->input('date_from') : $defaultDateFrom;
+        $dateTo = $request->filled('date_to') ? (string) $request->input('date_to') : $todayWib;
         $sort = (string) $request->input('sort', 'date');
         $direction = strtolower((string) $request->input('direction', 'desc')) === 'asc' ? 'asc' : 'desc';
+        $statusFilter = (string) $request->input('status', 'PENDING');
 
-        $query = OvertimeSubmission::query()
-            ->with([
-                'section:id,name,code,department_id',
-                'department:id,name,code',
-                'submittedBy:id,name,npk',
-                'spklDocument',
-                'items' => function ($itemsQuery) {
-                    $itemsQuery->with([
-                        'employee:id,npk,full_name,job_position,hourly_rate',
-                        'capexProject:id,project_code,name',
-                        'anomalyLogs' => fn ($q) => $q->where('is_dismissed', false),
-                    ]);
-                },
+        // --- Build grouped query ---
+        $query = DB::table('spl_entries')
+            ->select([
+                'section_id',
+                DB::raw("strftime('%Y-%m-%d', realization_date) as date"),
+                DB::raw('MAX(day_type) as day_type'),
+                DB::raw('COUNT(*) as entries_count'),
+                DB::raw('ROUND(SUM(total_hours), 2) as total_hours'),
+                DB::raw("SUM(CASE WHEN status = 'PENDING'   THEN 1 ELSE 0 END) as pending_count"),
+                DB::raw("SUM(CASE WHEN status = 'APPROVED'  THEN 1 ELSE 0 END) as approved_count"),
+                DB::raw("SUM(CASE WHEN status = 'REJECTED'  THEN 1 ELSE 0 END) as rejected_count"),
+                DB::raw('MAX(imported_by_user_id) as imported_by_user_id'),
             ])
-            ->withCount('items')
-            ->withSum('items as total_cost_cached', 'total_cost_snapshot')
-            ->withCount([
-                'items as anomaly_count' => function (Builder $q) {
-                    $q->whereHas('anomalyLogs', function (Builder $aq) {
-                        $aq->where('is_dismissed', false);
-                    });
-                },
-            ]);
+            ->whereNotNull('section_id')
+            ->whereDate('realization_date', '>=', $dateFrom)
+            ->whereDate('realization_date', '<=', $dateTo)
+            ->groupBy('section_id', DB::raw("strftime('%Y-%m-%d', realization_date)"));
 
-        // Role scoping: Manager → own department; Admin → plant-wide
+        // Manager → own department only
         if ($user->isManager() && $user->department_id) {
-            $query->where('department_id', $user->department_id);
+            $sectionIds = Section::where('department_id', $user->department_id)->pluck('id');
+            $query->whereIn('section_id', $sectionIds);
         }
 
-        // Admin department filter
-        if ($user->isAdmin() && $request->filled('department_id')) {
-            $filterDeptId = (int) $request->input('department_id');
-            $query->where('department_id', $filterDeptId);
+        if ($request->filled('department_id')) {
+            $deptId = (int) $request->input('department_id');
+            $sectionIds = Section::where('department_id', $deptId)->pluck('id');
+            $query->whereIn('section_id', $sectionIds);
         }
 
-        // Section filter (authorized only)
         if ($request->filled('section_id')) {
-            $filterSecId = (int) $request->input('section_id');
-            if ($user->canAccessSection($filterSecId)) {
-                $query->where('section_id', $filterSecId);
-            }
+            $query->where('section_id', (int) $request->input('section_id'));
         }
 
-        // Status filter — default to Menunggu Review (SUBMITTED) per UX plan
-        $statusInput = $request->input('status');
-        if ($statusInput === null || $statusInput === '' || $statusInput === 'SUBMITTED') {
-            $query->where('status', 'SUBMITTED');
-        } elseif ($statusInput === 'PENDING') {
-            $query->whereIn('status', ['SUBMITTED', 'PARTIALLY_APPROVED']);
-        } elseif ($statusInput === 'ALL') {
-            // No status constraint — show all statuses in date range
-        } elseif (is_array($statusInput)) {
-            $query->whereIn('status', $statusInput);
-        } elseif (str_contains((string) $statusInput, ',')) {
-            $query->whereIn('status', explode(',', (string) $statusInput));
-        } else {
-            $query->where('status', $statusInput);
-        }
-
-        // SPKL status filter (non-blocking indicator)
-        if ($request->filled('spkl_status')) {
-            $spklStatus = (string) $request->input('spkl_status');
-            if ($spklStatus === 'OVERDUE') {
-                $query->whereHas('spklDocument', function (Builder $q) use ($todayWib) {
-                    $q->where('status', 'PENDING')
-                        ->whereDate('due_date', '<', $todayWib);
-                });
-            } elseif ($spklStatus === 'NONE') {
-                $query->whereDoesntHave('spklDocument');
-            } elseif (in_array($spklStatus, ['PENDING', 'ATTACHED', 'VERIFIED'], true)) {
-                $query->whereHas('spklDocument', function (Builder $q) use ($spklStatus) {
-                    $q->where('status', $spklStatus);
-                });
-            }
-        }
-
-        // Date range (defaults to last 7 days inclusive)
-        $query->whereDate('operational_date', '>=', $dateFrom)
-            ->whereDate('operational_date', '<=', $dateTo);
+        // Status filter
+        $query->havingRaw(match ($statusFilter) {
+            'PENDING' => "SUM(CASE WHEN status = 'PENDING' THEN 1 ELSE 0 END) > 0 AND SUM(CASE WHEN status != 'PENDING' THEN 1 ELSE 0 END) = 0",
+            'APPROVED' => "SUM(CASE WHEN status != 'APPROVED' THEN 1 ELSE 0 END) = 0",
+            'REJECTED' => "SUM(CASE WHEN status != 'REJECTED' THEN 1 ELSE 0 END) = 0",
+            'PARTIALLY_APPROVED' => "SUM(CASE WHEN status = 'APPROVED' THEN 1 ELSE 0 END) > 0 AND SUM(CASE WHEN status = 'PENDING' THEN 1 ELSE 0 END) > 0",
+            default => '1=1', // ALL
+        });
 
         // Sorting
-        match ($sort) {
-            'section' => $query->orderBy(
-                Section::select('name')
-                    ->whereColumn('sections.id', 'overtime_submissions.section_id')
-                    ->limit(1),
-                $direction,
-            )->orderByDesc('id'),
-            'total_hours' => $query->orderBy('total_hours_cached', $direction)->orderByDesc('id'),
-            default => $query->orderBy('operational_date', $direction)->orderByDesc('id'),
-        };
+        $query->orderBy(
+            $sort === 'section' ? 'section_id' : 'date',
+            $direction
+        );
 
-        $submissions = $query->paginate(20)->withQueryString();
+        $paginated = $query->paginate(20)->withQueryString();
 
-        // Pending summary (scoped, independent of current status filter)
-        $pendingBase = OvertimeSubmission::query()
-            ->whereIn('status', ['SUBMITTED', 'PARTIALLY_APPROVED']);
+        // Enrich with section + department names
+        $sectionIds = collect($paginated->items())->pluck('section_id')->unique()->filter()->values();
+        $sections = Section::with('department:id,name,code')
+            ->whereIn('id', $sectionIds)
+            ->get(['id', 'name', 'code', 'department_id'])
+            ->keyBy('id');
+
+        $groups = collect($paginated->items())->map(function (object $row) use ($sections): array {
+            $section = $sections->get($row->section_id);
+            $total = $row->entries_count;
+            $approved = (int) $row->approved_count;
+            $rejected = (int) $row->rejected_count;
+            $pending = (int) $row->pending_count;
+
+            $status = match (true) {
+                $pending === $total => 'PENDING',
+                $approved === $total => 'APPROVED',
+                $rejected === $total => 'REJECTED',
+                default => 'PARTIALLY_APPROVED',
+            };
+
+            return [
+                'section_id' => $row->section_id,
+                'date' => $row->date,
+                'day_type' => $row->day_type,
+                'entries_count' => $total,
+                'total_hours' => (float) $row->total_hours,
+                'pending_count' => $pending,
+                'approved_count' => $approved,
+                'rejected_count' => $rejected,
+                'status' => $status,
+                'section' => $section ? [
+                    'id' => $section->id,
+                    'name' => $section->name,
+                    'code' => $section->code,
+                ] : null,
+                'department' => $section?->department ? [
+                    'id' => $section->department->id,
+                    'name' => $section->department->name,
+                    'code' => $section->department->code,
+                ] : null,
+            ];
+        })->values()->all();
+
+        // Replace the raw items with enriched groups while keeping pagination meta
+        $paginationMeta = [
+            'current_page' => $paginated->currentPage(),
+            'last_page' => $paginated->lastPage(),
+            'per_page' => $paginated->perPage(),
+            'total' => $paginated->total(),
+            'from' => $paginated->firstItem(),
+            'to' => $paginated->lastItem(),
+            'links' => $paginated->linkCollection()->toArray(),
+            'path' => $paginated->path(),
+            'next_page_url' => $paginated->nextPageUrl(),
+            'prev_page_url' => $paginated->previousPageUrl(),
+        ];
+
+        // Pending summary (for badge)
+        $pendingBase = DB::table('spl_entries')
+            ->select('section_id', DB::raw("strftime('%Y-%m-%d', realization_date) as date"))
+            ->where('status', 'PENDING')
+            ->whereNotNull('section_id')
+            ->groupBy('section_id', DB::raw("strftime('%Y-%m-%d', realization_date)"));
 
         if ($user->isManager() && $user->department_id) {
-            $pendingBase->where('department_id', $user->department_id);
+            $pendingBase->whereIn('section_id', Section::where('department_id', $user->department_id)->pluck('id'));
         }
 
-        $pendingCount = (clone $pendingBase)->count();
-        $pendingHours = (float) (clone $pendingBase)->sum('total_hours_cached');
+        $pendingGroupCount = $pendingBase->get()->count();
+        $pendingHours = (float) DB::table('spl_entries')
+            ->where('status', 'PENDING')
+            ->whereNotNull('section_id')
+            ->when($user->isManager() && $user->department_id, fn ($q) => $q->whereIn('section_id',
+                Section::where('department_id', $user->department_id)->pluck('id')
+            ))
+            ->sum('total_hours');
 
-        // Filter option lists
-        $availableSectionsQuery = Section::query()->where('is_active', true)->orderBy('name');
+        $availableSections = collect();
         $availableDepartments = collect();
 
+        $sectionsQuery = Section::query()->where('is_active', true)->orderBy('name');
         if ($user->isAdmin()) {
-            $availableDepartments = Department::query()
-                ->where('is_active', true)
-                ->orderBy('name')
-                ->get(['id', 'code', 'name']);
-
+            $availableDepartments = Department::where('is_active', true)->orderBy('name')->get(['id', 'code', 'name']);
             if ($request->filled('department_id')) {
-                $availableSectionsQuery->where('department_id', (int) $request->input('department_id'));
+                $sectionsQuery->where('department_id', (int) $request->input('department_id'));
             }
         } elseif ($user->isManager() && $user->department_id) {
-            $availableSectionsQuery->where('department_id', $user->department_id);
+            $sectionsQuery->where('department_id', $user->department_id);
         }
-
-        $availableSections = $availableSectionsQuery->get(['id', 'department_id', 'code', 'name']);
+        $availableSections = $sectionsQuery->get(['id', 'department_id', 'code', 'name']);
 
         return Inertia::render('overtime/ApprovalQueue', [
-            'submissions' => $submissions,
+            'groups' => $groups,
+            'pagination' => $paginationMeta,
             'available_sections' => $availableSections,
             'available_departments' => $availableDepartments,
-            'pending_count' => $pendingCount,
+            'pending_count' => $pendingGroupCount,
             'pending_hours' => $pendingHours,
             'filters' => [
-                'status' => $request->input('status', 'SUBMITTED'),
+                'status' => $statusFilter,
                 'department_id' => $request->input('department_id', ''),
                 'section_id' => $request->input('section_id', ''),
-                'spkl_status' => $request->input('spkl_status', ''),
                 'date_from' => $dateFrom,
                 'date_to' => $dateTo,
                 'sort' => $sort,
@@ -195,107 +216,120 @@ class OvertimeApprovalController extends Controller
     }
 
     /**
-     * Process item-level approvals or rejections for a submission (E04-02).
+     * Return JSON of individual SplEntry rows for a (section_id, date) group.
+     * Used by the frontend to populate the expand accordion.
      */
-    public function approveItems(ApproveOvertimeItemsRequest $request, OvertimeSubmission $submission): JsonResponse|RedirectResponse
+    public function splGroupEntries(Request $request): JsonResponse
+    {
+        $sectionId = (int) $request->input('section_id');
+        $date = (string) $request->input('date');
+
+        /** @var User $user */
+        $user = $request->user();
+
+        if ($user->isManager() && $user->department_id !== null) {
+            $section = Section::find($sectionId);
+            if ($section && $section->department_id !== $user->department_id) {
+                abort(403);
+            }
+        }
+
+        $entries = SplEntry::where('section_id', $sectionId)
+            ->whereDate('realization_date', $date)
+            ->orderBy('employee_name_snapshot')
+            ->get([
+                'id', 'npk_snapshot', 'employee_name_snapshot',
+                'start_time', 'end_time', 'total_hours',
+                'jenis_pekerjaan', 'type_ot_code', 'keterangan_lembur',
+                'day_type', 'status', 'lock_version',
+                'reviewed_at', 'rejection_reason',
+            ]);
+
+        return response()->json($entries);
+    }
+
+    /**
+     * Approve or reject all entries in one (section_id, date) group.
+     */
+    public function approveSplGroup(Request $request): JsonResponse|RedirectResponse
     {
         /** @var User $user */
         $user = $request->user();
 
-        // Department-level authority check for Managers
-        if ($user->isManager() && $user->department_id !== null && $submission->department_id !== $user->department_id) {
-            abort(403, __('Anda tidak memiliki akses persetujuan untuk departemen pengajuan ini.'));
-        }
+        $validated = $request->validate([
+            'section_id' => ['required', 'integer', 'exists:sections,id'],
+            'date' => ['required', 'date'],
+            'decisions' => ['required', 'array', 'min:1'],
+            'decisions.*.entry_id' => ['required', 'integer', 'exists:spl_entries,id'],
+            'decisions.*.action' => ['required', 'string', 'in:APPROVED,REJECTED'],
+            'decisions.*.lock_version' => ['nullable', 'integer'],
+            'decisions.*.rejection_reason' => ['nullable', 'string', 'max:1000'],
+        ]);
 
-        /** @var array<int, array{item_id: int, action: string, rejection_reason?: string|null, lock_version?: int|null}> $decisions */
-        $decisions = $request->validated('decisions');
+        // Manager department guard
+        if ($user->isManager() && $user->department_id !== null) {
+            $section = Section::find($validated['section_id']);
+            if ($section && $section->department_id !== $user->department_id) {
+                abort(403, __('Anda tidak memiliki akses persetujuan untuk seksi ini.'));
+            }
+        }
 
         try {
-            $updatedSubmission = $this->approveOvertimeItemsAction->execute(
-                $submission->id,
-                $decisions,
-                $user->id
-            );
+            /** @var array<int, array{entry_id: int, action: string, rejection_reason?: string|null, lock_version?: int|null}> $decisions */
+            $decisions = $validated['decisions'];
+            $result = $this->approveSplEntriesAction->execute($decisions, $user);
         } catch (OptimisticLockException $e) {
-            if ($request->wantsJson() || $request->ajax()) {
-                return response()->json([
-                    'message' => $e->getMessage(),
-                    'conflict' => true,
-                ], 409);
-            }
-
-            return back()->withErrors([
-                'conflict' => $e->getMessage(),
-            ]);
+            return $request->wantsJson()
+                ? response()->json(['message' => $e->getMessage(), 'conflict' => true], 409)
+                : back()->withErrors(['conflict' => $e->getMessage()]);
         }
 
-        $approvedCount = collect($decisions)->filter(fn ($d) => strtoupper($d['action']) === 'APPROVED')->count();
-        $rejectedCount = collect($decisions)->filter(fn ($d) => strtoupper($d['action']) === 'REJECTED')->count();
+        $msg = __(':approved disetujui, :rejected ditolak.', $result);
 
-        $successMessage = __('Persetujuan lembur :code berhasil disimpan (:approved disetujui, :rejected ditolak)', [
-            'code' => $updatedSubmission->submission_code,
-            'approved' => $approvedCount,
-            'rejected' => $rejectedCount,
-        ]);
-
-        if ($request->wantsJson() || $request->ajax()) {
-            return response()->json([
-                'message' => $successMessage,
-                'submission' => $updatedSubmission,
-                'approved_count' => $approvedCount,
-                'rejected_count' => $rejectedCount,
-            ]);
+        if ($request->wantsJson()) {
+            return response()->json(['message' => $msg, 'result' => $result]);
         }
 
-        Inertia::flash('toast', [
-            'type' => 'success',
-            'message' => $successMessage,
-        ]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => $msg]);
 
-        return redirect()->route('overtime.approvals')->with('success', $successMessage);
+        return redirect()->route('overtime.approvals');
     }
 
     /**
-     * Process bulk approvals or rejections for multiple submissions (E04-03).
+     * Bulk approve/reject multiple (section_id, date) groups.
      */
     public function bulkProcess(BulkApprovalRequest $request): JsonResponse|RedirectResponse
     {
         /** @var User $user */
         $user = $request->user();
 
-        /** @var list<int> $submissionIds */
-        $submissionIds = $request->validated('submission_ids');
+        /** @var list<array{section_id: int, date: string}> $groups */
+        $groups = $request->validated('groups');
         $action = (string) $request->validated('action');
         $rejectionReason = $request->filled('rejection_reason') ? (string) $request->validated('rejection_reason') : null;
 
-        $result = $this->bulkApproveSubmissionsAction->execute(
-            $submissionIds,
-            $action,
-            $rejectionReason,
-            $user
-        );
+        $result = $this->bulkApproveSplEntriesAction->execute($groups, $action, $rejectionReason, $user);
 
-        if ($request->wantsJson() || $request->ajax()) {
+        if ($request->wantsJson()) {
             return response()->json($result);
         }
 
         Inertia::flash('toast', [
-            'type' => $result['skipped_submissions_count'] > 0 ? 'warning' : 'success',
+            'type' => $result['skipped'] > 0 ? 'warning' : 'success',
             'message' => $result['message'],
         ]);
 
-        return redirect()->route('overtime.approvals')->with('success', $result['message']);
+        return redirect()->route('overtime.approvals');
     }
 
     /**
-     * Export filtered overtime records to CSV or Excel (E04-04).
+     * Export filtered overtime records (kept as-is, reads old overtime_submissions).
      */
     public function export(Request $request): SymfonyResponse
     {
         /** @var User $user */
         $user = $request->user();
 
-        // Department authority check: Managers cannot export foreign department records
         if ($user->isManager() && $request->filled('department_id')) {
             $reqDeptId = (int) $request->input('department_id');
             if ($user->department_id !== null && $reqDeptId !== (int) $user->department_id) {
@@ -306,5 +340,33 @@ class OvertimeApprovalController extends Controller
         $format = strtolower((string) $request->input('format', 'csv'));
 
         return $this->exportService->export($request->all(), $user, $format);
+    }
+
+    /**
+     * Legacy: item-level approval for old OvertimeSubmission records.
+     */
+    public function approveItems(ApproveOvertimeItemsRequest $request, OvertimeSubmission $submission): JsonResponse|RedirectResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+
+        if ($user->isManager() && $user->department_id !== null && $submission->department_id !== $user->department_id) {
+            abort(403, __('Anda tidak memiliki akses persetujuan untuk departemen pengajuan ini.'));
+        }
+
+        /** @var array<int, array{item_id: int, action: string, rejection_reason?: string|null, lock_version?: int|null}> $decisions */
+        $decisions = $request->validated('decisions');
+
+        try {
+            $this->approveOvertimeItemsAction->execute($submission->id, $decisions, $user->id);
+        } catch (OptimisticLockException $e) {
+            return $request->wantsJson()
+                ? response()->json(['message' => $e->getMessage(), 'conflict' => true], 409)
+                : back()->withErrors(['conflict' => $e->getMessage()]);
+        }
+
+        return $request->wantsJson()
+            ? response()->json(['message' => __('Persetujuan disimpan.')])
+            : redirect()->route('overtime.approvals');
     }
 }

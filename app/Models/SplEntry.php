@@ -29,6 +29,11 @@ use Illuminate\Support\Carbon;
  * @property string|null $description
  * @property string|null $action
  * @property int $imported_by_user_id
+ * @property string $status PENDING | APPROVED | REJECTED
+ * @property int|null $reviewed_by_user_id
+ * @property Carbon|null $reviewed_at
+ * @property string|null $rejection_reason
+ * @property int $lock_version
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
@@ -57,6 +62,11 @@ class SplEntry extends Model
         'description',
         'action',
         'imported_by_user_id',
+        'status',
+        'reviewed_by_user_id',
+        'reviewed_at',
+        'rejection_reason',
+        'lock_version',
     ];
 
     /** @return array<string, string> */
@@ -66,6 +76,8 @@ class SplEntry extends Model
             'realization_date' => 'date',
             'total_hours' => 'decimal:2',
             'type_ot_code' => 'integer',
+            'reviewed_at' => 'datetime',
+            'lock_version' => 'integer',
         ];
     }
 
@@ -107,6 +119,12 @@ class SplEntry extends Model
         return $this->belongsTo(User::class, 'imported_by_user_id');
     }
 
+    /** @return BelongsTo<User, $this> */
+    public function reviewedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'reviewed_by_user_id');
+    }
+
     /**
      * Scope: entries for a specific date range.
      *
@@ -116,5 +134,15 @@ class SplEntry extends Model
     {
         $query->whereYear('realization_date', $year)
             ->whereMonth('realization_date', $month);
+    }
+
+    /**
+     * Scope: only pending entries awaiting approval.
+     *
+     * @param  Builder<static>  $query
+     */
+    public function scopePending(Builder $query): void
+    {
+        $query->where('status', 'PENDING');
     }
 }

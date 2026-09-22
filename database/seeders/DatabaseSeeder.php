@@ -18,6 +18,7 @@ class DatabaseSeeder extends Seeder
             DepartmentSeeder::class,
             SectionSeeder::class,
             EmployeeSeeder::class,
+            PcdEmployeeSeeder::class,   // Seeds real PCD employees from ot_excel.xlsx db_pegawai
             UserSeeder::class,
             OperationalCalendarSeeder::class,
             PolicyThresholdSeeder::class,

@@ -1,214 +1,98 @@
 <?php
 
 use App\Models\Department;
-use App\Models\Employee;
-use App\Models\OperationalCalendar;
-use App\Models\OvertimeItem;
-use App\Models\OvertimeSubmission;
 use App\Models\Section;
+use App\Models\SplEntry;
 use App\Models\User;
 use Carbon\Carbon;
 
-test('manager can select multiple submissions, inspect floating bulk bar, confirm bulk approval, and see reactive success toast', function () {
+function createBulkBrowserSplEntry(Department $dept, Section $section, User $importer, string $date, array $extra = []): SplEntry
+{
+    return SplEntry::create(array_merge([
+        'npk_snapshot' => 'EMP-BLK-'.fake()->unique()->numerify('#####'),
+        'employee_name_snapshot' => fake()->name(),
+        'section_id' => $section->id,
+        'department_id' => $dept->id,
+        'section_name_snapshot' => $section->name,
+        'department_name_snapshot' => $dept->name,
+        'realization_date' => $date,
+        'day_type' => 'HKN',
+        'start_time' => '18:00:00',
+        'end_time' => '22:00:00',
+        'total_hours' => 3.50,
+        'status' => 'PENDING',
+        'lock_version' => 0,
+        'imported_by_user_id' => $importer->id,
+    ], $extra));
+}
+
+test('manager can select a group, see bulk bar, confirm bulk approval, and see success toast', function () {
     $today = Carbon::now('Asia/Jakarta')->toDateString();
 
-    if (! OperationalCalendar::whereDate('calendar_date', $today)->exists()) {
-        OperationalCalendar::create([
-            'calendar_date' => $today,
-            'day_type' => 'HKN',
-            'is_holiday' => false,
-        ]);
-    }
-
-    $dept = Department::factory()->create([
-        'code' => 'DEPT_BRW_BULK_'.uniqid(),
-        'name' => 'Bulk Browser Dept',
-        'is_active' => true,
-    ]);
-
+    $dept = Department::factory()->create(['is_active' => true]);
     $section = Section::factory()->create([
         'department_id' => $dept->id,
-        'code' => 'SEC_BRW_BLK_'.uniqid(),
-        'name' => 'Assembly Line Bulk',
+        'name' => 'Assembly Bulk Line',
         'is_active' => true,
     ]);
-
-    $teamLeader = User::factory()->teamLeader($section->id, $dept->id)->create();
+    $importer = User::factory()->user()->create();
 
     User::factory()->manager($dept->id)->create([
-        'name' => 'Manager Bulk Reviewer',
-        'email' => 'mgr.bulk@factory.com',
+        'email' => 'mgr.bulk.brw@factory.com',
         'password' => 'password',
     ]);
 
-    $emp1 = Employee::factory()->forDepartmentAndSection($dept, $section)->create([
-        'full_name' => 'Dedi Santoso',
-        'npk' => 'EMP-BLK-01',
-        'hourly_rate' => 35000,
-        'is_active' => true,
-    ]);
+    createBulkBrowserSplEntry($dept, $section, $importer, $today);
 
-    $emp2 = Employee::factory()->forDepartmentAndSection($dept, $section)->create([
-        'full_name' => 'Eko Prasetyo',
-        'npk' => 'EMP-BLK-02',
-        'hourly_rate' => 35000,
-        'is_active' => true,
-    ]);
+    $groupKey = "{$section->id}|{$today}";
 
-    $sub1 = OvertimeSubmission::create([
-        'submission_code' => 'OT-BLK-SUB-001',
-        'submission_date' => $today,
-        'operational_date' => $today,
-        'day_type' => 'HKN',
-        'department_id' => $dept->id,
-        'section_id' => $section->id,
-        'submitted_by_user_id' => $teamLeader->id,
-        'status' => 'SUBMITTED',
-        'total_hours_cached' => 3.5,
-    ]);
-
-    OvertimeItem::create([
-        'overtime_submission_id' => $sub1->id,
-        'employee_id' => $emp1->id,
-        'npk_snapshot' => $emp1->npk,
-        'hours_production' => 3.5,
-        'hours_tpm' => 0.0,
-        'hours_project' => 0.0,
-        'hours_others' => 0.0,
-        'hourly_rate_snapshot' => 35000,
-        'total_cost_snapshot' => 3.5 * 35000,
-        'status' => 'PENDING',
-        'task_description' => 'Assembly overtime job 1',
-        'lock_version' => 1,
-    ]);
-
-    $sub2 = OvertimeSubmission::create([
-        'submission_code' => 'OT-BLK-SUB-002',
-        'submission_date' => $today,
-        'operational_date' => $today,
-        'day_type' => 'HKN',
-        'department_id' => $dept->id,
-        'section_id' => $section->id,
-        'submitted_by_user_id' => $teamLeader->id,
-        'status' => 'SUBMITTED',
-        'total_hours_cached' => 4.0,
-    ]);
-
-    OvertimeItem::create([
-        'overtime_submission_id' => $sub2->id,
-        'employee_id' => $emp2->id,
-        'npk_snapshot' => $emp2->npk,
-        'hours_production' => 4.0,
-        'hours_tpm' => 0.0,
-        'hours_project' => 0.0,
-        'hours_others' => 0.0,
-        'hourly_rate_snapshot' => 35000,
-        'total_cost_snapshot' => 4.0 * 35000,
-        'status' => 'PENDING',
-        'task_description' => 'Assembly overtime job 2',
-        'lock_version' => 1,
-    ]);
-
-    $page = visit('/login')
-        ->fill('email', 'mgr.bulk@factory.com')
+    visit('/login')
+        ->fill('email', 'mgr.bulk.brw@factory.com')
         ->fill('password', 'password')
         ->click('Log in to System')
         ->assertPathIs('/dashboard')
         ->click('[data-test="nav-overtime-approvals"]')
         ->assertPathIs('/overtime/approvals')
-        ->assertSee('OT-BLK-SUB-001')
-        ->assertSee('OT-BLK-SUB-002')
+        ->assertSee('Assembly Bulk Line')
         ->assertMissing('[data-test="floating-bulk-bar"]')
-        ->assertNoJavaScriptErrors();
-
-    // Check row 1
-    $page->check('[data-test="approval-row-checkbox-'.$sub1->id.'"]')
+        ->check('[data-test="approval-row-checkbox-'.$groupKey.'"]')
         ->assertPresent('[data-test="floating-bulk-bar"]')
-        ->assertSeeIn('[data-test="bulk-selected-count"]', '1');
-
-    // Check row 2
-    $page->check('[data-test="approval-row-checkbox-'.$sub2->id.'"]')
-        ->assertSeeIn('[data-test="bulk-selected-count"]', '2')
-        ->assertSeeIn('[data-test="bulk-hours-stat"]', '7.5');
-
-    // Click Bulk Approve
-    $page->click('[data-test="btn-bulk-approve"]')
+        ->assertSeeIn('[data-test="bulk-selected-count"]', '1')
+        ->click('[data-test="btn-bulk-approve"]')
         ->assertPresent('[data-test="bulk-approval-confirm-modal"]')
         ->assertPresent('[data-test="bulk-modal-title"]')
-        ->assertSee('OT-BLK-SUB-001')
-        ->assertSee('OT-BLK-SUB-002')
+        ->assertSee('Assembly Bulk Line')
         ->click('[data-test="btn-bulk-confirm"]')
         ->assertPresent('[data-test="bulk-action-result-toast"]')
         ->assertNoJavaScriptErrors();
 });
 
-test('manager can bulk reject submissions with mandatory shared rejection reason', function () {
+test('manager can bulk reject with mandatory shared rejection reason', function () {
     $today = Carbon::now('Asia/Jakarta')->toDateString();
 
-    if (! OperationalCalendar::whereDate('calendar_date', $today)->exists()) {
-        OperationalCalendar::create([
-            'calendar_date' => $today,
-            'day_type' => 'HKN',
-            'is_holiday' => false,
-        ]);
-    }
-
     $dept = Department::factory()->create(['is_active' => true]);
-    $section = Section::factory()->create([
-        'department_id' => $dept->id,
-        'is_active' => true,
-    ]);
-
-    $teamLeader = User::factory()->teamLeader($section->id, $dept->id)->create();
+    $section = Section::factory()->create(['department_id' => $dept->id, 'name' => 'Reject Bulk Line', 'is_active' => true]);
+    $importer = User::factory()->user()->create();
 
     User::factory()->manager($dept->id)->create([
-        'email' => 'mgr.bulkreject@factory.com',
+        'email' => 'mgr.bulkrej.brw@factory.com',
         'password' => 'password',
     ]);
 
-    $emp = Employee::factory()->forDepartmentAndSection($dept, $section)->create([
-        'npk' => 'EMP-BLK-REJ-01',
-        'hourly_rate' => 30000,
-        'is_active' => true,
-    ]);
+    createBulkBrowserSplEntry($dept, $section, $importer, $today);
 
-    $sub = OvertimeSubmission::create([
-        'submission_code' => 'OT-BLK-REJ-001',
-        'submission_date' => $today,
-        'operational_date' => $today,
-        'day_type' => 'HKN',
-        'department_id' => $dept->id,
-        'section_id' => $section->id,
-        'submitted_by_user_id' => $teamLeader->id,
-        'status' => 'SUBMITTED',
-        'total_hours_cached' => 2.0,
-    ]);
+    $groupKey = "{$section->id}|{$today}";
 
-    OvertimeItem::create([
-        'overtime_submission_id' => $sub->id,
-        'employee_id' => $emp->id,
-        'npk_snapshot' => $emp->npk,
-        'hours_production' => 2.0,
-        'hours_tpm' => 0.0,
-        'hours_project' => 0.0,
-        'hours_others' => 0.0,
-        'hourly_rate_snapshot' => 30000,
-        'total_cost_snapshot' => 60000,
-        'status' => 'PENDING',
-        'lock_version' => 1,
-    ]);
-
-    $page = visit('/login')
-        ->fill('email', 'mgr.bulkreject@factory.com')
+    visit('/login')
+        ->fill('email', 'mgr.bulkrej.brw@factory.com')
         ->fill('password', 'password')
         ->click('Log in to System')
         ->assertPathIs('/dashboard')
         ->click('[data-test="nav-overtime-approvals"]')
         ->assertPathIs('/overtime/approvals')
-        ->check('[data-test="approval-row-checkbox-'.$sub->id.'"]')
+        ->check('[data-test="approval-row-checkbox-'.$groupKey.'"]')
         ->click('[data-test="btn-bulk-reject"]')
         ->assertPresent('[data-test="bulk-approval-confirm-modal"]')
-        ->assertPresent('[data-test="bulk-modal-title"]')
         ->assertPresent('[data-test="bulk-rejection-reason-container"]')
         ->fill('[data-test="bulk-rejection-reason-input"]', 'Target shift tercapai tanpa lembur')
         ->click('[data-test="btn-bulk-confirm"]')
@@ -216,69 +100,30 @@ test('manager can bulk reject submissions with mandatory shared rejection reason
         ->assertNoJavaScriptErrors();
 });
 
-test('manager can toggle select-all on page and clear bulk selection', function () {
+test('manager can clear bulk selection', function () {
     $today = Carbon::now('Asia/Jakarta')->toDateString();
 
-    if (! OperationalCalendar::whereDate('calendar_date', $today)->exists()) {
-        OperationalCalendar::create([
-            'calendar_date' => $today,
-            'day_type' => 'HKN',
-            'is_holiday' => false,
-        ]);
-    }
-
     $dept = Department::factory()->create(['is_active' => true]);
-    $section = Section::factory()->create([
-        'department_id' => $dept->id,
-        'is_active' => true,
-    ]);
-
-    $teamLeader = User::factory()->teamLeader($section->id, $dept->id)->create();
+    $section = Section::factory()->create(['department_id' => $dept->id, 'is_active' => true]);
+    $importer = User::factory()->user()->create();
 
     User::factory()->manager($dept->id)->create([
-        'email' => 'mgr.selectall@factory.com',
+        'email' => 'mgr.clear.brw@factory.com',
         'password' => 'password',
     ]);
 
-    $emp = Employee::factory()->forDepartmentAndSection($dept, $section)->create([
-        'hourly_rate' => 30000,
-        'is_active' => true,
-    ]);
+    createBulkBrowserSplEntry($dept, $section, $importer, $today);
 
-    $sub = OvertimeSubmission::create([
-        'submission_code' => 'OT-SELECTALL-001',
-        'submission_date' => $today,
-        'operational_date' => $today,
-        'day_type' => 'HKN',
-        'department_id' => $dept->id,
-        'section_id' => $section->id,
-        'submitted_by_user_id' => $teamLeader->id,
-        'status' => 'SUBMITTED',
-        'total_hours_cached' => 2.0,
-    ]);
-
-    OvertimeItem::create([
-        'overtime_submission_id' => $sub->id,
-        'employee_id' => $emp->id,
-        'npk_snapshot' => $emp->npk,
-        'hours_production' => 2.0,
-        'hours_tpm' => 0.0,
-        'hours_project' => 0.0,
-        'hours_others' => 0.0,
-        'hourly_rate_snapshot' => 30000,
-        'total_cost_snapshot' => 60000,
-        'status' => 'PENDING',
-        'lock_version' => 1,
-    ]);
+    $groupKey = "{$section->id}|{$today}";
 
     visit('/login')
-        ->fill('email', 'mgr.selectall@factory.com')
+        ->fill('email', 'mgr.clear.brw@factory.com')
         ->fill('password', 'password')
         ->click('Log in to System')
         ->assertPathIs('/dashboard')
         ->click('[data-test="nav-overtime-approvals"]')
         ->assertPathIs('/overtime/approvals')
-        ->check('[data-test="select-all-checkbox"]')
+        ->check('[data-test="approval-row-checkbox-'.$groupKey.'"]')
         ->assertPresent('[data-test="floating-bulk-bar"]')
         ->click('[data-test="btn-bulk-clear"]')
         ->assertMissing('[data-test="floating-bulk-bar"]')

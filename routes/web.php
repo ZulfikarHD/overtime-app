@@ -223,11 +223,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/submissions/{submission}/spkl/download', [SpklDocumentController::class, 'download'])->name('submissions.spkl.download');
     });
 
-    // Overtime Approvals Queue & Decisions (E04-01, E04-02 & E04-03 — Manager & Admin only)
+    // Overtime Approvals Queue & Decisions (new SPL-based flow — Manager & Admin only)
     Route::middleware(['role:admin,manager'])->prefix('overtime')->name('overtime.')->group(function () {
         Route::get('/approvals', [OvertimeApprovalController::class, 'index'])->name('approvals');
         Route::get('/approvals/export', [OvertimeApprovalController::class, 'export'])->name('approvals.export');
         Route::post('/approvals/bulk', [OvertimeApprovalController::class, 'bulkProcess'])->name('approvals.bulk');
+        // Single-group per-entry approval (SPL new flow)
+        Route::post('/approvals/spl/approve', [OvertimeApprovalController::class, 'approveSplGroup'])->name('approvals.spl.approve');
+        // Fetch expanded entries for a group (used by ApprovalQueue AJAX expand)
+        Route::get('/approvals/spl/entries', [OvertimeApprovalController::class, 'splGroupEntries'])->name('approvals.spl.entries');
+        // Legacy item-level route kept for backward compat (old submissions)
         Route::post('/submissions/{submission}/approve-items', [OvertimeApprovalController::class, 'approveItems'])->name('submissions.approve-items');
         Route::get('/items/{item}/audit', [OvertimeItemAuditController::class, 'index'])->name('items.audit');
     });

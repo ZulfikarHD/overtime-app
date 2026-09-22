@@ -8,9 +8,6 @@ use Illuminate\Foundation\Http\FormRequest;
 
 class BulkApprovalRequest extends FormRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     */
     public function authorize(): bool
     {
         /** @var User|null $user */
@@ -20,15 +17,14 @@ class BulkApprovalRequest extends FormRequest
     }
 
     /**
-     * Get the validation rules that apply to the request.
-     *
      * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
         return [
-            'submission_ids' => ['required', 'array', 'min:1', 'max:50'],
-            'submission_ids.*' => ['required', 'integer', 'exists:overtime_submissions,id'],
+            'groups' => ['required', 'array', 'min:1', 'max:50'],
+            'groups.*.section_id' => ['required', 'integer', 'exists:sections,id'],
+            'groups.*.date' => ['required', 'date'],
             'action' => ['required', 'string', 'in:APPROVED,REJECTED,approved,rejected'],
             'rejection_reason' => [
                 'required_if:action,REJECTED,rejected',
@@ -48,22 +44,16 @@ class BulkApprovalRequest extends FormRequest
         ];
     }
 
-    /**
-     * @return array<string, string>
-     */
+    /** @return array<string, string> */
     public function messages(): array
     {
         return [
-            'submission_ids.required' => __('Daftar pengajuan lembur wajib dipilih.'),
-            'submission_ids.min' => __('Minimal satu pengajuan lembur harus dipilih.'),
-            'submission_ids.max' => __('Maksimal 50 pengajuan lembur dalam satu proses persetujuan massal.'),
-            'submission_ids.*.required' => __('ID pengajuan lembur wajib diisi.'),
-            'submission_ids.*.integer' => __('ID pengajuan lembur harus berupa angka.'),
-            'submission_ids.*.exists' => __('Salah satu pengajuan lembur tidak valid atau tidak ditemukan.'),
+            'groups.required' => __('Daftar grup lembur wajib dipilih.'),
+            'groups.min' => __('Minimal satu grup harus dipilih.'),
+            'groups.max' => __('Maksimal 50 grup dalam satu proses persetujuan massal.'),
             'action.required' => __('Aksi persetujuan wajib ditentukan.'),
-            'action.in' => __('Aksi persetujuan harus berupa APPROVED atau REJECTED.'),
+            'action.in' => __('Aksi harus berupa APPROVED atau REJECTED.'),
             'rejection_reason.required_if' => __('Alasan penolakan massal wajib diisi (minimal 5 karakter).'),
-            'rejection_reason.max' => __('Alasan penolakan maksimal 1000 karakter.'),
         ];
     }
 }

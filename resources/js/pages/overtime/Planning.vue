@@ -206,10 +206,10 @@ function totalForEmployee(empId: number): number {
     return Object.values(empData).reduce((sum, cell) => {
         return (
             sum +
-            cell.hours_production +
-            cell.hours_tpm +
-            cell.hours_project +
-            cell.hours_others
+            safeHours(cell.hours_production) +
+            safeHours(cell.hours_tpm) +
+            safeHours(cell.hours_project) +
+            safeHours(cell.hours_others)
         );
     }, 0);
 }
@@ -229,10 +229,10 @@ function dayTotal(date: string): number {
         if (!cell) return sum;
         return (
             sum +
-            cell.hours_production +
-            cell.hours_tpm +
-            cell.hours_project +
-            cell.hours_others
+            safeHours(cell.hours_production) +
+            safeHours(cell.hours_tpm) +
+            safeHours(cell.hours_project) +
+            safeHours(cell.hours_others)
         );
     }, 0);
 }
@@ -319,8 +319,9 @@ async function loadRoster(sectionId: number) {
     }
 }
 
-watch(selectedSectionId, (newId) => {
-    if (newId) {
+watch(selectedSectionId, (newId, oldId) => {
+    // Only reload when switching to a different, valid section
+    if (newId && newId > 0 && newId !== oldId) {
         loadRoster(newId);
     }
 });
@@ -429,11 +430,24 @@ function openCell(empId: number, date: string) {
     });
 }
 
+/** Sanitize a potentially NaN/undefined hour value to a safe number ≥ 0. */
+function safeHours(val: unknown): number {
+    const n = Number(val);
+    return isNaN(n) || n < 0 ? 0 : n;
+}
+
 function closeCell() {
     if (editingCell.value) {
         const { empId, date } = editingCell.value;
         if (!gridData.value[empId]) gridData.value[empId] = {};
-        gridData.value[empId][date] = { ...editForm.value };
+        // Sanitize: v-model.number produces NaN when the input is cleared (Delete key).
+        // Storing NaN causes toFixed() to throw, making the entire page go blank.
+        gridData.value[empId][date] = {
+            hours_production: safeHours(editForm.value.hours_production),
+            hours_tpm: safeHours(editForm.value.hours_tpm),
+            hours_project: safeHours(editForm.value.hours_project),
+            hours_others: safeHours(editForm.value.hours_others),
+        };
     }
     editingCell.value = null;
 }
@@ -442,10 +456,10 @@ function quickCellValue(empId: number, date: string): number {
     const cell = gridData.value[empId]?.[date];
     if (!cell) return 0;
     return (
-        cell.hours_production +
-        cell.hours_tpm +
-        cell.hours_project +
-        cell.hours_others
+        safeHours(cell.hours_production) +
+        safeHours(cell.hours_tpm) +
+        safeHours(cell.hours_project) +
+        safeHours(cell.hours_others)
     );
 }
 
@@ -469,7 +483,11 @@ function hasNonZeroCell(empId: number): boolean {
         <div class="mb-6 flex flex-wrap items-start justify-between gap-4">
             <Heading
                 :title="__('Planning Overtime')"
-                :description="__('Susun rencana lembur bulanan per seksi berdasarkan kategori A/B/C/D.')"
+                :description="
+                    __(
+                        'Susun rencana lembur bulanan per seksi berdasarkan kategori A/B/C/D.',
+                    )
+                "
             />
             <div class="flex flex-wrap items-center gap-2">
                 <Button variant="outline" size="sm" @click="navigateMonth(-1)">
@@ -494,13 +512,13 @@ function hasNonZeroCell(empId: number): boolean {
                     v-model="selectedDepartmentId"
                     @update:model-value="
                         (v) => {
-                            selectedDepartmentId.value = Number(v);
+                            selectedDepartmentId = Number(v);
                             // Only clear section if it belongs to a different department
                             const sec = props.sections.find(
-                                (s) => s.id === selectedSectionId.value,
+                                (s) => s.id === selectedSectionId,
                             );
                             if (sec && sec.department_id !== Number(v)) {
-                                selectedSectionId.value = null;
+                                selectedSectionId = null;
                             }
                         }
                     "
@@ -521,10 +539,7 @@ function hasNonZeroCell(empId: number): boolean {
             </div>
             <!-- Section -->
             <div class="w-44">
-                <Select
-                    v-model="selectedSectionId"
-                    @update:model-value="(v) => (selectedSectionId = Number(v))"
-                >
+                <Select v-model="selectedSectionId">
                     <SelectTrigger class="h-9 text-xs">
                         <SelectValue :placeholder="__('Pilih Seksi')" />
                     </SelectTrigger>
@@ -723,6 +738,8 @@ function hasNonZeroCell(empId: number): boolean {
                                             : 'text-slate-300 hover:bg-slate-50 dark:text-slate-700 dark:hover:bg-slate-800'
                                     "
                                     @click="openCell(emp.id, d.date)"
+                                    @keydown.delete.prevent
+                                    @keydown.backspace.prevent
                                 >
                                     <span
                                         v-if="
@@ -943,10 +960,10 @@ function hasNonZeroCell(empId: number): boolean {
                         <span class="font-mono text-[#cc0000] tabular-nums">
                             {{
                                 (
-                                    editForm.hours_production +
-                                    editForm.hours_tpm +
-                                    editForm.hours_project +
-                                    editForm.hours_others
+                                    safeHours(editForm.hours_production) +
+                                    safeHours(editForm.hours_tpm) +
+                                    safeHours(editForm.hours_project) +
+                                    safeHours(editForm.hours_others)
                                 ).toFixed(2)
                             }}
                             jam

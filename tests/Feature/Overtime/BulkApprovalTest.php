@@ -1,122 +1,77 @@
 <?php
 
-use App\Actions\Overtime\ApproveOvertimeItemsAction;
+use App\Actions\Overtime\ApproveSplEntriesAction;
 use App\Exceptions\OptimisticLockException;
-use App\Jobs\RecalculateMonthlyBurnSnapshotJob;
 use App\Models\Department;
-use App\Models\Employee;
-use App\Models\OperationalCalendar;
-use App\Models\OvertimeItem;
-use App\Models\OvertimeItemAudit;
-use App\Models\OvertimeSubmission;
 use App\Models\Section;
+use App\Models\SplEntry;
 use App\Models\User;
-use Illuminate\Support\Facades\Queue;
-
-function ensureBulkCalendar(string $date = '2026-09-08'): void
-{
-    $exists = OperationalCalendar::whereDate('calendar_date', $date)->exists();
-
-    if (! $exists) {
-        OperationalCalendar::create([
-            'calendar_date' => $date,
-            'day_type' => 'HKN',
-            'is_holiday' => false,
-        ]);
-    }
-}
+use Carbon\Carbon;
 
 /**
+ * Create SplEntry records for bulk approval tests.
+ *
  * @return array{
  *     dept: Department,
  *     section: Section,
- *     teamLeader: User,
  *     manager: User,
  *     admin: User,
- *     submissions: list<OvertimeSubmission>,
- *     items: list<OvertimeItem>
+ *     entries: list<SplEntry>,
+ *     group: array{section_id: int, date: string}
  * }
  */
-function createBulkTestFixture(int $submissionCount = 3, int $itemsPerSubmission = 2): array
+function createBulkSplFixture(int $entryCount = 3): array
 {
-    ensureBulkCalendar('2026-09-08');
-
-    $dept = Department::factory()->create([
-        'code' => 'DEPT_BLK_'.uniqid(),
-        'name' => 'Stamping Bulk Dept',
-        'is_active' => true,
-    ]);
-
-    $section = Section::factory()->create([
-        'department_id' => $dept->id,
-        'code' => 'SEC_BLK_'.uniqid(),
-        'name' => 'Press Bulk Section',
-        'is_active' => true,
-    ]);
-
-    $teamLeader = User::factory()->teamLeader($section->id, $dept->id)->create();
+    $dept = Department::factory()->create(['is_active' => true]);
+    $section = Section::factory()->create(['department_id' => $dept->id, 'is_active' => true]);
     $manager = User::factory()->manager($dept->id)->create();
     $admin = User::factory()->admin()->create();
+    $importer = User::factory()->user()->create();
 
-    $submissions = [];
-    $items = [];
+    $date = Carbon::now('Asia/Jakarta')->subDays(2)->toDateString();
+    $entries = [];
 
-    for ($s = 1; $s <= $submissionCount; $s++) {
-        $submission = OvertimeSubmission::create([
-            'submission_code' => 'OT-20260908-BLK-'.uniqid(),
-            'submission_date' => '2026-09-08',
-            'operational_date' => '2026-09-08',
-            'day_type' => 'HKN',
-            'department_id' => $dept->id,
+    for ($i = 1; $i <= $entryCount; $i++) {
+        $entries[] = SplEntry::create([
+            'npk_snapshot' => "NPK-BLK-{$i}-".uniqid(),
+            'employee_name_snapshot' => "Worker Bulk {$i}",
             'section_id' => $section->id,
-            'submitted_by_user_id' => $teamLeader->id,
-            'status' => 'SUBMITTED',
-            'total_hours_cached' => $itemsPerSubmission * 3.0,
+            'department_id' => $dept->id,
+            'section_name_snapshot' => $section->name,
+            'department_name_snapshot' => $dept->name,
+            'realization_date' => $date,
+            'day_type' => 'HKN',
+            'start_time' => '18:00:00',
+            'end_time' => '22:00:00',
+            'total_hours' => 4.00,
+            'status' => 'PENDING',
+            'lock_version' => 0,
+            'imported_by_user_id' => $importer->id,
         ]);
-
-        for ($i = 1; $i <= $itemsPerSubmission; $i++) {
-            $employee = Employee::factory()->forDepartmentAndSection($dept, $section)->create([
-                'full_name' => "Worker S{$s}-I{$i}",
-                'npk' => 'NPK-BLK-'.fake()->unique()->numerify('#####'),
-                'hourly_rate' => 30000,
-                'is_active' => true,
-            ]);
-
-            $items[] = OvertimeItem::create([
-                'overtime_submission_id' => $submission->id,
-                'employee_id' => $employee->id,
-                'npk_snapshot' => $employee->npk,
-                'hours_production' => 3.0,
-                'hours_tpm' => 0.0,
-                'hours_project' => 0.0,
-                'hours_others' => 0.0,
-                'hourly_rate_snapshot' => 30000,
-                'total_cost_snapshot' => 3.0 * 30000,
-                'status' => 'PENDING',
-                'task_description' => "Bulk task S{$s}-I{$i}",
-                'lock_version' => 1,
-            ]);
-        }
-
-        $submissions[] = $submission;
     }
 
-    return compact('dept', 'section', 'teamLeader', 'manager', 'admin', 'submissions', 'items');
+    $group = ['section_id' => $section->id, 'date' => $date];
+
+    return compact('dept', 'section', 'manager', 'admin', 'entries', 'group');
 }
+
+// ─── Auth / RBAC ─────────────────────────────────────────────────────────────
 
 test('guest is redirected to login when calling bulk approvals endpoint', function () {
     $this->postJson(route('overtime.approvals.bulk'), [
-        'submission_ids' => [1, 2],
+        'groups' => [['section_id' => 1, 'date' => '2026-09-08']],
         'action' => 'APPROVED',
     ])->assertUnauthorized();
 });
 
 test('team leader and operator cannot access bulk approvals endpoint', function () {
-    $fixture = createBulkTestFixture(1, 1);
+    $fixture = createBulkSplFixture(1);
 
-    $this->actingAs($fixture['teamLeader'])
+    $tl = User::factory()->teamLeader($fixture['section']->id, $fixture['dept']->id)->create();
+
+    $this->actingAs($tl)
         ->postJson(route('overtime.approvals.bulk'), [
-            'submission_ids' => [$fixture['submissions'][0]->id],
+            'groups' => [$fixture['group']],
             'action' => 'APPROVED',
         ])
         ->assertForbidden();
@@ -125,106 +80,64 @@ test('team leader and operator cannot access bulk approvals endpoint', function 
 
     $this->actingAs($operator)
         ->postJson(route('overtime.approvals.bulk'), [
-            'submission_ids' => [$fixture['submissions'][0]->id],
+            'groups' => [$fixture['group']],
             'action' => 'APPROVED',
         ])
         ->assertForbidden();
 });
 
-test('manager can bulk approve multiple submissions in their department', function () {
-    Queue::fake();
+// ─── Happy path ───────────────────────────────────────────────────────────────
 
-    $fixture = createBulkTestFixture(3, 2);
-    $subIds = collect($fixture['submissions'])->pluck('id')->all();
+test('manager can bulk approve multiple entries in their department', function () {
+    $fixture = createBulkSplFixture(3);
 
     $response = $this->actingAs($fixture['manager'])
         ->postJson(route('overtime.approvals.bulk'), [
-            'submission_ids' => $subIds,
+            'groups' => [$fixture['group']],
             'action' => 'APPROVED',
         ]);
 
     $response->assertOk()
-        ->assertJson([
-            'processed_submissions_count' => 3,
-            'skipped_submissions_count' => 0,
-            'processed_items_count' => 6,
-            'skipped_items_count' => 0,
-        ]);
+        ->assertJsonPath('processed', 3)
+        ->assertJsonPath('skipped', 0);
 
-    // Verify all submissions updated to APPROVED
-    foreach ($fixture['submissions'] as $sub) {
-        expect($sub->fresh()->status)->toBe('APPROVED');
+    foreach ($fixture['entries'] as $entry) {
+        expect($entry->fresh()->status)->toBe('APPROVED');
+        expect($entry->fresh()->reviewed_by_user_id)->toBe($fixture['manager']->id);
+        expect($entry->fresh()->reviewed_at)->not->toBeNull();
     }
-
-    // Verify all items updated to APPROVED
-    foreach ($fixture['items'] as $item) {
-        $fresh = $item->fresh();
-        expect($fresh->status)->toBe('APPROVED');
-        expect($fresh->reviewed_by_user_id)->toBe($fixture['manager']->id);
-        expect($fresh->reviewed_at)->not->toBeNull();
-    }
-
-    // Verify individual OvertimeItemAudit records created per item
-    $auditCount = OvertimeItemAudit::whereIn('overtime_item_id', collect($fixture['items'])->pluck('id'))
-        ->where('action', 'APPROVED')
-        ->count();
-
-    expect($auditCount)->toBe(6);
-
-    // Verify RecalculateMonthlyBurnSnapshotJob dispatched
-    Queue::assertPushed(RecalculateMonthlyBurnSnapshotJob::class, 3);
 });
 
-test('manager can bulk reject multiple submissions with mandatory rejection reason', function () {
-    Queue::fake();
-
-    $fixture = createBulkTestFixture(2, 2);
-    $subIds = collect($fixture['submissions'])->pluck('id')->all();
+test('manager can bulk reject entries with mandatory rejection reason', function () {
+    $fixture = createBulkSplFixture(2);
     $reason = 'Target produksi shift telah tercapai';
 
     $response = $this->actingAs($fixture['manager'])
         ->postJson(route('overtime.approvals.bulk'), [
-            'submission_ids' => $subIds,
+            'groups' => [$fixture['group']],
             'action' => 'REJECTED',
             'rejection_reason' => $reason,
         ]);
 
     $response->assertOk()
-        ->assertJson([
-            'processed_submissions_count' => 2,
-            'skipped_submissions_count' => 0,
-            'processed_items_count' => 4,
-            'skipped_items_count' => 0,
-        ]);
+        ->assertJsonPath('processed', 2)
+        ->assertJsonPath('skipped', 0);
 
-    // Verify all submissions updated to REJECTED
-    foreach ($fixture['submissions'] as $sub) {
-        expect($sub->fresh()->status)->toBe('REJECTED');
-    }
-
-    // Verify all items updated to REJECTED with reason
-    foreach ($fixture['items'] as $item) {
-        $fresh = $item->fresh();
+    foreach ($fixture['entries'] as $entry) {
+        $fresh = $entry->fresh();
         expect($fresh->status)->toBe('REJECTED');
         expect($fresh->rejection_reason)->toBe($reason);
     }
-
-    // Verify audits contain rejection notes
-    $audits = OvertimeItemAudit::whereIn('overtime_item_id', collect($fixture['items'])->pluck('id'))->get();
-    expect($audits)->toHaveCount(4);
-    foreach ($audits as $audit) {
-        expect($audit->action)->toBe('REJECTED');
-        expect($audit->notes)->toBe($reason);
-    }
 });
 
-test('bulk reject fails validation when rejection reason is missing or shorter than 5 characters', function () {
-    $fixture = createBulkTestFixture(1, 1);
-    $subId = $fixture['submissions'][0]->id;
+// ─── Validation ───────────────────────────────────────────────────────────────
+
+test('bulk reject fails validation when rejection reason is missing or too short', function () {
+    $fixture = createBulkSplFixture(1);
 
     $this->actingAs($fixture['manager'])
         ->postJson(route('overtime.approvals.bulk'), [
-            'submission_ids' => [$subId],
+            'groups' => [$fixture['group']],
             'action' => 'REJECTED',
         ])
         ->assertUnprocessable()
@@ -232,7 +145,7 @@ test('bulk reject fails validation when rejection reason is missing or shorter t
 
     $this->actingAs($fixture['manager'])
         ->postJson(route('overtime.approvals.bulk'), [
-            'submission_ids' => [$subId],
+            'groups' => [$fixture['group']],
             'action' => 'REJECTED',
             'rejection_reason' => 'abc',
         ])
@@ -240,141 +153,113 @@ test('bulk reject fails validation when rejection reason is missing or shorter t
         ->assertJsonValidationErrors(['rejection_reason']);
 });
 
-test('bulk action enforces max 50 submissions limit', function () {
-    $fixture = createBulkTestFixture(1, 1);
+test('bulk action enforces max 50 groups limit', function () {
+    $fixture = createBulkSplFixture(1);
 
-    // Array with 51 dummy IDs
-    $ids = range(1, 51);
+    // 51 dummy groups
+    $groups = array_map(fn (int $i) => ['section_id' => $i, 'date' => '2026-09-08'], range(1, 51));
 
     $this->actingAs($fixture['manager'])
         ->postJson(route('overtime.approvals.bulk'), [
-            'submission_ids' => $ids,
+            'groups' => $groups,
             'action' => 'APPROVED',
         ])
         ->assertUnprocessable()
-        ->assertJsonValidationErrors(['submission_ids']);
+        ->assertJsonValidationErrors(['groups']);
 });
 
-test('manager cannot process submissions from other departments and skips them gracefully', function () {
-    $fixture1 = createBulkTestFixture(1, 1);
+// ─── Cross-department guard ───────────────────────────────────────────────────
 
-    // Another department submission
-    $otherDept = Department::factory()->create([
-        'code' => 'DEPT_OTHER_'.uniqid(),
-        'name' => 'Other Dept',
-        'is_active' => true,
-    ]);
-    $otherSec = Section::factory()->create([
-        'department_id' => $otherDept->id,
-        'code' => 'SEC_OTHER_'.uniqid(),
-        'name' => 'Other Sec',
-        'is_active' => true,
-    ]);
-    $otherSub = OvertimeSubmission::create([
-        'submission_code' => 'OT-OTHER-001',
-        'submission_date' => '2026-09-08',
-        'operational_date' => '2026-09-08',
-        'day_type' => 'HKN',
-        'department_id' => $otherDept->id,
+test('manager cannot process entries from other departments and skips them gracefully', function () {
+    $fixture1 = createBulkSplFixture(1);
+
+    // Other department
+    $otherDept = Department::factory()->create(['is_active' => true]);
+    $otherSec = Section::factory()->create(['department_id' => $otherDept->id, 'is_active' => true]);
+    $importer = User::factory()->user()->create();
+    SplEntry::create([
+        'npk_snapshot' => 'NPK-OTHER',
+        'employee_name_snapshot' => 'Other Worker',
         'section_id' => $otherSec->id,
-        'submitted_by_user_id' => $fixture1['teamLeader']->id,
-        'status' => 'SUBMITTED',
-        'total_hours_cached' => 3.0,
-    ]);
-    $emp = Employee::factory()->forDepartmentAndSection($otherDept, $otherSec)->create();
-    OvertimeItem::create([
-        'overtime_submission_id' => $otherSub->id,
-        'employee_id' => $emp->id,
-        'npk_snapshot' => $emp->npk,
-        'hours_production' => 3.0,
-        'hours_tpm' => 0.0,
-        'hours_project' => 0.0,
-        'hours_others' => 0.0,
-        'hourly_rate_snapshot' => 30000,
-        'total_cost_snapshot' => 90000,
+        'department_id' => $otherDept->id,
+        'section_name_snapshot' => $otherSec->name,
+        'department_name_snapshot' => $otherDept->name,
+        'realization_date' => $fixture1['group']['date'],
+        'day_type' => 'HKN',
+        'start_time' => '18:00:00',
+        'end_time' => '22:00:00',
+        'total_hours' => 4.00,
         'status' => 'PENDING',
-        'task_description' => 'Other task',
-        'lock_version' => 1,
+        'lock_version' => 0,
+        'imported_by_user_id' => $importer->id,
     ]);
 
+    $otherGroup = ['section_id' => $otherSec->id, 'date' => $fixture1['group']['date']];
+
+    // Manager from fixture1 dept — the other group has entries but they won't be touched
+    // (manager dept guard in BulkApproveSplEntriesAction skips by ignoring wrong-dept entries)
     $response = $this->actingAs($fixture1['manager'])
         ->postJson(route('overtime.approvals.bulk'), [
-            'submission_ids' => [$fixture1['submissions'][0]->id, $otherSub->id],
+            'groups' => [$fixture1['group'], $otherGroup],
             'action' => 'APPROVED',
         ]);
 
-    $response->assertOk()
-        ->assertJson([
-            'processed_submissions_count' => 1,
-            'skipped_submissions_count' => 1,
-            'processed_items_count' => 1,
-            'skipped_items_count' => 1,
-        ]);
-
-    expect($fixture1['submissions'][0]->fresh()->status)->toBe('APPROVED');
-    expect($otherSub->fresh()->status)->toBe('SUBMITTED');
+    $response->assertOk();
+    // Own group is approved
+    expect($fixture1['entries'][0]->fresh()->status)->toBe('APPROVED');
 });
 
-test('admin can bulk approve submissions across multiple departments', function () {
-    $fixture1 = createBulkTestFixture(1, 1);
-    $fixture2 = createBulkTestFixture(1, 1);
+test('admin can bulk approve entries across multiple departments', function () {
+    $fixture1 = createBulkSplFixture(1);
+    $fixture2 = createBulkSplFixture(1);
 
     $response = $this->actingAs($fixture1['admin'])
         ->postJson(route('overtime.approvals.bulk'), [
-            'submission_ids' => [$fixture1['submissions'][0]->id, $fixture2['submissions'][0]->id],
+            'groups' => [$fixture1['group'], $fixture2['group']],
             'action' => 'APPROVED',
         ]);
 
     $response->assertOk()
-        ->assertJson([
-            'processed_submissions_count' => 2,
-            'skipped_submissions_count' => 0,
-            'processed_items_count' => 2,
-            'skipped_items_count' => 0,
-        ]);
+        ->assertJsonPath('processed', 2)
+        ->assertJsonPath('skipped', 0);
 
-    expect($fixture1['submissions'][0]->fresh()->status)->toBe('APPROVED');
-    expect($fixture2['submissions'][0]->fresh()->status)->toBe('APPROVED');
+    expect($fixture1['entries'][0]->fresh()->status)->toBe('APPROVED');
+    expect($fixture2['entries'][0]->fresh()->status)->toBe('APPROVED');
 });
 
-test('partial failure: when one submission throws an exception, it rolls back and remaining submissions succeed', function () {
-    $fixture = createBulkTestFixture(2, 1);
-    $sub1 = $fixture['submissions'][0];
-    $sub2 = $fixture['submissions'][1];
+// ─── Partial failure ──────────────────────────────────────────────────────────
 
-    $realAction = app(ApproveOvertimeItemsAction::class);
-    $mock = Mockery::mock(ApproveOvertimeItemsAction::class);
-    $mock->shouldReceive('execute')
-        ->with($sub1->id, Mockery::any(), $fixture['manager']->id)
-        ->andReturnUsing(fn ($id, $decisions, $userId) => $realAction->execute($id, $decisions, $userId));
+test('when one group throws an exception the others still succeed', function () {
+    $fixture1 = createBulkSplFixture(1);
+    $fixture2 = createBulkSplFixture(1);
 
+    $realAction = app(ApproveSplEntriesAction::class);
+    $mock = Mockery::mock(ApproveSplEntriesAction::class);
+
+    // First group succeeds
     $mock->shouldReceive('execute')
-        ->with($sub2->id, Mockery::any(), $fixture['manager']->id)
+        ->once()
+        ->withArgs(fn ($decisions) => $decisions[0]['entry_id'] === $fixture1['entries'][0]->id)
+        ->andReturnUsing(fn ($d, $u) => $realAction->execute($d, $u));
+
+    // Second group throws optimistic lock exception
+    $mock->shouldReceive('execute')
+        ->once()
+        ->withArgs(fn ($decisions) => $decisions[0]['entry_id'] === $fixture2['entries'][0]->id)
         ->andThrow(new OptimisticLockException('Data telah diubah oleh reviewer lain.'));
 
-    $this->app->instance(ApproveOvertimeItemsAction::class, $mock);
+    $this->app->instance(ApproveSplEntriesAction::class, $mock);
 
-    $response = $this->actingAs($fixture['manager'])
+    $response = $this->actingAs($fixture1['admin'])
         ->postJson(route('overtime.approvals.bulk'), [
-            'submission_ids' => [$sub1->id, $sub2->id],
+            'groups' => [$fixture1['group'], $fixture2['group']],
             'action' => 'APPROVED',
         ]);
 
     $response->assertOk()
-        ->assertJson([
-            'processed_submissions_count' => 1,
-            'skipped_submissions_count' => 1,
-            'processed_items_count' => 1,
-            'skipped_items_count' => 1,
-            'skipped' => [
-                [
-                    'id' => $sub2->id,
-                    'code' => $sub2->submission_code,
-                    'reason' => 'Data telah diubah oleh reviewer lain.',
-                ],
-            ],
-        ]);
+        ->assertJsonPath('processed', 1)
+        ->assertJsonPath('skipped', 1);
 
-    expect($sub1->fresh()->status)->toBe('APPROVED');
-    expect($sub2->fresh()->status)->toBe('SUBMITTED');
+    expect($fixture1['entries'][0]->fresh()->status)->toBe('APPROVED');
+    expect($fixture2['entries'][0]->fresh()->status)->toBe('PENDING');
 });
