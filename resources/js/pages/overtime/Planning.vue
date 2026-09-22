@@ -284,7 +284,7 @@ async function loadRoster(sectionId: number) {
         });
         const json = await res.json();
         roster.value = json.employees ?? [];
-        // Re-init grid for new roster
+        // Re-init grid for new roster, preserving any already-saved plan items
         const data: Record<number, Record<string, CellData>> = {};
         roster.value.forEach((emp) => {
             data[emp.id] = {};
@@ -297,6 +297,22 @@ async function loadRoster(sectionId: number) {
                 };
             });
         });
+
+        // Restore saved plan items so switching back to the same section
+        // (or an accidental re-trigger) does not discard committed data.
+        if (props.existing_plan?.items) {
+            props.existing_plan.items.forEach((item) => {
+                if (data[item.employee_id]?.[item.plan_date] !== undefined) {
+                    data[item.employee_id][item.plan_date] = {
+                        hours_production: Number(item.hours_production) || 0,
+                        hours_tpm: Number(item.hours_tpm) || 0,
+                        hours_project: Number(item.hours_project) || 0,
+                        hours_others: Number(item.hours_others) || 0,
+                    };
+                }
+            });
+        }
+
         gridData.value = data;
     } finally {
         rosterLoading.value = false;
@@ -478,8 +494,14 @@ function hasNonZeroCell(empId: number): boolean {
                     v-model="selectedDepartmentId"
                     @update:model-value="
                         (v) => {
-                            selectedDepartmentId = Number(v);
-                            selectedSectionId = null;
+                            selectedDepartmentId.value = Number(v);
+                            // Only clear section if it belongs to a different department
+                            const sec = props.sections.find(
+                                (s) => s.id === selectedSectionId.value,
+                            );
+                            if (sec && sec.department_id !== Number(v)) {
+                                selectedSectionId.value = null;
+                            }
                         }
                     "
                 >
