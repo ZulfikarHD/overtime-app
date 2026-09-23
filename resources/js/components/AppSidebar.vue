@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { Link, usePage } from '@inertiajs/vue3';
 import {
+    BarChart3,
     ClipboardList,
     Database,
     LayoutGrid,
     ShieldCheck,
+    TrendingUp,
     Users,
 } from '@lucide/vue';
 import { computed } from 'vue';
@@ -29,6 +31,11 @@ import { administration, masterData } from '@/routes/admin';
 import { index as reportsEmployees } from '@/routes/reports/employees';
 import { index as planningOtIndex } from '@/routes/overtime/planning';
 import { index as splIndex } from '@/routes/overtime/spl';
+import {
+    training as mlTraining,
+    analysis as mlAnalysis,
+    forecast as mlForecast,
+} from '@/routes/analytics/ml';
 import type { NavItem, User } from '@/types';
 
 const { __ } = useTrans();
@@ -79,7 +86,32 @@ const mainNavItems = computed<NavItem[]>(() => {
         });
     }
 
-    // Group 2: System & Configuration
+    // Group 2: Analisis Overtime (ML Regression)
+    if (role === 'admin' || role === 'manager') {
+        items.push({
+            title: __('Data Training'),
+            href: mlTraining(),
+            icon: Database,
+            group: __('Analisis Overtime'),
+            testId: 'nav-ml-training',
+        });
+        items.push({
+            title: __('Hasil Analisis'),
+            href: mlAnalysis(),
+            icon: BarChart3,
+            group: __('Analisis Overtime'),
+            testId: 'nav-ml-analysis',
+        });
+        items.push({
+            title: __('Analisis Forecasting'),
+            href: mlForecast(),
+            icon: TrendingUp,
+            group: __('Analisis Overtime'),
+            testId: 'nav-ml-forecast',
+        });
+    }
+
+    // Group 3: System & Configuration
     if (role === 'admin') {
         items.push({
             title: __('Master Data'),

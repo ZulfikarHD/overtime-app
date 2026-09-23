@@ -10,6 +10,7 @@ use App\Http\Controllers\Admin\OperationalCalendarController;
 use App\Http\Controllers\Admin\PolicyThresholdController;
 use App\Http\Controllers\Admin\SectionController;
 use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\Analytics\MlController;
 use App\Http\Controllers\AnalyticsController;
 use App\Http\Controllers\AnalyticsScenarioController;
 use App\Http\Controllers\Api\CalendarController;
@@ -96,6 +97,21 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/employees/{npk}', [EmployeeReportController::class, 'show'])->name('employees.show');
         Route::get('/employees/{npk}/timesheet', [EmployeeReportController::class, 'timesheet'])->name('employees.timesheet');
         Route::get('/employees/{npk}/timesheet/export', [EmployeeReportController::class, 'exportTimesheet'])->name('employees.timesheet.export');
+    });
+
+    // ML Analisis Overtime — Regresi Linier Berganda (Admin & Manager, no feature flag)
+    Route::middleware(['role:admin,manager'])->prefix('analytics/ml')->name('analytics.ml.')->group(function () {
+        Route::get('/training', [MlController::class, 'trainingData'])->name('training');
+        Route::post('/training', [MlController::class, 'storeTraining'])->name('training.store');
+        Route::put('/training/{mlTrainingData}', [MlController::class, 'updateTraining'])->name('training.update');
+        Route::delete('/training/{mlTrainingData}', [MlController::class, 'destroyTraining'])->name('training.destroy');
+
+        Route::get('/analysis', [MlController::class, 'analysis'])->name('analysis');
+
+        Route::get('/forecast', [MlController::class, 'forecasting'])->name('forecast');
+        Route::post('/forecast', [MlController::class, 'storeForecast'])->name('forecast.store');
+        Route::put('/forecast/{mlForecastInput}', [MlController::class, 'updateForecast'])->name('forecast.update');
+        Route::delete('/forecast/{mlForecastInput}', [MlController::class, 'destroyForecast'])->name('forecast.destroy');
     });
 
     // Strategic Analytics & Decision Intelligence Hub (E09-06 - Admin & Manager)
