@@ -22,6 +22,11 @@ declare module '@inertiajs/core' {
             sidebarOpen: boolean;
             unread_notifications_count?: number;
             pending_approvals_count?: number;
+            features?: {
+                financial_governance_enabled?: boolean;
+                overtime_approvals_enabled?: boolean;
+                capex_attribution_required?: boolean;
+            };
             flash?: {
                 success?: string | null;
                 error?: string | null;

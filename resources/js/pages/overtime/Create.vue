@@ -762,7 +762,9 @@ function submitOvertime() {
                     {{ __('Produksi (Jam)') }}
                 </div>
                 <div class="col-span-2 text-right">{{ __('TPM (Jam)') }}</div>
-                <div class="col-span-2 text-right">{{ __('Project (Jam)') }}</div>
+                <div class="col-span-2 text-right">
+                    {{ __('Project (Jam)') }}
+                </div>
                 <div class="col-span-1 text-right">{{ __('Lainnya') }}</div>
                 <div class="col-span-1 text-right">
                     {{ __('Total') }}

@@ -306,10 +306,7 @@ function submit() {
                     />
 
                     <!-- Approval Status Notification -->
-                    <div
-                        v-if="showApprovalPref"
-                        class="flex items-start gap-3"
-                    >
+                    <div v-if="showApprovalPref" class="flex items-start gap-3">
                         <Checkbox
                             id="pref-approval-status"
                             data-test="checkbox-approval-status"

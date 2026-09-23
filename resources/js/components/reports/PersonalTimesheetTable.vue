@@ -1051,7 +1051,6 @@ const categoryFilterLabel = computed(() => {
                                                     </span>
                                                 </div>
                                             </div>
-
                                         </div>
                                     </div>
                                 </td>

@@ -179,9 +179,7 @@ function asCapexData(item: AppNotification): CapexBurnAlertNotificationData {
     return item.data as CapexBurnAlertNotificationData;
 }
 
-function projectBurnAlertMessage(
-    item: AppNotification,
-): string {
+function projectBurnAlertMessage(item: AppNotification): string {
     const data = asCapexData(item);
 
     return __(
