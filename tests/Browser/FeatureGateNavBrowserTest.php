@@ -19,7 +19,7 @@ test('sidebar hides financial governance and approvals when features are off', f
         ->fill('password', 'password')
         ->click('[data-test="login-button"]')
         ->assertPathIs('/dashboard')
-        ->assertSee('ISUZU Overtime')
+        ->assertSee('SMARTIME 2.0')
         ->assertDontSee('OT-CapEx')
         ->assertMissing('[data-test="nav-capex-projects"]')
         ->assertMissing('[data-test="nav-burn-index"]')
