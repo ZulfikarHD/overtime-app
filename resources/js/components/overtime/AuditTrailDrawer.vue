@@ -371,7 +371,7 @@ function computeDiff(
     >
         <SheetContent
             side="right"
-            class="flex h-full w-full flex-col overflow-hidden p-0 sm:max-w-xl"
+            class="flex h-full max-h-[min(90vh,56rem)] w-full flex-col overflow-hidden p-0 sm:max-w-xl lg:h-auto"
             data-test="audit-trail-drawer"
         >
             <!-- Drawer Header -->

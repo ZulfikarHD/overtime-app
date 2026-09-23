@@ -237,7 +237,7 @@ const formattedLastRecalculated = computed(() => {
     <Sheet :open="open" @update:open="(val) => emit('update:open', val)">
         <SheetContent
             side="right"
-            class="flex max-h-screen w-full flex-col overflow-y-auto p-4 sm:max-w-2xl sm:p-6 lg:max-w-3xl"
+            class="flex max-h-[min(90vh,56rem)] w-full flex-col overflow-y-auto p-4 sm:max-w-2xl sm:p-6 lg:h-auto lg:max-w-3xl"
             data-test="section-burndown-sheet"
         >
             <!-- Drawer Header -->
