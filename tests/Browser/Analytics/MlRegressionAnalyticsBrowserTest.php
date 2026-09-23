@@ -84,11 +84,39 @@ test('analysis page shows model summary verdict when training data exists', func
         'npk' => 'EMP-ML-005',
     ]);
 
-    MlTrainingData::factory()->count(10)->create();
+    // Linear-ish training set so R² stays ≥ 0.4 → verdict "LAYAK"
+    $rows = [
+        [2024, 1, 20, 2000, 700, 40000],
+        [2024, 2, 21, 2200, 720, 45000],
+        [2024, 3, 19, 1800, 680, 36000],
+        [2024, 4, 22, 2500, 750, 52000],
+        [2024, 5, 20, 2100, 710, 43000],
+        [2024, 6, 21, 2300, 730, 48000],
+        [2024, 7, 18, 1700, 660, 33000],
+        [2024, 8, 22, 2600, 760, 55000],
+        [2024, 9, 20, 2050, 705, 42000],
+        [2024, 10, 21, 2400, 740, 50000],
+    ];
 
-    visit('/analytics/ml/analysis')
-        ->actingAs($admin)
-        ->assertSee('Persamaan Regresi')
+    foreach ($rows as [$year, $month, $workingDays, $volume, $manPower, $index]) {
+        MlTrainingData::factory()->create([
+            'year' => $year,
+            'month' => $month,
+            'working_days' => $workingDays,
+            'production_volume' => $volume,
+            'man_power' => $manPower,
+            'overtime_index' => $index,
+        ]);
+    }
+
+    visit('/login')
+        ->fill('email', 'ml.admin.analysis@factory.com')
+        ->fill('password', 'password')
+        ->click('[data-test="login-button"]')
+        ->assertPathIs('/dashboard')
+        ->navigate('/analytics/ml/analysis')
+        ->assertSee('Model Regresi LAYAK Digunakan')
+        ->assertDontSee('Model Regresi BELUM LAYAK')
         ->assertSee('R²');
 });
 
