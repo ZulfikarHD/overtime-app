@@ -276,7 +276,7 @@ The method now also fetches per-category planned hours from `OvertimeBudget`:
 - **Index over raw hours:** The client's Excel reference consistently used index values rather than raw hours in its KPI charts. We mirror this to align visual language with stakeholders' existing mental models.
 - **Per-category planned columns on `overtime_budgets`:** Rather than a separate join table, four decimal columns were added directly to `overtime_budgets`. This keeps queries simple and matches the existing single-row-per-month-per-section budget model.
 - **Linear plan distribution for daily burn-up:** Planned hours are distributed evenly across calendar days (not working days) for simplicity. A future improvement could weight by working-day density from `OperationalCalendar`.
-- **SQLite/MySQL portability for seeder:** The `Ytd2026DummyDataSeeder` uses `strftime()` in Tinker verification queries only — all application runtime queries use Eloquent/MariaDB-compatible syntax.
+- **SQLite/MySQL portability for seeder:** Month filters use Eloquent `whereYear()` / `whereMonth()` (MariaDB-compatible). Never use SQLite-only `strftime()` in seeders or runtime queries.
 
 ---
 

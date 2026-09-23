@@ -125,7 +125,8 @@ class Ytd2026DummyDataSeeder extends Seeder
                 // Skip if this section already has submissions for this month
                 $existingCount = OvertimeSubmission::query()
                     ->where('section_id', $section->id)
-                    ->whereRaw("strftime('%Y-%m', operational_date) = ?", [sprintf('2026-%02d', $month)])
+                    ->whereYear('operational_date', 2026)
+                    ->whereMonth('operational_date', $month)
                     ->count();
 
                 if ($existingCount >= 3) {
@@ -455,7 +456,8 @@ class Ytd2026DummyDataSeeder extends Seeder
         $actual = (float) OvertimeItem::query()
             ->join('overtime_submissions', 'overtime_items.overtime_submission_id', '=', 'overtime_submissions.id')
             ->where('overtime_submissions.section_id', $section->id)
-            ->whereRaw("strftime('%Y-%m', overtime_submissions.operational_date) = ?", [sprintf('%04d-%02d', $year, $month)])
+            ->whereYear('overtime_submissions.operational_date', $year)
+            ->whereMonth('overtime_submissions.operational_date', $month)
             ->where('overtime_items.status', 'APPROVED')
             ->sum('overtime_items.total_hours');
 
