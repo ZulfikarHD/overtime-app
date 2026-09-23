@@ -759,15 +759,19 @@ const filteredSections = computed(() => {
 
                 <!-- WIB Live Clock & Role Status -->
                 <div class="flex items-center gap-3">
-                    <div class="hidden flex-col items-end text-xs sm:flex">
+                    <div
+                        class="hidden flex-col items-end sm:flex"
+                        data-test="dossier-live-clock"
+                    >
                         <div
-                            class="text-muted-foreground flex items-center gap-1.5 font-mono"
+                            class="text-foreground flex items-center gap-1.5 font-mono text-base font-semibold tabular-nums"
                         >
-                            <Clock class="size-3.5" />
+                            <Clock class="size-3.5 text-slate-400" />
                             <span>{{ timeString }} WIB</span>
                         </div>
                         <span
-                            class="text-muted-foreground/80 mt-0.5 font-medium"
+                            class="text-muted-foreground mt-0.5 text-[11px] font-medium"
+                            data-test="dossier-active-shift"
                         >
                             {{ currentShift.badgeText }}
                         </span>

@@ -13,8 +13,8 @@ Furthermore, supervisors and line engineers using factory floor tablets and medi
 Key requirements addressed in this architecture:
 
 1. **Eliminate Welcome Page**: Replace the generic Welcome page entirely by making the root URL (`/`) render the authenticated system directly (redirecting logged-in users to `/dashboard` and presenting the login portal to unauthenticated users).
-2. **Professional Automotive Brand Identity**: Tailor the login screen with ISUZU brand identity (`/isuzu.png`), Karawang Assembly Plant indicators, IATF 16949 / ISO 9001 quality badges, and clean light/white mode contrast with adaptive dark mode.
-3. **Sidebar Redesign per Style Guide**: Group navigation into three distinct industrial clusters (_Operasional & Lembur_, _Finansial & Tata Kelola_, _Sistem & Konfigurasi_), integrate a live Plant Telemetry card (Karawang Assembly, 3 Shift / 24 Jam, Ambang Depnaker Maks 14 Jam/Minggu), and display `/isuzu.png` in a single-root Vue component.
+2. **Professional Automotive Brand Identity**: Tailor the login screen with ISUZU brand identity (`/isuzu.jpg`), Karawang Assembly Plant indicators, IATF 16949 / ISO 9001 quality badges, and clean light/white mode contrast with adaptive dark mode.
+3. **Sidebar Redesign per Style Guide**: Group navigation into three distinct industrial clusters (_Operasional & Lembur_, _Finansial & Tata Kelola_, _Sistem & Konfigurasi_), integrate a live Plant Telemetry card (Karawang Assembly, 3 Shift / 24 Jam, Ambang Depnaker Maks 14 Jam/Minggu), and display `/isuzu.jpg` in a single-root Vue component.
 4. **Responsive Collapse Ergonomics**: Ensure the sidebar defaults to collapsed (compact icon mode) at the `md` breakpoint (768px – 1023px) and defaults to expanded on full desktop screens (`>= 1024px`), while preserving explicit user manual toggles in cookies.
 
 ## Decision
@@ -24,7 +24,7 @@ We designed and implemented a unified automotive portal and responsive sidebar n
 1. **Unified Root Routing & Welcome Page Deprecation**:
     - Deleted `resources/js/pages/Welcome.vue` and removed the `Welcome` layout branch in `resources/js/app.ts`.
     - Updated `routes/web.php` so root `/` (`route('home')`) checks session authentication: authenticated requests redirect to `/dashboard`, while unauthenticated requests render `auth/Login` directly.
-    - Updated `resources/views/app.blade.php` to serve `/isuzu.png` as the browser favicon and apple-touch-icon, with document title defaulting to `ISUZU OT-CapEx`.
+    - Updated `resources/views/app.blade.php` to serve `/isuzu.jpg` as the browser favicon and apple-touch-icon, with document title defaulting to `ISUZU OT-CapEx`.
 
 2. **Automotive Split Layout (`AuthSplitLayout.vue`)**:
     - Built a split-screen layout with an automotive manufacturing presentation on the left and a glare-free authentication form on the right.
@@ -36,7 +36,7 @@ We designed and implemented a unified automotive portal and responsive sidebar n
     - **Telemetry Footer**: Displays live Western Indonesian Time (`WIB`) and active rotational shift status (`Shift 1/2/3`) via `useShiftInfo()`.
 
 3. **Style Guide Compliant Sidebar & Plant Telemetry**:
-    - **Single-Root `AppLogo.vue`**: Encloses the `/isuzu.png` asset and plant text within a single root `<div>`, complying with Vue 3 single-root standards.
+    - **Single-Root `AppLogo.vue`**: Encloses the `/isuzu.jpg` asset and plant text within a single root `<div>`, complying with Vue 3 single-root standards.
     - **Modular Navigation**: `NavMain.vue` categorizes items into semantic groups:
         - _Operasional & Lembur_: Dashboard, Input Lembur, Persetujuan Lembur, Laporan Karyawan.
         - _Finansial & Tata Kelola_: Proyek CapEx, Burn Index, Analitik & Keputusan, Budget Planning.

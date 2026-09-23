@@ -62,22 +62,34 @@ const actualBarColor = computed(() => {
     }
 });
 
+const heroPctClass = computed(() => {
+    switch (props.data?.burn_zone) {
+        case 'danger':
+            return 'text-[#cc0000] dark:text-red-400';
+        case 'warning':
+            return 'text-amber-600 dark:text-amber-400';
+        default:
+            return 'text-slate-900 dark:text-white';
+    }
+});
+
 const actualBarWidth = computed(() => {
     const pct = props.data?.actual_pct ?? 0;
-    // Cap visual bar width to 100% so it fits in the container, but show real percentage
+
     return `${Math.min(100, Math.max(0, pct))}%`;
 });
 </script>
 
 <template>
     <Card
-        class="border-border/70 relative overflow-hidden shadow-xs transition-shadow hover:shadow-sm"
+        class="border-border/70 @container gap-3 py-4 shadow-xs transition-shadow hover:shadow-sm sm:gap-4 sm:py-5"
         data-slot="kpi-card-burn-index"
+        data-test="kpi-card-burn-index"
     >
-        <CardHeader class="flex flex-row items-center justify-between pb-2">
-            <div class="flex items-center gap-2">
+        <CardHeader class="px-4 pb-1 sm:px-6">
+            <div class="flex min-w-0 items-center gap-2">
                 <div
-                    class="rounded-md p-1.5"
+                    class="shrink-0 rounded-md p-1.5"
                     :class="
                         data?.burn_zone === 'danger'
                             ? 'bg-red-500/10 text-[#cc0000] dark:bg-red-500/20'
@@ -86,85 +98,87 @@ const actualBarWidth = computed(() => {
                               : 'bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20'
                     "
                 >
-                    <Flame class="size-4" />
+                    <Flame class="size-3.5 sm:size-4" />
                 </div>
                 <h3
-                    class="text-xs font-semibold tracking-wider text-slate-500 uppercase dark:text-slate-400"
+                    class="min-w-0 flex-1 text-[10px] leading-snug font-semibold tracking-wider text-slate-500 uppercase sm:text-[11px] dark:text-slate-400"
+                    data-test="burn-index-title"
                 >
                     {{ __('Index Burn Up (Day to Date)') }}
                 </h3>
             </div>
-
-            <!-- Zone Badge -->
-            <Badge
-                variant="outline"
-                class="text-[10px] font-semibold"
-                :class="zoneBadgeClass"
-            >
-                <ShieldAlert
-                    v-if="
-                        data?.burn_zone === 'danger' ||
-                        data?.burn_zone === 'warning'
-                    "
-                    class="mr-1 size-2.5"
-                />
-                <ShieldCheck v-else class="mr-1 size-2.5" />
-                {{ data?.burn_zone_label }}
-            </Badge>
         </CardHeader>
 
-        <CardContent class="space-y-3 pt-0">
+        <CardContent class="space-y-2 px-4 pt-0 sm:space-y-2.5 sm:px-6">
             <template v-if="loading">
                 <ChartSkeleton height-class="h-16" variant="sparkline" />
             </template>
 
             <template v-else>
-                <div>
-                    <div class="flex items-baseline justify-between gap-2">
-                        <div class="flex items-baseline gap-1.5">
-                            <span
-                                class="font-mono text-2xl font-bold tracking-tight tabular-nums"
-                                :class="
-                                    data?.burn_zone === 'danger'
-                                        ? 'text-[#cc0000] dark:text-red-400'
-                                        : data?.burn_zone === 'warning'
-                                          ? 'text-amber-600 dark:text-amber-400'
-                                          : 'text-slate-900 dark:text-white'
-                                "
-                            >
-                                {{ data?.actual_pct }}%
-                            </span>
-                            <span
-                                class="text-xs font-medium text-slate-500 dark:text-slate-400"
-                            >
-                                {{ __('Realisasi') }}
-                            </span>
-                        </div>
-
-                        <span
-                            class="font-mono text-xs text-slate-500 tabular-nums dark:text-slate-400"
-                        >
-                            {{ data?.actual_hours }} /
-                            {{ data?.planned_hours }} jam
-                        </span>
+                <div class="min-w-0" data-test="burn-index-hero">
+                    <div
+                        class="font-mono text-2xl leading-none font-bold tracking-tight tabular-nums @[14rem]:text-3xl @[20rem]:text-[2rem]"
+                        :class="heroPctClass"
+                        data-test="burn-index-pct"
+                    >
+                        {{ data?.actual_pct }}%
                     </div>
-
                     <p
-                        class="mt-0.5 text-xs text-slate-500 dark:text-slate-400"
+                        class="mt-1.5 text-xs font-medium text-slate-600 dark:text-slate-300"
+                        data-test="burn-index-subtitle"
+                    >
+                        {{ __('Realisasi') }}
+                    </p>
+                    <p
+                        class="text-[10px] text-slate-500 sm:text-[11px] dark:text-slate-400"
                     >
                         {{ __('Konsumsi Budget Lembur Bulan Ini') }}
                     </p>
+                    <div
+                        class="mt-2 flex flex-wrap items-center gap-1.5 sm:gap-2"
+                        data-test="burn-index-meta"
+                    >
+                        <Badge
+                            variant="outline"
+                            class="max-w-full text-[10px] font-semibold"
+                            :class="zoneBadgeClass"
+                        >
+                            <ShieldAlert
+                                v-if="
+                                    data?.burn_zone === 'danger' ||
+                                    data?.burn_zone === 'warning'
+                                "
+                                class="mr-1 size-2.5 shrink-0"
+                            />
+                            <ShieldCheck
+                                v-else
+                                class="mr-1 size-2.5 shrink-0"
+                            />
+                            <span class="truncate">{{
+                                data?.burn_zone_label
+                            }}</span>
+                        </Badge>
+                        <span
+                            class="font-mono text-[10px] text-slate-500 tabular-nums dark:text-slate-400"
+                        >
+                            {{ data?.actual_hours }} /
+                            {{ data?.planned_hours }}
+                            {{ __('jam') }}
+                        </span>
+                    </div>
                 </div>
 
-                <!-- Dual Progress Bars: Plan vs Actual -->
-                <div class="space-y-1.5 pt-1">
-                    <!-- Plan Bar (Baseline 100%) -->
+                <div class="min-w-0 space-y-1.5 pt-0.5">
                     <div class="space-y-0.5">
                         <div
-                            class="flex justify-between text-[10px] font-medium text-slate-500"
+                            class="flex justify-between gap-2 text-[10px] font-medium text-slate-500"
                         >
-                            <span>{{ __('Rencana Budget (Plafon)') }}</span>
-                            <span class="font-mono tabular-nums">100%</span>
+                            <span class="min-w-0 truncate">{{
+                                __('Rencana Budget (Plafon)')
+                            }}</span>
+                            <span class="shrink-0 font-mono tabular-nums"
+                                >100%</span
+                            >
                         </div>
                         <div
                             class="h-2 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800"
@@ -175,13 +189,16 @@ const actualBarWidth = computed(() => {
                         </div>
                     </div>
 
-                    <!-- Actual Bar (Current Month Realization) -->
                     <div class="space-y-0.5">
                         <div
-                            class="flex justify-between text-[10px] font-medium text-slate-500"
+                            class="flex justify-between gap-2 text-[10px] font-medium text-slate-500"
                         >
-                            <span>{{ __('Realisasi Saat Ini') }}</span>
-                            <span class="font-mono font-semibold tabular-nums">
+                            <span class="min-w-0 truncate">{{
+                                __('Realisasi Saat Ini')
+                            }}</span>
+                            <span
+                                class="shrink-0 font-mono font-semibold tabular-nums"
+                            >
                                 {{ data?.actual_pct }}%
                             </span>
                         </div>

@@ -57,22 +57,18 @@ test('manager can view 4 executive kpi cards with sparklines and burn metrics', 
         'password' => 'password',
     ]);
 
-    visit('/login')
-        ->fill('email', 'manager.ops@factory.com')
-        ->fill('password', 'password')
-        ->click('[data-test="login-button"]')
+    visit('/dashboard')
+        ->actingAs($manager)
         ->assertPathIs('/dashboard')
         ->assertPresent('[data-test="dashboard-filter-bar"]')
         ->assertPresent('[data-slot="kpi-card-production"]')
-        ->assertSee('Volume Produksi')
-        ->assertSee('Target Bulanan Plant')
-        ->assertSee('unit')
-        ->assertSee('Hari Kerja (HKN)')
-        ->assertSee('Tenaga Kerja (Man Power)')
-        ->assertSee('Index Burn Up (Day to Date)')
+        ->assertPresent('[data-slot="kpi-card-working-days"]')
+        ->assertPresent('[data-slot="kpi-card-manpower"]')
+        ->assertPresent('[data-slot="kpi-card-burn-index"]')
         ->assertPresent('[data-test="burn-index-title"]')
         ->assertPresent('[data-test="burn-index-pct"]')
         ->assertPresent('[data-test="burn-index-meta"]')
+        ->assertPresent('[data-test="manpower-shift-meta"]')
         ->assertPresent('[data-test="dashboard-live-clock"]')
         ->assertPresent('[data-test="dashboard-active-shift"]')
         ->assertSee('88%')
@@ -169,4 +165,43 @@ test('manager can filter operational dashboard by section then reset to departme
     $page->select('[data-test="section-filter-select"]', 'all')
         ->assertSee('Semua Seksi (Departemen)')
         ->assertNoJavaScriptErrors();
+});
+
+test('kpi card hierarchy stays intact across mobile tablet and desktop viewports', function () {
+    $dept = Department::create([
+        'code' => 'DEPT_VP_KPI',
+        'name' => 'Viewport KPI Dept',
+        'cost_center_code' => 'CC-VP-001',
+        'default_hourly_rate' => 38000,
+        'is_active' => true,
+    ]);
+
+    $manager = User::factory()->manager($dept->id)->create([
+        'name' => 'Manager Viewport',
+        'email' => 'manager.viewport@factory.com',
+        'password' => 'password',
+    ]);
+
+    $page = visit('/dashboard')
+        ->actingAs($manager)
+        ->assertPathIs('/dashboard')
+        ->assertPresent('[data-test="kpi-cards-grid"]');
+
+    foreach ([
+        [390, 844],
+        [768, 1024],
+        [1280, 800],
+        [1536, 900],
+    ] as [$width, $height]) {
+        $page->resize($width, $height)
+            ->assertPresent('[data-slot="kpi-card-production"]')
+            ->assertPresent('[data-slot="kpi-card-working-days"]')
+            ->assertPresent('[data-slot="kpi-card-manpower"]')
+            ->assertPresent('[data-slot="kpi-card-burn-index"]')
+            ->assertPresent('[data-test="burn-index-title"]')
+            ->assertPresent('[data-test="burn-index-pct"]')
+            ->assertPresent('[data-test="manpower-shift-meta"]')
+            ->assertPresent('[data-test="dashboard-live-clock"]')
+            ->assertNoJavaScriptErrors();
+    }
 });

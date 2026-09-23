@@ -46,72 +46,71 @@ const progressStyle = computed(() => {
 
 <template>
     <Card
-        class="border-border/70 relative overflow-hidden shadow-xs transition-shadow hover:shadow-sm"
+        class="border-border/70 @container gap-3 py-4 shadow-xs transition-shadow hover:shadow-sm sm:gap-4 sm:py-5"
         data-slot="kpi-card-working-days"
+        data-test="kpi-card-working-days"
     >
-        <CardHeader class="flex flex-row items-center justify-between pb-2">
-            <div class="flex items-center gap-2">
+        <CardHeader class="px-4 pb-1 sm:px-6">
+            <div class="flex min-w-0 items-center gap-2">
                 <div
-                    class="rounded-md bg-emerald-500/10 p-1.5 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400"
+                    class="shrink-0 rounded-md bg-emerald-500/10 p-1.5 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400"
                 >
-                    <CalendarDays class="size-4" />
+                    <CalendarDays class="size-3.5 sm:size-4" />
                 </div>
                 <h3
-                    class="text-xs font-semibold tracking-wider text-slate-500 uppercase dark:text-slate-400"
+                    class="min-w-0 flex-1 text-[10px] leading-snug font-semibold tracking-wider text-slate-500 uppercase sm:text-[11px] dark:text-slate-400"
                 >
                     {{ __('Hari Kerja (HKN)') }}
                 </h3>
             </div>
-
-            <span
-                class="font-mono text-xs font-medium text-slate-500 tabular-nums dark:text-slate-400"
-            >
-                {{ data?.progress_pct }}%
-            </span>
         </CardHeader>
 
-        <CardContent class="space-y-3 pt-0">
+        <CardContent class="space-y-2 px-4 pt-0 sm:space-y-2.5 sm:px-6">
             <template v-if="loading">
                 <ChartSkeleton height-class="h-16" variant="sparkline" />
             </template>
 
             <template v-else>
-                <div>
-                    <div class="flex items-baseline gap-1.5">
-                        <span
-                            class="font-mono text-2xl font-bold tracking-tight text-slate-900 tabular-nums dark:text-white"
-                        >
-                            {{ data?.completed_hkn_days }} /
-                            {{ data?.total_hkn_days }}
-                        </span>
-                        <span
-                            class="text-xs font-medium text-slate-500 dark:text-slate-400"
-                        >
-                            {{ __('Hari') }}
-                        </span>
-                    </div>
-
+                <div class="min-w-0">
                     <div
-                        class="mt-1 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400"
+                        class="font-mono text-2xl leading-none font-bold tracking-tight text-slate-900 tabular-nums @[14rem]:text-3xl @[20rem]:text-[2rem] dark:text-white"
                     >
-                        <span class="flex items-center gap-1 font-medium">
-                            <Clock class="size-3 text-slate-400" />
+                        {{ data?.completed_hkn_days }} /
+                        {{ data?.total_hkn_days }}
+                    </div>
+                    <p
+                        class="mt-1.5 text-xs font-medium text-slate-600 dark:text-slate-300"
+                    >
+                        {{ __('Hari') }}
+                    </p>
+                    <p
+                        class="flex items-center gap-1 text-[10px] text-slate-500 sm:text-[11px] dark:text-slate-400"
+                    >
+                        <Clock class="size-3 shrink-0 text-slate-400" />
+                        <span class="min-w-0 break-words">
                             {{
                                 __('Sisa: :days Hari Kerja', {
                                     days: data?.remaining_hkn_days ?? 0,
                                 })
                             }}
                         </span>
+                    </p>
+                    <div
+                        class="mt-2 flex flex-wrap items-center gap-1.5 text-[10px] text-slate-500 sm:gap-2 dark:text-slate-400"
+                    >
                         <span
-                            class="font-mono text-[11px] text-slate-400 tabular-nums"
+                            class="font-mono font-semibold text-slate-700 tabular-nums dark:text-slate-300"
                         >
-                            {{ data?.total_calendar_days }} hari kalender
+                            {{ data?.progress_pct }}%
+                        </span>
+                        <span class="font-mono tabular-nums">
+                            {{ data?.total_calendar_days }}
+                            {{ __('hari kalender') }}
                         </span>
                     </div>
                 </div>
 
-                <!-- Mini Bar Sparkline of HKN days per week -->
-                <div>
+                <div class="min-w-0">
                     <BaseMiniSparkline
                         :data="data?.weekly_hkn || []"
                         :labels="data?.labels || []"
@@ -120,8 +119,6 @@ const progressStyle = computed(() => {
                         height-class="h-9"
                         unit="hari"
                     />
-
-                    <!-- Progress Bar -->
                     <div
                         class="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800"
                     >

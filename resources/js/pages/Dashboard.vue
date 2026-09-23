@@ -333,28 +333,32 @@ function resetFilters() {
             class="border-border/70 bg-card rounded-xl border p-5 shadow-xs sm:p-6"
         >
             <div
-                class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between"
+                class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between"
             >
-                <div>
-                    <div class="flex items-center gap-2">
+                <div class="min-w-0 flex-1">
+                    <div class="flex min-w-0 items-center gap-2">
                         <h1
-                            class="text-foreground text-2xl font-bold tracking-tight sm:text-3xl"
+                            class="text-foreground text-xl font-bold tracking-tight break-words sm:text-2xl lg:text-3xl"
                             data-test="welcome-heading"
                         >
                             {{ __('Executive Operational Dashboard') }}
                         </h1>
                     </div>
                     <p
-                        class="text-muted-foreground mt-1 flex flex-wrap items-center gap-2 text-sm"
+                        class="text-muted-foreground mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs sm:text-sm"
                     >
                         <span>{{
                             __('Welcome back, :name!', {
                                 name: user?.name ?? 'Operator',
                             })
                         }}</span>
-                        <span>•</span>
-                        <Calendar class="size-4 shrink-0 text-slate-400" />
-                        <span>{{ dateString }}</span>
+                        <span class="hidden sm:inline">•</span>
+                        <span class="inline-flex items-center gap-1.5">
+                            <Calendar
+                                class="size-3.5 shrink-0 text-slate-400 sm:size-4"
+                            />
+                            <span>{{ dateString }}</span>
+                        </span>
                     </p>
                     <!-- Clock hero, shift stacked below (proximity / hierarchy) -->
                     <div
@@ -362,13 +366,15 @@ function resetFilters() {
                         data-test="dashboard-live-clock"
                     >
                         <div
-                            class="text-foreground flex items-center gap-1.5 font-mono text-base font-semibold tabular-nums sm:text-lg"
+                            class="text-foreground flex items-center gap-1.5 font-mono text-sm font-semibold tabular-nums sm:text-base lg:text-lg"
                         >
-                            <Clock class="size-4 shrink-0 text-slate-400" />
+                            <Clock
+                                class="size-3.5 shrink-0 text-slate-400 sm:size-4"
+                            />
                             <span>{{ timeString }} WIB</span>
                         </div>
                         <span
-                            class="text-muted-foreground pl-5 text-[11px] font-medium"
+                            class="text-muted-foreground max-w-full text-[10px] font-medium break-words sm:pl-5 sm:text-[11px]"
                             data-test="dashboard-active-shift"
                         >
                             {{ currentShift.name }} ·
@@ -378,10 +384,12 @@ function resetFilters() {
                 </div>
 
                 <!-- Filter Bar -->
-                <div class="flex flex-wrap items-center gap-3">
+                <div
+                    class="flex w-full min-w-0 flex-wrap items-center gap-3 lg:w-auto lg:max-w-[min(100%,28rem)] xl:max-w-none"
+                >
                     <!-- Filter Controls -->
                     <div
-                        class="flex flex-wrap items-center gap-2 rounded-lg border border-slate-200 bg-slate-50/70 p-1.5 dark:border-slate-800 dark:bg-slate-900/60"
+                        class="flex w-full min-w-0 flex-wrap items-center gap-2 rounded-lg border border-slate-200 bg-slate-50/70 p-1.5 sm:w-auto dark:border-slate-800 dark:bg-slate-900/60"
                         data-test="dashboard-filter-bar"
                     >
                         <!-- Department Selector (Admin or display current) -->
@@ -390,7 +398,7 @@ function resetFilters() {
                             <select
                                 v-if="user?.role === 'admin'"
                                 v-model="filterDept"
-                                class="h-8 rounded-md border border-slate-300 bg-white px-2.5 text-xs font-medium text-slate-700 shadow-2xs focus:border-blue-500 focus:outline-hidden dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+                                class="h-8 w-full max-w-full min-w-0 rounded-md border border-slate-300 bg-white px-2.5 text-xs font-medium text-slate-700 shadow-2xs focus:border-blue-500 focus:outline-hidden sm:w-auto dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
                                 data-test="department-filter-select"
                                 @change="handleDepartmentChange"
                             >
@@ -424,7 +432,7 @@ function resetFilters() {
                         >
                             <select
                                 v-model="filterSection"
-                                class="h-8 max-w-52 rounded-md border border-slate-300 bg-white px-2.5 text-xs font-medium text-slate-700 shadow-2xs focus:border-blue-500 focus:outline-hidden dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+                                class="h-8 w-full max-w-full min-w-0 rounded-md border border-slate-300 bg-white px-2.5 text-xs font-medium text-slate-700 shadow-2xs focus:border-blue-500 focus:outline-hidden sm:max-w-52 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
                                 data-test="section-filter-select"
                                 @change="handleSectionChange"
                             >
@@ -446,7 +454,7 @@ function resetFilters() {
                             <input
                                 v-model="filterDate"
                                 type="date"
-                                class="h-8 rounded-md border border-slate-300 bg-white px-2.5 font-mono text-xs font-medium text-slate-700 tabular-nums shadow-2xs focus:border-blue-500 focus:outline-hidden dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+                                class="h-8 w-full max-w-full min-w-0 rounded-md border border-slate-300 bg-white px-2.5 font-mono text-xs font-medium text-slate-700 tabular-nums shadow-2xs focus:border-blue-500 focus:outline-hidden sm:w-auto dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
                                 data-test="date-filter-input"
                                 @change="applyFilters"
                             />
@@ -469,7 +477,7 @@ function resetFilters() {
 
         <!-- Header KPI Cards Row with Sparklines (Story E09-01) -->
         <div
-            class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4"
+            class="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-4"
             data-test="kpi-cards-grid"
         >
             <!-- Card 1: Production Volume -->

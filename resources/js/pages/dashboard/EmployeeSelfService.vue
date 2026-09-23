@@ -303,14 +303,26 @@ const getStatusBadge = (status: 'APPROVED' | 'PENDING' | 'REJECTED') => {
                         </p>
                     </div>
 
-                    <!-- Right: Live Clock & Shift Badge -->
+                    <!-- Right: clock hero, shift + date stacked below -->
                     <div
-                        class="border-border/40 flex items-center justify-between gap-1.5 border-t pt-2 sm:flex-col sm:items-end sm:border-t-0 sm:pt-0"
+                        class="border-border/40 flex flex-col items-stretch gap-1 border-t pt-2 sm:items-end sm:border-t-0 sm:pt-0"
+                        data-test="ess-live-clock"
                     >
                         <div
-                            class="bg-primary/10 text-primary border-primary/20 inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium"
+                            class="text-foreground font-mono text-xl font-semibold tabular-nums sm:text-2xl"
+                            data-test="ess-time"
                         >
-                            <span class="relative flex h-2 w-2">
+                            {{ timeString }}
+                            <span
+                                class="text-muted-foreground text-xs font-medium"
+                                >WIB</span
+                            >
+                        </div>
+                        <div
+                            class="bg-primary/10 text-primary border-primary/20 inline-flex max-w-full flex-wrap items-center gap-1.5 self-start rounded-full border px-2.5 py-1 text-[11px] font-medium sm:self-end"
+                            data-test="ess-active-shift"
+                        >
+                            <span class="relative flex h-2 w-2 shrink-0">
                                 <span
                                     class="bg-primary absolute inline-flex h-full w-full animate-ping rounded-full opacity-75"
                                 ></span>
@@ -318,21 +330,18 @@ const getStatusBadge = (status: 'APPROVED' | 'PENDING' | 'REJECTED') => {
                                     class="bg-primary relative inline-flex h-2 w-2 rounded-full"
                                 ></span>
                             </span>
-                            <span class="font-semibold">{{
+                            <span class="font-semibold whitespace-nowrap">{{
                                 currentShift.name
                             }}</span>
                             <span
-                                class="text-muted-foreground hidden text-[11px] md:inline"
-                                >({{ currentShift.hours }})</span
+                                class="text-muted-foreground min-w-0 break-words"
+                                >{{ currentShift.hours }}</span
                             >
                         </div>
                         <div
-                            class="text-muted-foreground text-right font-mono text-xs tabular-nums"
+                            class="text-muted-foreground text-[11px] sm:text-right"
                         >
-                            <span class="text-foreground font-medium">{{
-                                timeString
-                            }}</span>
-                            &bull; {{ dateString }}
+                            {{ dateString }}
                         </div>
                     </div>
                 </div>
