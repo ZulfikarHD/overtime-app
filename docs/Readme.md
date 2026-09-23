@@ -67,6 +67,7 @@ Technical specifications and decision records for the engineering implementation
     - [ADR-035: Bivariate Correlation Matrix and Optimal Overtime Productivity Frontier Engine](./dev-docs/decisions/035-bivariate-correlation-matrix-and-optimal-overtime-frontier.md)
     - [ADR-036: What-If Scenario Simulation, Empirical Labor Factor Modeling, and Ergonomic Parameter Management](./dev-docs/decisions/036-what-if-scenario-simulation-and-empirical-labor-factor-modeling.md)
     - [ADR-037: Separate Tables for Planned vs Realized Overtime](./dev-docs/decisions/037-planned-vs-realized-overtime-tables.md)
+    - [ADR-038: Excel-Parity Planning Grid UX](./dev-docs/decisions/038-excel-parity-planning-grid-ux.md)
 - **Technical Feature Design Specifications:**
     - [Authentication & Role-Based Access Control](./dev-docs/features/authentication-rbac.md)
     - [Database Schema Migrations (Full DDL)](./dev-docs/features/database-schema-migrations.md)

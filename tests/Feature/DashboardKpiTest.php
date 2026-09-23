@@ -215,11 +215,12 @@ test('production volume card gracefully degrades when erp is not connected', fun
     $production = $response->json('production_volume');
     expect($production['erp_connected'])->toBeFalse()
         ->and($production['current_volume'])->toBeNull()
-        ->and($production['target_volume'])->toBe(1450)
+        ->and($production['target_volume'])->toBe(Carbon::now('Asia/Jakarta')->daysInMonth * 1450)
+        ->and($production['unit'])->toBe('unit')
         ->and($production['message'])->toContain('ERP belum terhubung');
 });
 
-test('production volume card returns 14 day sparkline progression when erp is connected', function () {
+test('production volume card returns 12 month sparkline progression when erp is connected', function () {
     config(['services.erp.connected' => true]);
 
     $admin = User::factory()->admin()->create();
@@ -231,8 +232,9 @@ test('production volume card returns 14 day sparkline progression when erp is co
     $production = $response->json('production_volume');
     expect($production['erp_connected'])->toBeTrue()
         ->and($production['current_volume'])->toBeGreaterThan(0)
-        ->and(count($production['sparkline_14d']))->toBe(14)
-        ->and(count($production['labels']))->toBe(14);
+        ->and($production['unit'])->toBe('unit')
+        ->and(count($production['sparkline_12m']))->toBe(12)
+        ->and(count($production['labels']))->toBe(12);
 });
 
 test('malformed date query does not crash the dashboard', function () {

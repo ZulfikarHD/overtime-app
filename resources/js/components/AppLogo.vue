@@ -21,7 +21,7 @@ const { __ } = useTrans();
             <span
                 class="truncate font-bold tracking-tight text-slate-900 dark:text-white"
             >
-                ISUZU OT-CapEx
+                ISUZU Overtime
             </span>
             <span
                 class="truncate font-mono text-[10px] font-medium text-slate-500 dark:text-slate-400"

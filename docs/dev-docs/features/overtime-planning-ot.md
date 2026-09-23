@@ -2,11 +2,12 @@
 
 ## Overview
 
-The Planning OT feature provides a monthly planning grid where team leaders and managers can
-schedule overtime hours per employee, per day, across four overtime categories (Production, TPM,
-Project, Others). Plans are saved as **DRAFT** and then published (**PUBLISHED**) to lock the
-record. This feature replaced the earlier "Input Lembur" form, which is now repurposed for
-SPL Excel imports.
+The Planning OT feature provides a monthly Excel-parity planning grid where team leaders and
+managers schedule overtime hours per employee, per day, across four overtime categories
+(Production / A, TPM / B, Project / C, Others / D). Plans use a **DRAFT → PUBLISHED** lifecycle.
+Day types (HKN/HLR) come from `operational_calendars` (Indonesian weekends + national holidays
+via `OperationalCalendarService::ensureYearSeeded`). A separate monitoring panel below the grid
+shows weekly hours, Conversi Idx, and Plan vs Actual index against approved realized overtime.
 
 ---
 
@@ -14,20 +15,16 @@ SPL Excel imports.
 
 ```mermaid
 flowchart TD
-    A[User clicks Planning OT in sidebar] --> B[OvertimePlanningController@create]
-    B --> C[Loads departments / sections / calendar_days]
-    C --> D[Returns overtime/Planning Inertia page]
-    D --> E[User fills monthly grid per employee × day × category]
-    E --> F{Existing plan?}
-    F -- No --> G[POST /overtime/planning store]
-    F -- Yes --> H[PUT /overtime/planning/:id update]
-    G --> I[OvertimePlan::updateOrCreate]
-    H --> I
-    I --> J[OvertimePlanItem::updateOrCreate per row]
-    J --> K[Redirect to edit page]
-    K --> L{Publish?}
-    L -- Yes --> M[PATCH /overtime/planning/:id/publish]
-    M --> N[status = PUBLISHED]
+    A[User opens Planning OT] --> B[OvertimePlanningController@create or edit]
+    B --> C[ensureYearSeeded + calendar_days + roster + actuals]
+    C --> D[Inertia overtime/Planning]
+    D --> E[Excel grid entry A/B/C/D + keyboard nav]
+    E --> F[Monitoring tabs Weekly / Plan vs Actual]
+    F --> G{Save draft?}
+    G -->|POST/PUT| H[OvertimePlan updateOrCreate + PlanItems]
+    H --> I[Redirect edit]
+    I --> J{Publish?}
+    J -->|PATCH| K[status PUBLISHED]
 ```
 
 ---
@@ -68,21 +65,19 @@ erDiagram
 
 ## Key Files & UI Mapping
 
-| Layer          | File / Route / Menu                                            | Purpose                               |
-| -------------- | -------------------------------------------------------------- | ------------------------------------- |
-| Sidebar Menu   | **Planning OT**                                                | User entry point                      |
-| Page (List)    | `resources/js/pages/overtime/PlanningIndex.vue`                | Lists all plans with filter           |
-| Page (Grid)    | `resources/js/pages/overtime/Planning.vue`                     | Monthly planning grid                 |
-| Controller     | `app/Http/Controllers/Overtime/OvertimePlanningController.php` | CRUD + roster API                     |
-| Store Request  | `app/Http/Requests/Overtime/StorePlanningRequest.php`          | Validation + auth gate                |
-| Update Request | `app/Http/Requests/Overtime/UpdatePlanningRequest.php`         | Validation + auth gate                |
-| Model          | `app/Models/OvertimePlan.php`                                  | Plan header                           |
-| Model          | `app/Models/OvertimePlanItem.php`                              | Per-day per-employee row              |
-| Factory        | `database/factories/OvertimePlanFactory.php`                   | Test seeding                          |
-| Factory        | `database/factories/OvertimePlanItemFactory.php`               | Test seeding                          |
-| Migration      | `2026_09_22_132412_create_overtime_plans_table.php`            | DDL                                   |
-| Migration      | `2026_09_22_132413_create_overtime_plan_items_table.php`       | DDL                                   |
-| Feature Tests  | `tests/Feature/OvertimePlanningTest.php`                       | 15 tests covering auth, CRUD, publish |
+| Layer          | File / Route / Menu                                            | Purpose                                     |
+| -------------- | -------------------------------------------------------------- | ------------------------------------------- |
+| Sidebar Menu   | **Planning OT**                                                | User entry point                            |
+| Page (List)    | `resources/js/pages/overtime/PlanningIndex.vue`                | Lists plans                                 |
+| Page (Grid)    | `resources/js/pages/overtime/Planning.vue`                     | Excel grid + monitoring tabs                |
+| Composable     | `resources/js/composables/useSpreadsheetNav.ts`                | Tab / arrow / Enter cell navigation         |
+| Controller     | `app/Http/Controllers/Overtime/OvertimePlanningController.php` | CRUD, roster, calendar, actuals aggregation |
+| Calendar       | `app/Services/OperationalCalendarService.php`                  | HKN/HLR seed (ID national holidays)         |
+| Store Request  | `app/Http/Requests/Overtime/StorePlanningRequest.php`          | Validation + auth                           |
+| Update Request | `app/Http/Requests/Overtime/UpdatePlanningRequest.php`         | Validation + auth                           |
+| Models         | `OvertimePlan`, `OvertimePlanItem`                             | Plan header + day rows                      |
+| Feature Tests  | `tests/Feature/OvertimePlanningTest.php`                       | Auth, CRUD, actuals props                   |
+| Browser Tests  | `tests/Browser/Overtime/PlanningSpreadsheetBrowserTest.php`    | Grid entry + monitoring UI                  |
 
 ---
 
@@ -103,34 +98,31 @@ erDiagram
 
 ## Flow Explanation
 
-1. **User opens Planning OT** — sidebar navigates to `PlanningIndex` showing all accessible plans.
-2. **Create new plan** — user clicks "Buat Planning Baru" to open the monthly grid for the
-   current month. Department and section dropdowns filter the roster.
-3. **Fill the grid** — user clicks any cell to open a per-day modal with ±0.25h steppers and
-   number inputs (auto-selected on focus) for each of the four categories.
-4. **Save as Draft** — `StorePlanningRequest` validates, `updateOrCreate` upserts the plan header,
-   then `OvertimePlanItem::updateOrCreate` upserts each row. `plan_date` is normalized with
-   `Carbon::startOfDay()` to avoid SQLite/MySQL date-format divergence.
-5. **Publish** — a separate `PATCH` route sets `status = PUBLISHED`. Published plans cannot be deleted.
+1. **User opens Planning OT** — sidebar → `PlanningIndex`.
+2. **Create / edit** — year/month dropdowns + department/section; controller seeds calendar year,
+   loads roster, and aggregates `actuals` from approved `overtime_items`.
+3. **Fill grid** — inline A/B/C/D cells; Tab/arrows/Enter; green fill for non-zero; HLR day bands
+   tinted red. Published plans are read-only.
+4. **Monitoring** — separate panel under the grid: **Jam Mingguan** (Conversi Idx, W1–W5, GT HOUR)
+   and **Plan vs Actual** (index P from plan, A from approved OT). Week buckets: days 1–7 → W1 … 29+ → W5.
+5. **Section change** — full Inertia reload (not client-only roster fetch) so `actuals` stay correct.
+6. **Save draft / publish** — upsert plan + items; publish locks the document.
 
 ---
 
 ## Decisions & Trade-offs
 
-- **Separate tables from `overtime_submissions`** — planning data has different semantics
-  (projected hours by category, not realized hours by submission) and different approval lifecycle.
-  Reusing `overtime_submissions` would require nullable columns and schema contortions.
-  See ADR-037.
-- **`Carbon::startOfDay()` in `updateOrCreate` WHERE keys** — Eloquent's `date` cast stores as
-  `Y-m-d H:i:s` in SQLite but MySQL accepts `Y-m-d` on DATE columns. Passing a Carbon object
-  ensures the formatted value matches across both drivers. See `.ai/rules/app.md`.
-- **Four categories mapped to OT codes** — Production (61, 62), TPM (65, 66), Project/Kaizen
-  (67, 68), Others (remaining codes). Mirrors the physical SPL template format.
+- **Separate tables from submissions** — see ADR-037.
+- **Excel-parity UI without modal** — see ADR-038.
+- **Index multipliers** — HKN × 1.5 / HLR × 2.0 (`DashboardKpiService` constants), not Excel VLOOKUP tables.
+- **Carbon::startOfDay()** on `plan_date` upsert keys — SQLite/MySQL date cast portability.
 
 ---
 
 ## Related
 
-- [SPL Excel Import](./spl-excel-import.md) — feature for importing realized overtime from SPL Excel files
-- [ADR-037: Separate Tables for Planned vs Realized Overtime](../decisions/037-planned-vs-realized-overtime-tables.md)
-- [Daily Overtime SPKL](./daily-overtime-spkl.md) — original realized-overtime submission workflow
+- [SPL Excel Import](./spl-excel-import.md)
+- [Operational Calendar Management](./operational-calendar-management.md)
+- [ADR-037: Planned vs Realized Overtime Tables](../decisions/037-planned-vs-realized-overtime-tables.md)
+- [ADR-038: Excel-Parity Planning Grid UX](../decisions/038-excel-parity-planning-grid-ux.md)
+- [Daily Overtime SPKL](./daily-overtime-spkl.md)

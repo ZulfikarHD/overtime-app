@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
+import { useTrans } from '@/composables/useTrans';
 
 export interface CategorySegment {
     key: 'production' | 'tpm' | 'project' | 'others' | string;
@@ -21,18 +22,20 @@ const props = withDefaults(defineProps<Props>(), {
     heightClass: 'h-2',
 });
 
+const { __ } = useTrans();
+
 const defaultColors: Record<string, string> = {
     production: '#3b82f6', // Blue
     tpm: '#10b981', // Emerald
-    project: '#7c3aed', // Purple (CapEx)
+    project: '#7c3aed', // Purple (Project)
     others: '#94a3b8', // Slate
 };
 
 const defaultLabels: Record<string, string> = {
-    production: 'Produksi',
-    tpm: 'TPM',
-    project: 'CapEx',
-    others: 'Lain-lain',
+    production: __('Produksi'),
+    tpm: __('TPM'),
+    project: __('Project'),
+    others: __('Lainnya'),
 };
 
 const segments = computed(() => {

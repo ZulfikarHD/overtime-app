@@ -158,10 +158,12 @@ function handleClose() {
     >
         <SheetContent
             side="right"
-            class="flex w-full flex-col sm:max-w-md"
+            class="flex w-full flex-col gap-0 overflow-y-auto p-0 sm:max-w-md"
             data-test="calendar-day-sheet"
         >
-            <SheetHeader class="border-border border-b pb-4 text-left">
+            <SheetHeader
+                class="border-border space-y-1.5 border-b px-6 pt-6 pr-12 pb-4 text-left"
+            >
                 <div class="flex items-center gap-2">
                     <CalendarIcon class="text-primary size-5" />
                     <SheetTitle class="text-foreground text-lg font-bold">
@@ -181,7 +183,7 @@ function handleClose() {
                 </SheetDescription>
             </SheetHeader>
 
-            <div class="flex-1 space-y-5 overflow-y-auto py-5 text-xs">
+            <div class="flex-1 space-y-5 overflow-y-auto px-6 py-5 text-xs">
                 <!-- Informational Hard-UX Warning Banner -->
                 <div
                     class="flex items-start gap-3 rounded-lg border border-blue-500/20 bg-blue-500/10 p-3.5 text-blue-900 dark:text-blue-200"
@@ -314,7 +316,7 @@ function handleClose() {
                 </div>
             </div>
 
-            <SheetFooter class="border-border border-t pt-4">
+            <SheetFooter class="border-border mt-auto border-t px-6 py-4">
                 <div class="flex w-full items-center justify-end gap-2">
                     <Button
                         type="button"

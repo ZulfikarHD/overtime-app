@@ -2,8 +2,10 @@
 
 use App\Models\Department;
 use App\Models\Employee;
+use App\Models\OvertimeItem;
 use App\Models\OvertimePlan;
 use App\Models\OvertimePlanItem;
+use App\Models\OvertimeSubmission;
 use App\Models\Section;
 use App\Models\User;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -99,7 +101,50 @@ test('admin can view planning create page', function () {
         ->assertInertia(fn (Assert $page) => $page
             ->component('overtime/Planning')
             ->has('calendar_days')
-            ->has('departments'),
+            ->has('departments')
+            ->has('actuals'),
+        );
+});
+
+test('planning create includes weekly actuals from approved overtime items', function () {
+    $admin = User::factory()->admin()->create();
+    $dept = Department::factory()->create();
+    $section = Section::factory()->create(['department_id' => $dept->id]);
+    $employee = Employee::factory()->create([
+        'section_id' => $section->id,
+        'department_id' => $dept->id,
+    ]);
+
+    $submission = OvertimeSubmission::factory()->create([
+        'section_id' => $section->id,
+        'department_id' => $dept->id,
+        'operational_date' => '2026-09-03', // week 1
+        'day_type' => 'HKN',
+        'submitted_by_user_id' => $admin->id,
+    ]);
+
+    OvertimeItem::factory()->approved($admin)->create([
+        'overtime_submission_id' => $submission->id,
+        'employee_id' => $employee->id,
+        'npk_snapshot' => $employee->npk,
+        'hours_production' => 2.0,
+        'hours_tpm' => 0.0,
+        'hours_project' => 0.0,
+        'hours_others' => 0.0,
+    ]);
+
+    $this->actingAs($admin)
+        ->get(route('overtime.planning.create', [
+            'section_id' => $section->id,
+            'fiscal_year' => 2026,
+            'fiscal_month' => 9,
+        ]))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('overtime/Planning')
+            ->has('actuals')
+            ->where("actuals.{$employee->id}.weeks.1.hours_production", 2)
+            ->where("actuals.{$employee->id}.weeks.1.index_total", 3), // 2.0 × HKN 1.5
         );
 });
 

@@ -91,7 +91,7 @@ const actualBarWidth = computed(() => {
                 <h3
                     class="text-xs font-semibold tracking-wider text-slate-500 uppercase dark:text-slate-400"
                 >
-                    {{ __('Indeks Burn (BBI)') }}
+                    {{ __('Index Burn Up (Day to Date)') }}
                 </h3>
             </div>
 
@@ -152,7 +152,7 @@ const actualBarWidth = computed(() => {
                     <p
                         class="mt-0.5 text-xs text-slate-500 dark:text-slate-400"
                     >
-                        {{ __('Konsumsi Anggaran Lembur Bulan Ini') }}
+                        {{ __('Konsumsi Budget Lembur Bulan Ini') }}
                     </p>
                 </div>
 
@@ -163,7 +163,7 @@ const actualBarWidth = computed(() => {
                         <div
                             class="flex justify-between text-[10px] font-medium text-slate-500"
                         >
-                            <span>{{ __('Rencana Anggaran (Plafon)') }}</span>
+                            <span>{{ __('Rencana Budget (Plafon)') }}</span>
                             <span class="font-mono tabular-nums">100%</span>
                         </div>
                         <div

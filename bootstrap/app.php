@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\EnsureFeatureEnabled;
 use App\Http\Middleware\EnsureRole;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
@@ -30,6 +31,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->alias([
             'role' => EnsureRole::class,
+            'feature' => EnsureFeatureEnabled::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

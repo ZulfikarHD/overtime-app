@@ -53,6 +53,27 @@ When asked to build a new page, modal, or timesheet component:
 - Wrap all labels, titles, and tooltips in `__()` from `useTrans()`.
 - Add new strings to both `lang/id.json` and `lang/en.json`.
 
+### Step 6: Responsive Overlays (Drawer / Dialog)
+
+- Detail and edit forms use `Sheet` with `side="right"` — **one layer only** (no modal stacking).
+- `SheetContent` is responsive by default:
+    - **`< lg` (tablet & below)**: slide-in drawer from the right.
+    - **`lg+` (desktop)**: centered dialog (`data-presentation="dialog"`).
+- Prefer `max-h-[min(90vh,56rem)]` over `h-full` / `max-h-screen` so desktop dialog mode does not blow past the viewport.
+- Left-side sheets (mobile nav) stay drawers. Use `:responsive="false"` only when a true desktop drawer is required.
+
+```vue
+<!-- ✅ GOOD: responsive Sheet — drawer on tablet, dialog on desktop -->
+<Sheet :open="open" @update:open="emit('update:open', $event)">
+    <SheetContent side="right" class="w-full overflow-y-auto sm:max-w-lg">
+        <!-- form content -->
+    </SheetContent>
+</Sheet>
+
+<!-- ❌ BAD: always-drawer on wide desktop (annoys mouse users) -->
+<SheetContent side="right" :responsive="false" class="h-full sm:max-w-lg" />
+```
+
 ---
 
 ## 3. Reusable Component Blueprints
@@ -291,4 +312,5 @@ Before finalizing any frontend Vue change:
 3. [ ] **Tabular Audit Columns**: Employee NIK, overtime hours, and currency amounts have `font-mono tabular-nums`.
 4. [ ] **ISUZU Brand Standards**: Primary buttons and main accents use `#cc0000`. CapEx badges use `#0284c7` (sky blue).
 5. [ ] **i18n Translations**: All displayed text uses `__()` with keys updated in `lang/id.json` and `lang/en.json`.
-6. [ ] **Quality Checks**: Run `pnpm lint` and `pnpm build` to verify clean compilation.
+6. [ ] **Responsive Overlay**: Right-side Sheets use default responsive mode (drawer `< lg`, dialog `lg+`); avoid `h-full` without `lg:h-auto` / `max-h-[min(90vh,56rem)]`.
+7. [ ] **Quality Checks**: Run `pnpm lint` and `pnpm build` to verify clean compilation.

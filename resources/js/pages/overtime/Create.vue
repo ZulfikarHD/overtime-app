@@ -3,7 +3,6 @@ import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
 import {
     Calendar as CalendarIcon,
     Clock,
-    DollarSign,
     FileText,
     Layers,
     ListPlus,
@@ -38,7 +37,6 @@ import {
     type RosterEmployee,
 } from '@/composables/useSectionRoster';
 import { useTrans } from '@/composables/useTrans';
-import { formatRupiah } from '@/lib/formatters';
 import { dashboard } from '@/routes';
 import {
     create as createSubmissionRoute,
@@ -351,20 +349,6 @@ const batchTotalHours = computed(() => {
 
 const defaultHourlyRate = computed(() => {
     return 35000;
-});
-
-const batchEstimatedCost = computed(() => {
-    return form.items.reduce((acc, item) => {
-        const prod = Number(item.hours_production) || 0;
-        const tpm = Number(item.hours_tpm) || 0;
-        const proj = Number(item.hours_project) || 0;
-        const oth = Number(item.hours_others) || 0;
-        const lineTotal = prod + tpm + proj + oth;
-        const empRate = Number(item.hourly_rate);
-        const rate =
-            !isNaN(empRate) && empRate > 0 ? empRate : defaultHourlyRate.value;
-        return acc + lineTotal * rate;
-    }, 0);
 });
 
 // Success card state
@@ -778,10 +762,12 @@ function submitOvertime() {
                     {{ __('Produksi (Jam)') }}
                 </div>
                 <div class="col-span-2 text-right">{{ __('TPM (Jam)') }}</div>
-                <div class="col-span-2 text-right">{{ __('CapEx (Jam)') }}</div>
+                <div class="col-span-2 text-right">
+                    {{ __('Project (Jam)') }}
+                </div>
                 <div class="col-span-1 text-right">{{ __('Lainnya') }}</div>
                 <div class="col-span-1 text-right">
-                    {{ __('Total & Biaya') }}
+                    {{ __('Total') }}
                 </div>
                 <div class="col-span-1 text-right">{{ __('Aksi') }}</div>
             </div>
@@ -917,27 +903,6 @@ function submitOvertime() {
                                         class="text-xs font-normal text-slate-500"
                                         >jam</span
                                     >
-                                </div>
-                            </div>
-                            <div
-                                class="h-8 w-px bg-slate-200 dark:bg-slate-700"
-                            />
-                            <div class="text-right">
-                                <div
-                                    class="text-[10px] text-slate-500 uppercase"
-                                >
-                                    {{ __('Estimasi Biaya') }}
-                                </div>
-                                <div
-                                    class="cursor-help font-mono text-sm font-bold text-[#cc0000] tabular-nums dark:text-red-400"
-                                    :title="
-                                        __(
-                                            'Estimasi biaya dihitung otomatis menggunakan tarif standar karyawan saat pengajuan (Snapshot Biaya Terkunci).',
-                                        )
-                                    "
-                                    data-test="footer-estimated-cost"
-                                >
-                                    {{ formatRupiah(batchEstimatedCost) }}
                                 </div>
                             </div>
                         </div>

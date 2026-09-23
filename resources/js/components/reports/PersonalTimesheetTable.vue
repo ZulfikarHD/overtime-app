@@ -14,7 +14,6 @@ import {
     Download,
     FileSpreadsheet,
     Filter,
-    FolderKanban,
     RotateCcw,
     Search,
     X,
@@ -39,7 +38,6 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { useTrans } from '@/composables/useTrans';
-import { formatRupiah } from '@/lib/formatters';
 import { show as showEmployeeDossier } from '@/routes/reports/employees';
 
 export interface TimesheetItem {
@@ -269,6 +267,18 @@ const isFilterActive = computed(() => {
         isAllTime.value
     );
 });
+
+const categoryFilterLabels: Record<string, string> = {
+    production: __('Produksi'),
+    tpm: __('TPM'),
+    project: __('Project'),
+    capex: __('Project'),
+    others: __('Lainnya'),
+};
+
+const categoryFilterLabel = computed(() => {
+    return categoryFilterLabels[categoryFilter.value] ?? categoryFilter.value;
+});
 </script>
 
 <template>
@@ -479,8 +489,8 @@ const isFilterActive = computed(() => {
                                 <SelectItem value="tpm">
                                     {{ __('TPM') }}
                                 </SelectItem>
-                                <SelectItem value="capex">
-                                    {{ __('CapEx Proyek') }}
+                                <SelectItem value="project">
+                                    {{ __('Project') }}
                                 </SelectItem>
                                 <SelectItem value="others">
                                     {{ __('Lainnya') }}
@@ -573,7 +583,10 @@ const isFilterActive = computed(() => {
                         variant="secondary"
                         class="gap-1 text-[11px]"
                     >
-                        <span>Kategori: {{ categoryFilter }}</span>
+                        <span
+                            >{{ __('Kategori') }}:
+                            {{ categoryFilterLabel }}</span
+                        >
                         <button
                             type="button"
                             @click="
@@ -687,7 +700,7 @@ const isFilterActive = computed(() => {
                                 {{ __('TPM') }}
                             </th>
                             <th class="p-3 text-right">
-                                {{ __('CapEx') }}
+                                {{ __('Project') }}
                             </th>
                             <th class="p-3 text-right">
                                 {{ __('Lainnya') }}
@@ -844,33 +857,19 @@ const isFilterActive = computed(() => {
                                     </span>
                                 </td>
 
-                                <!-- CapEx -->
+                                <!-- Project -->
                                 <td
                                     class="text-foreground p-3 text-right font-mono tabular-nums"
                                 >
-                                    <div
-                                        class="flex flex-col items-end gap-0.5"
+                                    <span
+                                        :class="
+                                            item.hours_project > 0
+                                                ? 'font-bold text-sky-700 dark:text-sky-400'
+                                                : 'text-muted-foreground/50'
+                                        "
                                     >
-                                        <span
-                                            :class="
-                                                item.hours_project > 0
-                                                    ? 'font-bold text-sky-700 dark:text-sky-400'
-                                                    : 'text-muted-foreground/50'
-                                            "
-                                        >
-                                            {{ item.hours_project.toFixed(1) }}
-                                        </span>
-                                        <span
-                                            v-if="item.capex_project"
-                                            class="py-0.2 inline-flex items-center gap-0.5 rounded bg-sky-100 px-1 text-[9px] font-bold text-sky-800 dark:bg-sky-950/80 dark:text-sky-300"
-                                            :title="item.capex_project.name"
-                                        >
-                                            <FolderKanban class="size-2.5" />
-                                            {{
-                                                item.capex_project.project_code
-                                            }}
-                                        </span>
-                                    </div>
+                                        {{ item.hours_project.toFixed(1) }}
+                                    </span>
                                 </td>
 
                                 <!-- Others -->
@@ -984,7 +983,7 @@ const isFilterActive = computed(() => {
                                             </div>
                                         </div>
 
-                                        <!-- Detail Grid: Task Notes, RCA, CapEx Asset Details -->
+                                        <!-- Detail Grid: Task Notes & RCA -->
                                         <div
                                             class="grid grid-cols-1 gap-3 text-xs sm:grid-cols-2 lg:grid-cols-3"
                                         >
@@ -1052,103 +1051,6 @@ const isFilterActive = computed(() => {
                                                     </span>
                                                 </div>
                                             </div>
-
-                                            <!-- Financial Breakdown Snapshot -->
-                                            <div class="flex flex-col gap-1">
-                                                <span
-                                                    class="text-muted-foreground text-[11px] font-medium"
-                                                >
-                                                    {{
-                                                        __(
-                                                            'Estimasi Nilai Lembur',
-                                                        )
-                                                    }}
-                                                </span>
-                                                <div
-                                                    class="bg-muted/30 flex flex-col gap-1 rounded p-2 text-xs"
-                                                >
-                                                    <div
-                                                        class="flex items-center justify-between font-mono"
-                                                    >
-                                                        <span
-                                                            class="text-muted-foreground text-[11px]"
-                                                            >{{
-                                                                __('Tarif/Jam:')
-                                                            }}</span
-                                                        >
-                                                        <span
-                                                            class="font-semibold"
-                                                            >{{
-                                                                formatRupiah(
-                                                                    item.hourly_rate,
-                                                                )
-                                                            }}</span
-                                                        >
-                                                    </div>
-                                                    <div
-                                                        class="flex items-center justify-between font-mono"
-                                                    >
-                                                        <span
-                                                            class="text-muted-foreground text-[11px]"
-                                                            >{{
-                                                                __(
-                                                                    'Total Biaya:',
-                                                                )
-                                                            }}</span
-                                                        >
-                                                        <span
-                                                            class="text-foreground font-bold"
-                                                            >{{
-                                                                formatRupiah(
-                                                                    item.total_cost,
-                                                                )
-                                                            }}</span
-                                                        >
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <!-- CapEx Detailed Banner if attributed -->
-                                        <div
-                                            v-if="item.capex_project"
-                                            class="flex items-center justify-between rounded border-sky-200 bg-sky-50/60 p-2.5 text-xs dark:border-sky-900/60 dark:bg-sky-950/30"
-                                        >
-                                            <div
-                                                class="flex items-center gap-2"
-                                            >
-                                                <FolderKanban
-                                                    class="size-4 text-sky-700 dark:text-sky-300"
-                                                />
-                                                <div>
-                                                    <span
-                                                        class="font-bold text-sky-900 dark:text-sky-200"
-                                                    >
-                                                        {{
-                                                            item.capex_project
-                                                                .project_code
-                                                        }}
-                                                    </span>
-                                                    <span
-                                                        class="ml-1.5 text-sky-800 dark:text-sky-300"
-                                                    >
-                                                        {{
-                                                            item.capex_project
-                                                                .name
-                                                        }}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                            <span
-                                                class="font-mono text-xs font-bold text-sky-800 dark:text-sky-300"
-                                            >
-                                                {{
-                                                    item.hours_project.toFixed(
-                                                        1,
-                                                    )
-                                                }}
-                                                {{ __('Jam CapEx') }}
-                                            </span>
                                         </div>
                                     </div>
                                 </td>

@@ -8,26 +8,29 @@ test('guest visiting root / sees tailored automotive isuzu login page with indon
     visit('/')
         ->assertPathIs('/')
         ->assertSee('PT ISUZU ASTRA MOTOR INDONESIA')
+        ->assertSee('Smart Monitoring Overtime versi 2.0')
+        ->assertSee('Management Index Overtime berbasis Machine Learning')
         ->assertSee('Masuk ke Sistem')
         ->assertSee('Email atau NPK')
         ->assertSee('Kata Sandi')
         ->assertSee('Ingat saya')
-        ->assertSee('Alokasi CapEx CIP')
-        ->assertSee('Ergonomi 3-Klik')
-        ->assertSee('Batas Depnaker')
+        ->assertDontSee('Alokasi CapEx CIP')
+        ->assertDontSee('Ergonomi 3-Klik')
+        ->assertDontSee('Batas Depnaker')
         // Switch language to English via desktop brand bar toggle
         ->click('[data-test="lang-switch-desktop-en"]')
         ->assertSee('Log in to System')
+        ->assertSee('Smart Monitoring Overtime versi 2.0')
+        ->assertSee('Machine Learning-based Overtime Index Management')
         ->assertSee('Email or NPK')
         ->assertSee('Password')
         ->assertSee('Remember me')
-        ->assertSee('CIP CapEx Allocation')
-        ->assertSee('3-Click Ergonomics')
-        ->assertSee('Statutory Limit')
         // Switch back to Indonesian
         ->click('[data-test="lang-switch-desktop-id"]')
         ->assertSee('Masuk ke Sistem')
-        ->assertSee('Alokasi CapEx CIP');
+        ->assertSee('Smart Monitoring Overtime versi 2.0')
+        ->assertSee('Management Index Overtime berbasis Machine Learning')
+        ->assertNoJavaScriptErrors();
 });
 
 test('user can log in through tailored isuzu automotive login page and view plant sidebar with telemetry card', function () {
@@ -60,14 +63,15 @@ test('user can log in through tailored isuzu automotive login page and view plan
         ->fill('password', 'password')
         ->click('[data-test="login-button"]')
         ->assertPathIs('/dashboard')
-        ->assertSee('ISUZU OT-CapEx')
+        ->assertMissing('[data-test="active-shift-badge"]')
+        ->assertSee('ISUZU Overtime')
         ->assertSee('Karawang Assembly')
         ->assertSee('Dashboard')
         ->assertSee('Fasilitas')
-        ->assertSee('Sistem Shift')
-        ->assertSee('3 Shift / 24 Jam')
-        ->assertSee('Ambang Depnaker')
-        ->assertSee('Maks 14 Jam/Minggu');
+        ->assertDontSee('Sistem Shift')
+        ->assertDontSee('3 Shift / 24 Jam')
+        ->assertDontSee('Ambang Depnaker')
+        ->assertDontSee('Maks 14 Jam/Minggu');
 });
 
 test('authenticated user sees redesigned sidebar following style guide with telemetry card and toggle rail', function () {
@@ -100,22 +104,22 @@ test('authenticated user sees redesigned sidebar following style guide with tele
         ->fill('password', 'password')
         ->click('[data-test="login-button"]')
         ->assertPathIs('/dashboard')
-        ->assertSee('ISUZU OT-CapEx')
+        ->assertMissing('[data-test="active-shift-badge"]')
+        ->assertSee('ISUZU Overtime')
         ->assertSee('Karawang Assembly')
         ->assertSee('Dashboard')
-        ->assertSee('Burn Index')
-        ->assertSee('Proyek CapEx')
         ->assertSee('Master Data')
-        ->assertSee('Ambang Depnaker')
+        ->assertDontSee('Ambang Depnaker')
+        ->assertDontSee('Sistem Shift')
+        ->assertDontSee('3 Shift / 24 Jam')
         // Switch to English in sidebar footer
         ->click('[data-test="lang-switch-sidebar-en"]')
         ->assertSee('Operations & Overtime')
-        ->assertSee('Financial & Governance')
-        ->assertSee('CapEx Projects')
         ->assertSee('Facility')
-        ->assertSee('Shift System')
-        ->assertSee('3 Shifts / 24 Hours')
-        ->assertSee('Statutory Limit')
-        ->assertSee('Max 14 Hours/Week')
-        ->click('[data-slot="sidebar-trigger"]');
+        ->assertDontSee('Shift System')
+        ->assertDontSee('3 Shifts / 24 Hours')
+        ->assertDontSee('Statutory Limit')
+        ->assertDontSee('Max 14 Hours/Week')
+        ->click('[data-slot="sidebar-trigger"]')
+        ->assertNoJavaScriptErrors();
 });

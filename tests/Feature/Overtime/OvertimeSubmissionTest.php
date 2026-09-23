@@ -294,7 +294,39 @@ test('atomic rollback occurs if any employee row in the batch violates min 0.5 h
     expect(OvertimeItem::count())->toBe(0);
 });
 
-test('capex project attribution is required when project hours are greater than 0 (BR-08)', function () {
+test('project hours do not require capex attribution when feature flag is off', function () {
+    config(['features.capex_attribution_required' => false]);
+
+    $dept = Department::factory()->create();
+    $section = Section::factory()->create(['department_id' => $dept->id]);
+    $teamLeader = User::factory()->teamLeader($section->id, $dept->id)->create();
+    $emp = Employee::factory()->forDepartmentAndSection($dept, $section)->create();
+
+    $payload = [
+        'operational_date' => '2026-09-08',
+        'department_id' => $dept->id,
+        'section_id' => $section->id,
+        'items' => [
+            [
+                'employee_id' => $emp->id,
+                'hours_project' => 2.0,
+                'capex_project_id' => null,
+            ],
+        ],
+    ];
+
+    $this->actingAs($teamLeader)
+        ->post(route('overtime.submissions.store'), $payload)
+        ->assertRedirect();
+
+    expect(OvertimeSubmission::count())->toBe(1)
+        ->and(OvertimeItem::first()->hours_project)->toEqual(2.0)
+        ->and(OvertimeItem::first()->capex_project_id)->toBeNull();
+});
+
+test('capex project attribution is required when project hours are greater than 0 and feature flag is on (BR-08)', function () {
+    config(['features.capex_attribution_required' => true]);
+
     $dept = Department::factory()->create();
     $section = Section::factory()->create(['department_id' => $dept->id]);
     $teamLeader = User::factory()->teamLeader($section->id, $dept->id)->create();

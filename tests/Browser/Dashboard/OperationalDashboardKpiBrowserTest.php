@@ -60,13 +60,18 @@ test('manager can view 4 executive kpi cards with sparklines and burn metrics', 
     visit('/login')
         ->fill('email', 'manager.ops@factory.com')
         ->fill('password', 'password')
-        ->click('Log in to System')
+        ->click('[data-test="login-button"]')
         ->assertPathIs('/dashboard')
-        ->assertSee('Production Volume')
-        ->assertSee('Working Days (HKN)')
-        ->assertSee('Man Power')
-        ->assertSee('Burn Index (BBI)')
-        ->assertSee('88%');
+        ->assertPresent('[data-test="dashboard-filter-bar"]')
+        ->assertPresent('[data-slot="kpi-card-production"]')
+        ->assertSee('Volume Produksi')
+        ->assertSee('Target Bulanan Plant')
+        ->assertSee('unit')
+        ->assertSee('Hari Kerja (HKN)')
+        ->assertSee('Tenaga Kerja (Man Power)')
+        ->assertSee('Index Burn Up (Day to Date)')
+        ->assertSee('88%')
+        ->assertNoJavaScriptErrors();
 });
 
 test('admin can interact with dashboard filters and inspect department scope', function () {
@@ -87,10 +92,13 @@ test('admin can interact with dashboard filters and inspect department scope', f
     visit('/login')
         ->fill('email', 'admin.kpi@factory.com')
         ->fill('password', 'password')
-        ->click('Log in to System')
+        ->click('[data-test="login-button"]')
         ->assertPathIs('/dashboard')
-        ->assertSee('Executive Operational Dashboard')
-        ->assertSee('Production Volume')
+        ->assertPresent('[data-test="dashboard-filter-bar"]')
+        ->assertSee('Dashboard Operasional Eksekutif')
+        ->assertSee('Volume Produksi')
+        ->assertSee('Target Bulanan Plant')
         ->assertPresent('[data-test="department-filter-select"]')
-        ->assertPresent('[data-test="date-filter-input"]');
+        ->assertPresent('[data-test="date-filter-input"]')
+        ->assertNoJavaScriptErrors();
 });

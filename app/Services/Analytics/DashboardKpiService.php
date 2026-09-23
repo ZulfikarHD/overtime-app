@@ -44,7 +44,7 @@ class DashboardKpiService
      *         target_volume: int,
      *         unit: string,
      *         labels: list<string>,
-     *         sparkline_14d: list<int>
+     *         sparkline_12m: list<int>
      *     },
      *     working_days: array{
      *         total_hkn_days: int,
@@ -128,7 +128,7 @@ class DashboardKpiService
     }
 
     /**
-     * Card 1: Production Volume with 14-day sparkline and graceful ERP fallback.
+     * Card 1: Production Volume with 12-month sparkline and graceful ERP fallback.
      *
      * @return array{
      *     erp_connected: bool,
@@ -137,13 +137,14 @@ class DashboardKpiService
      *     target_volume: int,
      *     unit: string,
      *     labels: list<string>,
-     *     sparkline_14d: list<int>
+     *     sparkline_12m: list<int>
      * }
      */
     protected function getProductionVolumeCard(Carbon $selectedCarbon): array
     {
         $erpConnected = (bool) config('services.erp.connected', false);
-        $targetVolume = 1450; // Standard ISUZU plant daily unit production target
+        $dailyPlantTarget = 1450; // Standard ISUZU plant daily unit production target
+        $targetVolume = $dailyPlantTarget * $selectedCarbon->daysInMonth;
 
         if (! $erpConnected) {
             return [
@@ -153,19 +154,20 @@ class DashboardKpiService
                 'target_volume' => $targetVolume,
                 'unit' => 'unit',
                 'labels' => [],
-                'sparkline_14d' => [],
+                'sparkline_12m' => [],
             ];
         }
 
-        // When ERP is connected, return 14-day production progression
+        // When ERP is connected, return 12-month production progression
         $labels = [];
         $sparkline = [];
-        for ($i = 13; $i >= 0; $i--) {
-            $day = $selectedCarbon->copy()->subDays($i);
-            $labels[] = $day->format('d/m');
-            // Seed realistic daily variations between 1390 and 1475 units
-            $variation = (($day->dayOfYear * 17) % 85) - 40;
-            $sparkline[] = $targetVolume + $variation;
+        for ($i = 11; $i >= 0; $i--) {
+            $month = $selectedCarbon->copy()->subMonthsNoOverflow($i);
+            $labels[] = $month->format('M Y');
+            $monthTarget = $dailyPlantTarget * $month->daysInMonth;
+            // Seed realistic monthly variations around the plant monthly target
+            $variation = (($month->month * 37) + ($month->year % 7) * 11) % 1800 - 900;
+            $sparkline[] = $monthTarget + $variation;
         }
 
         return [
@@ -175,7 +177,7 @@ class DashboardKpiService
             'target_volume' => $targetVolume,
             'unit' => 'unit',
             'labels' => $labels,
-            'sparkline_14d' => $sparkline,
+            'sparkline_12m' => $sparkline,
         ];
     }
 

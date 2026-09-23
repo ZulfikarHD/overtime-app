@@ -261,7 +261,7 @@ function handleSubmit() {
             </SheetHeader>
 
             <!-- Sheet Scrollable Form Body -->
-            <div class="flex-1 space-y-5 overflow-y-auto py-4 pr-1">
+            <div class="flex-1 space-y-5 overflow-y-auto py-4">
                 <!-- Informational Regulatory Banner -->
                 <div
                     class="rounded-lg border border-blue-200 bg-blue-50/70 p-3.5 text-xs text-blue-900 dark:border-blue-900/50 dark:bg-blue-950/30 dark:text-blue-300"

@@ -65,7 +65,7 @@ return new class extends Migration
 
         if (in_array($driver, ['pgsql', 'mysql'])) {
             DB::statement('ALTER TABLE overtime_items ADD CONSTRAINT chk_min_hours CHECK ((hours_production + hours_tpm + hours_project + hours_others) >= 0.50)');
-            DB::statement('ALTER TABLE overtime_items ADD CONSTRAINT chk_capex_attribution CHECK ((hours_project = 0.00) OR (hours_project > 0.00 AND capex_project_id IS NOT NULL))');
+            // CapEx attribution check (BR-08) removed — see drop_capex_attribution_check migration
             DB::statement('ALTER TABLE overtime_items ADD CONSTRAINT chk_hours_non_negative CHECK (hours_production >= 0.00 AND hours_tpm >= 0.00 AND hours_project >= 0.00 AND hours_others >= 0.00)');
         }
     }

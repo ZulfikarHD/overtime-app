@@ -62,17 +62,24 @@ test('manager can click section card to open 5-week burndown drawer and inspect 
     ]);
 
     visit('/login')
+        ->on()
+        ->macbook16()
         ->fill('email', 'manager.powertrain@factory.com')
         ->fill('password', 'password')
-        ->click('Log in to System')
+        ->click('[data-test="login-button"]')
         ->assertPathIs('/dashboard')
-        ->click('[data-test="nav-burn-index"]')
+        ->navigate('/dashboard/burn-index')
         ->assertPathIs('/dashboard/burn-index')
         ->assertSee('Engine Assembly Line')
         ->assertSee('SEC_PWR_ENG')
         // Click the card action button to open burndown drawer
         ->click('[data-test="btn-open-burndown"]')
         ->assertVisible('[data-test="section-burndown-sheet"]')
+        ->assertAttribute(
+            '[data-test="section-burndown-sheet"]',
+            'data-presentation',
+            'dialog',
+        )
         ->assertSee('Engine Assembly Line')
         ->assertSee('SEC_PWR_ENG')
         ->assertSee('Powertrain Manufacturing')

@@ -44,7 +44,7 @@ const progressWidth = computed(() => {
     >
         <div class="flex items-center justify-between gap-3 font-medium">
             <span class="text-slate-600 dark:text-slate-400">{{
-                __('Anggaran Seksi')
+                __('Plafon Jam Seksi')
             }}</span>
             <span
                 class="font-mono font-semibold tabular-nums"

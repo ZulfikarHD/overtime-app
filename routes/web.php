@@ -10,6 +10,7 @@ use App\Http\Controllers\Admin\OperationalCalendarController;
 use App\Http\Controllers\Admin\PolicyThresholdController;
 use App\Http\Controllers\Admin\SectionController;
 use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\Analytics\MlController;
 use App\Http\Controllers\AnalyticsController;
 use App\Http\Controllers\AnalyticsScenarioController;
 use App\Http\Controllers\Api\CalendarController;
@@ -59,7 +60,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('my/dashboard', [EmployeeSelfServiceController::class, 'index'])->name('my.dashboard');
 
     // Dashboard Burn Index & Budget Analytics (E05 - Admin, Manager, Team Leader)
-    Route::middleware(['role:admin,manager,team_leader'])->prefix('dashboard')->name('dashboard.')->group(function () {
+    Route::middleware(['role:admin,manager,team_leader', 'feature:financial_governance_enabled'])->prefix('dashboard')->name('dashboard.')->group(function () {
         Route::get('/burn-index', [DashboardBurnIndexController::class, 'index'])->name('burn-index');
         Route::post('/burn-index/recalculate', [DashboardBurnIndexController::class, 'recalculate'])->name('burn-index.recalculate');
         Route::get('/burn-index/export-pdf', [DashboardBurnIndexController::class, 'exportPdf'])->name('burn-index.export-pdf');
@@ -67,24 +68,27 @@ Route::middleware(['auth', 'verified'])->group(function () {
     });
 
     // Legacy/Scrum alias redirect for CapEx vs OpEx tab (E05-03 per UX Plan Section 1.3 & 5.1)
-    Route::redirect('/reports/capex-opex', '/dashboard/burn-index?tab=capex-opex');
+    Route::redirect('/reports/capex-opex', '/dashboard/burn-index?tab=capex-opex')
+        ->middleware(['feature:financial_governance_enabled']);
 
     // Legacy/Scrum alias redirects for CapEx Project Portfolio & Labor Attribution (E07 per UX Plan Section 1.3 & 5.1/5.2)
-    Route::get('/reports/capex-projects/portfolio', function (Request $request) {
-        $query = $request->query();
-        $query['tab'] = 'portfolio';
+    Route::middleware(['feature:financial_governance_enabled'])->group(function () {
+        Route::get('/reports/capex-projects/portfolio', function (Request $request) {
+            $query = $request->query();
+            $query['tab'] = 'portfolio';
 
-        return redirect()->route('admin.capex-projects.index', $query);
-    });
-    Route::get('/reports/capex-labor', function (Request $request) {
-        $query = $request->query();
-        $query['tab'] = 'attribution';
+            return redirect()->route('admin.capex-projects.index', $query);
+        });
+        Route::get('/reports/capex-labor', function (Request $request) {
+            $query = $request->query();
+            $query['tab'] = 'attribution';
 
-        return redirect()->route('admin.capex-projects.index', $query);
+            return redirect()->route('admin.capex-projects.index', $query);
+        });
+        Route::get('/reports/capex-labor/export', [CapexProjectController::class, 'exportAttribution'])
+            ->middleware(['role:admin,manager'])
+            ->name('reports.capex-labor.export');
     });
-    Route::get('/reports/capex-labor/export', [CapexProjectController::class, 'exportAttribution'])
-        ->middleware(['role:admin,manager'])
-        ->name('reports.capex-labor.export');
 
     // Individual Employee Reporting & Welfare Tracking (E06 - Admin, Manager, Team Leader, User)
     Route::middleware(['role:admin,manager,team_leader,user'])->prefix('reports')->name('reports.')->group(function () {
@@ -95,8 +99,23 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/employees/{npk}/timesheet/export', [EmployeeReportController::class, 'exportTimesheet'])->name('employees.timesheet.export');
     });
 
+    // ML Analisis Overtime — Regresi Linier Berganda (Admin & Manager, no feature flag)
+    Route::middleware(['role:admin,manager'])->prefix('analytics/ml')->name('analytics.ml.')->group(function () {
+        Route::get('/training', [MlController::class, 'trainingData'])->name('training');
+        Route::post('/training', [MlController::class, 'storeTraining'])->name('training.store');
+        Route::put('/training/{mlTrainingData}', [MlController::class, 'updateTraining'])->name('training.update');
+        Route::delete('/training/{mlTrainingData}', [MlController::class, 'destroyTraining'])->name('training.destroy');
+
+        Route::get('/analysis', [MlController::class, 'analysis'])->name('analysis');
+
+        Route::get('/forecast', [MlController::class, 'forecasting'])->name('forecast');
+        Route::post('/forecast', [MlController::class, 'storeForecast'])->name('forecast.store');
+        Route::put('/forecast/{mlForecastInput}', [MlController::class, 'updateForecast'])->name('forecast.update');
+        Route::delete('/forecast/{mlForecastInput}', [MlController::class, 'destroyForecast'])->name('forecast.destroy');
+    });
+
     // Strategic Analytics & Decision Intelligence Hub (E09-06 - Admin & Manager)
-    Route::middleware(['role:admin,manager'])->prefix('analytics')->name('analytics.')->group(function () {
+    Route::middleware(['role:admin,manager', 'feature:financial_governance_enabled'])->prefix('analytics')->name('analytics.')->group(function () {
         Route::get('/', [AnalyticsController::class, 'index'])->name('index');
         Route::get('/predictive', [AnalyticsController::class, 'predictive'])->name('predictive');
         Route::get('/cost', [AnalyticsController::class, 'costAnalysis'])->name('cost');
@@ -165,7 +184,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     });
 
     // CapEx Project Master Data & Portfolio Hub (E07-01 - Admin & Manager)
-    Route::middleware(['role:admin,manager'])->prefix('admin')->name('admin.')->group(function () {
+    Route::middleware(['role:admin,manager', 'feature:financial_governance_enabled'])->prefix('admin')->name('admin.')->group(function () {
         Route::get('/capex-projects/export-attribution', [CapexProjectController::class, 'exportAttribution'])->name('capex-projects.export-attribution');
         Route::get('/capex-projects', [CapexProjectController::class, 'index'])->name('capex-projects.index');
         Route::post('/capex-projects', [CapexProjectController::class, 'store'])->name('capex-projects.store');
@@ -180,7 +199,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/api/calendar/{date}', [CalendarController::class, 'show'])->name('api.calendar.show');
 
     // Overtime Budget Planning Hub (E02-07 - Admin & Manager)
-    Route::middleware(['role:admin,manager'])->prefix('budgets')->name('budgets.')->group(function () {
+    Route::middleware(['role:admin,manager', 'feature:financial_governance_enabled'])->prefix('budgets')->name('budgets.')->group(function () {
         Route::get('/planning', [OvertimeBudgetController::class, 'index'])->name('planning');
         Route::post('/planning', [OvertimeBudgetController::class, 'store'])->name('store');
         Route::post('/planning/import/preview', [OvertimeBudgetImportController::class, 'preview'])->name('import.preview');
@@ -224,7 +243,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     });
 
     // Overtime Approvals Queue & Decisions (new SPL-based flow — Manager & Admin only)
-    Route::middleware(['role:admin,manager'])->prefix('overtime')->name('overtime.')->group(function () {
+    Route::middleware(['role:admin,manager', 'feature:overtime_approvals_enabled'])->prefix('overtime')->name('overtime.')->group(function () {
         Route::get('/approvals', [OvertimeApprovalController::class, 'index'])->name('approvals');
         Route::get('/approvals/export', [OvertimeApprovalController::class, 'export'])->name('approvals.export');
         Route::post('/approvals/bulk', [OvertimeApprovalController::class, 'bulkProcess'])->name('approvals.bulk');
