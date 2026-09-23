@@ -268,15 +268,22 @@ test('manager can click employee row to open quick dossier drawer and inspect de
     ]);
 
     visit('/login')
+        ->on()
+        ->macbook16()
         ->fill('email', 'manager.drawer@factory.com')
         ->fill('password', 'password')
-        ->click('Log in to System')
+        ->click('[data-test="login-button"]')
         ->assertPathIs('/dashboard')
         ->click('[data-test="tab-employees"]')
         ->assertSee('Agus Gunawan')
         // Click employee row to open drawer
-        ->click('Agus Gunawan')
+        ->click('[data-test="employee-summary-row"]')
         ->assertPresent('[data-test="employee-quick-dossier-drawer"]')
+        ->assertAttribute(
+            '[data-test="employee-quick-dossier-drawer"]',
+            'data-presentation',
+            'dialog',
+        )
         ->assertPresent('[data-test="drawer-npk-badge"]')
         ->assertPresent('[data-test="drawer-burn-zone-badge"]')
         ->assertPresent('[data-test="drawer-total-hours"]')

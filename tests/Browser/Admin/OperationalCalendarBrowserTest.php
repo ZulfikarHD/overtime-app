@@ -32,15 +32,23 @@ test('admin can click a day cell and update classification via slide-in sheet', 
     ]);
 
     visit('/login')
+        ->on()
+        ->macbook16()
         ->fill('email', 'admin.sheet@factory.com')
         ->fill('password', 'password')
-        ->click('Log in to System')
+        ->click('[data-test="login-button"]')
         ->assertPathIs('/dashboard')
         ->navigate('/admin/master-data?tab=calendar&year=2026&month=8')
         ->assertSee('Agustus 2026')
         ->assertSee('17')
         ->click('[data-test="calendar-cell-2026-08-20"]')
-        ->assertSee('Edit Day Classification')
+        ->assertPresent('[data-test="calendar-day-sheet"]')
+        ->assertAttribute(
+            '[data-test="calendar-day-sheet"]',
+            'data-presentation',
+            'dialog',
+        )
+        ->assertSee('HKN')
         ->click('[data-test="btn-day-type-hlr"]')
         ->fill('#holiday_name', 'Cuti Bersama Plant Shutdown')
         ->fill('#calendar_description', 'Shutdown lini produksi tahunan')
@@ -51,6 +59,31 @@ test('admin can click a day cell and update classification via slide-in sheet', 
     expect($record->day_type)->toBe('HLR')
         ->and($record->is_holiday)->toBeTrue()
         ->and($record->holiday_name)->toBe('Cuti Bersama Plant Shutdown');
+});
+
+test('calendar day sheet stays a drawer below the lg breakpoint', function () {
+    app(OperationalCalendarService::class)->generateForYear(2026);
+
+    $admin = User::factory()->admin()->create([
+        'email' => 'admin.sheet.mobile@factory.com',
+    ]);
+
+    visit('/login')
+        ->on()
+        ->iPadMini()
+        ->fill('email', 'admin.sheet.mobile@factory.com')
+        ->fill('password', 'password')
+        ->click('[data-test="login-button"]')
+        ->assertPathIs('/dashboard')
+        ->navigate('/admin/master-data?tab=calendar&year=2026&month=8')
+        ->click('[data-test="calendar-cell-2026-08-20"]')
+        ->assertPresent('[data-test="calendar-day-sheet"]')
+        ->assertAttribute(
+            '[data-test="calendar-day-sheet"]',
+            'data-presentation',
+            'drawer',
+        )
+        ->assertSee('HKN');
 });
 
 test('admin can open national holidays import dialog and view CSV template format', function () {

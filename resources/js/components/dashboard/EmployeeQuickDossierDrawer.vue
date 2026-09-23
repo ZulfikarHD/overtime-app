@@ -164,7 +164,7 @@ const spklBadgeClass = computed(() => {
     <Sheet :open="open" @update:open="emit('update:open', $event)">
         <SheetContent
             side="right"
-            class="w-full overflow-y-auto p-6 sm:max-w-xl"
+            class="w-full overflow-y-auto p-6 sm:max-w-xl lg:h-auto"
             data-test="employee-quick-dossier-drawer"
         >
             <div v-if="employee" class="space-y-6">

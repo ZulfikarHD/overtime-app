@@ -162,7 +162,7 @@ function handleClose() {
             data-test="calendar-day-sheet"
         >
             <SheetHeader
-                class="border-border space-y-1.5 border-b px-6 pt-6 pb-4 text-left"
+                class="border-border space-y-1.5 border-b px-6 pt-6 pr-12 pb-4 text-left"
             >
                 <div class="flex items-center gap-2">
                     <CalendarIcon class="text-primary size-5" />
