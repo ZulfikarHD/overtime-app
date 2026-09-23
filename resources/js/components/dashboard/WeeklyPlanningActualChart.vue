@@ -172,10 +172,10 @@ const chartData = computed<ChartData<'bar' | 'line'>>(() => {
             stack: 'actual',
             order: 2,
         },
-        // Project / CapEx
+        // Project
         {
             type: 'bar' as const,
-            label: __('CapEx / Project'),
+            label: __('Project'),
             data: weeks.map((w) => w.actual_project),
             backgroundColor: weeks.map((w) =>
                 w.is_future
@@ -419,7 +419,7 @@ const chartOptions = computed<ChartOptions<'bar'>>(() => ({
                             </th>
                             <th class="px-3 py-2 text-right">TPM</th>
                             <th class="px-3 py-2 text-right">
-                                {{ __('CapEx') }}
+                                {{ __('Project') }}
                             </th>
                             <th class="px-3 py-2 text-right">
                                 {{ __('Lainnya') }}

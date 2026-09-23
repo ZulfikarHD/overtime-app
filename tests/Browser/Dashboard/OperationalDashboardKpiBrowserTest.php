@@ -69,7 +69,7 @@ test('manager can view 4 executive kpi cards with sparklines and burn metrics', 
         ->assertSee('unit')
         ->assertSee('Hari Kerja (HKN)')
         ->assertSee('Tenaga Kerja (Man Power)')
-        ->assertSee('Indeks Burn (BBI)')
+        ->assertSee('Index Burn Up (Day to Date)')
         ->assertSee('88%')
         ->assertNoJavaScriptErrors();
 });
