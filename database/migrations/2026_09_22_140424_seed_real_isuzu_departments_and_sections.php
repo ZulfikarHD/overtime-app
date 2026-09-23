@@ -4,8 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Seed the real ISUZU factory departments and sections sourced from
- * docs/references/db_ot.xlsx (db_section sheet).
+ * Seed the real ISUZU factory departments and sections (canonical Cannon org).
  *
  * These are additive – existing seeded demo data is not touched.
  * Uses insertOrIgnore so it is idempotent on re-runs.
@@ -13,9 +12,8 @@ use Illuminate\Support\Facades\DB;
 return new class extends Migration
 {
     private const DEPARTMENTS = [
+        ['code' => 'DEPT_PCD', 'name' => 'Planning Control & Delivery', 'cost_center_code' => 'CC-PCD-003', 'default_hourly_rate' => 47000.00, 'is_active' => true],
         ['code' => 'DEPT_PROD', 'name' => 'Production', 'cost_center_code' => 'CC-PROD-001', 'default_hourly_rate' => 45000.00, 'is_active' => true],
-        ['code' => 'DEPT_MTC', 'name' => 'Maintenance', 'cost_center_code' => 'CC-MTC-002', 'default_hourly_rate' => 48000.00, 'is_active' => true],
-        ['code' => 'DEPT_PCD', 'name' => 'Planning, Control & Delivery', 'cost_center_code' => 'CC-PCD-003', 'default_hourly_rate' => 47000.00, 'is_active' => true],
         ['code' => 'DEPT_QC', 'name' => 'Quality Control', 'cost_center_code' => 'CC-QC-004', 'default_hourly_rate' => 47000.00, 'is_active' => true],
         ['code' => 'DEPT_WI', 'name' => 'Warehouse & Inventory', 'cost_center_code' => 'CC-WI-005', 'default_hourly_rate' => 43000.00, 'is_active' => true],
     ];
@@ -24,21 +22,24 @@ return new class extends Migration
      * @var array<array{dept_code: string, code: string, name: string}>
      */
     private const SECTIONS = [
+        // Planning Control & Delivery
+        ['dept_code' => 'DEPT_PCD', 'code' => 'SEC_PCD_MAIN', 'name' => 'Planning Control & Delivery'],
         // Production
-        ['dept_code' => 'DEPT_PROD', 'code' => 'SEC_PROD_MAIN', 'name' => 'Production'],
-        ['dept_code' => 'DEPT_PROD', 'code' => 'SEC_PROD_BS_FSER', 'name' => 'Production Sect Body Shop FSer'],
-        ['dept_code' => 'DEPT_PROD', 'code' => 'SEC_PROD_BS_NSER', 'name' => 'Production Sect Body Shop NSer'],
-        ['dept_code' => 'DEPT_PROD', 'code' => 'SEC_PROD_KIT', 'name' => 'Production Sect Kit'],
-        ['dept_code' => 'DEPT_PROD', 'code' => 'SEC_PROD_OFF_NSER', 'name' => 'Production Sect Offline N Ser'],
-        ['dept_code' => 'DEPT_PROD', 'code' => 'SEC_PROD_PS', 'name' => 'Production Sect Paint Shop'],
-        ['dept_code' => 'DEPT_PROD', 'code' => 'SEC_PROD_TCF_FSER', 'name' => 'Production Sect TCF FSer'],
-        ['dept_code' => 'DEPT_PROD', 'code' => 'SEC_PROD_TCF_NSER', 'name' => 'Production Sect TCF NSer'],
-        ['dept_code' => 'DEPT_PROD', 'code' => 'SEC_PROD_TC_FSER', 'name' => 'Production Sect TrimCabFSer'],
-        ['dept_code' => 'DEPT_PROD', 'code' => 'SEC_PROD_TC_NSER', 'name' => 'Production Sect TrimCabNSer'],
-        // Maintenance
-        ['dept_code' => 'DEPT_MTC', 'code' => 'SEC_MTC_MAIN', 'name' => 'Maintenance'],
-        // Planning, Control & Delivery
-        ['dept_code' => 'DEPT_PCD', 'code' => 'SEC_PCD_MAIN', 'name' => 'Planning, Control & Delivery'],
+        ['dept_code' => 'DEPT_PROD', 'code' => 'SEC_PROD_BODY_NS_A', 'name' => 'Body NS A'],
+        ['dept_code' => 'DEPT_PROD', 'code' => 'SEC_PROD_BODY_NS_B', 'name' => 'Body NS B'],
+        ['dept_code' => 'DEPT_PROD', 'code' => 'SEC_PROD_BODY_FS_A', 'name' => 'Body FS A'],
+        ['dept_code' => 'DEPT_PROD', 'code' => 'SEC_PROD_BODY_FS_B', 'name' => 'Body FS B'],
+        ['dept_code' => 'DEPT_PROD', 'code' => 'SEC_PROD_PAINT_A', 'name' => 'Paint Shop A'],
+        ['dept_code' => 'DEPT_PROD', 'code' => 'SEC_PROD_PAINT_B', 'name' => 'Paint Shop B'],
+        ['dept_code' => 'DEPT_PROD', 'code' => 'SEC_PROD_MODIFY', 'name' => 'Modify'],
+        ['dept_code' => 'DEPT_PROD', 'code' => 'SEC_PROD_TCAB_KIT_NS_A', 'name' => 'TCAB & KIT NS A'],
+        ['dept_code' => 'DEPT_PROD', 'code' => 'SEC_PROD_TCAB_KIT_NS_B', 'name' => 'TCAB & KIT NS B'],
+        ['dept_code' => 'DEPT_PROD', 'code' => 'SEC_PROD_TCAB_KIT_FS_A', 'name' => 'TCAB & KIT FS A'],
+        ['dept_code' => 'DEPT_PROD', 'code' => 'SEC_PROD_TCAB_KIT_FS_B', 'name' => 'TCAB & KIT FS B'],
+        ['dept_code' => 'DEPT_PROD', 'code' => 'SEC_PROD_TCF_NS_A', 'name' => 'TCF NS A'],
+        ['dept_code' => 'DEPT_PROD', 'code' => 'SEC_PROD_TCF_NS_B', 'name' => 'TCF NS B'],
+        ['dept_code' => 'DEPT_PROD', 'code' => 'SEC_PROD_TCF_FS_A', 'name' => 'TCF FS A'],
+        ['dept_code' => 'DEPT_PROD', 'code' => 'SEC_PROD_TCF_FS_B', 'name' => 'TCF FS B'],
         // Quality Control
         ['dept_code' => 'DEPT_QC', 'code' => 'SEC_QC_MAIN', 'name' => 'Quality Control'],
         // Warehouse & Inventory

@@ -23,16 +23,18 @@ test('database seeder orchestrates all seeders cleanly and completes well within
 test('departments and sections are seeded with realistic automotive plant master data', function () {
     $this->seed(DatabaseSeeder::class);
 
-    expect(Department::count())->toBeGreaterThanOrEqual(6)
-        ->and(Section::count())->toBeGreaterThanOrEqual(12);
+    expect(Department::count())->toBe(4)
+        ->and(Section::count())->toBe(18);
 
-    $stampingDept = Department::where('code', 'DEPT_STP')->first();
-    expect($stampingDept)->not->toBeNull()
-        ->and($stampingDept->sections()->count())->toBeGreaterThanOrEqual(3);
+    $pcdDept = Department::where('code', 'DEPT_PCD')->first();
+    expect($pcdDept)->not->toBeNull()
+        ->and($pcdDept->name)->toBe('Planning Control & Delivery')
+        ->and($pcdDept->sections()->count())->toBe(1);
 
-    $assemblyDept = Department::where('code', 'DEPT_ASY')->first();
-    expect($assemblyDept)->not->toBeNull()
-        ->and($assemblyDept->sections()->count())->toBeGreaterThanOrEqual(3);
+    $productionDept = Department::where('code', 'DEPT_PROD')->first();
+    expect($productionDept)->not->toBeNull()
+        ->and($productionDept->name)->toBe('Production')
+        ->and($productionDept->sections()->count())->toBe(15);
 });
 
 test('employees are seeded with at least 100 records and unique NPK numbers', function () {
@@ -70,12 +72,12 @@ test('users are seeded with required minimum role counts and valid credentials',
         ->and($admin->role)->toBe(UserRole::Admin);
 
     // Verify demo manager has department assignment
-    $manager = User::where('email', 'manager.assembly@factory.com')->first();
+    $manager = User::where('email', 'manager.production@factory.com')->first();
     expect($manager)->not->toBeNull()
         ->and($manager->department_id)->not->toBeNull();
 
     // Verify demo team leader has section assignment
-    $teamLeader = User::where('email', 'tl.stamping.press@factory.com')->first();
+    $teamLeader = User::where('email', 'tl.prod.body.ns.a@factory.com')->first();
     expect($teamLeader)->not->toBeNull()
         ->and($teamLeader->section_id)->not->toBeNull();
 });

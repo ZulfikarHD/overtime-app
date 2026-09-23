@@ -10,7 +10,7 @@ use Illuminate\Support\Carbon;
 class CapexProjectSeeder extends Seeder
 {
     /**
-     * Seed CapEx project master data for each production department.
+     * Seed CapEx project master data for each plant department.
      */
     public function run(): void
     {
@@ -20,64 +20,54 @@ class CapexProjectSeeder extends Seeder
 
         $projects = [
             [
-                'department_code' => 'DEPT_ASY',
-                'project_code' => "CPX-{$year}-ASY-001",
-                'asset_code' => 'AST-ASY-2101',
-                'name' => 'Otomasi Feeder Robot Assy Line 3',
+                'department_code' => 'DEPT_PROD',
+                'project_code' => "CPX-{$year}-PROD-001",
+                'asset_code' => 'AST-PROD-2101',
+                'name' => 'Otomasi Feeder Robot Body NS Line',
                 'allocated_labor_hours' => 500.00,
                 'allocated_labor_budget_idr' => 25000000.00,
                 'physical_progress_pct' => 35.00,
                 'status' => 'ACTIVE',
             ],
             [
-                'department_code' => 'DEPT_WLD',
-                'project_code' => "CPX-{$year}-WLD-001",
-                'asset_code' => 'AST-WLD-1804',
-                'name' => 'Pemasangan Lini Robot Welding Underbody',
+                'department_code' => 'DEPT_PROD',
+                'project_code' => "CPX-{$year}-PROD-002",
+                'asset_code' => 'AST-PROD-1804',
+                'name' => 'Upgrading Sealer Robot Paint Shop A',
                 'allocated_labor_hours' => 800.00,
                 'allocated_labor_budget_idr' => 40000000.00,
                 'physical_progress_pct' => 55.00,
                 'status' => 'ACTIVE',
             ],
             [
-                'department_code' => 'DEPT_STP',
-                'project_code' => "CPX-{$year}-STP-001",
-                'asset_code' => 'AST-STP-0902',
-                'name' => 'Instalasi Jig Stamping Press 500T',
+                'department_code' => 'DEPT_PCD',
+                'project_code' => "CPX-{$year}-PCD-001",
+                'asset_code' => 'AST-PCD-0902',
+                'name' => 'Digitalisasi Planning Control Dashboard',
                 'allocated_labor_hours' => 350.00,
                 'allocated_labor_budget_idr' => 17500000.00,
                 'physical_progress_pct' => 20.00,
                 'status' => 'ACTIVE',
             ],
             [
-                'department_code' => 'DEPT_PNT',
-                'project_code' => "CPX-{$year}-PNT-001",
-                'asset_code' => 'AST-PNT-1205',
-                'name' => 'Upgrading Sealer Robot Paint Line 2',
-                'allocated_labor_hours' => 420.00,
-                'allocated_labor_budget_idr' => 21000000.00,
-                'physical_progress_pct' => 10.00,
-                'status' => 'PLANNING',
-            ],
-            [
-                'department_code' => 'DEPT_MNT',
-                'project_code' => "CPX-{$year}-MNT-001",
-                'asset_code' => 'AST-MNT-0701',
-                'name' => 'Retrofit Overhead Crane Workshop',
-                'allocated_labor_hours' => 280.00,
-                'allocated_labor_budget_idr' => 14000000.00,
-                'physical_progress_pct' => 70.00,
-                'status' => 'ACTIVE',
-            ],
-            [
-                'department_code' => 'DEPT_QAC',
-                'project_code' => "CPX-{$year}-QAC-001",
-                'asset_code' => 'AST-QAC-0403',
+                'department_code' => 'DEPT_QC',
+                'project_code' => "CPX-{$year}-QC-001",
+                'asset_code' => 'AST-QC-0403',
                 'name' => 'Instalasi CMM Inspection Cell',
                 'allocated_labor_hours' => 200.00,
                 'allocated_labor_budget_idr' => 12000000.00,
                 'physical_progress_pct' => 100.00,
                 'status' => 'COMPLETED',
+            ],
+            [
+                'department_code' => 'DEPT_WI',
+                'project_code' => "CPX-{$year}-WI-001",
+                'asset_code' => 'AST-WI-0701',
+                'name' => 'Retrofit Rack System Warehouse',
+                'allocated_labor_hours' => 280.00,
+                'allocated_labor_budget_idr' => 14000000.00,
+                'physical_progress_pct' => 70.00,
+                'status' => 'ACTIVE',
             ],
         ];
 
