@@ -26,10 +26,10 @@ class PolicyThresholdSeeder extends Seeder
         );
 
         // 2. Department-specific threshold overrides
-        $deptStp = Department::where('code', 'DEPT_STP')->first();
-        if ($deptStp) {
+        $deptPcd = Department::where('code', 'DEPT_PCD')->first();
+        if ($deptPcd) {
             PolicyThreshold::updateOrCreate(
-                ['department_id' => $deptStp->id],
+                ['department_id' => $deptPcd->id],
                 [
                     'weekly_soft_limit_hours' => 22.0,
                     'consecutive_weeks_alert' => 3,
@@ -40,10 +40,10 @@ class PolicyThresholdSeeder extends Seeder
             );
         }
 
-        $deptAsy = Department::where('code', 'DEPT_ASY')->first();
-        if ($deptAsy) {
+        $deptProd = Department::where('code', 'DEPT_PROD')->first();
+        if ($deptProd) {
             PolicyThreshold::updateOrCreate(
-                ['department_id' => $deptAsy->id],
+                ['department_id' => $deptProd->id],
                 [
                     'weekly_soft_limit_hours' => 24.0,
                     'consecutive_weeks_alert' => 3,

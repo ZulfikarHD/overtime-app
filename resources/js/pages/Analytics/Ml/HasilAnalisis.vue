@@ -408,11 +408,14 @@ const modelSummary = computed(() => {
     let verdictText: string;
     let verdictSub: string;
 
-    if (r2 >= 0.6 && fPassed && passedCount >= 4) {
+    // Layak when R² ≥ 40% — F-test & asumsi tetap ditampilkan sebagai badge informatif
+    if (r2 >= 0.4) {
         verdict = 'layak';
         verdictText = 'Model Regresi LAYAK Digunakan';
-        verdictSub = `Model menjelaskan ${r2Pct}% variasi Index Overtime dan hubungannya terbukti signifikan. Anda dapat menggunakan halaman Forecasting untuk prediksi.`;
-    } else if (r2 >= 0.4 && fPassed) {
+        verdictSub = fPassed
+            ? `Model menjelaskan ${r2Pct}% variasi Index Overtime dan hubungannya terbukti signifikan. Anda dapat menggunakan halaman Forecasting untuk prediksi.`
+            : `Model menjelaskan ${r2Pct}% variasi Index Overtime. Anda dapat menggunakan halaman Forecasting untuk prediksi.`;
+    } else if (r2 >= 0.2) {
         verdict = 'perhatian';
         verdictText = 'Model Regresi CUKUP — Perlu Perhatian';
         verdictSub = `Model menjelaskan ${r2Pct}% variasi Index Overtime. Beberapa asumsi tidak terpenuhi — hasil prediksi sebaiknya dikonfirmasi dengan data lapangan.`;

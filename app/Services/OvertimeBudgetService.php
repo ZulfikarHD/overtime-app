@@ -506,8 +506,8 @@ class OvertimeBudgetService
         $headers = ['section_code', 'fiscal_year', 'fiscal_month', 'planned_hours'];
 
         $sampleRows = [
-            ['SEC_ASY_TRIM', '2026', '9', '120.00'],
-            ['SEC_STP_PRESS', '2026', '9', '160.00'],
+            ['SEC_PROD_BODY_NS_A', '2026', '9', '120.00'],
+            ['SEC_PROD_PAINT_A', '2026', '9', '160.00'],
         ];
 
         $output = fopen('php://temp', 'r+');

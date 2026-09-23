@@ -151,10 +151,10 @@ defineProps<{
                         <div
                             class="text-xs font-bold text-slate-900 dark:text-white"
                         >
-                            {{ __('ISUZU Overtime') }}
+                            {{ __('SMARTIME 2.0') }}
                         </div>
                         <div class="text-[10px] text-slate-500">
-                            {{ __('Karawang Assembly Plant') }}
+                            {{ __('PT. Isuzu Astra Motor Indonesia') }}
                         </div>
                     </div>
                 </Link>

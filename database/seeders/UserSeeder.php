@@ -19,17 +19,15 @@ class UserSeeder extends Seeder
     {
         $password = Hash::make('password');
 
-        $deptAsy = Department::where('code', 'DEPT_ASY')->first();
-        $deptStp = Department::where('code', 'DEPT_STP')->first();
-        $deptWld = Department::where('code', 'DEPT_WLD')->first();
-        $deptPnt = Department::where('code', 'DEPT_PNT')->first();
-        $deptMnt = Department::where('code', 'DEPT_MNT')->first();
+        $deptProd = Department::where('code', 'DEPT_PROD')->first();
+        $deptPcd = Department::where('code', 'DEPT_PCD')->first();
+        $deptQc = Department::where('code', 'DEPT_QC')->first();
 
-        $secStpPress = Section::where('code', 'SEC_STP_PRESS')->first();
-        $secWldUnder = Section::where('code', 'SEC_WLD_UNDER')->first();
-        $secPntTop = Section::where('code', 'SEC_PNT_TOP')->first();
-        $secAsyTrim = Section::where('code', 'SEC_ASY_TRIM')->first();
-        $secMntElec = Section::where('code', 'SEC_MNT_ELEC')->first();
+        $secBodyNsA = Section::where('code', 'SEC_PROD_BODY_NS_A')->first();
+        $secPaintA = Section::where('code', 'SEC_PROD_PAINT_A')->first();
+        $secTcfNsA = Section::where('code', 'SEC_PROD_TCF_NS_A')->first();
+        $secPcd = Section::where('code', 'SEC_PCD_MAIN')->first();
+        $secQc = Section::where('code', 'SEC_QC_MAIN')->first();
 
         // 1. Admin (1 demo account)
         User::updateOrCreate(
@@ -48,13 +46,13 @@ class UserSeeder extends Seeder
 
         // 2. Managers (2 demo accounts)
         User::updateOrCreate(
-            ['email' => 'manager.assembly@factory.com'],
+            ['email' => 'manager.production@factory.com'],
             [
                 'name' => 'Ir. Bambang Soeprapto',
                 'password' => $password,
                 'role' => UserRole::Manager,
                 'npk' => 'EMP-00101',
-                'department_id' => $deptAsy?->id,
+                'department_id' => $deptProd?->id,
                 'section_id' => null,
                 'is_active' => true,
                 'email_verified_at' => now(),
@@ -62,13 +60,13 @@ class UserSeeder extends Seeder
         );
 
         User::updateOrCreate(
-            ['email' => 'manager.stamping@factory.com'],
+            ['email' => 'manager.pcd@factory.com'],
             [
                 'name' => 'Dra. Sri Mulyani',
                 'password' => $password,
                 'role' => UserRole::Manager,
                 'npk' => 'EMP-00102',
-                'department_id' => $deptStp?->id,
+                'department_id' => $deptPcd?->id,
                 'section_id' => null,
                 'is_active' => true,
                 'email_verified_at' => now(),
@@ -79,38 +77,38 @@ class UserSeeder extends Seeder
         $teamLeaders = [
             [
                 'name' => 'Ahmad Fauzi',
-                'email' => 'tl.stamping.press@factory.com',
+                'email' => 'tl.prod.body.ns.a@factory.com',
                 'npk' => 'EMP-00201',
-                'department_id' => $deptStp?->id,
-                'section_id' => $secStpPress?->id,
+                'department_id' => $deptProd?->id,
+                'section_id' => $secBodyNsA?->id,
             ],
             [
                 'name' => 'Agus Setiawan',
-                'email' => 'tl.welding.under@factory.com',
+                'email' => 'tl.prod.paint.a@factory.com',
                 'npk' => 'EMP-00202',
-                'department_id' => $deptWld?->id,
-                'section_id' => $secWldUnder?->id,
+                'department_id' => $deptProd?->id,
+                'section_id' => $secPaintA?->id,
             ],
             [
                 'name' => 'Hadi Pranoto',
-                'email' => 'tl.painting.topcoat@factory.com',
+                'email' => 'tl.prod.tcf.ns.a@factory.com',
                 'npk' => 'EMP-00203',
-                'department_id' => $deptPnt?->id,
-                'section_id' => $secPntTop?->id,
+                'department_id' => $deptProd?->id,
+                'section_id' => $secTcfNsA?->id,
             ],
             [
                 'name' => 'Budi Santoso',
-                'email' => 'tl.assembly.trim@factory.com',
+                'email' => 'tl.pcd@factory.com',
                 'npk' => 'EMP-00204',
-                'department_id' => $deptAsy?->id,
-                'section_id' => $secAsyTrim?->id,
+                'department_id' => $deptPcd?->id,
+                'section_id' => $secPcd?->id,
             ],
             [
                 'name' => 'Eko Prasetyo',
-                'email' => 'tl.maintenance.elec@factory.com',
+                'email' => 'tl.qc@factory.com',
                 'npk' => 'EMP-00205',
-                'department_id' => $deptMnt?->id,
-                'section_id' => $secMntElec?->id,
+                'department_id' => $deptQc?->id,
+                'section_id' => $secQc?->id,
             ],
         ];
 
@@ -139,8 +137,8 @@ class UserSeeder extends Seeder
             $email = sprintf('operator.%02d@factory.com', $i);
             $npk = $emp?->npk ?? sprintf('EMP-%05d', 2000 + $i);
             $name = $emp?->full_name ?? "Operator Line {$i}";
-            $deptId = $emp?->department_id ?? $deptAsy?->id;
-            $secId = $emp?->section_id ?? $secAsyTrim?->id;
+            $deptId = $emp?->department_id ?? $deptProd?->id;
+            $secId = $emp?->section_id ?? $secBodyNsA?->id;
 
             User::updateOrCreate(
                 ['email' => $email],

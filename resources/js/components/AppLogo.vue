@@ -21,12 +21,12 @@ const { __ } = useTrans();
             <span
                 class="truncate font-bold tracking-tight text-slate-900 dark:text-white"
             >
-                ISUZU Overtime
+                {{ __('SMARTIME 2.0') }}
             </span>
             <span
                 class="truncate font-mono text-[10px] font-medium text-slate-500 dark:text-slate-400"
             >
-                {{ __('Karawang Assembly') }}
+                {{ __('PT. Isuzu Astra Motor Indonesia') }}
             </span>
         </div>
     </div>
