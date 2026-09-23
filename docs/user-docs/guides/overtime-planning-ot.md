@@ -4,10 +4,11 @@
 
 Planning OT is a monthly overtime planning tool. Supervisors and managers use it to schedule
 how many overtime hours each employee is expected to work each day of the month, broken down
-into four work categories: Production, TPM (maintenance), Project/Kaizen, and Others.
+into four work categories: Production (A), TPM (B), Project/Kaizen (C), and Others (D).
 
-Think of it as a digital version of the `planning_ot.xlsx` spreadsheet — but stored in the
-system so it can be reviewed, published, and used as a reference against actual realized hours.
+The grid mirrors the Excel workbook `planning_ot.xlsx`: dense day × category cells, sticky
+employee columns, keyboard navigation, and a monitoring strip (Total Jam, Conversi Idx,
+weekly hours, Plan vs Actual index).
 
 ---
 
@@ -34,18 +35,31 @@ system so it can be reviewed, published, and used as a reference against actual 
 
 1. Click the red **Buat Planning Baru** button at the top-right of the list.
 2. Select your **Department** and **Section** from the dropdowns.
-3. Use the **← →** arrows at the top to navigate to the correct month.
+3. Select **Year** and **Month** from the dropdowns (and Department / Section).
 4. The grid loads your section's active employees as rows and the days of the month as columns.
 
-### Filling in Hours
+### Filling in Hours (Excel-style)
 
-1. **Click any cell** in the grid to open the input panel for that employee + day.
-2. The panel shows four category fields: **Prod** (Production), **TPM**, **Proj** (Project), and **Lain** (Others).
-3. Type a value directly — the field selects automatically when you click or Tab into it, so you can type the replacement immediately.
-4. Use the **−** and **+** buttons to adjust in 0.5-hour steps.
-5. Click **OK** to apply. The cell in the grid shows the total hours.
+1. Each day has four columns: **A** (Prod), **B** (TPM), **C** (Proj), **D** (Lain).
+2. Click a cell (or Tab / arrow into it) — the value is selected so you can type immediately.
+3. **Tab** / **Shift+Tab** move horizontally; **arrow keys** move in any direction; **Enter** moves down.
+4. **Delete** / **Backspace** with the value selected clears the cell.
+5. Non-zero cells highlight in light green.
 
-> 💡 **Tip:** Red-shaded columns are **HLR** (holiday) days; white columns are **HKN** (workday) days.
+> 💡 **Tip:** Red-shaded day headers are **HLR** (holiday); white/neutral headers are **HKN** (workday).
+
+### Monitoring (below the grid)
+
+Summary lives in a separate **Monitoring Ringkasan** panel under the day grid (not mixed into days 1–N):
+
+| Tab                | Contents                                        |
+| ------------------ | ----------------------------------------------- |
+| **Jam Mingguan**   | Conversi Idx, W1–W5 category hours + Σ, GT HOUR |
+| **Plan vs Actual** | Index W1–W5 (P / A) and GT Idx                  |
+
+The day entry grid only shows employee identity, day × A/B/C/D cells, and **Total Jam**.
+
+Week buckets: days 1–7 → W1, 8–14 → W2, 15–21 → W3, 22–28 → W4, 29+ → W5.
 
 ### Saving and Publishing
 
@@ -63,7 +77,7 @@ system so it can be reviewed, published, and used as a reference against actual 
 
 **Q: What is the difference between HKN and HLR?**
 A: HKN (Hari Kerja Normal) means a regular workday. HLR (Hari Libur Resmi) means an official
-holiday or weekly day off. The day type affects the overtime calculation rules.
+holiday or weekly day off. The day type affects Conversi Idx (1.5 vs 2.0).
 
 **Q: Can two plans exist for the same section and month?**
 A: No. There is one plan per section per month. Re-saving the same section and period updates the
@@ -72,10 +86,14 @@ existing plan rather than creating a duplicate.
 **Q: What are the four categories?**
 A: They map to the standard OT type codes used in the SPL document:
 
-- **Prod** = Production work (codes 61, 62)
-- **TPM** = Maintenance work (codes 65, 66)
-- **Proj** = Project / Kaizen (codes 67, 68)
-- **Lain** = Other types
+- **A / Prod** = Production work (codes 61, 62)
+- **B / TPM** = Maintenance work (codes 65, 66)
+- **C / Proj** = Project / Kaizen (codes 67, 68)
+- **D / Lain** = Other types
+
+**Q: Why is Actual (A) empty in Plan vs Actual?**
+A: Actual index comes from **approved** overtime submissions for that section and month. Until
+hours are approved, Actual stays at zero.
 
 ---
 

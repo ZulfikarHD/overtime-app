@@ -104,14 +104,17 @@ erDiagram
 ## Flow Explanation
 
 1. **User opens Planning OT** — sidebar navigates to `PlanningIndex` showing all accessible plans.
-2. **Create new plan** — user clicks "Buat Planning Baru" to open the monthly grid for the
+2. **Create new plan** — user clicks "Buat Planning Baru" to open the monthly Excel-parity grid for the
    current month. Department and section dropdowns filter the roster.
-3. **Fill the grid** — user clicks any cell to open a per-day modal with ±0.25h steppers and
-   number inputs (auto-selected on focus) for each of the four categories.
-4. **Save as Draft** — `StorePlanningRequest` validates, `updateOrCreate` upserts the plan header,
+3. **Fill the grid** — each day exposes four inline cells (A/B/C/D). Keyboard navigation
+   (Tab / arrows / Enter) moves focus; typing replaces the selected value. No modal.
+4. **Monitoring panel** — below the day grid (tabs): Weekly Hours + Conversi Idx / Plan vs Actual
+   weekly index (P from grid, A from approved `overtime_items`). Day grid itself only has
+   identity + day × A/B/C/D + Total Jam.
+5. **Save as Draft** — `StorePlanningRequest` validates, `updateOrCreate` upserts the plan header,
    then `OvertimePlanItem::updateOrCreate` upserts each row. `plan_date` is normalized with
    `Carbon::startOfDay()` to avoid SQLite/MySQL date-format divergence.
-5. **Publish** — a separate `PATCH` route sets `status = PUBLISHED`. Published plans cannot be deleted.
+6. **Publish** — a separate `PATCH` route sets `status = PUBLISHED`. Published plans cannot be deleted.
 
 ---
 

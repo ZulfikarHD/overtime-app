@@ -8,10 +8,12 @@ use App\Http\Requests\Overtime\UpdatePlanningRequest;
 use App\Models\Department;
 use App\Models\Employee;
 use App\Models\OperationalCalendar;
+use App\Models\OvertimeItem;
 use App\Models\OvertimePlan;
 use App\Models\OvertimePlanItem;
 use App\Models\Section;
 use App\Models\User;
+use App\Services\Analytics\DashboardKpiService;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -108,16 +110,19 @@ class OvertimePlanningController extends Controller
                 ->get(['id', 'npk', 'full_name', 'job_position'])
             : collect();
 
+        $resolvedSectionId = $sectionId ?: ($defaultSectionId ?? 0);
+
         return Inertia::render('overtime/Planning', [
             'departments' => $departments,
             'sections' => $sections,
             'selected_department_id' => $defaultDepartmentId,
-            'selected_section_id' => $sectionId ?: $defaultSectionId,
+            'selected_section_id' => $resolvedSectionId ?: null,
             'fiscal_year' => $fiscalYear,
             'fiscal_month' => $fiscalMonth,
             'calendar_days' => $calendarDays,
             'initial_roster' => $roster,
             'existing_plan' => $existingPlan,
+            'actuals' => $this->getSectionActuals((int) $resolvedSectionId, $fiscalYear, $fiscalMonth),
         ]);
     }
 
@@ -157,6 +162,11 @@ class OvertimePlanningController extends Controller
             'calendar_days' => $calendarDays,
             'initial_roster' => $roster,
             'existing_plan' => $overtimePlan,
+            'actuals' => $this->getSectionActuals(
+                $overtimePlan->section_id,
+                $overtimePlan->fiscal_year,
+                $overtimePlan->fiscal_month,
+            ),
         ]);
     }
 
@@ -417,6 +427,103 @@ class OvertimePlanningController extends Controller
         $calendar = OperationalCalendar::find($date);
 
         return $calendar?->day_type ?? (Carbon::parse($date)->isWeekend() ? 'HLR' : 'HKN');
+    }
+
+    /**
+     * Aggregate approved realized overtime for Plan vs Actual monitoring.
+     *
+     * Week buckets match MonthlySnapshotService: days 1–7 → W1 … 29+ → W5.
+     * Index uses DashboardKpiService multipliers (HKN × 1.5, HLR × 2.0).
+     *
+     * @return array<int, array{weeks: array<int, array{hours_production: float, hours_tpm: float, hours_project: float, hours_others: float, index_total: float}>}>
+     */
+    private function getSectionActuals(int $sectionId, int $year, int $month): array
+    {
+        if ($sectionId <= 0) {
+            return [];
+        }
+
+        $start = Carbon::create($year, $month, 1, 0, 0, 0, 'Asia/Jakarta')->startOfDay();
+        $end = $start->copy()->endOfMonth();
+
+        $items = OvertimeItem::query()
+            ->join('overtime_submissions', 'overtime_items.overtime_submission_id', '=', 'overtime_submissions.id')
+            ->where('overtime_submissions.section_id', $sectionId)
+            ->whereBetween('overtime_submissions.operational_date', [
+                $start->toDateString(),
+                $end->toDateString(),
+            ])
+            ->where('overtime_items.status', 'APPROVED')
+            ->select([
+                'overtime_items.employee_id',
+                'overtime_items.hours_production',
+                'overtime_items.hours_tpm',
+                'overtime_items.hours_project',
+                'overtime_items.hours_others',
+                'overtime_submissions.operational_date',
+                'overtime_submissions.day_type',
+            ])
+            ->get();
+
+        $emptyWeek = static fn (): array => [
+            'hours_production' => 0.0,
+            'hours_tpm' => 0.0,
+            'hours_project' => 0.0,
+            'hours_others' => 0.0,
+            'index_total' => 0.0,
+        ];
+
+        $actuals = [];
+
+        foreach ($items as $item) {
+            $employeeId = (int) $item->employee_id;
+            $day = Carbon::parse($item->operational_date)->day;
+            $week = match (true) {
+                $day <= 7 => 1,
+                $day <= 14 => 2,
+                $day <= 21 => 3,
+                $day <= 28 => 4,
+                default => 5,
+            };
+
+            if (! isset($actuals[$employeeId])) {
+                $actuals[$employeeId] = [
+                    'weeks' => [
+                        1 => $emptyWeek(),
+                        2 => $emptyWeek(),
+                        3 => $emptyWeek(),
+                        4 => $emptyWeek(),
+                        5 => $emptyWeek(),
+                    ],
+                ];
+            }
+
+            $prod = (float) $item->hours_production;
+            $tpm = (float) $item->hours_tpm;
+            $proj = (float) $item->hours_project;
+            $others = (float) $item->hours_others;
+            $totalHours = $prod + $tpm + $proj + $others;
+            $multiplier = $item->day_type === 'HLR'
+                ? DashboardKpiService::HLR_MULTIPLIER
+                : DashboardKpiService::HKN_MULTIPLIER;
+
+            $actuals[$employeeId]['weeks'][$week]['hours_production'] += $prod;
+            $actuals[$employeeId]['weeks'][$week]['hours_tpm'] += $tpm;
+            $actuals[$employeeId]['weeks'][$week]['hours_project'] += $proj;
+            $actuals[$employeeId]['weeks'][$week]['hours_others'] += $others;
+            $actuals[$employeeId]['weeks'][$week]['index_total'] += $totalHours * $multiplier;
+        }
+
+        // Round for stable JSON / UI display
+        foreach ($actuals as $employeeId => $payload) {
+            foreach ($payload['weeks'] as $week => $bucket) {
+                foreach ($bucket as $key => $value) {
+                    $actuals[$employeeId]['weeks'][$week][$key] = round((float) $value, 2);
+                }
+            }
+        }
+
+        return $actuals;
     }
 
     private function generatePlanCode(int $sectionId, int $year, int $month): string
