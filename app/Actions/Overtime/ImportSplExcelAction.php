@@ -7,6 +7,7 @@ use App\Models\Employee;
 use App\Models\Section;
 use App\Models\SplEntry;
 use App\Models\User;
+use App\Support\Features;
 use Carbon\Carbon;
 use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 use PhpOffice\PhpSpreadsheet\IOFactory;
@@ -196,6 +197,12 @@ class ImportSplExcelAction
                     'action' => $action,
                     'imported_by_user_id' => $importedBy->id,
                 ];
+
+                if (! Features::overtimeApprovalsEnabled()) {
+                    $data['status'] = 'APPROVED';
+                    $data['reviewed_by_user_id'] = $importedBy->id;
+                    $data['reviewed_at'] = now('Asia/Jakarta');
+                }
 
                 // Upsert: match on npk_snapshot + realization_date + start_time
                 // Use whereDate() so the comparison works on both MySQL DATE and SQLite text.

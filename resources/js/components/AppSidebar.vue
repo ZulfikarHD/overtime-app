@@ -1,15 +1,10 @@
 <script setup lang="ts">
 import { Link, usePage } from '@inertiajs/vue3';
 import {
-    Calculator,
-    ClipboardCheck,
     ClipboardList,
     Database,
-    Flame,
-    FolderKanban,
     LayoutGrid,
     ShieldCheck,
-    TrendingUp,
     Users,
 } from '@lucide/vue';
 import { computed } from 'vue';
@@ -31,13 +26,7 @@ import { useTrans } from '@/composables/useTrans';
 import { dashboard } from '@/routes';
 import { dashboard as myDashboard } from '@/routes/my';
 import { administration, masterData } from '@/routes/admin';
-import capexProjects from '@/routes/admin/capex-projects';
-import { planning } from '@/routes/budgets';
-import { burnIndex } from '@/routes/dashboard';
-import { index as analyticsIndex } from '@/routes/analytics';
-import { approvals as overtimeApprovals } from '@/routes/overtime';
 import { index as reportsEmployees } from '@/routes/reports/employees';
-import { create as overtimeCreate } from '@/routes/overtime/submissions';
 import { index as planningOtIndex } from '@/routes/overtime/planning';
 import { index as splIndex } from '@/routes/overtime/spl';
 import type { NavItem, User } from '@/types';
@@ -45,9 +34,6 @@ import type { NavItem, User } from '@/types';
 const { __ } = useTrans();
 const page = usePage();
 const user = computed(() => page.props.auth?.user as User | undefined);
-const pendingApprovalsCount = computed(
-    () => (page.props.pending_approvals_count as number | undefined) ?? 0,
-);
 
 const mainNavItems = computed<NavItem[]>(() => {
     const isOperator = user.value?.role === 'user';
@@ -83,17 +69,6 @@ const mainNavItems = computed<NavItem[]>(() => {
         });
     }
 
-    if (role === 'admin' || role === 'manager') {
-        items.push({
-            title: __('Overtime Approvals'),
-            href: overtimeApprovals(),
-            icon: ClipboardCheck,
-            badge: pendingApprovalsCount.value,
-            testId: 'nav-overtime-approvals',
-            group: __('Operations & Overtime'),
-        });
-    }
-
     if (role === 'admin' || role === 'manager' || role === 'team_leader') {
         items.push({
             title: __('Employee Reports'),
@@ -104,39 +79,7 @@ const mainNavItems = computed<NavItem[]>(() => {
         });
     }
 
-    // Group 2: Financial & Governance
-    if (role === 'admin' || role === 'manager') {
-        items.push({
-            title: __('CapEx Projects'),
-            href: capexProjects.index(),
-            icon: FolderKanban,
-            testId: 'nav-capex-projects',
-            group: __('Financial & Governance'),
-        });
-        items.push({
-            title: __('Burn Index'),
-            href: burnIndex(),
-            icon: Flame,
-            testId: 'nav-burn-index',
-            group: __('Financial & Governance'),
-        });
-        items.push({
-            title: __('Analytics & Decisions'),
-            href: analyticsIndex(),
-            icon: TrendingUp,
-            testId: 'nav-analytics',
-            group: __('Financial & Governance'),
-        });
-        items.push({
-            title: __('Budget Planning'),
-            href: planning(),
-            icon: Calculator,
-            group: __('Financial & Governance'),
-            testId: 'nav-budget-planning',
-        });
-    }
-
-    // Group 3: System & Configuration
+    // Group 2: System & Configuration
     if (role === 'admin') {
         items.push({
             title: __('Master Data'),
@@ -186,7 +129,7 @@ const mainNavItems = computed<NavItem[]>(() => {
         <SidebarContent class="py-2">
             <NavMain :items="mainNavItems" />
 
-            <!-- Plant Badge Quick Info (from public/style-guide.html lines 351-380) -->
+            <!-- Plant Badge Quick Info -->
             <div
                 class="mx-3 mt-6 mb-2 space-y-2 rounded-xl border border-slate-200 bg-slate-50/70 p-3 text-xs shadow-2xs group-data-[collapsible=icon]:hidden dark:border-slate-800 dark:bg-slate-900/60"
             >
@@ -198,24 +141,6 @@ const mainNavItems = computed<NavItem[]>(() => {
                         {{ __('Karawang Assembly') }}
                     </span>
                 </div>
-                <div class="flex items-center justify-between text-slate-500">
-                    <span class="text-[11px]">{{ __('Shift System') }}:</span>
-                    <span
-                        class="text-[11px] font-semibold text-slate-800 dark:text-slate-200"
-                    >
-                        {{ __('3 Shifts / 24 Hours') }}
-                    </span>
-                </div>
-                <div class="flex items-center justify-between text-slate-500">
-                    <span class="text-[11px]"
-                        >{{ __('Statutory Limit') }}:</span
-                    >
-                    <span
-                        class="text-[11px] font-semibold text-[#cc0000] dark:text-red-400"
-                    >
-                        {{ __('Max 14 Hours/Week') }}
-                    </span>
-                </div>
             </div>
         </SidebarContent>
 
@@ -223,7 +148,7 @@ const mainNavItems = computed<NavItem[]>(() => {
             <div
                 class="text-muted-foreground/70 flex items-center justify-between px-3 py-1 text-[11px] group-data-[collapsible=icon]:hidden"
             >
-                <span>{{ __('OT-CapEx System v1.0.0 · Karawang') }}</span>
+                <span>{{ __('OT System v1.0.0 · Karawang') }}</span>
                 <LanguageSwitcher
                     size="sm"
                     test-id-prefix="lang-switch-sidebar"

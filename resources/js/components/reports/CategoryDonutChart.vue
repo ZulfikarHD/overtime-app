@@ -51,7 +51,7 @@ const chartData = computed(() => {
     }
 
     return {
-        labels: [__('Produksi'), __('TPM'), __('CapEx Proyek'), __('Lainnya')],
+        labels: [__('Produksi'), __('TPM'), __('Project'), __('Lainnya')],
         datasets: [
             {
                 data: [
@@ -63,7 +63,7 @@ const chartData = computed(() => {
                 backgroundColor: [
                     '#059669', // Emerald - Production
                     '#d97706', // Amber - TPM
-                    '#0284c7', // Sky Blue - CapEx Project
+                    '#0284c7', // Sky Blue - Project
                     '#64748b', // Slate - Others
                 ],
                 hoverBackgroundColor: [
@@ -201,7 +201,7 @@ const chartOptions = computed(() => {
                     </span>
                 </div>
 
-                <!-- CapEx Proyek -->
+                <!-- Project -->
                 <div
                     class="border-border/60 bg-muted/20 flex items-center justify-between rounded-md border p-2"
                 >
@@ -211,7 +211,7 @@ const chartOptions = computed(() => {
                         />
                         <span
                             class="truncate font-medium text-sky-800 dark:text-sky-300"
-                            >{{ __('CapEx') }}</span
+                            >{{ __('Project') }}</span
                         >
                     </div>
                     <span

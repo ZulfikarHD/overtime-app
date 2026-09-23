@@ -179,7 +179,7 @@ function handleTabChange(tab: DashboardTab) {
 }
 
 const { __ } = useTrans();
-const { timeString, dateString, currentShift } = useShiftInfo();
+const { timeString, dateString } = useShiftInfo();
 const page = usePage();
 const user = computed(() => page.props.auth?.user as User | undefined);
 
@@ -342,18 +342,8 @@ function resetFilters() {
                     </p>
                 </div>
 
-                <!-- Shift Indicator Pill & Filter Bar -->
+                <!-- Filter Bar -->
                 <div class="flex flex-wrap items-center gap-3">
-                    <!-- Shift Pill -->
-                    <div
-                        class="inline-flex items-center gap-2 rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-3.5 py-2 text-sm font-semibold text-emerald-800 dark:text-emerald-300"
-                    >
-                        <span
-                            class="size-2 animate-pulse rounded-full bg-emerald-500"
-                        />
-                        <span>{{ currentShift.badgeText }}</span>
-                    </div>
-
                     <!-- Filter Controls -->
                     <div
                         class="flex flex-wrap items-center gap-2 rounded-lg border border-slate-200 bg-slate-50/70 p-1.5 dark:border-slate-800 dark:bg-slate-900/60"

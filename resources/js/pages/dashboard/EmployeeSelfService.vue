@@ -33,7 +33,6 @@ import {
 } from '@/components/ui/card';
 import { useShiftInfo } from '@/composables/useShiftInfo';
 import { useTrans } from '@/composables/useTrans';
-import { formatRupiah } from '@/lib/formatters';
 import { dashboard as myDashboard } from '@/routes/my';
 import { show as showEmployeeDossier } from '@/routes/reports/employees';
 import type { User } from '@/types';
@@ -412,22 +411,11 @@ const getStatusBadge = (status: 'APPROVED' | 'PENDING' | 'REJECTED') => {
                             >
                         </div>
                         <div
-                            class="border-border/50 text-muted-foreground mt-3 flex items-center justify-between border-t pt-2 text-xs"
+                            class="border-border/50 text-muted-foreground mt-3 flex items-center border-t pt-2 text-xs"
                         >
                             <span
                                 >{{ currentMonthLabel }} {{ fiscal_year }}</span
                             >
-                            <span
-                                class="text-foreground font-mono font-semibold tabular-nums"
-                                data-testid="kpi-month-cost"
-                            >
-                                {{
-                                    formatRupiah(summary?.total_cost_idr ?? 0, {
-                                        minimumFractionDigits: 0,
-                                        maximumFractionDigits: 0,
-                                    })
-                                }}
-                            </span>
                         </div>
                     </CardContent>
                 </Card>
@@ -670,7 +658,7 @@ const getStatusBadge = (status: 'APPROVED' | 'PENDING' | 'REJECTED') => {
                             :style="{
                                 width: `${summary?.category_breakdown?.project_pct ?? 0}%`,
                             }"
-                            :title="`Proyek / CapEx: ${summary?.category_breakdown?.project ?? 0} jam (${summary?.category_breakdown?.project_pct ?? 0}%)`"
+                            :title="`${__('Project')}: ${summary?.category_breakdown?.project ?? 0} jam (${summary?.category_breakdown?.project_pct ?? 0}%)`"
                         />
                         <div
                             class="bg-slate-400 transition-all duration-500 dark:bg-slate-600"
@@ -729,7 +717,7 @@ const getStatusBadge = (status: 'APPROVED' | 'PENDING' | 'REJECTED') => {
                                 class="h-2.5 w-2.5 shrink-0 rounded-full bg-purple-500"
                             ></span>
                             <span class="text-muted-foreground truncate"
-                                >CapEx / Proyek:</span
+                                >{{ __('Project') }}:</span
                             >
                             <span
                                 class="text-foreground ml-auto font-mono font-semibold tabular-nums"

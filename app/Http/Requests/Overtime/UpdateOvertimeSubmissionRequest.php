@@ -6,6 +6,7 @@ use App\Models\CapexProject;
 use App\Models\OvertimeSubmission;
 use App\Models\Section;
 use App\Models\User;
+use App\Support\Features;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
@@ -114,8 +115,8 @@ class UpdateOvertimeSubmissionRequest extends FormRequest
                         );
                     }
 
-                    // BR-08: CapEx project required and active when hours_project > 0
-                    if ($proj > 0.00) {
+                    // BR-08: CapEx project required when feature flag is on
+                    if (Features::capexAttributionRequired() && $proj > 0.00) {
                         if (empty($item['capex_project_id'])) {
                             $v->errors()->add(
                                 "items.{$index}.capex_project_id",

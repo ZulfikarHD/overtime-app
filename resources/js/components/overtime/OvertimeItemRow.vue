@@ -38,16 +38,25 @@ export interface OvertimeItemModel {
     task_description: string | null;
 }
 
-const props = defineProps<{
-    modelValue: OvertimeItemModel;
-    defaultHourlyRate?: number | string | null;
-    capexProjects: CapexProjectOption[];
-    error?: string;
-    index: number;
-    operationalDate?: string;
-    submissionId?: number | null;
-    initialPolicyWarning?: PolicyWarningData | null;
-}>();
+const props = withDefaults(
+    defineProps<{
+        modelValue: OvertimeItemModel;
+        defaultHourlyRate?: number | string | null;
+        capexProjects?: CapexProjectOption[];
+        requireCapexAttribution?: boolean;
+        showCostEstimate?: boolean;
+        error?: string;
+        index: number;
+        operationalDate?: string;
+        submissionId?: number | null;
+        initialPolicyWarning?: PolicyWarningData | null;
+    }>(),
+    {
+        capexProjects: () => [],
+        requireCapexAttribution: false,
+        showCostEstimate: false,
+    },
+);
 
 const emit = defineEmits<{
     (e: 'update:modelValue', value: OvertimeItemModel): void;
@@ -279,11 +288,11 @@ const rcaCategories = [
                 </div>
             </div>
 
-            <!-- Col 4: Project CapEx Hours (2 cols) -->
+            <!-- Col 4: Project Hours (2 cols) -->
             <div class="col-span-3 sm:col-span-2">
                 <label
                     class="block text-[10px] font-medium text-slate-500 sm:hidden"
-                    >{{ __('CapEx') }}</label
+                    >{{ __('Project') }}</label
                 >
                 <div class="relative">
                     <input
@@ -295,7 +304,7 @@ const rcaCategories = [
                         placeholder="0.0"
                         :name="`items[${index}][hours_project]`"
                         :data-test="`input-project-${modelValue.employee_id}`"
-                        class="h-8 w-full rounded border border-sky-300 bg-sky-50/40 px-2 text-right font-mono text-xs text-sky-950 tabular-nums focus:border-sky-500 focus:ring-1 focus:ring-sky-500 dark:border-sky-800 dark:bg-sky-950/30 dark:text-sky-200"
+                        class="h-8 w-full rounded border border-emerald-300 bg-emerald-50/40 px-2 text-right font-mono text-xs text-emerald-950 tabular-nums focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-200"
                     />
                 </div>
             </div>
@@ -338,6 +347,7 @@ const rcaCategories = [
                     >
                 </div>
                 <div
+                    v-if="showCostEstimate"
                     class="cursor-help font-mono text-[10px] text-slate-500 tabular-nums"
                     :title="
                         __(
@@ -388,9 +398,9 @@ const rcaCategories = [
             <span>{{ error }}</span>
         </div>
 
-        <!-- Progressive Disclosure 1: CapEx Project Selection (Visible when hours_project > 0) -->
+        <!-- Progressive Disclosure 1: CapEx Project Selection (only when attribution required) -->
         <div
-            v-if="modelValue.hours_project > 0"
+            v-if="requireCapexAttribution && modelValue.hours_project > 0"
             class="border-t border-sky-100 bg-sky-50/60 px-3 py-2 dark:border-sky-950 dark:bg-sky-950/20"
             :data-test="`capex-container-${modelValue.employee_id}`"
         >

@@ -1,20 +1,13 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3';
-import {
-    Activity,
-    Clock,
-    Factory,
-    FolderKanban,
-    ShieldCheck,
-    Zap,
-} from '@lucide/vue';
+import { Activity, Clock, Factory } from '@lucide/vue';
 import LanguageSwitcher from '@/components/LanguageSwitcher.vue';
 import { useShiftInfo } from '@/composables/useShiftInfo';
 import { useTrans } from '@/composables/useTrans';
 import { home } from '@/routes';
 
 const { __ } = useTrans();
-const { timeString, currentShift } = useShiftInfo();
+const { timeString } = useShiftInfo();
 
 defineProps<{
     title?: string;
@@ -57,7 +50,7 @@ defineProps<{
                         <div
                             class="font-bold tracking-tight text-slate-900 dark:text-white"
                         >
-                            PT ISUZU ASTRA MOTOR INDONESIA
+                            {{ __('PT ISUZU ASTRA MOTOR INDONESIA') }}
                         </div>
                         <div
                             class="text-[11px] font-medium tracking-wide text-slate-500 dark:text-slate-400"
@@ -77,139 +70,52 @@ defineProps<{
                         class="inline-flex items-center gap-1.5 rounded-full border border-red-200 bg-red-50 px-3 py-1 text-xs font-semibold text-[#cc0000] dark:border-red-500/30 dark:bg-red-950/60 dark:text-red-300"
                     >
                         <span class="size-1.5 rounded-full bg-[#cc0000]" />
-                        <span>{{ __('OT-CapEx Portal') }}</span>
+                        <span>{{ __('Overtime Portal') }}</span>
                     </div>
                 </div>
             </div>
 
             <!-- Middle Technical Presentation -->
-            <div class="relative z-10 my-auto max-w-xl space-y-8 py-8">
-                <div class="space-y-3">
-                    <div
-                        class="inline-flex items-center gap-2 rounded-md border border-slate-200 bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700 dark:border-transparent dark:bg-white/10 dark:text-slate-300"
-                    >
-                        <Factory
-                            class="size-3.5 text-[#cc0000] dark:text-red-400"
-                        />
-                        <span>{{
-                            __('Manufacturing Execution & Cost Governance')
-                        }}</span>
-                    </div>
-                    <h1
-                        class="text-3xl font-extrabold tracking-tight text-slate-900 xl:text-4xl dark:text-white"
-                    >
-                        {{
-                            __(
-                                'Overtime Management & Fixed Asset Capitalization System',
-                            )
-                        }}
-                    </h1>
-                    <p
-                        class="text-sm leading-relaxed text-slate-600 xl:text-base dark:text-slate-400"
-                    >
-                        {{
-                            __(
-                                'Manufacturing operational precision for shift overtime tracking, burn-rate index efficiency, and CapEx/OpEx cost segregation under IATF 16949 standards.',
-                            )
-                        }}
-                    </p>
+            <div class="relative z-10 my-auto max-w-xl space-y-4 py-8">
+                <div
+                    class="inline-flex items-center gap-2 rounded-md border border-slate-200 bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700 dark:border-transparent dark:bg-white/10 dark:text-slate-300"
+                >
+                    <Factory
+                        class="size-3.5 text-[#cc0000] dark:text-red-400"
+                    />
+                    <span>{{
+                        __('Manufacturing Execution & Overtime Control')
+                    }}</span>
                 </div>
-
-                <!-- 3 Automotive Highlight Cards -->
-                <div class="grid gap-3 sm:grid-cols-3">
-                    <!-- Feature 1: CapEx Segregation -->
-                    <div
-                        class="rounded-xl border border-slate-200 bg-slate-50/70 p-3.5 shadow-2xs dark:border-slate-800 dark:bg-slate-900/60"
-                    >
-                        <div
-                            class="mb-2 flex size-8 items-center justify-center rounded-lg bg-sky-100 text-sky-700 dark:bg-sky-950 dark:text-sky-400"
-                        >
-                            <FolderKanban class="size-4" />
-                        </div>
-                        <div
-                            class="text-xs font-bold text-slate-900 dark:text-white"
-                        >
-                            {{ __('CIP CapEx Allocation') }}
-                        </div>
-                        <p
-                            class="mt-1 text-[11px] leading-tight text-slate-600 dark:text-slate-400"
-                        >
-                            {{
-                                __(
-                                    'Automated fixed asset project cost segregation.',
-                                )
-                            }}
-                        </p>
-                    </div>
-
-                    <!-- Feature 2: Shift Ergonomics -->
-                    <div
-                        class="rounded-xl border border-slate-200 bg-slate-50/70 p-3.5 shadow-2xs dark:border-slate-800 dark:bg-slate-900/60"
-                    >
-                        <div
-                            class="mb-2 flex size-8 items-center justify-center rounded-lg bg-red-100 text-[#cc0000] dark:bg-red-950 dark:text-red-400"
-                        >
-                            <Zap class="size-4" />
-                        </div>
-                        <div
-                            class="text-xs font-bold text-slate-900 dark:text-white"
-                        >
-                            {{ __('3-Click Ergonomics') }}
-                        </div>
-                        <p
-                            class="mt-1 text-[11px] leading-tight text-slate-600 dark:text-slate-400"
-                        >
-                            {{ __('Fast shift submissions for Team Leaders.') }}
-                        </p>
-                    </div>
-
-                    <!-- Feature 3: Depnaker Compliance -->
-                    <div
-                        class="rounded-xl border border-slate-200 bg-slate-50/70 p-3.5 shadow-2xs dark:border-slate-800 dark:bg-slate-900/60"
-                    >
-                        <div
-                            class="mb-2 flex size-8 items-center justify-center rounded-lg bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400"
-                        >
-                            <ShieldCheck class="size-4" />
-                        </div>
-                        <div
-                            class="text-xs font-bold text-slate-900 dark:text-white"
-                        >
-                            {{ __('Statutory Overtime Limit') }}
-                        </div>
-                        <p
-                            class="mt-1 text-[11px] leading-tight text-slate-600 dark:text-slate-400"
-                        >
-                            {{ __('14-hour weekly overtime protection.') }}
-                        </p>
-                    </div>
-                </div>
+                <h1
+                    class="text-3xl font-extrabold tracking-tight text-slate-900 xl:text-4xl dark:text-white"
+                    data-test="login-hero-title"
+                >
+                    {{ __('Smart Monitoring Overtime versi 2.0') }}
+                </h1>
+                <p
+                    class="text-sm leading-relaxed text-slate-600 xl:text-base dark:text-slate-400"
+                    data-test="login-hero-subtitle"
+                >
+                    {{
+                        __(
+                            'Management Index Overtime berbasis Machine Learning',
+                        )
+                    }}
+                </p>
             </div>
 
             <!-- Bottom Telemetry Footer Bar -->
             <div
                 class="relative z-10 flex flex-wrap items-center justify-between gap-4 border-t border-slate-200 pt-6 text-xs text-slate-500 dark:border-slate-800/80 dark:text-slate-400"
             >
-                <div class="flex items-center gap-4">
-                    <!-- Live Shift Indicator -->
-                    <div
-                        class="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 font-medium text-emerald-800 dark:border-emerald-500/20 dark:bg-emerald-950/40 dark:text-emerald-300"
-                    >
-                        <span
-                            class="size-2 animate-pulse rounded-full bg-emerald-500"
-                        />
-                        <span>{{ currentShift.badgeText }}</span>
-                    </div>
-
-                    <!-- Live WIB Clock -->
-                    <div
-                        class="inline-flex items-center gap-1.5 font-mono text-slate-700 dark:text-slate-300"
-                    >
-                        <Clock
-                            class="size-3.5 text-slate-500 dark:text-slate-400"
-                        />
-                        <span>{{ timeString }} WIB</span>
-                    </div>
+                <div
+                    class="inline-flex items-center gap-1.5 font-mono text-slate-700 dark:text-slate-300"
+                >
+                    <Clock
+                        class="size-3.5 text-slate-500 dark:text-slate-400"
+                    />
+                    <span>{{ timeString }} WIB</span>
                 </div>
 
                 <div
@@ -218,7 +124,9 @@ defineProps<{
                     <Activity
                         class="size-3.5 text-slate-500 dark:text-slate-400"
                     />
-                    <span>IATF 16949 · ISO 9001 · 5S Standards</span>
+                    <span>{{
+                        __('IATF 16949 · ISO 9001 · 5S Standards')
+                    }}</span>
                 </div>
             </div>
         </div>
@@ -243,7 +151,7 @@ defineProps<{
                         <div
                             class="text-xs font-bold text-slate-900 dark:text-white"
                         >
-                            ISUZU OT-CapEx
+                            {{ __('ISUZU Overtime') }}
                         </div>
                         <div class="text-[10px] text-slate-500">
                             {{ __('Karawang Assembly Plant') }}
@@ -251,20 +159,10 @@ defineProps<{
                     </div>
                 </Link>
 
-                <div class="flex items-center gap-2">
-                    <LanguageSwitcher
-                        size="sm"
-                        test-id-prefix="lang-switch-mobile"
-                    />
-                    <div
-                        class="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-1 text-[11px] font-medium text-emerald-700 dark:text-emerald-300"
-                    >
-                        <span
-                            class="size-1.5 animate-pulse rounded-full bg-emerald-500"
-                        />
-                        <span>{{ currentShift.name }}</span>
-                    </div>
-                </div>
+                <LanguageSwitcher
+                    size="sm"
+                    test-id-prefix="lang-switch-mobile"
+                />
             </div>
 
             <!-- Form Container -->
@@ -284,12 +182,13 @@ defineProps<{
                     <h2
                         class="text-2xl font-bold tracking-tight text-slate-900 dark:text-white"
                     >
-                        {{ title || __('Log in to System') }}
+                        {{ title ? __(title) : __('Log in to System') }}
                     </h2>
                     <p class="text-sm text-slate-500 dark:text-slate-400">
                         {{
-                            description ||
-                            __('Enter your credentials below to log in')
+                            description
+                                ? __(description)
+                                : __('Enter your credentials below to log in')
                         }}
                     </p>
                 </div>
@@ -303,7 +202,11 @@ defineProps<{
                 class="pt-6 text-center text-xs text-slate-400 dark:text-slate-500"
             >
                 <p>
-                    PT Isuzu Astra Motor Indonesia &copy; 2026.
+                    {{
+                        __('PT Isuzu Astra Motor Indonesia © :year.', {
+                            year: 2026,
+                        })
+                    }}
                     {{ __('All rights reserved.') }}
                 </p>
             </div>

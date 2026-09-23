@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use App\Models\OvertimeSubmission;
 use App\Models\User;
+use App\Support\Features;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -58,7 +59,14 @@ class HandleInertiaRequests extends Middleware
             'translations' => $this->getTranslations(),
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
             'unread_notifications_count' => $user ? $user->unreadNotifications()->count() : 0,
-            'pending_approvals_count' => $this->pendingApprovalsCount($user),
+            'pending_approvals_count' => Features::overtimeApprovalsEnabled()
+                ? $this->pendingApprovalsCount($user)
+                : 0,
+            'features' => [
+                'financial_governance_enabled' => Features::financialGovernanceEnabled(),
+                'overtime_approvals_enabled' => Features::overtimeApprovalsEnabled(),
+                'capex_attribution_required' => Features::capexAttributionRequired(),
+            ],
             'flash' => [
                 'success' => $request->session()->get('success'),
                 'error' => $request->session()->get('error'),

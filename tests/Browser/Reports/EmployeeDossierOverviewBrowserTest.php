@@ -156,7 +156,7 @@ test('team leader can view employee dossier overview with KPI cards, category do
         ->assertSee('Overtime Category Distribution')
         ->assertSee('Production')
         ->assertSee('TPM')
-        ->assertSee('CapEx')
+        ->assertSee('Project')
         ->assertSee('Others')
         // Day-Type Breakdown Card
         ->assertSee('Workday & Holiday Distribution (HKN vs HLR)')

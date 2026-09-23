@@ -32,7 +32,7 @@ import {
 } from '@/components/ui/sheet';
 import { Spinner } from '@/components/ui/spinner';
 import { useTrans } from '@/composables/useTrans';
-import { formatDateIndo, formatRupiah } from '@/lib/formatters';
+import { formatDateIndo } from '@/lib/formatters';
 import { audit as auditRoute } from '@/routes/overtime/items';
 
 export interface AuditItemDetails {
@@ -259,12 +259,6 @@ function formatFieldValue(key: string, val: unknown): string {
     if (key === 'status') {
         return formatStatusValue(val);
     }
-    if (key === 'total_cost_snapshot' || key === 'hourly_rate_snapshot') {
-        return formatRupiah(val as number | string, {
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 0,
-        });
-    }
     if (
         key === 'hours_production' ||
         key === 'hours_tpm' ||
@@ -284,7 +278,6 @@ const FIELD_LABELS: Record<string, string> = {
     hourly_rate_snapshot: 'Tarif Upah Per Jam',
     hours_production: 'Jam Produksi',
     hours_tpm: 'Jam TPM',
-    hours_project: 'Jam CapEx Proyek',
     hours_others: 'Jam Lainnya',
     task_description: 'Deskripsi Tugas',
     rca_category: 'Kategori RCA',
@@ -294,6 +287,10 @@ const FIELD_LABELS: Record<string, string> = {
 };
 
 function getFieldLabel(key: string): string {
+    if (key === 'hours_project') {
+        return __('Project (Jam)');
+    }
+
     return FIELD_LABELS[key] ?? key;
 }
 
@@ -313,7 +310,6 @@ function computeDiff(
             'hours_tpm',
             'hours_project',
             'hours_others',
-            'total_cost_snapshot',
             'task_description',
         ];
         const diffs: AuditDiffField[] = [];
@@ -338,6 +334,8 @@ function computeDiff(
         'created_at',
         'updated_at',
         'policy_warning',
+        'total_cost_snapshot',
+        'hourly_rate_snapshot',
     ]);
 
     for (const key of Object.keys(newState)) {

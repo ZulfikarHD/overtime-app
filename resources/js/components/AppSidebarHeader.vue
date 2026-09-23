@@ -18,7 +18,7 @@ withDefaults(
     },
 );
 
-const { timeString, currentShift } = useShiftInfo();
+const { timeString } = useShiftInfo();
 const page = usePage();
 const user = computed(() => page.props.auth?.user as User | undefined);
 </script>
@@ -36,17 +36,6 @@ const user = computed(() => page.props.auth?.user as User | undefined);
 
         <!-- Factory Operational Indicators & User Identity Pill -->
         <div class="flex shrink-0 items-center gap-2 sm:gap-3">
-            <!-- Active Shift Badge -->
-            <div
-                class="hidden items-center gap-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-1 text-xs font-medium text-emerald-800 shadow-xs sm:inline-flex dark:text-emerald-300"
-                data-test="active-shift-badge"
-            >
-                <span
-                    class="size-1.5 animate-pulse rounded-full bg-emerald-500"
-                />
-                <span>{{ currentShift.badgeText }}</span>
-            </div>
-
             <!-- Topbar Notification Bell (E03-05) -->
             <NotificationBell />
 

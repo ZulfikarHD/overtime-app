@@ -15,7 +15,7 @@ export interface ProductionVolumeData {
     target_volume: number;
     unit: string;
     labels: string[];
-    sparkline_14d: number[];
+    sparkline_12m: number[];
 }
 
 interface Props {
@@ -28,10 +28,10 @@ const props = withDefaults(defineProps<Props>(), {
         erp_connected: false,
         message: 'N/A — Integrasi data produksi ERP belum terhubung',
         current_volume: null,
-        target_volume: 1450,
+        target_volume: 43500,
         unit: 'unit',
         labels: [],
-        sparkline_14d: [],
+        sparkline_12m: [],
     }),
     loading: false,
 });
@@ -40,7 +40,7 @@ const { __ } = useTrans();
 
 const formattedTarget = computed(() => {
     return new Intl.NumberFormat('id-ID').format(
-        props.data?.target_volume ?? 1450,
+        props.data?.target_volume ?? 43500,
     );
 });
 
@@ -124,7 +124,7 @@ const variancePct = computed(() => {
                             <span
                                 class="text-xs font-medium text-slate-500 dark:text-slate-400"
                             >
-                                {{ data?.unit || 'unit' }}
+                                {{ __('unit') }}
                             </span>
                         </div>
                         <p
@@ -140,7 +140,7 @@ const variancePct = computed(() => {
                                 }}
                             </span>
                             <span v-else>
-                                {{ __('Target Harian Plant') }}
+                                {{ __('Target Bulanan Plant') }}
                             </span>
                         </p>
                     </div>
@@ -162,12 +162,12 @@ const variancePct = computed(() => {
                     </div>
                 </div>
 
-                <!-- Live 14-day sparkline when ERP connected -->
+                <!-- Live 12-month sparkline when ERP connected -->
                 <div
-                    v-if="data?.erp_connected && data.sparkline_14d.length > 0"
+                    v-if="data?.erp_connected && data.sparkline_12m.length > 0"
                 >
                     <BaseMiniSparkline
-                        :data="data.sparkline_14d"
+                        :data="data.sparkline_12m"
                         :labels="data.labels"
                         type="line"
                         :color="chartColors.primary"
@@ -178,8 +178,8 @@ const variancePct = computed(() => {
                     <div
                         class="mt-1 flex items-center justify-between text-[11px] text-slate-400"
                     >
-                        <span>14 hari lalu</span>
-                        <span>Hari ini</span>
+                        <span>{{ __('12 bulan lalu') }}</span>
+                        <span>{{ __('Bulan ini') }}</span>
                     </div>
                 </div>
 

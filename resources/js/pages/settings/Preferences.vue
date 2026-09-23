@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head, useForm } from '@inertiajs/vue3';
+import { Head, useForm, usePage } from '@inertiajs/vue3';
 import {
     Bell,
     Check,
@@ -12,6 +12,7 @@ import {
     ShieldAlert,
     Sun,
 } from '@lucide/vue';
+import { computed } from 'vue';
 import Heading from '@/components/Heading.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -53,6 +54,22 @@ const props = defineProps<{
 }>();
 
 const { __ } = useTrans();
+const page = usePage();
+const features = computed(
+    () =>
+        (page.props.features as
+            | {
+                  financial_governance_enabled?: boolean;
+                  overtime_approvals_enabled?: boolean;
+              }
+            | undefined) ?? {},
+);
+const showBudgetAlertPref = computed(
+    () => features.value.financial_governance_enabled === true,
+);
+const showApprovalPref = computed(
+    () => features.value.overtime_approvals_enabled === true,
+);
 const { updateAppearance } = useAppearance();
 
 const form = useForm<PreferencesData>({
@@ -236,10 +253,16 @@ function submit() {
                         </div>
                     </div>
 
-                    <div class="border-border/60 border-t" />
+                    <div
+                        v-if="showBudgetAlertPref"
+                        class="border-border/60 border-t"
+                    />
 
                     <!-- Budget Threshold Alert -->
-                    <div class="flex items-start gap-3">
+                    <div
+                        v-if="showBudgetAlertPref"
+                        class="flex items-start gap-3"
+                    >
                         <Checkbox
                             id="pref-budget-alert"
                             data-test="checkbox-budget-alert"
@@ -277,10 +300,16 @@ function submit() {
                         </div>
                     </div>
 
-                    <div class="border-border/60 border-t" />
+                    <div
+                        v-if="showApprovalPref"
+                        class="border-border/60 border-t"
+                    />
 
                     <!-- Approval Status Notification -->
-                    <div class="flex items-start gap-3">
+                    <div
+                        v-if="showApprovalPref"
+                        class="flex items-start gap-3"
+                    >
                         <Checkbox
                             id="pref-approval-status"
                             data-test="checkbox-approval-status"
@@ -338,7 +367,8 @@ function submit() {
                     </CardDescription>
                 </CardHeader>
                 <CardContent
-                    class="grid grid-cols-1 gap-3 text-xs sm:grid-cols-3"
+                    class="grid grid-cols-1 gap-3 text-xs sm:grid-cols-2"
+                    :class="{ 'sm:grid-cols-3': showBudgetAlertPref }"
                 >
                     <div
                         class="border-border/60 bg-background/80 rounded-md border p-2.5"
@@ -379,6 +409,7 @@ function submit() {
                     </div>
 
                     <div
+                        v-if="showBudgetAlertPref"
                         class="border-border/60 bg-background/80 rounded-md border p-2.5"
                     >
                         <div

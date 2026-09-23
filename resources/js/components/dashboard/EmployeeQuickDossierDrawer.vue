@@ -120,6 +120,17 @@ const opexPct = computed(() => {
     );
 });
 
+function categoryLabel(cat: EmployeeCategoryItem): string {
+    const labels: Record<EmployeeCategoryItem['key'], string> = {
+        production: __('Produksi'),
+        tpm: __('TPM'),
+        project: __('Project'),
+        others: __('Lainnya'),
+    };
+
+    return labels[cat.key] ?? cat.label;
+}
+
 const zoneBadgeClass = computed(() => {
     switch (props.employee?.burn_zone) {
         case 'danger':
@@ -290,13 +301,13 @@ const spklBadgeClass = computed(() => {
                             />
                         </div>
 
-                        <!-- CapEx vs OpEx Split Bar -->
+                        <!-- Project vs Operational Split Bar -->
                         <div class="border-border/50 space-y-2 border-t pt-1">
                             <div
                                 class="flex items-center justify-between text-xs font-medium"
                             >
                                 <span class="text-muted-foreground">{{
-                                    __('Pemisahan CapEx vs OpEx')
+                                    __('Project vs Operational Split')
                                 }}</span>
                                 <div class="flex items-center gap-2">
                                     <span
@@ -305,7 +316,7 @@ const spklBadgeClass = computed(() => {
                                         <span
                                             class="size-2 rounded-full bg-sky-500"
                                         ></span>
-                                        CapEx:
+                                        {{ __('Project') }}:
                                         {{ employee.capex_hours.toFixed(1) }}j
                                         ({{ capexPct }}%)
                                     </span>
@@ -315,7 +326,7 @@ const spklBadgeClass = computed(() => {
                                         <span
                                             class="size-2 rounded-full bg-slate-400"
                                         ></span>
-                                        OpEx:
+                                        {{ __('Operational') }}:
                                         {{ employee.opex_hours.toFixed(1) }}j
                                         ({{ opexPct }}%)
                                     </span>
@@ -327,12 +338,12 @@ const spklBadgeClass = computed(() => {
                                 <div
                                     class="h-full bg-sky-500 transition-all duration-300"
                                     :style="{ width: `${capexPct}%` }"
-                                    :title="`CapEx: ${employee.capex_hours}j`"
+                                    :title="`${__('Project')}: ${employee.capex_hours}j`"
                                 />
                                 <div
                                     class="h-full bg-slate-400 transition-all duration-300"
                                     :style="{ width: `${opexPct}%` }"
-                                    :title="`OpEx: ${employee.opex_hours}j`"
+                                    :title="`${__('Operational')}: ${employee.opex_hours}j`"
                                 />
                             </div>
                         </div>
@@ -361,7 +372,7 @@ const spklBadgeClass = computed(() => {
                                                 backgroundColor: cat.color,
                                             }"
                                         />
-                                        {{ cat.label }}
+                                        {{ categoryLabel(cat) }}
                                     </span>
                                     <span
                                         class="text-foreground font-bold tabular-nums"

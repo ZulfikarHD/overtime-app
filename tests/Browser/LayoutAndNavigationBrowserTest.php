@@ -81,9 +81,12 @@ test('user dropdown displays department and section and reveals inline sign out 
 test('guest layout enforces centered clean authentication card with dual identifier placeholder', function () {
     visit('/login')
         ->assertSee('PT ISUZU ASTRA MOTOR INDONESIA')
+        ->assertSee('Smart Monitoring Overtime versi 2.0')
+        ->assertSee('Management Index Overtime berbasis Machine Learning')
         ->assertSee('Masuk ke Sistem')
         ->assertSee('Email atau NPK')
         ->assertSee('Kata Sandi')
         ->assertSee('Ingat saya')
-        ->assertSee('Alokasi CapEx CIP');
+        ->assertDontSee('Alokasi CapEx CIP')
+        ->assertNoJavaScriptErrors();
 });

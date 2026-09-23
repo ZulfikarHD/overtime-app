@@ -44,6 +44,14 @@ import type {
 const { __ } = useTrans();
 const page = usePage();
 
+const financialGovernanceEnabled = computed(() => {
+    const features = page.props.features as
+        | { financial_governance_enabled?: boolean }
+        | undefined;
+
+    return features?.financial_governance_enabled === true;
+});
+
 const isOpen = ref(false);
 const isLoading = ref(false);
 const notifications = ref<AppNotification[]>([]);
@@ -169,6 +177,22 @@ function asFatigueData(item: AppNotification): FatigueAlertNotificationData {
 
 function asCapexData(item: AppNotification): CapexBurnAlertNotificationData {
     return item.data as CapexBurnAlertNotificationData;
+}
+
+function projectBurnAlertMessage(
+    item: AppNotification,
+): string {
+    const data = asCapexData(item);
+
+    return __(
+        'Project [:code] has consumed :pct% of allocated work hours (:consumed / :allocated hrs).',
+        {
+            code: data.project_code,
+            pct: Number(data.burn_index_pct).toFixed(1),
+            consumed: Number(data.consumed_hours).toFixed(1),
+            allocated: Number(data.allocated_hours).toFixed(1),
+        },
+    );
 }
 
 function asSpklData(item: AppNotification): SpklNotificationData {
@@ -611,9 +635,12 @@ const displayCount = computed(() => {
                                 </div>
                             </div>
 
-                            <!-- CapEx Burn Alert Notification Item (E07-02) -->
+                            <!-- Project hour burn alert (financial governance) -->
                             <div
-                                v-else-if="isCapexAlert(item)"
+                                v-else-if="
+                                    financialGovernanceEnabled &&
+                                    isCapexAlert(item)
+                                "
                                 class="flex cursor-pointer items-start gap-2.5"
                                 data-test="notification-capex-item"
                                 @click="handleCapexNotificationClick(item)"
@@ -660,10 +687,7 @@ const displayCount = computed(() => {
                                     <p
                                         class="text-muted-foreground mt-0.5 line-clamp-2 text-xs"
                                     >
-                                        {{
-                                            asCapexData(item).message ||
-                                            asCapexData(item).title
-                                        }}
+                                        {{ projectBurnAlertMessage(item) }}
                                     </p>
 
                                     <div
@@ -675,7 +699,7 @@ const displayCount = computed(() => {
                                             {{
                                                 asCapexData(item)
                                                     .department_name ||
-                                                __('Proyek CapEx')
+                                                __('Project')
                                             }}
                                         </span>
 

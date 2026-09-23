@@ -13,6 +13,7 @@ use App\Models\OvertimeSubmission;
 use App\Models\Section;
 use App\Services\Policy\OvertimePolicyEvaluator;
 use App\Services\PolicyThresholdService;
+use App\Support\Features;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -101,7 +102,7 @@ class SubmitOvertimeAction
                 'department_id' => $department->id,
                 'section_id' => $section->id,
                 'submitted_by_user_id' => $userId,
-                'status' => 'SUBMITTED',
+                'status' => Features::overtimeApprovalsEnabled() ? 'SUBMITTED' : 'APPROVED',
                 'submission_notes' => $data['submission_notes'] ?? ($data['notes'] ?? null),
             ]);
 
@@ -135,23 +136,27 @@ class SubmitOvertimeAction
                     ]);
                 }
 
-                // Validate BR-08: CapEx project required when hours_project > 0
+                // Validate BR-08: CapEx project required when feature flag is on
                 $capexProjectId = null;
                 if (bccomp($projStr, '0.00', 2) > 0) {
-                    if (empty($itemData['capex_project_id'])) {
-                        throw ValidationException::withMessages([
-                            'items' => [__('Jam lembur proyek CapEx untuk :name memerlukan pemilihan Proyek Investasi (BR-08).', ['name' => $employee->full_name])],
-                        ]);
+                    if (Features::capexAttributionRequired()) {
+                        if (empty($itemData['capex_project_id'])) {
+                            throw ValidationException::withMessages([
+                                'items' => [__('Jam lembur proyek CapEx untuk :name memerlukan pemilihan Proyek Investasi (BR-08).', ['name' => $employee->full_name])],
+                            ]);
+                        }
+                        $capexProject = CapexProject::where('id', $itemData['capex_project_id'])
+                            ->where('status', 'ACTIVE')
+                            ->first();
+                        if (! $capexProject) {
+                            throw ValidationException::withMessages([
+                                'items' => [__('Proyek CapEx yang dipilih tidak aktif atau tidak ditemukan.')],
+                            ]);
+                        }
+                        $capexProjectId = $capexProject->id;
+                    } elseif (! empty($itemData['capex_project_id'])) {
+                        $capexProjectId = (int) $itemData['capex_project_id'];
                     }
-                    $capexProject = CapexProject::where('id', $itemData['capex_project_id'])
-                        ->where('status', 'ACTIVE')
-                        ->first();
-                    if (! $capexProject) {
-                        throw ValidationException::withMessages([
-                            'items' => [__('Proyek CapEx yang dipilih tidak aktif atau tidak ditemukan.')],
-                        ]);
-                    }
-                    $capexProjectId = $capexProject->id;
                 }
 
                 // Immutable Financial Snapshotting (E03-02)
@@ -160,6 +165,8 @@ class SubmitOvertimeAction
                     : number_format((float) ($department->default_hourly_rate ?? 0.00), 2, '.', '');
 
                 $costSnapshot = bcmul($lineTotalStr, $rateSnapshot, 2);
+
+                $itemStatus = Features::overtimeApprovalsEnabled() ? 'PENDING' : 'APPROVED';
 
                 $createdItem = OvertimeItem::create([
                     'overtime_submission_id' => $submission->id,
@@ -175,7 +182,7 @@ class SubmitOvertimeAction
                     'rca_category' => $itemData['rca_category'] ?? null,
                     'rca_notes' => $itemData['rca_notes'] ?? null,
                     'task_description' => $itemData['task_description'] ?? null,
-                    'status' => 'PENDING',
+                    'status' => $itemStatus,
                     'lock_version' => 1,
                 ]);
 
@@ -297,23 +304,27 @@ class SubmitOvertimeAction
                     ]);
                 }
 
-                // Validate BR-08: CapEx project required when hours_project > 0
+                // Validate BR-08: CapEx project required when feature flag is on
                 $capexProjectId = null;
                 if (bccomp($projStr, '0.00', 2) > 0) {
-                    if (empty($itemData['capex_project_id'])) {
-                        throw ValidationException::withMessages([
-                            'items' => [__('Jam lembur proyek CapEx untuk :name memerlukan pemilihan Proyek Investasi (BR-08).', ['name' => $employee->full_name])],
-                        ]);
+                    if (Features::capexAttributionRequired()) {
+                        if (empty($itemData['capex_project_id'])) {
+                            throw ValidationException::withMessages([
+                                'items' => [__('Jam lembur proyek CapEx untuk :name memerlukan pemilihan Proyek Investasi (BR-08).', ['name' => $employee->full_name])],
+                            ]);
+                        }
+                        $capexProject = CapexProject::where('id', $itemData['capex_project_id'])
+                            ->where('status', 'ACTIVE')
+                            ->first();
+                        if (! $capexProject) {
+                            throw ValidationException::withMessages([
+                                'items' => [__('Proyek CapEx yang dipilih tidak aktif atau tidak ditemukan.')],
+                            ]);
+                        }
+                        $capexProjectId = $capexProject->id;
+                    } elseif (! empty($itemData['capex_project_id'])) {
+                        $capexProjectId = (int) $itemData['capex_project_id'];
                     }
-                    $capexProject = CapexProject::where('id', $itemData['capex_project_id'])
-                        ->where('status', 'ACTIVE')
-                        ->first();
-                    if (! $capexProject) {
-                        throw ValidationException::withMessages([
-                            'items' => [__('Proyek CapEx yang dipilih tidak aktif atau tidak ditemukan.')],
-                        ]);
-                    }
-                    $capexProjectId = $capexProject->id;
                 }
 
                 // Fresh Financial Snapshotting (E03-02 / E03-03 re-snapshot)
@@ -322,6 +333,8 @@ class SubmitOvertimeAction
                     : number_format((float) ($department->default_hourly_rate ?? 0.00), 2, '.', '');
 
                 $costSnapshot = bcmul($lineTotalStr, $rateSnapshot, 2);
+
+                $itemStatus = Features::overtimeApprovalsEnabled() ? 'PENDING' : 'APPROVED';
 
                 $createdItem = OvertimeItem::create([
                     'overtime_submission_id' => $submission->id,
@@ -337,7 +350,7 @@ class SubmitOvertimeAction
                     'rca_category' => $itemData['rca_category'] ?? null,
                     'rca_notes' => $itemData['rca_notes'] ?? null,
                     'task_description' => $itemData['task_description'] ?? null,
-                    'status' => 'PENDING',
+                    'status' => $itemStatus,
                     'lock_version' => 1,
                 ]);
 
@@ -375,7 +388,7 @@ class SubmitOvertimeAction
                 'section_id' => $section->id,
                 'submission_notes' => $data['submission_notes'] ?? ($data['notes'] ?? null),
                 'total_hours_cached' => $totalHoursAccumulator,
-                'status' => 'SUBMITTED',
+                'status' => Features::overtimeApprovalsEnabled() ? 'SUBMITTED' : 'APPROVED',
             ]);
 
             // 6. Update SPKL due date if operational date changed
