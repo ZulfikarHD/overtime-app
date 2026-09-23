@@ -186,6 +186,7 @@ type CellData = {
 // -------------------------------------------------------
 // State
 // -------------------------------------------------------
+const isPublished = computed(() => props.existing_plan?.status === 'PUBLISHED');
 const selectedSectionId = ref<number | null>(props.selected_section_id);
 const selectedDepartmentId = ref<number | null>(props.selected_department_id);
 const roster = ref<RosterEmployee[]>(props.initial_roster);
@@ -544,53 +545,29 @@ function buildItems(): PlanItemData[] {
 }
 
 // -------------------------------------------------------
-// Roster loading
+// Section change — full Inertia reload (roster + actuals + plan)
 // -------------------------------------------------------
-const rosterLoading = ref(false);
-
-async function loadRoster(sectionId: number) {
-    rosterLoading.value = true;
-    try {
-        const res = await fetch(`/overtime/planning/roster/${sectionId}`, {
-            headers: {
-                Accept: 'application/json',
-                'X-Requested-With': 'XMLHttpRequest',
-            },
-        });
-        const json = await res.json();
-        roster.value = json.employees ?? [];
-        const data: Record<number, Record<string, CellData>> = {};
-        roster.value.forEach((emp) => {
-            data[emp.id] = {};
-            props.calendar_days.forEach((d) => {
-                data[emp.id][d.date] = emptyCell();
-            });
-        });
-
-        if (props.existing_plan?.items) {
-            props.existing_plan.items.forEach((item) => {
-                if (data[item.employee_id]?.[item.plan_date] !== undefined) {
-                    data[item.employee_id][item.plan_date] = {
-                        hours_production: Number(item.hours_production) || 0,
-                        hours_tpm: Number(item.hours_tpm) || 0,
-                        hours_project: Number(item.hours_project) || 0,
-                        hours_others: Number(item.hours_others) || 0,
-                    };
-                }
-            });
-        }
-
-        gridData.value = data;
-        draftInputs.value = {};
-    } finally {
-        rosterLoading.value = false;
-    }
-}
-
 watch(selectedSectionId, (newId, oldId) => {
-    if (newId && newId > 0 && newId !== oldId) {
-        loadRoster(newId);
+    const id = Number(newId);
+    const previousId = Number(oldId);
+
+    if (!id || id <= 0 || id === previousId) {
+        return;
     }
+
+    if (id === props.selected_section_id) {
+        return;
+    }
+
+    router.get(
+        planningCreate(),
+        {
+            fiscal_year: props.fiscal_year,
+            fiscal_month: props.fiscal_month,
+            section_id: id,
+        },
+        { preserveState: false },
+    );
 });
 
 // -------------------------------------------------------
@@ -838,13 +815,6 @@ function onMonthChange(value: unknown) {
         </div>
 
         <div
-            v-else-if="rosterLoading"
-            class="mb-4 animate-pulse rounded-lg border border-slate-200 p-8 text-center text-sm text-slate-400"
-        >
-            {{ __('Memuat karyawan...') }}
-        </div>
-
-        <div
             v-else-if="roster.length === 0"
             class="mb-4 rounded-lg border border-dashed border-slate-300 bg-slate-50 p-8 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900"
         >
@@ -858,7 +828,7 @@ function onMonthChange(value: unknown) {
                 data-test="planning-spreadsheet"
                 class="mb-4 overflow-hidden rounded-lg border border-slate-300 bg-white shadow-xs dark:border-slate-700 dark:bg-slate-900"
             >
-                <div class="max-h-[55vh] overflow-auto">
+                <div class="max-h-[55vh] overflow-auto pb-4">
                     <table
                         class="w-max min-w-full border-collapse text-left text-[10px]"
                     >
@@ -993,16 +963,20 @@ function onMonthChange(value: unknown) {
                                             inputmode="decimal"
                                             autocomplete="off"
                                             data-test="plan-cell-input"
+                                            :readonly="isPublished"
                                             class="h-7 w-[28px] border-0 bg-transparent text-center font-mono text-[10px] tabular-nums outline-none focus:ring-1 focus:ring-[#cc0000] focus:ring-inset"
-                                            :class="
+                                            :class="[
                                                 cellHasValue(
                                                     emp.id,
                                                     d.date,
                                                     cat.key,
                                                 )
                                                     ? 'bg-emerald-100 font-bold text-slate-900 dark:bg-emerald-900/40 dark:text-white'
-                                                    : 'text-slate-400'
-                                            "
+                                                    : 'text-slate-400',
+                                                isPublished
+                                                    ? 'cursor-not-allowed opacity-80'
+                                                    : '',
+                                            ]"
                                             :value="
                                                 getDisplayValue(
                                                     emp.id,
@@ -1463,10 +1437,12 @@ function onMonthChange(value: unknown) {
                 <textarea
                     v-model="form.notes"
                     rows="2"
+                    :readonly="isPublished"
                     :placeholder="
                         __('Catatan opsional untuk planning bulan ini...')
                     "
                     class="w-full resize-none rounded-md border border-slate-300 bg-white px-3 py-2 text-xs focus:border-[#cc0000] focus:ring-1 focus:ring-[#cc0000] focus:outline-none dark:border-slate-700 dark:bg-slate-800"
+                    :class="isPublished ? 'cursor-not-allowed opacity-80' : ''"
                 />
             </div>
 
@@ -1476,7 +1452,7 @@ function onMonthChange(value: unknown) {
                     variant="outline"
                     size="sm"
                     @click="submitPlan()"
-                    :disabled="form.processing"
+                    :disabled="form.processing || isPublished"
                 >
                     <Save class="mr-1 size-4" />
                     {{ __('Simpan Draft') }}

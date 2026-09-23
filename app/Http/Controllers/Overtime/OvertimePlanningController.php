@@ -14,6 +14,7 @@ use App\Models\OvertimePlanItem;
 use App\Models\Section;
 use App\Models\User;
 use App\Services\Analytics\DashboardKpiService;
+use App\Services\OperationalCalendarService;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -401,6 +402,9 @@ class OvertimePlanningController extends Controller
      */
     private function getCalendarDays(int $year, int $month): array
     {
+        // Ensure Indonesian national holidays + weekends are seeded for HKN/HLR.
+        app(OperationalCalendarService::class)->ensureYearSeeded($year);
+
         $daysInMonth = Carbon::createFromDate($year, $month, 1)->daysInMonth;
         $days = [];
 
