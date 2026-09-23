@@ -50,7 +50,7 @@ The top section displays four executive KPI cards with interactive mini charts:
 
 ---
 
-### Filtering by Department and Date
+### Filtering by Department, Section, and Date
 
 Supervisors and Administrators can filter metrics to inspect specific production areas:
 
@@ -59,14 +59,23 @@ Supervisors and Administrators can filter metrics to inspect specific production
     - Click the **Department** dropdown.
     - Choose a specific department (e.g., _Assembly Department_, _Welding Department_) or select **All Departments (Plant-wide)**.
     - _(Note: Department Managers and Team Leaders see their assigned department automatically.)_
-3. To change the operational date:
+3. To filter by section (optional):
+    - Click the **Section** dropdown next to Department.
+    - Leave **All Sections (Department)** selected to keep department-level totals (default).
+    - Choose a specific section (e.g., _Engine Assembly Line_) to narrow KPI cards and charts to that line only.
+    - Changing the department automatically resets the section back to **All Sections (Department)**.
+    - _(Note: Team Leaders are scoped to their assigned section and do not see this picker.)_
+4. To change the operational date:
     - Click the **Date** selector and pick any calendar date.
-4. The dashboard automatically refreshes all four KPI cards with real-time figures.
-5. Click the circular **Reset** icon to return to today's date and default plant view.
+5. The dashboard automatically refreshes all four KPI cards and tab charts with real-time figures.
+6. Click the circular **Reset** icon to return to today's date and default plant/department view.
 
 ---
 
 ## Frequently Asked Questions (FAQ)
+
+**Q: Why does changing department clear my section filter?**  
+A: Sections belong to a single department. When you change department, the section filter resets to **All Sections (Department)** so you do not accidentally view a section from another department.
 
 **Q: Why does the Production Volume card show "ERP N/A"?**  
 A: This indicates that the automated plant ERP telemetry interface is either undergoing scheduled maintenance or awaiting connection. The card continues to display standard plant capacity targets safely.

@@ -6,13 +6,15 @@ const { __ } = useTrans();
 
 <template>
     <div class="flex items-center gap-3 overflow-hidden">
+        <!-- Always white plate: black ISUZU mark must meet white behind it -->
         <div
-            class="flex size-9 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white p-1 shadow-xs dark:border-slate-800 dark:bg-slate-900"
+            class="flex size-9 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white p-1 shadow-xs dark:border-slate-300"
+            data-test="isuzu-logo-plate"
         >
             <img
-                src="/isuzu.png"
+                src="/isuzu.jpg"
                 alt="ISUZU"
-                class="h-6 w-auto object-contain"
+                class="h-6 w-auto bg-white object-contain"
             />
         </div>
         <div

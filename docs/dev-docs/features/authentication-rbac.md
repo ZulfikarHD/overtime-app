@@ -96,7 +96,7 @@ erDiagram
 | Layer                     | File / Route / Menu                             | Purpose                                                                                     |
 | ------------------------- | ----------------------------------------------- | ------------------------------------------------------------------------------------------- |
 | **Root & Login Route**    | `routes/web.php` (`/` & `/login`)               | Root `/` renders login directly for guests, redirects authenticated users to `/dashboard`   |
-| **Automotive Hero Shell** | `resources/js/layouts/auth/AuthSplitLayout.vue` | Automotive manufacturing split layout with `/isuzu.png`, shift telemetry, and feature pills |
+| **Automotive Hero Shell** | `resources/js/layouts/auth/AuthSplitLayout.vue` | Automotive manufacturing split layout with `/isuzu.jpg`, shift telemetry, and feature pills |
 | **Login Screen**          | `resources/js/pages/auth/Login.vue`             | Dual-identifier (Email/NPK) login form with password toggle, lockout timer, and passkeys    |
 | **Friendly 403 View**     | `resources/js/pages/Error.vue`                  | In-layout access restricted view with non-technical guidance and return button              |
 | **Dashboard**             | `resources/js/pages/Dashboard.vue`              | Operational dashboard with welcome greeting, assignment cards, role matrix, and shift clock |

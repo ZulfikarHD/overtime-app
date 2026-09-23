@@ -7,7 +7,7 @@ import { useTrans } from '@/composables/useTrans';
 import { home } from '@/routes';
 
 const { __ } = useTrans();
-const { timeString } = useShiftInfo();
+const { timeString, currentShift } = useShiftInfo();
 
 defineProps<{
     title?: string;
@@ -21,7 +21,7 @@ defineProps<{
     >
         <!-- LEFT COLUMN: Automotive Engineering Hero Panel (Desktop) -->
         <div
-            class="relative hidden flex-col justify-between overflow-hidden border-r border-slate-200 bg-white p-8 lg:col-span-6 lg:flex xl:col-span-7 xl:p-12 dark:border-slate-800 dark:bg-[#070b12]"
+            class="relative hidden flex-col justify-between overflow-x-hidden border-r border-slate-200 bg-white p-8 lg:col-span-6 lg:flex xl:col-span-7 xl:p-12 dark:border-slate-800 dark:bg-[#070b12]"
         >
             <!-- Background Decorative Grid & Glow -->
             <div
@@ -38,12 +38,13 @@ defineProps<{
             <div class="relative z-10 flex items-center justify-between">
                 <Link :href="home()" class="flex items-center gap-3">
                     <div
-                        class="flex h-11 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 py-1.5 shadow-xs dark:border-slate-700/60 dark:bg-slate-900"
+                        class="flex h-11 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 py-1.5 shadow-xs dark:border-slate-300"
+                        data-test="isuzu-logo-plate"
                     >
                         <img
-                            src="/isuzu.png"
+                            src="/isuzu.jpg"
                             alt="ISUZU"
-                            class="h-7 w-auto object-contain"
+                            class="h-7 w-auto bg-white object-contain"
                         />
                     </div>
                     <div>
@@ -107,15 +108,23 @@ defineProps<{
 
             <!-- Bottom Telemetry Footer Bar -->
             <div
-                class="relative z-10 flex flex-wrap items-center justify-between gap-4 border-t border-slate-200 pt-6 text-xs text-slate-500 dark:border-slate-800/80 dark:text-slate-400"
+                class="relative z-10 flex flex-wrap items-center justify-between gap-4 border-t border-slate-200 pt-4 text-xs text-slate-500 dark:border-slate-800/80 dark:text-slate-400"
             >
-                <div
-                    class="inline-flex items-center gap-1.5 font-mono text-slate-700 dark:text-slate-300"
-                >
-                    <Clock
-                        class="size-3.5 text-slate-500 dark:text-slate-400"
-                    />
-                    <span>{{ timeString }} WIB</span>
+                <div class="flex flex-col gap-0.5" data-test="login-live-clock">
+                    <div
+                        class="inline-flex items-center gap-1.5 font-mono text-xs font-semibold text-slate-800 tabular-nums dark:text-slate-200"
+                    >
+                        <Clock
+                            class="size-3.5 text-slate-500 dark:text-slate-400"
+                        />
+                        <span>{{ timeString }} WIB</span>
+                    </div>
+                    <span
+                        class="pl-5 text-[10px] font-medium tracking-wide text-slate-500"
+                        data-test="login-active-shift"
+                    >
+                        {{ currentShift.name }} · {{ currentShift.hours }}
+                    </span>
                 </div>
 
                 <div
@@ -139,12 +148,13 @@ defineProps<{
             <div class="mb-6 flex items-center justify-between lg:hidden">
                 <Link :href="home()" class="flex items-center gap-2.5">
                     <div
-                        class="flex h-10 items-center justify-center rounded-lg border border-slate-200 bg-white p-1.5 shadow-xs dark:border-slate-800 dark:bg-slate-900"
+                        class="flex h-10 items-center justify-center rounded-lg border border-slate-200 bg-white p-1.5 shadow-xs dark:border-slate-300"
+                        data-test="isuzu-logo-plate-mobile"
                     >
                         <img
-                            src="/isuzu.png"
+                            src="/isuzu.jpg"
                             alt="ISUZU"
-                            class="h-6 w-auto object-contain"
+                            class="h-6 w-auto bg-white object-contain"
                         />
                     </div>
                     <div>

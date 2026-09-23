@@ -174,7 +174,7 @@ test('chart endpoints calculate and aggregate data accurately with approved over
     ]);
 
     $admin = User::factory()->admin()->create();
-    $teamLeader = User::factory()->teamLeader($dept->id, $section->id)->create();
+    $teamLeader = User::factory()->teamLeader($section->id, $dept->id)->create();
 
     $emp1 = Employee::create([
         'npk' => 'EMP-MCG-01',

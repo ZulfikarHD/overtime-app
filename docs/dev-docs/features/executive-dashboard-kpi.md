@@ -10,7 +10,7 @@ The Executive Operational Dashboard lives exclusively on the `/dashboard` route 
 flowchart TD
     subgraph Client [Browser - Vue 3 & Inertia v3]
         Page[Dashboard.vue]
-        FilterBar[Toolbar: Date & Department Selector]
+        FilterBar[Toolbar: Date, Department & Section Selector]
         Clock[Live WIB Clock & Shift Pill]
 
         subgraph KpiRow [Header KPI Cards]
@@ -121,7 +121,8 @@ erDiagram
     - **Card 4 (Burn Index Plan vs Actual)**: Aggregates `planned_budget_hours` and `cumulative_actual_hours` from `monthly_burn_snapshots`. Computes Burn Index percentage and maps into four standard operational zones (Safe, On Track, Warning, Danger/ISUZU Red).
 3. **Rendering & Interactive Filtering**:
     - `Dashboard.vue` renders the four cards with monospace tabular numbers (`font-mono tabular-nums`).
-    - Changing the Date input or Department dropdown triggers an Inertia partial reload (`only: ['kpiCards', 'selectedDepartmentId', 'selectedDate']`) preserving scroll position.
+    - Changing the Date, Department, or Section dropdown triggers an Inertia partial reload (`only: ['kpiCards', 'sections', 'selectedDepartmentId', 'selectedSectionId', 'selectedDate', …charts]`) preserving scroll position.
+    - Default section value is **All Sections (Department)** — omit `section_id` for department-level aggregates. Choosing a section passes `section_id` into `getKpiCards()` and chart services.
     - During reload, `ChartSkeleton` displays an animated pulse placeholder.
 
 ## API Endpoints & Routes
@@ -134,6 +135,7 @@ erDiagram
 ## Decisions & Trade-offs
 
 - **Strict Two-Surface Architecture**: Per `docs/scrum/Epic-09-ux-plan.md`, operational health and KPI cards live on `/dashboard`, while multi-dimensional analytics live on `/analytics` (`/dashboard/burn-index`). Zero sidebar menu proliferation.
+- **Department-default with optional section drill-down**: Filter bar defaults to department aggregates; optional `section_id` narrows the same surface without a new route (see ADR-039).
 - **Tree-shakeable Chart.js Infrastructure**: Registered globally via `resources/js/plugins/chartjs.ts` to eliminate duplicate Chart.js registrations across individual components while keeping bundle size lean.
 - **Defensive ERP Degradation**: Plant ERP telemetry connections can experience latency or outages. The service guarantees a 0% failure rate by returning structured fallback states rather than throwing HTTP 500 exceptions.
 - **Monospace Tabular Figures**: Strict enforcement of `font-mono tabular-nums` for all quantitative figures prevents layout jitter during periodic updates.
@@ -141,6 +143,7 @@ erDiagram
 ## Related
 
 - [ADR-028: Shared Vue Chart.js Infrastructure and Operational KPI Cards](../decisions/028-shared-vue-chartjs-infrastructure-and-operational-kpi-cards.md)
+- [ADR-039: Department-Default Dashboard Scope with Optional Section Drill-Down](../decisions/039-department-default-dashboard-section-drill-down.md)
 - [ADR-004: Chart.js Visualization Engine](../decisions/004-chartjs-visualization-engine.md)
 - [ADR-005: Denormalized Monthly Burn Snapshots](../decisions/005-denormalized-monthly-burn-snapshots.md)
 - [Executive Operational Dashboard User Guide](../../user-docs/guides/executive-dashboard-kpi.md)

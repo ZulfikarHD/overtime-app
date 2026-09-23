@@ -48,68 +48,71 @@ const formattedTotal = computed(() => {
 
 <template>
     <Card
-        class="border-border/70 relative overflow-hidden shadow-xs transition-shadow hover:shadow-sm"
+        class="border-border/70 @container gap-3 py-4 shadow-xs transition-shadow hover:shadow-sm sm:gap-4 sm:py-5"
         data-slot="kpi-card-manpower"
+        data-test="kpi-card-manpower"
     >
-        <CardHeader class="flex flex-row items-center justify-between pb-2">
-            <div class="flex items-center gap-2">
+        <CardHeader class="px-4 pb-1 sm:px-6">
+            <div class="flex min-w-0 items-center gap-2">
                 <div
-                    class="rounded-md bg-purple-500/10 p-1.5 text-purple-600 dark:bg-purple-500/20 dark:text-purple-400"
+                    class="shrink-0 rounded-md bg-purple-500/10 p-1.5 text-purple-600 dark:bg-purple-500/20 dark:text-purple-400"
                 >
-                    <Users class="size-4" />
+                    <Users class="size-3.5 sm:size-4" />
                 </div>
                 <h3
-                    class="text-xs font-semibold tracking-wider text-slate-500 uppercase dark:text-slate-400"
+                    class="min-w-0 flex-1 text-[10px] leading-snug font-semibold tracking-wider text-slate-500 uppercase sm:text-[11px] dark:text-slate-400"
                 >
                     {{ __('Tenaga Kerja (Man Power)') }}
                 </h3>
             </div>
-
-            <span
-                class="inline-flex items-center gap-1 text-xs font-medium text-slate-500 dark:text-slate-400"
-            >
-                <span class="size-1.5 rounded-full bg-emerald-500" />
-                {{ data?.active_shifts_count ?? 3 }} Shift
-            </span>
         </CardHeader>
 
-        <CardContent class="space-y-3 pt-0">
+        <CardContent class="space-y-2 px-4 pt-0 sm:space-y-2.5 sm:px-6">
             <template v-if="loading">
                 <ChartSkeleton height-class="h-16" variant="sparkline" />
             </template>
 
             <template v-else>
-                <div>
-                    <div class="flex items-baseline gap-1.5">
-                        <span
-                            class="font-mono text-2xl font-bold tracking-tight text-slate-900 tabular-nums dark:text-white"
-                        >
-                            {{ formattedTotal }}
-                        </span>
-                        <span
-                            class="text-xs font-medium text-slate-500 dark:text-slate-400"
-                        >
-                            {{ __('Karyawan Aktif') }}
-                        </span>
-                    </div>
-
+                <div class="min-w-0">
                     <div
-                        class="mt-1 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400"
+                        class="font-mono text-2xl leading-none font-bold tracking-tight text-slate-900 tabular-nums @[14rem]:text-3xl @[20rem]:text-[2rem] dark:text-white"
                     >
-                        <span class="flex items-center gap-1 font-medium">
-                            <Building2 class="size-3 text-slate-400" />
-                            {{ __('Distribusi Seksi') }}
-                        </span>
+                        {{ formattedTotal }}
+                    </div>
+                    <p
+                        class="mt-1.5 text-xs font-medium text-slate-600 dark:text-slate-300"
+                    >
+                        {{ __('Karyawan Aktif') }}
+                    </p>
+                    <p
+                        class="flex items-center gap-1 text-[10px] text-slate-500 sm:text-[11px] dark:text-slate-400"
+                    >
+                        <Building2 class="size-3 shrink-0 text-slate-400" />
+                        <span class="min-w-0 truncate">{{
+                            __('Distribusi Seksi')
+                        }}</span>
+                    </p>
+                    <div
+                        class="mt-2 flex flex-wrap items-center gap-1.5 text-[10px] text-slate-500 sm:gap-2 dark:text-slate-400"
+                        data-test="manpower-shift-meta"
+                    >
                         <span
-                            class="font-mono text-[11px] text-slate-400 tabular-nums"
+                            class="inline-flex items-center gap-1 font-medium text-slate-700 dark:text-slate-300"
                         >
-                            {{ data?.sections?.length || 0 }} seksi terdaftar
+                            <span
+                                class="size-1.5 shrink-0 rounded-full bg-emerald-500"
+                            />
+                            {{ data?.active_shifts_count ?? 3 }}
+                            {{ __('Shift') }}
+                        </span>
+                        <span class="font-mono tabular-nums">
+                            {{ data?.sections?.length || 0 }}
+                            {{ __('seksi terdaftar') }}
                         </span>
                     </div>
                 </div>
 
-                <!-- Mini Bar Sparkline of Headcount per Section -->
-                <div>
+                <div class="min-w-0">
                     <BaseMiniSparkline
                         :data="data?.sparkline || []"
                         :labels="data?.labels || []"
@@ -118,15 +121,16 @@ const formattedTotal = computed(() => {
                         height-class="h-9"
                         unit="orang"
                     />
-
                     <div
-                        class="mt-1 flex items-center justify-between text-[11px] text-slate-400"
+                        class="mt-1 flex items-center justify-between gap-2 text-[10px] text-slate-400"
                     >
-                        <span>Seksi Produksi</span>
-                        <span class="font-mono tabular-nums">
+                        <span class="min-w-0 truncate">{{
+                            __('Seksi Produksi')
+                        }}</span>
+                        <span class="shrink-0 font-mono tabular-nums">
                             {{
                                 data?.sections?.length
-                                    ? `${data.sections.length} Seksi`
+                                    ? `${data.sections.length} ${__('Seksi')}`
                                     : '-'
                             }}
                         </span>

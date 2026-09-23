@@ -31,9 +31,9 @@
             }
         </style>
 
-        <link rel="icon" href="/isuzu.png" type="image/png">
-        <link rel="shortcut icon" href="/isuzu.png" type="image/png">
-        <link rel="apple-touch-icon" href="/isuzu.png">
+        <link rel="icon" href="/isuzu.jpg" type="image/png">
+        <link rel="shortcut icon" href="/isuzu.jpg" type="image/png">
+        <link rel="apple-touch-icon" href="/isuzu.jpg">
 
         @fonts
 

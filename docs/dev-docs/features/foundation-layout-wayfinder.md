@@ -42,7 +42,7 @@ erDiagram
 | Layer               | File / Route / Menu                                      | Purpose                                                                 |
 | ------------------- | -------------------------------------------------------- | ----------------------------------------------------------------------- |
 | Sidebar Menu        | `Operasional & Lembur`, `Finansial`, `Sistem`            | Grouped modular navigation adhering to `public/style-guide.html`        |
-| Brand Header        | `resources/js/components/AppLogo.vue`                    | Single-root logo displaying `/isuzu.png` and Karawang Plant identity    |
+| Brand Header        | `resources/js/components/AppLogo.vue`                    | Single-root logo displaying `/isuzu.jpg` and Karawang Plant identity    |
 | Telemetry Card      | `resources/js/components/AppSidebar.vue`                 | Real-time plant quick info (Karawang Assembly, 3 Shift, Depnaker limit) |
 | Sidebar Rail        | `resources/js/components/ui/sidebar/SidebarRail.vue`     | Interactive drag/click border rail to toggle expanded/collapsed states  |
 | Responsive Provider | `resources/js/components/ui/sidebar/SidebarProvider.vue` | Breakpoint-aware collapse (`md` collapsed, `md to up` open by default)  |

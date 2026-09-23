@@ -159,66 +159,77 @@ const burnClass = computed(() => {
 </script>
 
 <template>
-    <Card class="overflow-hidden">
-        <CardHeader class="pb-2">
-            <div class="flex flex-wrap items-start justify-between gap-2">
-                <div>
-                    <CardTitle
-                        class="flex items-center gap-2 text-sm font-bold"
-                    >
-                        <TrendingUp class="size-4 text-[#cc0000]" />
+    <Card class="overflow-hidden" data-test="burn-up-index-chart">
+        <CardHeader class="space-y-2 px-4 pb-2 sm:space-y-2.5 sm:px-6">
+            <!-- Title alone first -->
+            <div class="min-w-0">
+                <CardTitle
+                    class="flex min-w-0 items-center gap-2 text-xs font-bold sm:text-sm"
+                    data-test="burn-up-chart-title"
+                >
+                    <TrendingUp
+                        class="size-3.5 shrink-0 text-[#cc0000] sm:size-4"
+                    />
+                    <span class="min-w-0 leading-snug break-words">
                         {{ __('Burn-Up Chart Index Overtime') }}
-                    </CardTitle>
-                    <p class="text-muted-foreground mt-0.5 text-[11px]">
-                        {{ data?.month_name ?? '—' }} · Plan × Aktual
-                        (Kumulatif, Day to Date)
-                    </p>
-                </div>
+                    </span>
+                </CardTitle>
+                <p
+                    class="text-muted-foreground mt-0.5 text-[10px] sm:text-[11px]"
+                    data-test="burn-up-chart-subtitle"
+                >
+                    {{ data?.month_name ?? '—' }} · Plan × Aktual (Kumulatif,
+                    Day to Date)
+                </p>
+            </div>
 
-                <!-- Summary badges -->
-                <div class="flex items-center gap-3 text-[11px]">
-                    <div class="flex items-center gap-1.5">
-                        <span
-                            class="inline-block size-2.5 rounded-sm"
-                            :style="{ backgroundColor: '#1e3a5f' }"
-                        />
-                        <span class="text-slate-500">Plan:</span>
-                        <span
-                            class="font-mono font-bold text-[#1e3a5f] tabular-nums"
-                        >
-                            {{ (data?.total_plan_index ?? 0).toFixed(1) }}
-                        </span>
-                    </div>
-                    <div class="flex items-center gap-1.5">
-                        <span
-                            class="inline-block size-2.5 rounded-sm"
-                            :style="{ backgroundColor: '#e8601c' }"
-                        />
-                        <span class="text-slate-500">Aktual:</span>
-                        <span
-                            class="font-mono font-bold text-[#e8601c] tabular-nums"
-                        >
-                            {{ (data?.total_actual_index ?? 0).toFixed(1) }}
-                        </span>
-                    </div>
-                    <div
-                        class="flex items-center gap-1 rounded-full px-2 py-0.5"
-                        :class="{
-                            'bg-red-100': burnZone === 'danger',
-                            'bg-amber-100': burnZone === 'warning',
-                            'bg-blue-100': burnZone === 'on_track',
-                            'bg-emerald-100': burnZone === 'safe',
-                        }"
+            <!-- Metrics + % stacked under title (not beside) -->
+            <div
+                class="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[10px] sm:gap-x-4 sm:text-[11px]"
+                data-test="burn-up-chart-meta"
+            >
+                <div class="flex items-center gap-1.5">
+                    <span
+                        class="inline-block size-2.5 rounded-sm"
+                        :style="{ backgroundColor: '#1e3a5f' }"
+                    />
+                    <span class="text-slate-500">Plan:</span>
+                    <span
+                        class="font-mono font-bold text-[#1e3a5f] tabular-nums"
                     >
-                        <TrendingUp
-                            v-if="(data?.burn_index_pct ?? 0) > 100"
-                            class="size-3 text-red-600"
-                        />
-                        <TrendingDown v-else class="size-3 text-emerald-600" />
-                        <span :class="burnClass">
-                            {{ (data?.burn_index_pct ?? 0).toFixed(1) }}%
-                        </span>
-                    </div>
+                        {{ (data?.total_plan_index ?? 0).toFixed(1) }}
+                    </span>
+                </div>
+                <div class="flex items-center gap-1.5">
+                    <span
+                        class="inline-block size-2.5 rounded-sm"
+                        :style="{ backgroundColor: '#e8601c' }"
+                    />
+                    <span class="text-slate-500">Aktual:</span>
+                    <span
+                        class="font-mono font-bold text-[#e8601c] tabular-nums"
+                    >
+                        {{ (data?.total_actual_index ?? 0).toFixed(1) }}
+                    </span>
+                </div>
+                <div
+                    class="inline-flex items-center gap-1 rounded-full px-2 py-0.5"
+                    :class="{
+                        'bg-red-100': burnZone === 'danger',
+                        'bg-amber-100': burnZone === 'warning',
+                        'bg-blue-100': burnZone === 'on_track',
+                        'bg-emerald-100': burnZone === 'safe',
+                    }"
+                    data-test="burn-up-chart-pct"
+                >
+                    <TrendingUp
+                        v-if="(data?.burn_index_pct ?? 0) > 100"
+                        class="size-3 text-red-600"
+                    />
+                    <TrendingDown v-else class="size-3 text-emerald-600" />
+                    <span :class="burnClass">
+                        {{ (data?.burn_index_pct ?? 0).toFixed(1) }}%
+                    </span>
                 </div>
             </div>
         </CardHeader>
