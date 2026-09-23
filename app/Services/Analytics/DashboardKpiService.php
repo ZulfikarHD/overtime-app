@@ -80,7 +80,7 @@ class DashboardKpiService
      *     }
      * }
      */
-    public function getKpiCards(User $user, ?string $date = null, ?int $departmentId = null): array
+    public function getKpiCards(User $user, ?string $date = null, ?int $departmentId = null, ?int $sectionId = null): array
     {
         $now = Carbon::now('Asia/Jakarta');
         try {
@@ -92,9 +92,9 @@ class DashboardKpiService
         $fiscalYear = (int) $selectedCarbon->year;
         $fiscalMonth = (int) $selectedCarbon->month;
 
-        // Apply role-based scoping
+        // Apply role-based scoping (admins/managers may optionally narrow to a section)
         $scopedDepartmentId = $departmentId;
-        $scopedSectionId = null;
+        $scopedSectionId = $sectionId;
 
         if ($user->isManager()) {
             $scopedDepartmentId = $user->department_id ? (int) $user->department_id : null;

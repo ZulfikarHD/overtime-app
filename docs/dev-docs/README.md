@@ -109,6 +109,7 @@ Durable technical decisions and trade-offs:
 - **[ADR-036: What-If Scenario Simulation, Empirical Labor Factor Modeling, and Ergonomic Parameter Management](./decisions/036-what-if-scenario-simulation-and-empirical-labor-factor-modeling.md)**
 - **[ADR-037: Separate Tables for Planned vs Realized Overtime](./decisions/037-planned-vs-realized-overtime-tables.md)**
 - **[ADR-038: Excel-Parity Planning Grid UX](./decisions/038-excel-parity-planning-grid-ux.md)**
+- **[ADR-039: Department-Default Dashboard Scope with Optional Section Drill-Down](./decisions/039-department-default-dashboard-section-drill-down.md)**
 
 ---
 

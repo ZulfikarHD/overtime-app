@@ -17,9 +17,7 @@ import BurnUpIndexChart, {
 import CategoryOvertimeChart, {
     type CategoryOvertimeInputData,
 } from '@/components/dashboard/CategoryOvertimeChart.vue';
-import DailyBurnLineChart, {
-    type DailyBurnChartData,
-} from '@/components/dashboard/DailyBurnLineChart.vue';
+import { type DailyBurnChartData } from '@/components/dashboard/DailyBurnLineChart.vue';
 import WeeklyPlanningActualChart, {
     type WeeklyPlanningActualData,
 } from '@/components/dashboard/WeeklyPlanningActualChart.vue';
@@ -87,6 +85,13 @@ interface DepartmentItem {
     name: string;
 }
 
+interface SectionItem {
+    id: number;
+    department_id: number;
+    code: string;
+    name: string;
+}
+
 interface KpiCardsPayload {
     production_volume: ProductionVolumeData;
     working_days: WorkingDaysData;
@@ -117,6 +122,7 @@ interface Props {
     dayTypeBreakdown?: DayTypeBreakdownData;
     employeeSummary?: EmployeeSummaryData;
     departments?: DepartmentItem[];
+    sections?: SectionItem[];
     selectedDepartmentId?: number | null;
     selectedSectionId?: number | null;
     selectedDate?: string;
@@ -137,6 +143,7 @@ const props = withDefaults(defineProps<Props>(), {
     dayTypeBreakdown: undefined,
     employeeSummary: undefined,
     departments: () => [],
+    sections: () => [],
     selectedDepartmentId: null,
     selectedSectionId: null,
     selectedDate: '',
@@ -179,7 +186,7 @@ function handleTabChange(tab: DashboardTab) {
 }
 
 const { __ } = useTrans();
-const { timeString, dateString } = useShiftInfo();
+const { timeString, dateString, currentShift } = useShiftInfo();
 const page = usePage();
 const user = computed(() => page.props.auth?.user as User | undefined);
 
@@ -196,12 +203,33 @@ function handleCategorySelect(catKey: string | null) {
 const filterDept = ref(
     props.selectedDepartmentId ? String(props.selectedDepartmentId) : 'all',
 );
-const filterSection = ref<number | null>(props.selectedSectionId ?? null);
+const filterSection = ref(
+    props.selectedSectionId ? String(props.selectedSectionId) : 'all',
+);
 const filterDate = ref(
     props.selectedDate ||
         props.kpiCards?.scope?.selected_date ||
         new Date().toISOString().slice(0, 10),
 );
+
+const filteredSections = computed(() => {
+    if (!props.sections?.length) {
+        return [];
+    }
+    if (filterDept.value === 'all') {
+        return props.sections;
+    }
+    return props.sections.filter(
+        (sec) => String(sec.department_id) === filterDept.value,
+    );
+});
+
+const canPickSection = computed(() => {
+    if (user.value?.role === 'team_leader') {
+        return false;
+    }
+    return filteredSections.value.length > 0;
+});
 
 // Sync with props if updated via external visit
 watch(
@@ -214,7 +242,7 @@ watch(
 watch(
     () => props.selectedSectionId,
     (val) => {
-        filterSection.value = val ?? null;
+        filterSection.value = val ? String(val) : 'all';
     },
 );
 
@@ -227,12 +255,15 @@ watch(
     },
 );
 
-function applyFilters(overrideSection?: number | null | Event) {
+function applyFilters(overrideSection?: string | null | Event) {
     isFiltering.value = true;
-    const targetSection =
-        typeof overrideSection === 'number' || overrideSection === null
-            ? overrideSection
-            : filterSection.value;
+    let targetSection: string | null = filterSection.value;
+    if (typeof overrideSection === 'string' || overrideSection === null) {
+        targetSection = overrideSection;
+    }
+
+    const sectionId =
+        targetSection && targetSection !== 'all' ? targetSection : undefined;
 
     router.get(
         dashboard.url(),
@@ -240,7 +271,7 @@ function applyFilters(overrideSection?: number | null | Event) {
             date: filterDate.value,
             department_id:
                 filterDept.value === 'all' ? undefined : filterDept.value,
-            section_id: targetSection ? targetSection : undefined,
+            section_id: sectionId,
             tab: activeTab.value !== 'pacing' ? activeTab.value : undefined,
         },
         {
@@ -259,6 +290,7 @@ function applyFilters(overrideSection?: number | null | Event) {
                 'dailyIndexTrend',
                 'dayTypeBreakdown',
                 'employeeSummary',
+                'sections',
                 'selectedDepartmentId',
                 'selectedSectionId',
                 'selectedDate',
@@ -270,24 +302,13 @@ function applyFilters(overrideSection?: number | null | Event) {
     );
 }
 
-function handleMonthNavigation(direction: 'prev' | 'next') {
-    const current = new Date(
-        filterDate.value || new Date().toISOString().slice(0, 10),
-    );
-    if (direction === 'prev') {
-        current.setMonth(current.getMonth() - 1);
-    } else {
-        current.setMonth(current.getMonth() + 1);
-    }
-    const year = current.getFullYear();
-    const month = String(current.getMonth() + 1).padStart(2, '0');
-    filterDate.value = `${year}-${month}-01`;
-    applyFilters();
+function handleDepartmentChange() {
+    filterSection.value = 'all';
+    applyFilters('all');
 }
 
-function handleSectionSelect(secId: number | null) {
-    filterSection.value = secId;
-    applyFilters(secId);
+function handleSectionChange() {
+    applyFilters(filterSection.value);
 }
 
 function resetFilters() {
@@ -298,8 +319,8 @@ function resetFilters() {
             : user.value?.department_id
               ? String(user.value.department_id)
               : 'all';
-    filterSection.value = null;
-    applyFilters(null);
+    filterSection.value = 'all';
+    applyFilters('all');
 }
 </script>
 
@@ -334,12 +355,26 @@ function resetFilters() {
                         <span>•</span>
                         <Calendar class="size-4 shrink-0 text-slate-400" />
                         <span>{{ dateString }}</span>
-                        <span>•</span>
-                        <Clock class="size-4 shrink-0 text-slate-400" />
-                        <span class="font-mono tabular-nums"
-                            >{{ timeString }} WIB</span
-                        >
                     </p>
+                    <!-- Clock hero, shift stacked below (proximity / hierarchy) -->
+                    <div
+                        class="mt-2 flex flex-col gap-0.5"
+                        data-test="dashboard-live-clock"
+                    >
+                        <div
+                            class="text-foreground flex items-center gap-1.5 font-mono text-base font-semibold tabular-nums sm:text-lg"
+                        >
+                            <Clock class="size-4 shrink-0 text-slate-400" />
+                            <span>{{ timeString }} WIB</span>
+                        </div>
+                        <span
+                            class="text-muted-foreground pl-5 text-[11px] font-medium"
+                            data-test="dashboard-active-shift"
+                        >
+                            {{ currentShift.name }} ·
+                            {{ currentShift.hours }}
+                        </span>
+                    </div>
                 </div>
 
                 <!-- Filter Bar -->
@@ -357,7 +392,7 @@ function resetFilters() {
                                 v-model="filterDept"
                                 class="h-8 rounded-md border border-slate-300 bg-white px-2.5 text-xs font-medium text-slate-700 shadow-2xs focus:border-blue-500 focus:outline-hidden dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
                                 data-test="department-filter-select"
-                                @change="applyFilters"
+                                @change="handleDepartmentChange"
                             >
                                 <option value="all">
                                     {{ __('All Departments (Plant-wide)') }}
@@ -380,6 +415,30 @@ function resetFilters() {
                                     __('All Departments (Plant-wide)')
                                 }}
                             </span>
+                        </div>
+
+                        <!-- Section Selector (default = all sections / department-level) -->
+                        <div
+                            v-if="canPickSection"
+                            class="flex items-center gap-1.5"
+                        >
+                            <select
+                                v-model="filterSection"
+                                class="h-8 max-w-52 rounded-md border border-slate-300 bg-white px-2.5 text-xs font-medium text-slate-700 shadow-2xs focus:border-blue-500 focus:outline-hidden dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+                                data-test="section-filter-select"
+                                @change="handleSectionChange"
+                            >
+                                <option value="all">
+                                    {{ __('Semua Seksi (Departemen)') }}
+                                </option>
+                                <option
+                                    v-for="sec in filteredSections"
+                                    :key="sec.id"
+                                    :value="String(sec.id)"
+                                >
+                                    {{ sec.code }} — {{ sec.name }}
+                                </option>
+                            </select>
                         </div>
 
                         <!-- Date Picker -->

@@ -3,11 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Models\Department;
+use App\Models\Section;
 use App\Models\User;
 use App\Services\Analytics\DashboardKpiService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -38,8 +40,9 @@ class DashboardController extends Controller
         }
 
         $sectionId = $request->filled('section_id') ? $request->integer('section_id') : null;
+        $sectionId = $this->sanitizeSectionId($user, $departmentId, $sectionId);
 
-        $kpiCards = $this->kpiService->getKpiCards($user, $date, $departmentId);
+        $kpiCards = $this->kpiService->getKpiCards($user, $date, $departmentId, $sectionId);
         $weeklyPlanningVsActual = $this->kpiService->getWeeklyPlanningVsActual($user, $date, $departmentId, $sectionId);
         $dailyBurnChart = $this->kpiService->getDailyBurnChart($user, $date, $departmentId, $sectionId);
         $dailyBurnUpIndex = $this->kpiService->getDailyBurnUpIndex($user, $date, $departmentId, $sectionId);
@@ -62,6 +65,8 @@ class DashboardController extends Controller
             ->orderBy('name')
             ->get(['id', 'code', 'name']);
 
+        $sections = $this->availableSectionsForFilter($user, $departmentId);
+
         return Inertia::render('Dashboard', [
             'currentTab' => $tab,
             'kpiCards' => $kpiCards,
@@ -77,6 +82,7 @@ class DashboardController extends Controller
             'dayTypeBreakdown' => $dayTypeBreakdown,
             'employeeSummary' => $employeeSummary,
             'departments' => $departments,
+            'sections' => $sections,
             'selectedDepartmentId' => $kpiCards['scope']['department_id'],
             'selectedSectionId' => $dailyBurnChart['scope']['section_id'],
             'selectedDate' => $kpiCards['scope']['selected_date'],
@@ -95,15 +101,9 @@ class DashboardController extends Controller
             return response()->json(['error' => 'Unauthorized for operational dashboard'], 403);
         }
 
-        $date = $request->filled('date') ? $request->string('date')->value() : null;
+        [$date, $departmentId, $sectionId] = $this->extractFilterParams($request, $user);
 
-        $rawDept = $request->input('department_id');
-        $departmentId = null;
-        if ($request->has('department_id') && $rawDept !== '') {
-            $departmentId = ($rawDept === 'all' || (int) $rawDept === 0) ? 0 : (int) $rawDept;
-        }
-
-        $data = $this->kpiService->getKpiCards($user, $date, $departmentId);
+        $data = $this->kpiService->getKpiCards($user, $date, $departmentId, $sectionId);
 
         return response()->json($data);
     }
@@ -120,15 +120,7 @@ class DashboardController extends Controller
             return response()->json(['error' => 'Unauthorized for operational dashboard'], 403);
         }
 
-        $date = $request->filled('date') ? $request->string('date')->value() : null;
-
-        $rawDept = $request->input('department_id');
-        $departmentId = null;
-        if ($request->has('department_id') && $rawDept !== '') {
-            $departmentId = ($rawDept === 'all' || (int) $rawDept === 0) ? 0 : (int) $rawDept;
-        }
-
-        $sectionId = $request->filled('section_id') ? $request->integer('section_id') : null;
+        [$date, $departmentId, $sectionId] = $this->extractFilterParams($request, $user);
 
         $data = $this->kpiService->getDailyBurnChart($user, $date, $departmentId, $sectionId);
 
@@ -147,13 +139,7 @@ class DashboardController extends Controller
             return response()->json(['error' => 'Unauthorized for operational dashboard'], 403);
         }
 
-        $date = $request->filled('date') ? $request->string('date')->value() : null;
-
-        $rawDept = $request->input('department_id');
-        $departmentId = null;
-        if ($request->has('department_id') && $rawDept !== '') {
-            $departmentId = ($rawDept === 'all' || (int) $rawDept === 0) ? 0 : (int) $rawDept;
-        }
+        [$date, $departmentId] = $this->extractFilterParams($request, $user);
 
         $data = $this->kpiService->getSectionBurnComparison($user, $date, $departmentId);
 
@@ -172,7 +158,7 @@ class DashboardController extends Controller
             return response()->json(['error' => 'Unauthorized for operational dashboard'], 403);
         }
 
-        [$date, $departmentId, $sectionId] = $this->extractFilterParams($request);
+        [$date, $departmentId, $sectionId] = $this->extractFilterParams($request, $user);
 
         $data = $this->kpiService->getOvertimeLeaderboard($user, $date, $departmentId, $sectionId);
 
@@ -191,7 +177,7 @@ class DashboardController extends Controller
             return response()->json(['error' => 'Unauthorized for operational dashboard'], 403);
         }
 
-        [$date, $departmentId, $sectionId] = $this->extractFilterParams($request);
+        [$date, $departmentId, $sectionId] = $this->extractFilterParams($request, $user);
 
         $data = $this->kpiService->getCategoryDistribution($user, $date, $departmentId, $sectionId);
 
@@ -210,7 +196,7 @@ class DashboardController extends Controller
             return response()->json(['error' => 'Unauthorized for operational dashboard'], 403);
         }
 
-        [$date, $departmentId, $sectionId] = $this->extractFilterParams($request);
+        [$date, $departmentId, $sectionId] = $this->extractFilterParams($request, $user);
 
         $data = $this->kpiService->getTrendWorkingTime($user, $date, $departmentId, $sectionId);
 
@@ -229,7 +215,7 @@ class DashboardController extends Controller
             return response()->json(['error' => 'Unauthorized for operational dashboard'], 403);
         }
 
-        [$date, $departmentId, $sectionId] = $this->extractFilterParams($request);
+        [$date, $departmentId, $sectionId] = $this->extractFilterParams($request, $user);
 
         $data = $this->kpiService->getDailyIndexTrend($user, $date, $departmentId, $sectionId);
 
@@ -248,7 +234,7 @@ class DashboardController extends Controller
             return response()->json(['error' => 'Unauthorized for operational dashboard'], 403);
         }
 
-        [$date, $departmentId, $sectionId] = $this->extractFilterParams($request);
+        [$date, $departmentId, $sectionId] = $this->extractFilterParams($request, $user);
 
         $data = $this->kpiService->getDayTypeBreakdown($user, $date, $departmentId, $sectionId);
 
@@ -267,7 +253,7 @@ class DashboardController extends Controller
             return response()->json(['error' => 'Unauthorized for operational dashboard'], 403);
         }
 
-        [$date, $departmentId, $sectionId] = $this->extractFilterParams($request);
+        [$date, $departmentId, $sectionId] = $this->extractFilterParams($request, $user);
 
         $data = $this->kpiService->getEmployeeSummaryTable($user, $date, $departmentId, $sectionId);
 
@@ -279,7 +265,7 @@ class DashboardController extends Controller
      *
      * @return array{0: ?string, 1: ?int, 2: ?int}
      */
-    protected function extractFilterParams(Request $request): array
+    protected function extractFilterParams(Request $request, ?User $user = null): array
     {
         $date = $request->filled('date') ? $request->string('date')->value() : null;
 
@@ -290,7 +276,86 @@ class DashboardController extends Controller
         }
 
         $sectionId = $request->filled('section_id') ? $request->integer('section_id') : null;
+        $sectionId = $this->sanitizeSectionId($user, $departmentId, $sectionId);
 
         return [$date, $departmentId, $sectionId];
+    }
+
+    /**
+     * Drop section filters that do not belong to the active department scope.
+     */
+    protected function sanitizeSectionId(?User $user, ?int $departmentId, ?int $sectionId): ?int
+    {
+        if ($sectionId === null || ! $user) {
+            return null;
+        }
+
+        if ($user->isTeamLeader() || (! $user->isAdmin() && ! $user->isManager())) {
+            return $user->section_id ? (int) $user->section_id : null;
+        }
+
+        $section = Section::query()
+            ->where('id', $sectionId)
+            ->where('is_active', true)
+            ->first(['id', 'department_id']);
+
+        if (! $section) {
+            return null;
+        }
+
+        $effectiveDepartmentId = $departmentId;
+        if ($user->isManager()) {
+            $effectiveDepartmentId = $user->department_id ? (int) $user->department_id : null;
+        }
+
+        if ($effectiveDepartmentId && $effectiveDepartmentId !== 0
+            && (int) $section->department_id !== $effectiveDepartmentId) {
+            return null;
+        }
+
+        return (int) $section->id;
+    }
+
+    /**
+     * Sections available for the filter dropdown, scoped by role and department.
+     *
+     * @return Collection<int, array{id: int, department_id: int, code: string, name: string}>
+     */
+    protected function availableSectionsForFilter(?User $user, ?int $departmentId): Collection
+    {
+        if (! $user) {
+            return collect();
+        }
+
+        $query = Section::query()
+            ->where('is_active', true)
+            ->orderBy('name');
+
+        if ($user->isTeamLeader()) {
+            if ($user->section_id) {
+                $query->where('id', (int) $user->section_id);
+            } elseif ($user->department_id) {
+                $query->where('department_id', (int) $user->department_id);
+            }
+        } elseif ($user->isManager()) {
+            if ($user->department_id) {
+                $query->where('department_id', (int) $user->department_id);
+            }
+        } elseif ($user->isAdmin()) {
+            if ($departmentId && $departmentId !== 0) {
+                $query->where('department_id', $departmentId);
+            }
+        } elseif ($user->department_id) {
+            $query->where('department_id', (int) $user->department_id);
+        }
+
+        return $query->get(['id', 'department_id', 'code', 'name'])
+            ->map(fn (Section $section): array => [
+                'id' => (int) $section->id,
+                'department_id' => (int) $section->department_id,
+                'code' => $section->code,
+                'name' => $section->name,
+            ])
+            ->values();
     }
 }

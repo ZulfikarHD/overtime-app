@@ -70,6 +70,11 @@ test('manager can view 4 executive kpi cards with sparklines and burn metrics', 
         ->assertSee('Hari Kerja (HKN)')
         ->assertSee('Tenaga Kerja (Man Power)')
         ->assertSee('Index Burn Up (Day to Date)')
+        ->assertPresent('[data-test="burn-index-title"]')
+        ->assertPresent('[data-test="burn-index-pct"]')
+        ->assertPresent('[data-test="burn-index-meta"]')
+        ->assertPresent('[data-test="dashboard-live-clock"]')
+        ->assertPresent('[data-test="dashboard-active-shift"]')
         ->assertSee('88%')
         ->assertNoJavaScriptErrors();
 });
@@ -80,6 +85,20 @@ test('admin can interact with dashboard filters and inspect department scope', f
         'name' => 'Stamping Production Dept',
         'cost_center_code' => 'CC-STP-002',
         'default_hourly_rate' => 35000,
+        'is_active' => true,
+    ]);
+
+    Section::create([
+        'department_id' => $dept->id,
+        'code' => 'SEC_STP_01',
+        'name' => 'Stamping Line 1',
+        'is_active' => true,
+    ]);
+
+    Section::create([
+        'department_id' => $dept->id,
+        'code' => 'SEC_STP_02',
+        'name' => 'Stamping Line 2',
         'is_active' => true,
     ]);
 
@@ -100,5 +119,54 @@ test('admin can interact with dashboard filters and inspect department scope', f
         ->assertSee('Target Bulanan Plant')
         ->assertPresent('[data-test="department-filter-select"]')
         ->assertPresent('[data-test="date-filter-input"]')
+        ->assertPresent('[data-test="section-filter-select"]')
+        ->assertSee('Semua Seksi (Departemen)')
+        ->assertNoJavaScriptErrors();
+});
+
+test('manager can filter operational dashboard by section then reset to department scope', function () {
+    $dept = Department::create([
+        'code' => 'DEPT_MGR_SEC',
+        'name' => 'Manager Section Dept',
+        'cost_center_code' => 'CC-MGR-SEC',
+        'default_hourly_rate' => 38000,
+        'is_active' => true,
+    ]);
+
+    $section1 = Section::create([
+        'department_id' => $dept->id,
+        'code' => 'SEC_MGR_01',
+        'name' => 'Manager Line One',
+        'is_active' => true,
+    ]);
+
+    Section::create([
+        'department_id' => $dept->id,
+        'code' => 'SEC_MGR_02',
+        'name' => 'Manager Line Two',
+        'is_active' => true,
+    ]);
+
+    User::factory()->manager($dept->id)->create([
+        'name' => 'Manager Section Filter',
+        'email' => 'manager.section.filter@factory.com',
+        'password' => 'password',
+    ]);
+
+    $page = visit('/login')
+        ->fill('email', 'manager.section.filter@factory.com')
+        ->fill('password', 'password')
+        ->click('[data-test="login-button"]')
+        ->assertPathIs('/dashboard')
+        ->assertPresent('[data-test="section-filter-select"]')
+        ->assertSee('Semua Seksi (Departemen)')
+        ->assertSee('Manager Line One');
+
+    $page->select('[data-test="section-filter-select"]', (string) $section1->id)
+        ->assertQueryStringHas('section_id', (string) $section1->id)
+        ->assertNoJavaScriptErrors();
+
+    $page->select('[data-test="section-filter-select"]', 'all')
+        ->assertSee('Semua Seksi (Departemen)')
         ->assertNoJavaScriptErrors();
 });
