@@ -36,6 +36,9 @@ test('authenticated user sees topbar indicators, live wib clock, and role badge'
         ->assertSee('EMP-88001')
         ->assertSee('WIB')
         ->assertSee('Team Leader')
+        ->assertPresent('[data-test="developer-watermark"]')
+        ->assertSee('Developer system by: KARLINA IBRAHIM (PCD Department)')
+        ->click('[data-test="sidebar-menu-button"]')
         ->assertSee('Trim & Chassis Line')
         ->assertSee('Assembly Department')
         ->assertSee('Dashboard');
@@ -81,8 +84,10 @@ test('user dropdown displays department and section and reveals inline sign out 
 test('guest layout enforces centered clean authentication card with dual identifier placeholder', function () {
     visit('/login')
         ->assertSee('PT ISUZU ASTRA MOTOR INDONESIA')
-        ->assertSee('Smart Monitoring Overtime versi 2.0')
-        ->assertSee('Management Index Overtime berbasis Machine Learning')
+        ->assertSee('SMARTIME (Smart Overtime) 2.0')
+        ->assertSee('Machine Learning-Based Decision Support System (M-DSS)')
+        ->assertSee('Developer system by: KARLINA IBRAHIM (PCD Department)')
+        ->assertPresent('[data-test="developer-watermark"]')
         ->assertSee('Masuk ke Sistem')
         ->assertSee('Email atau NPK')
         ->assertSee('Kata Sandi')
