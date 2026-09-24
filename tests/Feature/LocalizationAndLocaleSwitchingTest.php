@@ -14,10 +14,14 @@ test('default application locale is id and shares indonesian translations to ine
         ->where('translations.Log in to System', 'Masuk ke Sistem')
         ->where('translations', function ($translations): bool {
             $translations = collect($translations);
-            expect($translations->get('Smart Monitoring Overtime versi 2.0'))
-                ->toBe('Smart Monitoring Overtime versi 2.0')
-                ->and($translations->get('Management Index Overtime berbasis Machine Learning'))
-                ->toBe('Management Index Overtime berbasis Machine Learning');
+            expect($translations->get('SMARTIME (Smart Overtime) 2.0'))
+                ->toBe('SMARTIME (Smart Overtime) 2.0')
+                ->and($translations->get('Machine Learning-Based Decision Support System (M-DSS)'))
+                ->toBe('Machine Learning-Based Decision Support System (M-DSS)')
+                ->and($translations->get('Developer system by: KARLINA IBRAHIM (PCD Department)'))
+                ->toBe('Developer system by: KARLINA IBRAHIM (PCD Department)')
+                ->and($translations->get('Welcome to'))
+                ->toBe('Selamat datang di');
 
             return true;
         })
@@ -41,10 +45,14 @@ test('guest can switch locale to english via post /locale', function () {
         ->where('translations.Log in to System', 'Log in to System')
         ->where('translations', function ($translations): bool {
             $translations = collect($translations);
-            expect($translations->get('Smart Monitoring Overtime versi 2.0'))
-                ->toBe('Smart Monitoring Overtime versi 2.0')
-                ->and($translations->get('Management Index Overtime berbasis Machine Learning'))
-                ->toBe('Machine Learning-based Overtime Index Management');
+            expect($translations->get('SMARTIME (Smart Overtime) 2.0'))
+                ->toBe('SMARTIME (Smart Overtime) 2.0')
+                ->and($translations->get('Machine Learning-Based Decision Support System (M-DSS)'))
+                ->toBe('Machine Learning-Based Decision Support System (M-DSS)')
+                ->and($translations->get('Welcome to'))
+                ->toBe('Welcome to')
+                ->and($translations->get('Developer system by: KARLINA IBRAHIM (PCD Department)'))
+                ->toBe('Developer system by: KARLINA IBRAHIM (PCD Department)');
 
             return true;
         })
