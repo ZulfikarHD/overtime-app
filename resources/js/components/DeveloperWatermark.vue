@@ -5,9 +5,12 @@ withDefaults(
     defineProps<{
         /** Visual density for header strip vs hero placement */
         variant?: 'strip' | 'inline';
+        /** Light text for dark overlays */
+        tone?: 'default' | 'inverse';
     }>(),
     {
         variant: 'strip',
+        tone: 'default',
     },
 );
 
@@ -16,19 +19,29 @@ const { __ } = useTrans();
 
 <template>
     <div
-        :class="
+        :class="[
             variant === 'strip'
-                ? 'border-border/60 bg-muted/40 text-muted-foreground flex w-full items-center justify-center border-b px-3 py-1 text-center'
-                : 'text-muted-foreground text-center'
-        "
+                ? 'flex w-full items-center justify-start border-b px-3 py-1.5 text-left sm:px-4'
+                : 'text-left',
+            variant === 'strip' && tone === 'default'
+                ? 'border-border/60 bg-muted/40 text-muted-foreground'
+                : '',
+            variant === 'strip' && tone === 'inverse'
+                ? 'border-white/15 bg-black/40 text-white/80'
+                : '',
+            variant === 'inline' && tone === 'default'
+                ? 'text-muted-foreground'
+                : '',
+            variant === 'inline' && tone === 'inverse' ? 'text-white/85' : '',
+        ]"
         data-test="developer-watermark"
         role="note"
     >
         <p
             :class="
                 variant === 'strip'
-                    ? 'text-[10px] font-medium tracking-wide sm:text-[11px]'
-                    : 'text-xs font-medium tracking-wide sm:text-sm'
+                    ? 'text-xs font-medium tracking-wide sm:text-sm'
+                    : 'text-sm font-medium tracking-wide sm:text-base'
             "
         >
             {{ __('Developer system by: KARLINA IBRAHIM (PCD Department)') }}

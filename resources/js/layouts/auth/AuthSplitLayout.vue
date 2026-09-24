@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3';
-import { Activity, Clock, Factory } from '@lucide/vue';
+import { Activity, Clock } from '@lucide/vue';
 import DeveloperWatermark from '@/components/DeveloperWatermark.vue';
 import LanguageSwitcher from '@/components/LanguageSwitcher.vue';
 import { useShiftInfo } from '@/composables/useShiftInfo';
@@ -24,26 +24,47 @@ defineProps<{
         <DeveloperWatermark variant="strip" />
 
         <div class="flex min-h-0 flex-1 flex-col lg:grid lg:grid-cols-12">
-            <!-- LEFT COLUMN: Automotive Engineering Hero Panel (Desktop) -->
+            <!--
+                LEFT brand panel (user intent): art + welcome copy.
+                Text protection = Material/NN/g "floor fade" scrim on the
+                bottom only — not a full black wash, not a frosted card.
+                Refs: material.io imagery scrims, nngroup.com/text-over-images
+            -->
             <div
-                class="relative hidden flex-col justify-between overflow-x-hidden border-r border-slate-200 bg-white p-8 lg:col-span-6 lg:flex xl:col-span-7 xl:p-12 dark:border-slate-800 dark:bg-[#070b12]"
+                class="relative hidden min-h-0 overflow-hidden border-r border-slate-200 bg-white lg:col-span-6 lg:flex lg:flex-col xl:col-span-7 dark:border-slate-800"
+                data-test="login-brand-panel"
             >
-                <!-- Background Decorative Grid & Glow -->
-                <div
-                    class="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,#e2e8f080_1px,transparent_1px),linear-gradient(to_bottom,#e2e8f080_1px,transparent_1px)] bg-[size:32px_32px] dark:bg-[linear-gradient(to_right,#1e293b22_1px,transparent_1px),linear-gradient(to_bottom,#1e293b22_1px,transparent_1px)]"
+                <img
+                    src="/welcome-img.jpg"
+                    alt=""
+                    class="pointer-events-none absolute inset-0 size-full object-contain object-center"
+                    data-test="login-welcome-image"
+                    aria-hidden="true"
                 />
+
+                <!-- Top: light fade so brand chrome stays dark-on-white -->
                 <div
-                    class="pointer-events-none absolute -top-24 -left-24 size-96 rounded-full bg-[#cc0000]/8 blur-3xl dark:bg-[#cc0000]/15"
+                    class="pointer-events-none absolute inset-x-0 top-0 z-10 h-28 bg-gradient-to-b from-white via-white/80 to-transparent"
+                    aria-hidden="true"
                 />
+
+                <!--
+                    Bottom floor-fade scrim (targeted text protection).
+                    Taller + stronger mid stops so the eyebrow ("Selamat datang")
+                    sits inside the protected zone, not on the white truck roof.
+                -->
                 <div
-                    class="pointer-events-none absolute -right-24 -bottom-24 size-96 rounded-full bg-sky-500/8 blur-3xl dark:bg-sky-600/10"
+                    class="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-[68%] bg-[linear-gradient(to_top,rgba(0,0,0,0.82)_0%,rgba(0,0,0,0.62)_32%,rgba(0,0,0,0.38)_58%,rgba(0,0,0,0.12)_82%,rgba(0,0,0,0)_100%)]"
+                    aria-hidden="true"
                 />
 
                 <!-- Top Brand Bar -->
-                <div class="relative z-10 flex items-center justify-between">
+                <div
+                    class="relative z-20 flex items-center justify-between px-8 pt-8 xl:px-12 xl:pt-10"
+                >
                     <Link :href="home()" class="flex items-center gap-3">
                         <div
-                            class="flex h-11 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 py-1.5 shadow-xs dark:border-slate-300"
+                            class="flex h-11 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 py-1.5 shadow-xs"
                             data-test="isuzu-logo-plate"
                         >
                             <img
@@ -54,12 +75,12 @@ defineProps<{
                         </div>
                         <div>
                             <div
-                                class="font-bold tracking-tight text-slate-900 dark:text-white"
+                                class="font-bold tracking-tight text-slate-900"
                             >
                                 {{ __('PT ISUZU ASTRA MOTOR INDONESIA') }}
                             </div>
                             <div
-                                class="text-[11px] font-medium tracking-wide text-slate-500 dark:text-slate-400"
+                                class="text-[11px] font-medium tracking-wide text-slate-600"
                             >
                                 {{ __('Karawang Assembly Plant') }}
                             </div>
@@ -73,7 +94,7 @@ defineProps<{
                             test-id-prefix="lang-switch-desktop"
                         />
                         <div
-                            class="inline-flex items-center gap-1.5 rounded-full border border-red-200 bg-red-50 px-3 py-1 text-xs font-semibold text-[#cc0000] dark:border-red-500/30 dark:bg-red-950/60 dark:text-red-300"
+                            class="inline-flex items-center gap-1.5 rounded-full border border-red-200 bg-red-50 px-3 py-1 text-xs font-semibold text-[#cc0000] shadow-xs"
                         >
                             <span class="size-1.5 rounded-full bg-[#cc0000]" />
                             <span>{{ __('Overtime Portal') }}</span>
@@ -81,35 +102,31 @@ defineProps<{
                     </div>
                 </div>
 
-                <!-- Middle Technical Presentation (client welcome copy) -->
+                <div class="relative z-20 min-h-0 flex-1" aria-hidden="true" />
+
+                <!-- Welcome copy on left (over floor-fade, white type) -->
                 <div
-                    class="relative z-10 my-auto max-w-xl space-y-4 py-8"
+                    class="relative z-20 space-y-3 px-8 pb-6 xl:px-12 xl:pb-8"
                     data-test="login-welcome-block"
                 >
-                    <div
-                        class="inline-flex items-center gap-2 rounded-md border border-slate-200 bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700 dark:border-transparent dark:bg-white/10 dark:text-slate-300"
-                    >
-                        <Factory
-                            class="size-3.5 text-[#cc0000] dark:text-red-400"
-                        />
-                        <span>{{
-                            __('Manufacturing Execution & Overtime Control')
-                        }}</span>
-                    </div>
+                    <!--
+                        Eyebrow uses a tiny strip highlight (Smashing Mag)
+                        so white type stays readable over the truck roof.
+                    -->
                     <p
-                        class="text-sm font-medium tracking-wide text-slate-500 uppercase dark:text-slate-400"
+                        class="inline-flex rounded-md bg-black/45 px-2.5 py-1 text-base font-semibold tracking-wide text-white uppercase [text-shadow:0_1px_2px_rgba(0,0,0,0.55)]"
                         data-test="login-hero-eyebrow"
                     >
                         {{ __('Welcome to') }}
                     </p>
                     <h1
-                        class="text-3xl font-extrabold tracking-tight text-slate-900 xl:text-4xl dark:text-white"
+                        class="max-w-xl text-4xl font-extrabold tracking-tight text-white [text-shadow:0_1px_3px_rgba(0,0,0,0.5)] xl:text-5xl"
                         data-test="login-hero-title"
                     >
                         {{ __('SMARTIME (Smart Overtime) 2.0') }}
                     </h1>
                     <p
-                        class="text-sm leading-relaxed text-slate-600 xl:text-base dark:text-slate-400"
+                        class="max-w-xl text-base leading-relaxed text-white/90 [text-shadow:0_1px_2px_rgba(0,0,0,0.45)] xl:text-lg"
                         data-test="login-hero-subtitle"
                     >
                         {{
@@ -118,47 +135,41 @@ defineProps<{
                             )
                         }}
                     </p>
-                    <DeveloperWatermark variant="inline" />
-                </div>
+                    <DeveloperWatermark variant="inline" tone="inverse" />
 
-                <!-- Bottom Telemetry Footer Bar -->
-                <div
-                    class="relative z-10 flex flex-wrap items-center justify-between gap-4 border-t border-slate-200 pt-4 text-xs text-slate-500 dark:border-slate-800/80 dark:text-slate-400"
-                >
                     <div
-                        class="flex flex-col gap-0.5"
-                        data-test="login-live-clock"
+                        class="flex flex-wrap items-center justify-between gap-4 border-t border-white/25 pt-4 text-xs text-white/80"
                     >
                         <div
-                            class="inline-flex items-center gap-1.5 font-mono text-xs font-semibold text-slate-800 tabular-nums dark:text-slate-200"
+                            class="flex flex-col gap-0.5"
+                            data-test="login-live-clock"
                         >
-                            <Clock
-                                class="size-3.5 text-slate-500 dark:text-slate-400"
-                            />
-                            <span>{{ timeString }} WIB</span>
+                            <div
+                                class="inline-flex items-center gap-1.5 font-mono text-xs font-semibold text-white tabular-nums"
+                            >
+                                <Clock class="size-3.5 text-white/80" />
+                                <span>{{ timeString }} WIB</span>
+                            </div>
+                            <span
+                                class="pl-5 text-[10px] font-medium tracking-wide text-white/70"
+                                data-test="login-active-shift"
+                            >
+                                {{ currentShift.name }} ·
+                                {{ currentShift.hours }}
+                            </span>
                         </div>
-                        <span
-                            class="pl-5 text-[10px] font-medium tracking-wide text-slate-500"
-                            data-test="login-active-shift"
-                        >
-                            {{ currentShift.name }} · {{ currentShift.hours }}
-                        </span>
-                    </div>
 
-                    <div
-                        class="flex items-center gap-2 text-slate-500 dark:text-slate-500"
-                    >
-                        <Activity
-                            class="size-3.5 text-slate-500 dark:text-slate-400"
-                        />
-                        <span>{{
-                            __('IATF 16949 · ISO 9001 · 5S Standards')
-                        }}</span>
+                        <div class="flex items-center gap-2 text-white/80">
+                            <Activity class="size-3.5 text-white/80" />
+                            <span>{{
+                                __('IATF 16949 · ISO 9001 · 5S Standards')
+                            }}</span>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- RIGHT COLUMN: Authentication Form Area -->
+            <!-- RIGHT: auth form only -->
             <div
                 class="flex flex-1 flex-col justify-between bg-white p-6 sm:p-10 lg:col-span-6 lg:p-12 xl:col-span-5 dark:bg-[#070b12]"
             >
@@ -193,23 +204,23 @@ defineProps<{
                     />
                 </div>
 
-                <!-- Mobile welcome copy (hero panel is desktop-only) -->
+                <!-- Mobile fallback welcome (left panel is desktop-only) -->
                 <div
                     class="mb-6 space-y-2 lg:hidden"
                     data-test="login-welcome-block-mobile"
                 >
                     <p
-                        class="text-[11px] font-medium tracking-wide text-slate-500 uppercase"
+                        class="text-sm font-medium tracking-wide text-slate-500 uppercase"
                     >
                         {{ __('Welcome to') }}
                     </p>
                     <h1
-                        class="text-xl font-extrabold tracking-tight text-slate-900 dark:text-white"
+                        class="text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white"
                     >
                         {{ __('SMARTIME (Smart Overtime) 2.0') }}
                     </h1>
                     <p
-                        class="text-xs leading-relaxed text-slate-600 dark:text-slate-400"
+                        class="text-sm leading-relaxed text-slate-600 dark:text-slate-400"
                     >
                         {{
                             __(
@@ -220,23 +231,15 @@ defineProps<{
                     <DeveloperWatermark variant="inline" />
                 </div>
 
-                <!-- Form Container -->
                 <div class="mx-auto my-auto w-full max-w-md py-6">
-                    <!-- Header Title & Subtitle -->
                     <div class="mb-6 space-y-1.5">
-                        <div
-                            class="hidden items-center justify-between lg:flex"
-                        >
-                            <div class="flex items-center gap-2">
-                                <span
-                                    class="size-2 rounded-full bg-[#cc0000]"
-                                />
-                                <span
-                                    class="text-xs font-bold tracking-wider text-slate-400 uppercase dark:text-slate-500"
-                                >
-                                    {{ __('Manufacturing Portal Access') }}
-                                </span>
-                            </div>
+                        <div class="hidden items-center gap-2 lg:flex">
+                            <span class="size-2 rounded-full bg-[#cc0000]" />
+                            <span
+                                class="text-xs font-bold tracking-wider text-slate-400 uppercase dark:text-slate-500"
+                            >
+                                {{ __('Manufacturing Portal Access') }}
+                            </span>
                         </div>
                         <h2
                             class="text-2xl font-bold tracking-tight text-slate-900 dark:text-white"
@@ -254,11 +257,9 @@ defineProps<{
                         </p>
                     </div>
 
-                    <!-- Auth Page Slot (Login, ForgotPassword, etc.) -->
                     <slot />
                 </div>
 
-                <!-- Right Column Footer -->
                 <div
                     class="pt-6 text-center text-xs text-slate-400 dark:text-slate-500"
                 >
