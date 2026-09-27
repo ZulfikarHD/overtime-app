@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use App\Models\OvertimeSubmission;
 use App\Models\User;
+use App\Services\ShiftScheduleService;
 use App\Support\Features;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
@@ -67,6 +68,7 @@ class HandleInertiaRequests extends Middleware
                 'overtime_approvals_enabled' => Features::overtimeApprovalsEnabled(),
                 'capex_attribution_required' => Features::capexAttributionRequired(),
             ],
+            'shiftSchedule' => app(ShiftScheduleService::class)->getActivePayload(),
             'flash' => [
                 'success' => $request->session()->get('success'),
                 'error' => $request->session()->get('error'),

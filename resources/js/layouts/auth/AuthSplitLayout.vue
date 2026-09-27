@@ -120,7 +120,7 @@ defineProps<{
                         {{ __('Welcome to') }}
                     </p>
                     <h1
-                        class="max-w-xl text-4xl font-extrabold tracking-tight text-white [text-shadow:0_1px_3px_rgba(0,0,0,0.5)] xl:text-5xl"
+                        class="text-3xl font-extrabold tracking-tight whitespace-nowrap text-white [text-shadow:0_1px_3px_rgba(0,0,0,0.5)] xl:text-4xl"
                         data-test="login-hero-title"
                     >
                         {{ __('SMARTIME (Smart Overtime) 2.0') }}
@@ -215,7 +215,7 @@ defineProps<{
                         {{ __('Welcome to') }}
                     </p>
                     <h1
-                        class="text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white"
+                        class="text-xl font-extrabold tracking-tight whitespace-nowrap text-slate-900 sm:text-2xl dark:text-white"
                     >
                         {{ __('SMARTIME (Smart Overtime) 2.0') }}
                     </h1>

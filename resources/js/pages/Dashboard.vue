@@ -2,7 +2,6 @@
 import { Head, router, usePage } from '@inertiajs/vue3';
 import {
     Calendar,
-    Clock,
     Filter,
     Flame,
     PieChart,
@@ -186,7 +185,7 @@ function handleTabChange(tab: DashboardTab) {
 }
 
 const { __ } = useTrans();
-const { timeString, dateString, currentShift } = useShiftInfo();
+const { dateString } = useShiftInfo();
 const page = usePage();
 const user = computed(() => page.props.auth?.user as User | undefined);
 
@@ -328,7 +327,7 @@ function resetFilters() {
     <div class="flex h-full flex-1 flex-col gap-6 p-4 sm:p-6">
         <Head :title="__('Operational Dashboard')" />
 
-        <!-- Executive Operational Header Banner with Live WIB Clock & Filters -->
+        <!-- Executive Operational Header Banner with Filters -->
         <div
             class="border-border/70 bg-card rounded-xl border p-5 shadow-xs sm:p-6"
         >
@@ -360,27 +359,6 @@ function resetFilters() {
                             <span>{{ dateString }}</span>
                         </span>
                     </p>
-                    <!-- Clock hero, shift stacked below (proximity / hierarchy) -->
-                    <div
-                        class="mt-2 flex flex-col gap-0.5"
-                        data-test="dashboard-live-clock"
-                    >
-                        <div
-                            class="text-foreground flex items-center gap-1.5 font-mono text-sm font-semibold tabular-nums sm:text-base lg:text-lg"
-                        >
-                            <Clock
-                                class="size-3.5 shrink-0 text-slate-400 sm:size-4"
-                            />
-                            <span>{{ timeString }} WIB</span>
-                        </div>
-                        <span
-                            class="text-muted-foreground max-w-full text-[10px] font-medium break-words sm:pl-5 sm:text-[11px]"
-                            data-test="dashboard-active-shift"
-                        >
-                            {{ currentShift.name }} ·
-                            {{ currentShift.hours }}
-                        </span>
-                    </div>
                 </div>
 
                 <!-- Filter Bar -->

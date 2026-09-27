@@ -1,4 +1,19 @@
-import { onMounted, onUnmounted, ref } from 'vue';
+import { usePage } from '@inertiajs/vue3';
+import { computed, onMounted, onUnmounted, ref } from 'vue';
+
+export interface ShiftWindow {
+    number: 1 | 2 | 3;
+    start: string;
+    end: string;
+}
+
+export interface SharedShiftSchedule {
+    id: number | null;
+    name: string;
+    effective_from: string;
+    effective_until: string | null;
+    shifts: ShiftWindow[];
+}
 
 export interface ShiftDetails {
     shiftNumber: 1 | 2 | 3;
@@ -7,22 +22,81 @@ export interface ShiftDetails {
     badgeText: string;
 }
 
+const DEFAULT_SHIFTS: ShiftWindow[] = [
+    { number: 1, start: '07:00', end: '15:00' },
+    { number: 2, start: '15:00', end: '23:00' },
+    { number: 3, start: '23:00', end: '07:00' },
+];
+
+function parseMinutes(hhmm: string): number {
+    const [h, m] = hhmm.split(':').map((part) => parseInt(part, 10));
+    return h * 60 + (m || 0);
+}
+
+function isWithinWindow(minutes: number, start: string, end: string): boolean {
+    const startMin = parseMinutes(start);
+    const endMin = parseMinutes(end);
+
+    if (startMin === endMin) {
+        return false;
+    }
+
+    // Overnight window (e.g. 23:00 – 07:00)
+    if (startMin > endMin) {
+        return minutes >= startMin || minutes < endMin;
+    }
+
+    return minutes >= startMin && minutes < endMin;
+}
+
+function resolveShift(
+    shifts: ShiftWindow[],
+    jakartaMinutes: number,
+): ShiftDetails {
+    const windows = shifts.length === 3 ? shifts : DEFAULT_SHIFTS;
+
+    for (const window of windows) {
+        if (isWithinWindow(jakartaMinutes, window.start, window.end)) {
+            const hours = `${window.start} – ${window.end} WIB`;
+            return {
+                shiftNumber: window.number,
+                name: `Shift ${window.number}`,
+                hours,
+                badgeText: `Shift ${window.number}: ${window.start}–${window.end} WIB`,
+            };
+        }
+    }
+
+    const fallback = windows[0] ?? DEFAULT_SHIFTS[0];
+    const hours = `${fallback.start} – ${fallback.end} WIB`;
+    return {
+        shiftNumber: fallback.number,
+        name: `Shift ${fallback.number}`,
+        hours,
+        badgeText: `Shift ${fallback.number}: ${fallback.start}–${fallback.end} WIB`,
+    };
+}
+
 export function useShiftInfo() {
+    const page = usePage();
+    const schedule = computed(() => {
+        const shared = page.props.shiftSchedule as
+            | SharedShiftSchedule
+            | undefined;
+        return shared?.shifts?.length === 3 ? shared.shifts : DEFAULT_SHIFTS;
+    });
+
     const timeString = ref('');
     const dateString = ref('');
-    const currentShift = ref<ShiftDetails>({
-        shiftNumber: 1,
-        name: 'Shift 1',
-        hours: '07:00 – 15:00 WIB',
-        badgeText: 'Shift 1: 07:00–15:00 WIB',
-    });
+    const currentShift = ref<ShiftDetails>(
+        resolveShift(DEFAULT_SHIFTS, 7 * 60),
+    );
 
     let timer: ReturnType<typeof setInterval> | null = null;
 
     const updateClock = () => {
         const now = new Date();
 
-        // Format live time in Asia/Jakarta timezone
         timeString.value = new Intl.DateTimeFormat('id-ID', {
             timeZone: 'Asia/Jakarta',
             hour: '2-digit',
@@ -39,8 +113,7 @@ export function useShiftInfo() {
             year: 'numeric',
         }).format(now);
 
-        // Get hour in Asia/Jakarta
-        const jakartaHour = parseInt(
+        const hour = parseInt(
             new Intl.DateTimeFormat('en-US', {
                 timeZone: 'Asia/Jakarta',
                 hour: 'numeric',
@@ -48,29 +121,15 @@ export function useShiftInfo() {
             }).format(now),
             10,
         );
+        const minute = parseInt(
+            new Intl.DateTimeFormat('en-US', {
+                timeZone: 'Asia/Jakarta',
+                minute: 'numeric',
+            }).format(now),
+            10,
+        );
 
-        if (jakartaHour >= 7 && jakartaHour < 15) {
-            currentShift.value = {
-                shiftNumber: 1,
-                name: 'Shift 1',
-                hours: '07:00 – 15:00 WIB',
-                badgeText: 'Shift 1: 07:00–15:00 WIB',
-            };
-        } else if (jakartaHour >= 15 && jakartaHour < 23) {
-            currentShift.value = {
-                shiftNumber: 2,
-                name: 'Shift 2',
-                hours: '15:00 – 23:00 WIB',
-                badgeText: 'Shift 2: 15:00–23:00 WIB',
-            };
-        } else {
-            currentShift.value = {
-                shiftNumber: 3,
-                name: 'Shift 3',
-                hours: '23:00 – 07:00 WIB',
-                badgeText: 'Shift 3: 23:00–07:00 WIB',
-            };
-        }
+        currentShift.value = resolveShift(schedule.value, hour * 60 + minute);
     };
 
     onMounted(() => {
@@ -85,12 +144,12 @@ export function useShiftInfo() {
         }
     });
 
-    // Run initial update for immediate SSR / mount readiness
     updateClock();
 
     return {
         timeString,
         dateString,
         currentShift,
+        schedule,
     };
 }

@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Department;
 use App\Models\User;
 use App\Services\PolicyThresholdService;
+use App\Services\ShiftScheduleService;
 use App\Services\UserService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -17,6 +18,7 @@ class AdministrationController extends Controller
     public function __construct(
         public PolicyThresholdService $policyService,
         public UserService $userService,
+        public ShiftScheduleService $shiftScheduleService,
     ) {}
 
     /**
@@ -131,6 +133,8 @@ class AdministrationController extends Controller
                 'user_department_id' => $userDept ? (int) $userDept : null,
             ],
             'availableRoles' => $availableRoles,
+            'shiftSchedules' => $this->shiftScheduleService->listForAdmin()->values(),
+            'activeShiftSchedule' => $this->shiftScheduleService->getActivePayload(),
         ]);
     }
 }

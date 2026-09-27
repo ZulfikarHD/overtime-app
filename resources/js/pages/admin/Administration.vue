@@ -32,6 +32,9 @@ import PolicyThresholdSheet, {
     type DepartmentOption,
     type PolicyThresholdRecord,
 } from '@/components/admin/PolicyThresholdSheet.vue';
+import ShiftScheduleSheet, {
+    type ShiftScheduleRecord,
+} from '@/components/admin/ShiftScheduleSheet.vue';
 import UserFormSheet, {
     type DepartmentWithSections,
     type RoleOption,
@@ -51,6 +54,7 @@ import { useTrans } from '@/composables/useTrans';
 import { dashboard } from '@/routes';
 import { administration } from '@/routes/admin';
 import policyThresholdsRoute from '@/routes/admin/policy-thresholds';
+import shiftSchedulesRoute from '@/routes/admin/shift-schedules';
 import usersRoute from '@/routes/admin/users';
 
 export type DepartmentPolicyStatus = {
@@ -105,6 +109,16 @@ export type UserFilters = {
     user_department_id?: number | null;
 };
 
+export type ShiftScheduleAdminRow = ShiftScheduleRecord & {
+    id: number;
+    created_by?: number | null;
+    creator_name?: string | null;
+    is_active: boolean;
+    is_upcoming: boolean;
+    is_past: boolean;
+    updated_at?: string | null;
+};
+
 const props = defineProps<{
     activeTab?: string;
     plantDefault: PolicyThresholdRecord;
@@ -116,6 +130,14 @@ const props = defineProps<{
     userFilters?: UserFilters;
     availableRoles?: RoleOption[];
     departmentsWithSections?: DepartmentWithSections[];
+    shiftSchedules?: ShiftScheduleAdminRow[];
+    activeShiftSchedule?: {
+        id: number | null;
+        name: string;
+        effective_from: string;
+        effective_until: string | null;
+        shifts: { number: number; start: string; end: string }[];
+    };
 }>();
 
 const { __ } = useTrans();
@@ -468,6 +490,85 @@ function getRoleBadgeStyle(role: string): string {
     }
 }
 
+// -------------------------------------------------------------
+// TAB 3: SHIFT SCHEDULES
+// -------------------------------------------------------------
+const shiftSheetOpen = ref(false);
+const selectedShiftSchedule = ref<ShiftScheduleRecord | null>(null);
+const deleteShiftDialogOpen = ref(false);
+const shiftToDelete = ref<ShiftScheduleAdminRow | null>(null);
+const isDeletingShift = ref(false);
+
+const shiftSchedulesList = computed(() => props.shiftSchedules ?? []);
+
+const shiftPeriodCountThisYear = computed(() => {
+    const year = new Date().getFullYear();
+    return shiftSchedulesList.value.filter((row) => {
+        const fromYear = Number(row.effective_from.slice(0, 4));
+        const untilYear = row.effective_until
+            ? Number(row.effective_until.slice(0, 4))
+            : year;
+        return fromYear <= year && untilYear >= year;
+    }).length;
+});
+
+function openCreateShiftSchedule() {
+    const active = props.activeShiftSchedule;
+    selectedShiftSchedule.value = {
+        name: __('New Shift Period'),
+        effective_from: new Date().toISOString().slice(0, 10),
+        effective_until: null,
+        shift_1_start: active?.shifts?.[0]?.start ?? '07:00',
+        shift_1_end: active?.shifts?.[0]?.end ?? '15:00',
+        shift_2_start: active?.shifts?.[1]?.start ?? '15:00',
+        shift_2_end: active?.shifts?.[1]?.end ?? '23:00',
+        shift_3_start: active?.shifts?.[2]?.start ?? '23:00',
+        shift_3_end: active?.shifts?.[2]?.end ?? '07:00',
+    };
+    shiftSheetOpen.value = true;
+}
+
+function openEditShiftSchedule(row: ShiftScheduleAdminRow) {
+    selectedShiftSchedule.value = {
+        id: row.id,
+        name: row.name,
+        effective_from: row.effective_from,
+        effective_until: row.effective_until,
+        shift_1_start: row.shift_1_start,
+        shift_1_end: row.shift_1_end,
+        shift_2_start: row.shift_2_start,
+        shift_2_end: row.shift_2_end,
+        shift_3_start: row.shift_3_start,
+        shift_3_end: row.shift_3_end,
+    };
+    shiftSheetOpen.value = true;
+}
+
+function triggerDeleteShift(row: ShiftScheduleAdminRow) {
+    shiftToDelete.value = row;
+    deleteShiftDialogOpen.value = true;
+}
+
+function executeDeleteShift() {
+    if (!shiftToDelete.value) {
+        return;
+    }
+
+    isDeletingShift.value = true;
+    router.delete(shiftSchedulesRoute.destroy.url(shiftToDelete.value.id), {
+        preserveScroll: true,
+        onFinish: () => {
+            isDeletingShift.value = false;
+            deleteShiftDialogOpen.value = false;
+            shiftToDelete.value = null;
+        },
+    });
+}
+
+function formatShiftWindow(start: string, end: string): string {
+    return `${start} – ${end}`;
+}
+
 // Flash notification
 const flashSuccess = computed(
     () => (page.props.flash as { success?: string } | undefined)?.success,
@@ -483,14 +584,9 @@ const flashSuccess = computed(
             class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
         >
             <div class="space-y-1">
-                <div class="flex items-center gap-2">
-                    <h1 class="text-2xl font-bold tracking-tight">
-                        {{ __('Administration Hub') }}
-                    </h1>
-                    <Badge variant="outline" class="font-mono text-xs">
-                        EPIC-02
-                    </Badge>
-                </div>
+                <h1 class="text-2xl font-bold tracking-tight">
+                    {{ __('Administration Hub') }}
+                </h1>
                 <p class="text-muted-foreground text-sm">
                     {{
                         __(
@@ -552,6 +648,24 @@ const flashSuccess = computed(
                         class="ml-1 text-xs"
                     >
                         {{ userStats.total }}
+                    </Badge>
+                </button>
+
+                <button
+                    type="button"
+                    :class="[
+                        currentTab === 'shifts'
+                            ? 'border-primary text-primary font-semibold'
+                            : 'text-muted-foreground hover:border-border hover:text-foreground border-transparent',
+                        'flex cursor-pointer items-center gap-2 border-b-2 py-3 text-sm font-medium transition-colors',
+                    ]"
+                    data-test="tab-shifts"
+                    @click="switchTab('shifts')"
+                >
+                    <Clock class="size-4" />
+                    <span>{{ __('Shift Times') }}</span>
+                    <Badge variant="secondary" class="ml-1 text-xs">
+                        {{ shiftPeriodCountThisYear }}/3
                     </Badge>
                 </button>
             </nav>
@@ -1747,6 +1861,283 @@ const flashSuccess = computed(
             </div>
         </div>
 
+        <!-- Tab 3: Shift Times -->
+        <div
+            v-else-if="currentTab === 'shifts'"
+            class="space-y-6"
+            data-test="shifts-tab-content"
+        >
+            <div
+                class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
+            >
+                <div class="space-y-1">
+                    <h2 class="text-lg font-semibold tracking-tight">
+                        {{ __('Plant Shift Times') }}
+                    </h2>
+                    <p class="text-muted-foreground text-sm">
+                        {{
+                            __(
+                                'Configure Shift 1, 2, and 3 windows (WIB). Periods can change up to 3 times per calendar year.',
+                            )
+                        }}
+                    </p>
+                </div>
+                <Button
+                    type="button"
+                    class="bg-[#cc0000] text-white hover:bg-[#b30000]"
+                    data-test="btn-add-shift-schedule"
+                    @click="openCreateShiftSchedule"
+                >
+                    <Plus class="mr-1.5 size-4" />
+                    {{ __('New Shift Period') }}
+                </Button>
+            </div>
+
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                <Card>
+                    <CardHeader
+                        class="flex flex-row items-center justify-between pb-2"
+                    >
+                        <CardTitle
+                            class="text-muted-foreground text-sm font-medium"
+                        >
+                            {{ __('Active Period') }}
+                        </CardTitle>
+                        <Clock class="size-4 text-emerald-500" />
+                    </CardHeader>
+                    <CardContent>
+                        <div class="truncate text-lg font-bold">
+                            {{
+                                activeShiftSchedule?.name ??
+                                __('Standard Plant Shift')
+                            }}
+                        </div>
+                        <p class="text-muted-foreground mt-1 text-xs">
+                            {{ __('Since') }}
+                            {{ activeShiftSchedule?.effective_from ?? '—' }}
+                        </p>
+                    </CardContent>
+                </Card>
+
+                <Card>
+                    <CardHeader
+                        class="flex flex-row items-center justify-between pb-2"
+                    >
+                        <CardTitle
+                            class="text-muted-foreground text-sm font-medium"
+                        >
+                            {{ __('Periods This Year') }}
+                        </CardTitle>
+                        <Layers class="size-4 text-amber-500" />
+                    </CardHeader>
+                    <CardContent>
+                        <div
+                            class="text-2xl font-bold tabular-nums"
+                            data-test="shift-periods-this-year"
+                        >
+                            {{ shiftPeriodCountThisYear }}
+                            <span
+                                class="text-muted-foreground text-base font-medium"
+                                >/ 3</span
+                            >
+                        </div>
+                        <p class="text-muted-foreground mt-1 text-xs">
+                            {{ __('Maximum 3 changes per year') }}
+                        </p>
+                    </CardContent>
+                </Card>
+
+                <Card>
+                    <CardHeader
+                        class="flex flex-row items-center justify-between pb-2"
+                    >
+                        <CardTitle
+                            class="text-muted-foreground text-sm font-medium"
+                        >
+                            {{ __('Current Windows') }}
+                        </CardTitle>
+                        <Flame class="text-primary size-4" />
+                    </CardHeader>
+                    <CardContent>
+                        <div
+                            class="space-y-1 font-mono text-xs tabular-nums"
+                            data-test="active-shift-windows"
+                        >
+                            <div
+                                v-for="shift in activeShiftSchedule?.shifts ??
+                                []"
+                                :key="shift.number"
+                            >
+                                S{{ shift.number }}:
+                                {{ formatShiftWindow(shift.start, shift.end) }}
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+            </div>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle>{{ __('Shift Schedule History') }}</CardTitle>
+                    <CardDescription>
+                        {{
+                            __(
+                                'Each dated period defines when Shift 1 / 2 / 3 times apply across the plant.',
+                            )
+                        }}
+                    </CardDescription>
+                </CardHeader>
+                <CardContent class="p-0">
+                    <div class="overflow-x-auto">
+                        <table
+                            class="w-full text-left text-xs"
+                            data-test="shift-schedules-table"
+                        >
+                            <thead>
+                                <tr
+                                    class="border-border bg-muted/40 border-b text-[11px] font-semibold tracking-wider text-slate-500 uppercase"
+                                >
+                                    <th class="px-4 py-3">{{ __('Name') }}</th>
+                                    <th class="px-4 py-3">
+                                        {{ __('Effective') }}
+                                    </th>
+                                    <th class="px-4 py-3 font-mono">
+                                        {{ __('Shift 1') }}
+                                    </th>
+                                    <th class="px-4 py-3 font-mono">
+                                        {{ __('Shift 2') }}
+                                    </th>
+                                    <th class="px-4 py-3 font-mono">
+                                        {{ __('Shift 3') }}
+                                    </th>
+                                    <th class="px-4 py-3">
+                                        {{ __('Status') }}
+                                    </th>
+                                    <th class="px-4 py-3 text-right">
+                                        {{ __('Actions') }}
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-border divide-y">
+                                <tr
+                                    v-if="shiftSchedulesList.length === 0"
+                                    data-test="shift-schedules-empty"
+                                >
+                                    <td
+                                        colspan="7"
+                                        class="text-muted-foreground px-4 py-8 text-center"
+                                    >
+                                        {{
+                                            __(
+                                                'No shift schedules yet. Create the first plant period to begin.',
+                                            )
+                                        }}
+                                    </td>
+                                </tr>
+                                <tr
+                                    v-for="row in shiftSchedulesList"
+                                    :key="row.id"
+                                    class="hover:bg-muted/30"
+                                    :data-test="`shift-schedule-row-${row.id}`"
+                                >
+                                    <td class="px-4 py-3 font-medium">
+                                        {{ row.name }}
+                                    </td>
+                                    <td
+                                        class="px-4 py-3 font-mono tabular-nums"
+                                    >
+                                        {{ row.effective_from }}
+                                        <span class="text-muted-foreground"
+                                            >→</span
+                                        >
+                                        {{
+                                            row.effective_until ??
+                                            __('Open-ended')
+                                        }}
+                                    </td>
+                                    <td
+                                        class="px-4 py-3 font-mono tabular-nums"
+                                    >
+                                        {{
+                                            formatShiftWindow(
+                                                row.shift_1_start,
+                                                row.shift_1_end,
+                                            )
+                                        }}
+                                    </td>
+                                    <td
+                                        class="px-4 py-3 font-mono tabular-nums"
+                                    >
+                                        {{
+                                            formatShiftWindow(
+                                                row.shift_2_start,
+                                                row.shift_2_end,
+                                            )
+                                        }}
+                                    </td>
+                                    <td
+                                        class="px-4 py-3 font-mono tabular-nums"
+                                    >
+                                        {{
+                                            formatShiftWindow(
+                                                row.shift_3_start,
+                                                row.shift_3_end,
+                                            )
+                                        }}
+                                    </td>
+                                    <td class="px-4 py-3">
+                                        <Badge
+                                            v-if="row.is_active"
+                                            class="border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-300"
+                                        >
+                                            {{ __('Active') }}
+                                        </Badge>
+                                        <Badge
+                                            v-else-if="row.is_upcoming"
+                                            class="border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-900 dark:bg-sky-950/40 dark:text-sky-300"
+                                        >
+                                            {{ __('Upcoming') }}
+                                        </Badge>
+                                        <Badge v-else variant="secondary">
+                                            {{ __('Past') }}
+                                        </Badge>
+                                    </td>
+                                    <td class="px-4 py-3 text-right">
+                                        <div
+                                            class="inline-flex items-center gap-1"
+                                        >
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="sm"
+                                                class="h-8 px-2"
+                                                :data-test="`btn-edit-shift-${row.id}`"
+                                                @click="
+                                                    openEditShiftSchedule(row)
+                                                "
+                                            >
+                                                <Edit2 class="size-3.5" />
+                                            </Button>
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="sm"
+                                                class="h-8 px-2 text-rose-600 hover:text-rose-700"
+                                                :data-test="`btn-delete-shift-${row.id}`"
+                                                @click="triggerDeleteShift(row)"
+                                            >
+                                                <Trash2 class="size-3.5" />
+                                            </Button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </CardContent>
+            </Card>
+        </div>
+
         <!-- Sheet Form: Policy Threshold (Tab 1) -->
         <PolicyThresholdSheet
             v-model:open="sheetOpen"
@@ -1764,6 +2155,12 @@ const flashSuccess = computed(
             :roles="availableRoles || []"
         />
 
+        <!-- Sheet Form: Shift Schedule (Tab 3) -->
+        <ShiftScheduleSheet
+            v-model:open="shiftSheetOpen"
+            :schedule="selectedShiftSchedule"
+        />
+
         <!-- Dialog: Delete Policy Override -->
         <ConfirmationDialog
             v-model:open="deleteDialogOpen"
@@ -1778,6 +2175,23 @@ const flashSuccess = computed(
             variant="destructive"
             :loading="isDeleting"
             @confirm="executeDeleteOverride"
+        />
+
+        <!-- Dialog: Delete Shift Schedule -->
+        <ConfirmationDialog
+            v-model:open="deleteShiftDialogOpen"
+            :title="__('Delete shift schedule period?')"
+            :description="
+                __(
+                    'Removing this period will stop using these Shift 1 / 2 / 3 times for the selected date range. Live clock badges will fall back to another active period or plant defaults.',
+                )
+            "
+            :confirm-text="__('Yes, Delete Period')"
+            :cancel-text="__('Cancel')"
+            variant="destructive"
+            :loading="isDeletingShift"
+            data-test="confirm-delete-shift-dialog"
+            @confirm="executeDeleteShift"
         />
 
         <!-- Dialog: Toggle User Active Status -->
