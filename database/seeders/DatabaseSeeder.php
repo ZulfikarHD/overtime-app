@@ -24,6 +24,7 @@ class DatabaseSeeder extends Seeder
             PolicyThresholdSeeder::class,
             OvertimeBudgetSeeder::class,
             DummyDataSeeder::class,
+            MlTrainingDataSeeder::class,
             Ytd2026DummyDataSeeder::class,
         ]);
     }

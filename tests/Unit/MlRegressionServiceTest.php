@@ -36,10 +36,10 @@ function xlsxTrainingRows(): array
         ['working_days' => 22, 'production_volume' => 2463, 'man_power' => 733, 'overtime_index' => 38491],
         ['working_days' => 22, 'production_volume' => 1998, 'man_power' => 729, 'overtime_index' => 29413],
         ['working_days' => 20, 'production_volume' => 2485, 'man_power' => 730, 'overtime_index' => 62983],
-        ['working_days' => 20, 'production_volume' => 2290, 'man_power' => 730, 'overtime_index' => 54317],
+        ['working_days' => 20, 'production_volume' => 2290, 'man_power' => 730, 'overtime_index' => 58430], // corrected from 54317
         ['working_days' => 19, 'production_volume' => 2173, 'man_power' => 730, 'overtime_index' => 62758],
-        ['working_days' => 17, 'production_volume' => 3283, 'man_power' => 730, 'overtime_index' => 48410],
-        ['working_days' => 21, 'production_volume' => 2889, 'man_power' => 704, 'overtime_index' => 88003],
+        ['working_days' => 17, 'production_volume' => 3283, 'man_power' => 730, 'overtime_index' => 86773], // corrected from 48410
+        ['working_days' => 21, 'production_volume' => 2889, 'man_power' => 704, 'overtime_index' => 84938], // corrected from 88003
         ['working_days' => 20, 'production_volume' => 3698, 'man_power' => 714, 'overtime_index' => 84449],
     ];
 }
@@ -51,8 +51,8 @@ test('descriptive stats: Y mean equals known value from xlsx', function () {
     $y = array_column(xlsxTrainingRows(), 'overtime_index');
     $stats = $service->descriptiveStats($y);
 
-    // xlsx Data sheet: mean Y = 67315.8
-    expect($stats['mean'])->toBeBetween(67300.0, 67350.0)
+    // Corrected actuals (Index Ideal sheet): mean Y ≈ 68629.5
+    expect($stats['mean'])->toBeBetween(68600.0, 68680.0)
         ->and($stats['n'])->toBe(30)
         ->and($stats['min'])->toBe(29413.0)
         ->and($stats['max'])->toBe(100190.0);
