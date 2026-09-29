@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\MasterDataController;
 use App\Http\Controllers\Admin\OperationalCalendarController;
 use App\Http\Controllers\Admin\PolicyThresholdController;
 use App\Http\Controllers\Admin\SectionController;
+use App\Http\Controllers\Admin\ShiftScheduleController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Analytics\MlController;
 use App\Http\Controllers\AnalyticsController;
@@ -170,11 +171,17 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::redirect('/policies', '/admin/administration?tab=policies');
         Route::redirect('/policy-thresholds', '/admin/administration?tab=policies');
         Route::redirect('/users', '/admin/administration?tab=users');
+        Route::redirect('/shifts', '/admin/administration?tab=shifts');
 
         // Policy Threshold Configuration (E02-04)
         Route::post('/policy-thresholds', [PolicyThresholdController::class, 'store'])->name('policy-thresholds.store');
         Route::put('/policy-thresholds/{policy_threshold}', [PolicyThresholdController::class, 'update'])->name('policy-thresholds.update');
         Route::delete('/policy-thresholds/{policy_threshold}', [PolicyThresholdController::class, 'destroy'])->name('policy-thresholds.destroy');
+
+        // Plant Shift Schedule Configuration
+        Route::post('/shift-schedules', [ShiftScheduleController::class, 'store'])->name('shift-schedules.store');
+        Route::put('/shift-schedules/{shift_schedule}', [ShiftScheduleController::class, 'update'])->name('shift-schedules.update');
+        Route::delete('/shift-schedules/{shift_schedule}', [ShiftScheduleController::class, 'destroy'])->name('shift-schedules.destroy');
 
         // User Account Management & RBAC (E02-05)
         Route::post('/users', [UserController::class, 'store'])->name('users.store');

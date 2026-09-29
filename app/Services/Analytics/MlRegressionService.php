@@ -15,10 +15,40 @@ namespace App\Services\Analytics;
  */
 class MlRegressionService
 {
-    // ─── Durbin-Watson table (n=30, k=3, α=5%) ───────────────────────────────
-    private const DW_DL = 1.2138;
-
-    private const DW_DU = 1.6498;
+    // ─── Durbin-Watson critical value table (k=3 predictors, α=5%) ──────────
+    // Source: Savin & White (1977), Economic Letters vol. 1 pp. 151-156.
+    // Rows for n=15..30 are tabulated individually; larger n uses 5-step breaks.
+    // Values for n not listed are obtained by linear interpolation (see dwCriticalValues()).
+    private const DW_TABLE_K3 = [
+        //  n  => [dL,     dU    ]
+        15 => [0.8140, 1.7501],
+        16 => [0.8570, 1.7280],
+        17 => [0.8970, 1.7100],
+        18 => [0.9330, 1.6960],
+        19 => [0.9670, 1.6850],
+        20 => [0.9977, 1.6763],
+        21 => [1.0260, 1.6690],
+        22 => [1.0530, 1.6640],
+        23 => [1.0780, 1.6600],
+        24 => [1.1010, 1.6560],
+        25 => [1.1232, 1.6540],
+        26 => [1.1430, 1.6520],
+        27 => [1.1620, 1.6510],
+        28 => [1.1810, 1.6500],
+        29 => [1.1980, 1.6500],
+        30 => [1.2138, 1.6498],
+        35 => [1.2830, 1.6530],
+        40 => [1.3380, 1.6590],
+        45 => [1.3830, 1.6660],
+        50 => [1.4210, 1.6740],
+        60 => [1.4800, 1.6890],
+        70 => [1.5250, 1.7030],
+        80 => [1.5600, 1.7150],
+        90 => [1.5890, 1.7260],
+        100 => [1.6130, 1.7360],
+        150 => [1.6930, 1.7740],
+        200 => [1.7380, 1.7990],
+    ];
 
     // Chi-square 95th percentile at df=2 (for Jarque-Bera)
     private const CHI2_DF2_95 = 5.9915;
@@ -313,6 +343,41 @@ class MlRegressionService
     }
 
     /**
+     * Look up Durbin-Watson critical values (dL, dU) for the actual observation count.
+     * Interpolates linearly between tabulated n values from DW_TABLE_K3.
+     * n < 15 → uses n=15 (most conservative); n > 200 → uses n=200.
+     *
+     * @return array{0: float, 1: float} [dL, dU]
+     */
+    private function dwCriticalValues(int $n): array
+    {
+        $table = self::DW_TABLE_K3;
+        $keys = array_keys($table);
+        $minN = min($keys);
+        $maxN = max($keys);
+
+        if ($n <= $minN) {
+            return $table[$minN];
+        }
+        if ($n >= $maxN) {
+            return $table[$maxN];
+        }
+        if (isset($table[$n])) {
+            return $table[$n];
+        }
+
+        // Linear interpolation between the two nearest tabulated neighbours
+        $lower = max(array_filter($keys, fn ($k) => $k < $n));
+        $upper = min(array_filter($keys, fn ($k) => $k > $n));
+        $frac = ($n - $lower) / ($upper - $lower);
+
+        $dl = $table[$lower][0] + $frac * ($table[$upper][0] - $table[$lower][0]);
+        $du = $table[$lower][1] + $frac * ($table[$upper][1] - $table[$lower][1]);
+
+        return [round($dl, 4), round($du, 4)];
+    }
+
+    /**
      * Durbin-Watson autocorrelation test.
      *
      * @param  list<float>  $residuals
@@ -321,8 +386,10 @@ class MlRegressionService
     public function durbinWatson(array $residuals): array
     {
         $n = count($residuals);
+        [$dl, $du] = $this->dwCriticalValues($n);
+
         if ($n < 3) {
-            return ['dw' => 0.0, 'dl' => self::DW_DL, 'du' => self::DW_DU, 'decision' => 'Tidak cukup data', 'r_lag1' => 0.0];
+            return ['dw' => 0.0, 'dl' => $dl, 'du' => $du, 'decision' => 'Tidak cukup data', 'r_lag1' => 0.0];
         }
 
         $sumDiff2 = 0.0;
@@ -337,9 +404,6 @@ class MlRegressionService
             array_slice($residuals, 0, $n - 1),
             array_slice($residuals, 1),
         );
-
-        $dl = self::DW_DL;
-        $du = self::DW_DU;
 
         if ($dw < $dl) {
             $decision = 'Ada autokorelasi positif (TIDAK TERPENUHI)';
@@ -592,10 +656,11 @@ class MlRegressionService
         }
 
         $x = ($df1 * $f) / ($df1 * $f + $df2);
-        // P(F > f) = Ix(df1/2, df2/2) — upper tail
-        $upper = $this->regularizedIncompleteBeta($x, $df1 / 2.0, $df2 / 2.0);
+        // regularizedIncompleteBeta returns P(F ≤ f) (the CDF).
+        // We need the upper tail P(F > f) = 1 − CDF.
+        $cdf = $this->regularizedIncompleteBeta($x, $df1 / 2.0, $df2 / 2.0);
 
-        return min(1.0, max(0.0, $upper));
+        return min(1.0, max(0.0, 1.0 - $cdf));
     }
 
     /**

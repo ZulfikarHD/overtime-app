@@ -69,8 +69,10 @@ test('manager can view 4 executive kpi cards with sparklines and burn metrics', 
         ->assertPresent('[data-test="burn-index-pct"]')
         ->assertPresent('[data-test="burn-index-meta"]')
         ->assertPresent('[data-test="manpower-shift-meta"]')
-        ->assertPresent('[data-test="dashboard-live-clock"]')
-        ->assertPresent('[data-test="dashboard-active-shift"]')
+        ->assertMissing('[data-test="dashboard-live-clock"]')
+        ->assertMissing('[data-test="dashboard-active-shift"]')
+        ->assertPresent('[data-test="live-wib-clock"]')
+        ->assertPresent('[data-test="topbar-active-shift"]')
         ->assertSee('88%')
         ->assertNoJavaScriptErrors();
 });
@@ -201,7 +203,8 @@ test('kpi card hierarchy stays intact across mobile tablet and desktop viewports
             ->assertPresent('[data-test="burn-index-title"]')
             ->assertPresent('[data-test="burn-index-pct"]')
             ->assertPresent('[data-test="manpower-shift-meta"]')
-            ->assertPresent('[data-test="dashboard-live-clock"]')
+            ->assertMissing('[data-test="dashboard-live-clock"]')
+            ->assertPresent('[data-test="live-wib-clock"]')
             ->assertNoJavaScriptErrors();
     }
 });
