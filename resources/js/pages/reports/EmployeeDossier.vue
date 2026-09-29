@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head, Link, router, usePage } from '@inertiajs/vue3';
+import { Head, Link, router } from '@inertiajs/vue3';
 import {
     Activity,
     ArrowLeft,
@@ -7,7 +7,6 @@ import {
     Briefcase,
     Building2,
     Calendar,
-    Clock,
     FileSpreadsheet,
     FileText,
     HeartPulse,
@@ -19,7 +18,6 @@ import {
     Users,
 } from '@lucide/vue';
 import { computed, onMounted, ref, watch } from 'vue';
-import RoleBadge from '@/components/RoleBadge.vue';
 import CategoryDonutChart from '@/components/reports/CategoryDonutChart.vue';
 import DayTypeBreakdownBar from '@/components/reports/DayTypeBreakdownBar.vue';
 import EmployeeSearch from '@/components/reports/EmployeeSearch.vue';
@@ -54,7 +52,6 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { useRecentLookups } from '@/composables/useRecentLookups';
-import { useShiftInfo } from '@/composables/useShiftInfo';
 import { useTrans } from '@/composables/useTrans';
 import { formatRupiah } from '@/lib/formatters';
 import { dashboard } from '@/routes';
@@ -62,7 +59,6 @@ import {
     index as reportsEmployees,
     show as showEmployeeDossier,
 } from '@/routes/reports/employees';
-import type { BreadcrumbItem, User } from '@/types';
 import type { WelfareStatusData } from '@/types/ui';
 
 defineOptions({
@@ -144,10 +140,7 @@ const props = defineProps<{
 }>();
 
 const { __ } = useTrans();
-const { timeString, currentShift } = useShiftInfo();
 const { addLookup } = useRecentLookups();
-const page = usePage();
-const currentUser = computed(() => page.props.auth?.user as User | undefined);
 
 const activeTab = ref(props.current_tab || 'overview');
 const selectedYear = ref(props.fiscal_year || 2026);
@@ -731,57 +724,27 @@ const filteredSections = computed(() => {
         <!-- ========================================== -->
         <template v-else>
             <!-- Page Header -->
-            <div
-                class="flex flex-col justify-between gap-4 sm:flex-row sm:items-center"
-            >
-                <div>
-                    <div class="flex items-center gap-2.5">
-                        <h1
-                            class="text-foreground text-2xl font-bold tracking-tight md:text-3xl"
-                        >
-                            {{ __('Laporan Karyawan & Kesejahteraan') }}
-                        </h1>
-                        <Badge
-                            variant="outline"
-                            class="border-primary/30 bg-primary/10 text-primary text-xs font-semibold"
-                        >
-                            {{ __('Dossier Hub') }}
-                        </Badge>
-                    </div>
-                    <p class="text-muted-foreground mt-1 text-sm">
-                        {{
-                            __(
-                                'Cari karyawan berdasarkan NPK atau nama untuk memantau jam lembur, riwayat persetujuan, dan status keselamatan kerja.',
-                            )
-                        }}
-                    </p>
-                </div>
-
-                <!-- WIB Live Clock & Role Status -->
-                <div class="flex items-center gap-3">
-                    <div
-                        class="hidden flex-col items-end sm:flex"
-                        data-test="dossier-live-clock"
+            <div>
+                <div class="flex items-center gap-2.5">
+                    <h1
+                        class="text-foreground text-2xl font-bold tracking-tight md:text-3xl"
                     >
-                        <div
-                            class="text-foreground flex items-center gap-1.5 font-mono text-base font-semibold tabular-nums"
-                        >
-                            <Clock class="size-3.5 text-slate-400" />
-                            <span>{{ timeString }} WIB</span>
-                        </div>
-                        <span
-                            class="text-muted-foreground mt-0.5 text-[11px] font-medium"
-                            data-test="dossier-active-shift"
-                        >
-                            {{ currentShift.badgeText }}
-                        </span>
-                    </div>
-
-                    <RoleBadge
-                        v-if="currentUser?.role"
-                        :role="currentUser.role"
-                    />
+                        {{ __('Laporan Karyawan & Kesejahteraan') }}
+                    </h1>
+                    <Badge
+                        variant="outline"
+                        class="border-primary/30 bg-primary/10 text-primary text-xs font-semibold"
+                    >
+                        {{ __('Dossier Hub') }}
+                    </Badge>
                 </div>
+                <p class="text-muted-foreground mt-1 text-sm">
+                    {{
+                        __(
+                            'Cari karyawan berdasarkan NPK atau nama untuk memantau jam lembur, riwayat persetujuan, dan status keselamatan kerja.',
+                        )
+                    }}
+                </p>
             </div>
 
             <!-- Prominent Employee Search & Recent Lookups Section -->
