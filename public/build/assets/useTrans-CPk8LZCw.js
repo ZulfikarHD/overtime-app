@@ -1,0 +1,1 @@
+import{X as e,u as t}from"./wayfinder-CFFIoNtG.js";function n(){let n=t(),r=e(()=>n.props.translations??{}),i=e(()=>n.props.locale??`id`);function a(e,t={}){let n=r.value[e]??e;for(let[e,r]of Object.entries(t))n=n.replaceAll(`:${e}`,String(r));return n}return{__:a,locale:i,translations:r}}export{n as t};
