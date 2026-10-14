@@ -70,6 +70,7 @@ Technical specifications and decision records for the engineering implementation
     - [ADR-038: Excel-Parity Planning Grid UX](./dev-docs/decisions/038-excel-parity-planning-grid-ux.md)
     - [ADR-039: Department-Default Dashboard Scope with Optional Section Drill-Down](./dev-docs/decisions/039-department-default-dashboard-section-drill-down.md)
     - [ADR-040: Computed Early Warning Alerts on a Shared Daily Index](./dev-docs/decisions/040-early-warning-alert-detection-shared-daily-index.md)
+    - [ADR-041: Early Warning Sidebar Badge Cached per Scope and Policy-Based Section Access](./dev-docs/decisions/041-early-warning-sidebar-badge-and-authorization.md)
 - **Technical Feature Design Specifications:**
     - [Authentication & Role-Based Access Control](./dev-docs/features/authentication-rbac.md)
     - [Database Schema Migrations (Full DDL)](./dev-docs/features/database-schema-migrations.md)
@@ -105,6 +106,7 @@ Technical specifications and decision records for the engineering implementation
     - [Overtime Planning OT — Monthly Grid](./dev-docs/features/overtime-planning-ot.md)
     - [SPL Excel Import — Realized Overtime](./dev-docs/features/spl-excel-import.md)
     - [Early Warning Alert Detection (E10-01)](./dev-docs/features/early-warning-alert-detection.md)
+    - [Early Warning Menu, Routes & Authorization (E10-02)](./dev-docs/features/early-warning-navigation-access.md)
 - **API Reference Design:**
     - [Calendar Classification & Management API](./dev-docs/api/calendar-endpoints.md)
     - [Overtime Policy Check API](./dev-docs/api/overtime-policy-check.md)
@@ -164,6 +166,7 @@ Plain-language operating guides for factory supervisors, team leaders, and opera
     - [Summary Employee Overtime Table Guide](./user-docs/guides/executive-dashboard-employee-summary-table.md)
     - [Analytics & Decision Intelligence Guide](./user-docs/guides/analytics-decision-intelligence.md)
     - [What-If Scenario Simulation Guide](./user-docs/guides/what-if-scenario-simulation.md)
+    - [Early Warning Menu Guide](./user-docs/guides/early-warning-menu.md)
     - [Overtime Planning OT Guide](./user-docs/guides/overtime-planning-ot.md)
     - [Input Lembur — SPL Upload Guide](./user-docs/guides/spl-excel-import.md)
 

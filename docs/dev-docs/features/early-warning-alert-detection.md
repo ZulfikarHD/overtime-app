@@ -40,14 +40,14 @@ Migration `2026_10_14_220807_add_alert_date_and_streak_days_to_alert_follow_ups_
 
 ## Key Files & UI Mapping
 
-| Layer             | File / Route / Menu                                                                          | Purpose                                                                                   |
-| ----------------- | -------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
-| Sidebar Menu      | _Early Warning_ (E10-02, not yet built)                                                      | Future entry point                                                                        |
-| Service           | `app/Services/EarlyWarningService.php`                                                       | `alertsFor()`, `alertDetail()`, `isAlert()`                                               |
-| Shared calculator | `app/Services/Analytics/DashboardKpiService.php`                                             | `calculateDailyIndex()`, `calculateDailyPacing()`, `resolvePlannedHoursForSections()`     |
-| Zone limits       | `app/Services/PolicyThresholdService.php`                                                    | `classifyWith()` with the section department's threshold                                  |
-| Model / Factory   | `app/Models/AlertFollowUp.php`, `database/factories/AlertFollowUpFactory.php` (`forAlert()`) | Follow-up linked to an alert                                                              |
-| Tests             | `tests/Feature/EarlyWarningServiceTest.php`                                                  | 20 tests (classification, streak, scope, ordering, follow-up status, query count, detail) |
+| Layer             | File / Route / Menu                                                                                | Purpose                                                                                   |
+| ----------------- | -------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| Sidebar Menu      | _Early Warning_ (E10-02, see [Menu, Routes & Authorization](./early-warning-navigation-access.md)) | Entry point and open-Merah badge                                                          |
+| Service           | `app/Services/EarlyWarningService.php`                                                             | `alertsFor()`, `alertDetail()`, `isAlert()`                                               |
+| Shared calculator | `app/Services/Analytics/DashboardKpiService.php`                                                   | `calculateDailyIndex()`, `calculateDailyPacing()`, `resolvePlannedHoursForSections()`     |
+| Zone limits       | `app/Services/PolicyThresholdService.php`                                                          | `classifyWith()` with the section department's threshold                                  |
+| Model / Factory   | `app/Models/AlertFollowUp.php`, `database/factories/AlertFollowUpFactory.php` (`forAlert()`)       | Follow-up linked to an alert                                                              |
+| Tests             | `tests/Feature/EarlyWarningServiceTest.php`                                                        | 20 tests (classification, streak, scope, ordering, follow-up status, query count, detail) |
 
 ## Flow Explanation
 
