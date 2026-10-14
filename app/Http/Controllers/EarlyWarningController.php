@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\EarlyWarningInboxRequest;
 use App\Models\AlertFollowUp;
 use App\Models\Section;
+use App\Services\EarlyWarningService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Gate;
@@ -13,14 +15,30 @@ use Inertia\Response;
 
 class EarlyWarningController extends Controller
 {
-    /**
-     * Alert inbox (content arrives with E10-03).
-     */
-    public function index(): Response
-    {
-        Gate::authorize('viewAny', AlertFollowUp::class);
+    public function __construct(public EarlyWarningService $earlyWarningService) {}
 
-        return Inertia::render('early-warning/Index');
+    /**
+     * Alert inbox. Filters live in the query string; the (heavy) alerts and summary load as deferred props.
+     */
+    public function index(EarlyWarningInboxRequest $request): Response
+    {
+        $user = $request->user();
+        $filters = $request->filters();
+        $scope = $this->earlyWarningService->inboxScope($user, $filters['department_id'], $filters['section_id']);
+        $filters = [...$filters, 'department_id' => $scope['department_id'], 'section_id' => $scope['section_id']];
+
+        $inbox = null;
+        $loadInbox = function () use (&$inbox, $user, $filters): array {
+            return $inbox ??= $this->earlyWarningService->inboxFor($user, $filters);
+        };
+
+        return Inertia::render('early-warning/Index', [
+            'filters' => $filters,
+            'departments' => $scope['departments'],
+            'sections' => $scope['sections'],
+            'summary' => Inertia::defer(fn (): array => $loadInbox()['summary'], 'inbox'),
+            'alerts' => Inertia::defer(fn (): array => $loadInbox()['alerts'], 'inbox'),
+        ]);
     }
 
     /**

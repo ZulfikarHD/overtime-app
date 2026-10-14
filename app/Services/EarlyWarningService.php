@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Enums\BurnZone;
 use App\Models\AlertFollowUp;
+use App\Models\Department;
 use App\Models\OperationalCalendar;
 use App\Models\OvertimeItem;
 use App\Models\PolicyThreshold;
@@ -64,6 +65,11 @@ class EarlyWarningService
      * How long the sidebar open-alert count is cached.
      */
     public const OPEN_ALERT_COUNT_TTL_SECONDS = 60;
+
+    /**
+     * Alerts per page in the inbox.
+     */
+    public const INBOX_PER_PAGE = 25;
 
     /**
      * Calendar days scanned backwards from the alert date to find the series working days.
@@ -152,6 +158,134 @@ class EarlyWarningService
             ))
             ->sort(fn (array $a, array $b): int => $this->compareAlerts($a, $b))
             ->values();
+    }
+
+    /**
+     * Department and section choices of the inbox filter bar, plus the filters that actually apply.
+     *
+     * Non-admins are locked to their own department whatever the client sent; admins pick any department.
+     * Sections are only offered once a department is in scope, and an unknown section is dropped.
+     *
+     * @return array{
+     *     department_id: ?int,
+     *     section_id: ?int,
+     *     departments: list<array{id: int, code: string, name: string}>,
+     *     sections: list<array{id: int, department_id: int, name: string}>
+     * }
+     */
+    public function inboxScope(User $user, ?int $departmentId, ?int $sectionId): array
+    {
+        $scopedDepartmentId = $this->resolveDepartmentScope($user, $departmentId);
+
+        if ($scopedDepartmentId === false) {
+            return ['department_id' => null, 'section_id' => null, 'departments' => [], 'sections' => []];
+        }
+
+        $departments = Department::query()
+            ->when(
+                $user->isAdmin(),
+                fn ($query) => $query->where('is_active', true),
+                fn ($query) => $query->whereKey($scopedDepartmentId),
+            )
+            ->orderBy('name')
+            ->get(['id', 'code', 'name'])
+            ->map(fn (Department $department): array => [
+                'id' => (int) $department->id,
+                'code' => (string) $department->code,
+                'name' => $department->name,
+            ])
+            ->values()
+            ->all();
+
+        $sections = $scopedDepartmentId === null
+            ? []
+            : Section::query()
+                ->where('department_id', $scopedDepartmentId)
+                ->orderBy('name')
+                ->get(['id', 'department_id', 'name'])
+                ->map(fn (Section $section): array => [
+                    'id' => (int) $section->id,
+                    'department_id' => (int) $section->department_id,
+                    'name' => $section->name,
+                ])
+                ->values()
+                ->all();
+
+        $knownSection = collect($sections)->contains(fn (array $section): bool => $section['id'] === $sectionId);
+
+        return [
+            'department_id' => $scopedDepartmentId,
+            'section_id' => $knownSection ? $sectionId : null,
+            'departments' => $departments,
+            'sections' => $sections,
+        ];
+    }
+
+    /**
+     * Content of the inbox page: the summary of the period and one page of the filtered alert list.
+     *
+     * The summary covers the department / section / date range filters only, so it keeps the whole picture
+     * while the zone and follow-up status filters narrow the list. The list keeps alertsFor() ordering
+     * (Merah first, then longest streak). An out-of-range page falls back to the last page.
+     *
+     * @param  array{
+     *     department_id: ?int,
+     *     section_id: ?int,
+     *     date_from: string,
+     *     date_to: string,
+     *     zone: string,
+     *     status: string,
+     *     page: int
+     * }  $filters
+     * @return array{
+     *     summary: array{total: int, red: int, yellow: int, without_follow_up: int},
+     *     alerts: array{
+     *         data: list<Alert>,
+     *         pagination: array{current_page: int, last_page: int, per_page: int, total: int, from: ?int, to: ?int}
+     *     }
+     * }
+     */
+    public function inboxFor(User $user, array $filters): array
+    {
+        $alerts = $this->alertsFor(
+            $user,
+            Carbon::parse($filters['date_from'], 'Asia/Jakarta'),
+            Carbon::parse($filters['date_to'], 'Asia/Jakarta'),
+            $filters['department_id'],
+            $filters['section_id'],
+        );
+
+        $summary = [
+            'total' => $alerts->count(),
+            'red' => $alerts->where('zone', 'red')->count(),
+            'yellow' => $alerts->where('zone', 'yellow')->count(),
+            'without_follow_up' => $alerts->where('follow_up_status', 'none')->count(),
+        ];
+
+        $visible = $alerts
+            ->when($filters['zone'] !== 'all', fn (Collection $items) => $items->where('zone', $filters['zone']))
+            ->when($filters['status'] !== 'all', fn (Collection $items) => $items->where('follow_up_status', $filters['status']))
+            ->values();
+
+        $total = $visible->count();
+        $lastPage = max(1, (int) ceil($total / self::INBOX_PER_PAGE));
+        $page = min(max(1, $filters['page']), $lastPage);
+        $offset = ($page - 1) * self::INBOX_PER_PAGE;
+
+        return [
+            'summary' => $summary,
+            'alerts' => [
+                'data' => $visible->slice($offset, self::INBOX_PER_PAGE)->values()->all(),
+                'pagination' => [
+                    'current_page' => $page,
+                    'last_page' => $lastPage,
+                    'per_page' => self::INBOX_PER_PAGE,
+                    'total' => $total,
+                    'from' => $total === 0 ? null : $offset + 1,
+                    'to' => $total === 0 ? null : min($offset + self::INBOX_PER_PAGE, $total),
+                ],
+            ],
+        ];
     }
 
     /**
