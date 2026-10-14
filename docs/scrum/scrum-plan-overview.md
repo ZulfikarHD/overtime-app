@@ -26,9 +26,10 @@
 | [Epic-07](./Epic-07.md) | CapEx Project Labor Management                        | P2 – Should Have  | 35 SP       | Sprint 6–7  | 🟢 Completed (35/35 SP)   |
 | [Epic-08](./Epic-08.md) | Supervised ML Analytics & Predictive Intelligence     | P3 – Nice to Have | 58 SP       | Sprint 7–8  | 🔴 Not Started            |
 | [Epic-09](./Epic-09.md) | Executive Dashboard & Analytics Decision Intelligence | P0 – Critical     | 87 SP       | Sprint 9–10 | 🟡 In Progress (79/87 SP) |
+| [Epic-10](./Epic-10.md) | Early Warning & Alert Follow-Up (Tindak Lanjut)       | P1 – Must Have    | 37 SP       | Sprint 11   | 🔴 Not Started            |
 
-**Total Estimated Effort:** ~437 Story Points  
-**Estimated Duration:** 10 Sprints × 2-Week Cycles = ~20 Weeks
+**Total Estimated Effort:** ~474 Story Points  
+**Estimated Duration:** 11 Sprints × 2-Week Cycles = ~22 Weeks
 
 ---
 
@@ -45,6 +46,7 @@ Sprint 7  │  Epic-07 cont.  +  Epic-08: ML (Demand Forecasting + Burn Trajecto
 Sprint 8  │  Epic-08 cont.: ML (CapEx Forecast + Anomaly Detection) + UAT Hardening
 Sprint 9  │  Epic-09: Executive Operational Dashboard (E09-00 to E09-05)
 Sprint 10 │  Epic-09 cont.: Analytics & Decision Intelligence Hub (E09-06 to E09-12)
+Sprint 11 │  Epic-10: Early Warning & Alert Follow-Up (sidebar menu, inbox, 5W2H)
 ```
 
 ---
