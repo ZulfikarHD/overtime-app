@@ -6,8 +6,10 @@ use App\Enums\AlertFollowUpStatus;
 use App\Enums\BurnZone;
 use App\Models\AlertFollowUp;
 use App\Models\Department;
+use App\Models\Section;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Support\Carbon;
 
 /**
  * @extends Factory<AlertFollowUp>
@@ -43,6 +45,24 @@ class AlertFollowUpFactory extends Factory
             'sent_by' => null,
             'sent_at' => null,
         ];
+    }
+
+    /**
+     * Link the follow-up to a concrete alert (section + date).
+     */
+    public function forAlert(Section $section, Carbon|string $date): static
+    {
+        $alertDate = $date instanceof Carbon
+            ? $date->copy()->startOfDay()
+            : Carbon::parse($date, 'Asia/Jakarta')->startOfDay();
+
+        return $this->state(fn (array $attributes) => [
+            'department_id' => $section->department_id,
+            'section_id' => $section->id,
+            'alert_date' => $alertDate->toDateString(),
+            'fiscal_year' => $alertDate->year,
+            'fiscal_month' => $alertDate->month,
+        ]);
     }
 
     /**

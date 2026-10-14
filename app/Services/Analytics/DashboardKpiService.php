@@ -13,6 +13,7 @@ use App\Models\OvertimeItem;
 use App\Models\PolicyThreshold;
 use App\Models\Section;
 use App\Models\User;
+use App\Services\EarlyWarningService;
 use App\Services\PolicyThresholdService;
 use Illuminate\Support\Carbon;
 
@@ -771,6 +772,114 @@ class DashboardKpiService
     }
 
     /**
+     * Batch variant of {@see resolvePlannedHours()} for many sections at once
+     * (budget first, monthly burn snapshot as fallback) in a constant number of queries.
+     *
+     * Only sections that actually have planned hours > 0 for a period are returned,
+     * so "no budget" can never be mistaken for a Hijau / Merah day.
+     *
+     * @param  list<int>  $sectionIds
+     * @param  list<array{0: int, 1: int}>  $periods  List of [fiscalYear, fiscalMonth]
+     * @return array<int, array<string, float>> sectionId => 'Y-m' => planned hours
+     */
+    public function resolvePlannedHoursForSections(array $sectionIds, array $periods): array
+    {
+        if ($sectionIds === [] || $periods === []) {
+            return [];
+        }
+
+        $wherePeriods = function ($query) use ($periods): void {
+            foreach ($periods as [$year, $month]) {
+                $query->orWhere(fn ($period) => $period
+                    ->where('fiscal_year', $year)
+                    ->where('fiscal_month', $month));
+            }
+        };
+
+        $planned = [];
+
+        $budgets = OvertimeBudget::query()
+            ->whereIn('section_id', $sectionIds)
+            ->where($wherePeriods)
+            ->orderBy('id')
+            ->get(['section_id', 'fiscal_year', 'fiscal_month', 'planned_hours']);
+
+        foreach ($budgets as $budget) {
+            $key = sprintf('%04d-%02d', $budget->fiscal_year, $budget->fiscal_month);
+            $planned[(int) $budget->section_id][$key] ??= (float) $budget->planned_hours;
+        }
+
+        $needsFallback = false;
+        foreach ($sectionIds as $sectionId) {
+            foreach ($periods as [$year, $month]) {
+                if (($planned[$sectionId][sprintf('%04d-%02d', $year, $month)] ?? 0.0) <= 0) {
+                    $needsFallback = true;
+                    break 2;
+                }
+            }
+        }
+
+        if ($needsFallback) {
+            $snapshots = MonthlyBurnSnapshot::query()
+                ->whereIn('section_id', $sectionIds)
+                ->where($wherePeriods)
+                ->orderBy('id')
+                ->get(['section_id', 'fiscal_year', 'fiscal_month', 'planned_budget_hours']);
+
+            $snapshotHours = [];
+            foreach ($snapshots as $snapshot) {
+                $key = sprintf('%04d-%02d', $snapshot->fiscal_year, $snapshot->fiscal_month);
+                $snapshotHours[(int) $snapshot->section_id][$key] ??= (float) $snapshot->planned_budget_hours;
+            }
+
+            foreach ($snapshotHours as $sectionId => $byPeriod) {
+                foreach ($byPeriod as $key => $hours) {
+                    if (($planned[$sectionId][$key] ?? 0.0) <= 0) {
+                        $planned[$sectionId][$key] = $hours;
+                    }
+                }
+            }
+        }
+
+        foreach ($planned as $sectionId => $byPeriod) {
+            foreach ($byPeriod as $key => $hours) {
+                if ($hours > 0) {
+                    $planned[$sectionId][$key] = round($hours, 1);
+                } else {
+                    unset($planned[$sectionId][$key]);
+                }
+            }
+        }
+
+        return $planned;
+    }
+
+    /**
+     * Daily pacing target in hours: the monthly plan spread evenly over the calendar month.
+     */
+    public function calculateDailyPacing(float $plannedHours, int $daysInMonth): float
+    {
+        return $daysInMonth > 0 ? $plannedHours / $daysInMonth : 0.0;
+    }
+
+    /**
+     * Daily burn index (CALC-02 applied per day): approved hours of the day vs. the daily pacing target.
+     *
+     * Single source of truth shared by the Dashboard Early Warning chart and
+     * {@see EarlyWarningService} so both can never diverge.
+     */
+    public function calculateDailyIndex(float $actualHours, float $dailyPacingHours): float
+    {
+        $actual = round($actualHours, 1);
+
+        if ($dailyPacingHours > 0) {
+            return round(($actual / $dailyPacingHours) * 100, 1);
+        }
+
+        return $actual > 0 ? 100.0 : 0.0;
+    }
+
+    /**
      * Build top 10 employee overtime leaderboard dataset (E09-04).
      *
      * @return array{
@@ -1171,7 +1280,7 @@ class DashboardKpiService
         [$scopedDepartmentId, $scopedSectionId] = $this->resolveScoping($user, $departmentId, $sectionId);
 
         $plannedHours = $this->resolvePlannedHours($fiscalYear, $fiscalMonth, $scopedDepartmentId, $scopedSectionId);
-        $dailyPacing = $daysInMonth > 0 ? $plannedHours / $daysInMonth : 0.0;
+        $dailyPacing = $this->calculateDailyPacing($plannedHours, $daysInMonth);
 
         $thresholdPct = 100.0;
         $boundaries = $this->thresholdService->boundariesFor($scopedDepartmentId);
@@ -1224,11 +1333,7 @@ class DashboardKpiService
                 $actual = round($dailyHoursMap[$dayDate] ?? 0.0, 1);
                 $dailyHours[] = $actual;
 
-                if ($dailyPacing > 0) {
-                    $index = round(($actual / $dailyPacing) * 100, 1);
-                } else {
-                    $index = $actual > 0 ? 100.0 : 0.0;
-                }
+                $index = $this->calculateDailyIndex($actual, $dailyPacing);
                 $dailyIndices[] = $index;
                 $dailyZones[] = BurnZone::classify($index, $boundaries['green_max_pct'], $boundaries['yellow_max_pct'])->value;
                 $validIndices[] = $index;

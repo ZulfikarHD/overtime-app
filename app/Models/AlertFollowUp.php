@@ -16,10 +16,12 @@ use Illuminate\Support\Carbon;
  * @property int $id
  * @property int|null $department_id
  * @property int|null $section_id
+ * @property Carbon|null $alert_date
  * @property int $fiscal_year
  * @property int $fiscal_month
  * @property BurnZone $zone
  * @property string $index_pct
+ * @property int $streak_days
  * @property string|null $what_text
  * @property string|null $why_text
  * @property Carbon|null $when_date
@@ -51,10 +53,12 @@ class AlertFollowUp extends Model
     protected $fillable = [
         'department_id',
         'section_id',
+        'alert_date',
         'fiscal_year',
         'fiscal_month',
         'zone',
         'index_pct',
+        'streak_days',
         'what_text',
         'why_text',
         'when_date',
@@ -75,10 +79,12 @@ class AlertFollowUp extends Model
     protected function casts(): array
     {
         return [
+            'alert_date' => 'date',
             'fiscal_year' => 'integer',
             'fiscal_month' => 'integer',
             'zone' => BurnZone::class,
             'index_pct' => 'decimal:2',
+            'streak_days' => 'integer',
             'when_date' => 'date',
             'who_department_id' => 'integer',
             'how_much_cost_idr' => 'integer',

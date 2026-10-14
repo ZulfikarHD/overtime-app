@@ -90,7 +90,7 @@ These exist from the previous session and are the foundation of this epic.
 
 **Story Points:** 5  
 **Priority:** Must Have  
-**Status:** 🔴 Not Started
+**Status:** 🟢 Done (backend; UI starts in E10-02/E10-03)
 
 #### Definition of an alert
 
@@ -103,24 +103,32 @@ These exist from the previous session and are the foundation of this epic.
 
 #### Acceptance Criteria
 
-- [ ] Service returns alerts for a date range, optionally filtered by department, section, and zone
-- [ ] Each alert exposes: `section_id`, `section_name`, `department_id`, `department_name`, `alert_date`, `index_pct`, `zone`, `streak_days`, `green_max_pct`, `yellow_max_pct`, `follow_up_status` (`none | draft | sent`), `follow_up_id` (latest)
-- [ ] Non-admin users only receive alerts of their own department (server-side)
-- [ ] Hijau days never appear as alerts
-- [ ] A section's streak resets on a Hijau working day and is unaffected by HLR days
-- [ ] Sections without a budget are excluded
-- [ ] Alerts are sorted: Merah first, then Kuning; then by `streak_days` desc, then date desc
-- [ ] Computing alerts for the whole plant for a 31-day range runs in a **constant number of queries** (no per-section × per-day queries)
+- [x] Service returns alerts for a date range, optionally filtered by department, section, and zone
+- [x] Each alert exposes: `section_id`, `section_name`, `department_id`, `department_name`, `alert_date`, `index_pct`, `zone`, `streak_days`, `green_max_pct`, `yellow_max_pct`, `follow_up_status` (`none | draft | sent`), `follow_up_id` (latest)
+- [x] Non-admin users only receive alerts of their own department (server-side)
+- [x] Hijau days never appear as alerts
+- [x] A section's streak resets on a Hijau working day and is unaffected by HLR days
+- [x] Sections without a budget are excluded
+- [x] Alerts are sorted: Merah first, then Kuning; then by `streak_days` desc, then date desc
+- [x] Computing alerts for the whole plant for a 31-day range runs in a **constant number of queries** (no per-section × per-day queries)
 
 #### Technical Tasks
 
-- [ ] `php artisan make:class Services/EarlyWarningService` (pragmatic Service pattern, controllers ≤ 30 lines)
-- [ ] `EarlyWarningService::alertsFor(User $user, Carbon $from, Carbon $to, ?int $departmentId, ?int $sectionId, ?BurnZone $zone): Collection`
-- [ ] `EarlyWarningService::alertDetail(User $user, Section $section, Carbon $date): array` (single alert + 7-working-day series; reuse `getDailyIndexTrend` semantics)
-- [ ] Reuse `DashboardKpiService::resolveScoping()` and `PolicyThresholdService`; extract the shared "daily index per section per day" calculation into one method used by **both** the Dashboard chart and this service
-- [ ] Group by section/day in SQL with `SUM` + `GROUP BY` (MySQL/MariaDB-safe, `whereDate` on date columns; **no SQLite-only syntax**)
-- [ ] Carbon dates use `Asia/Jakarta`
-- [ ] Feature tests: zone classification with department override, streak across a weekend, Hijau resets the streak, no-budget section, scope isolation between departments, query count assertion
+- [x] `php artisan make:class Services/EarlyWarningService` (pragmatic Service pattern, controllers ≤ 30 lines)
+- [x] `EarlyWarningService::alertsFor(User $user, Carbon $from, Carbon $to, ?int $departmentId, ?int $sectionId, ?BurnZone $zone): Collection`
+- [x] `EarlyWarningService::alertDetail(User $user, Section $section, Carbon $date): array` (single alert + 7-working-day series; reuse `getDailyIndexTrend` semantics)
+- [x] Reuse `DashboardKpiService::resolveScoping()` and `PolicyThresholdService`; extract the shared "daily index per section per day" calculation into one method used by **both** the Dashboard chart and this service
+- [x] Group by section/day in SQL with `SUM` + `GROUP BY` (MySQL/MariaDB-safe, `whereDate` on date columns; **no SQLite-only syntax**)
+- [x] Carbon dates use `Asia/Jakarta`
+- [x] Feature tests: zone classification with department override, streak across a weekend, Hijau resets the streak, no-budget section, scope isolation between departments, query count assertion
+
+#### Implementation Notes (delivered)
+
+- `EarlyWarningService::alertsFor()` / `alertDetail()` (+ `isAlert()` helper for E10-06) in `app/Services/EarlyWarningService.php`; shared formula in `DashboardKpiService::calculateDailyIndex()`, `calculateDailyPacing()`, `resolvePlannedHoursForSections()` (also used by `getDailyIndexTrend`).
+- Migration `add_alert_date_and_streak_days_to_alert_follow_ups_table` pulled forward from E10-06 (columns + index only; backfill, save/send flow and routes stay in E10-06). Model fillable/casts and factory state `forAlert()` updated.
+- Non-admins (Manager and Team Leader) are scoped to their own **department** (not narrowed to a section as the Dashboard does for Team Leaders), matching D3.
+- Streak lookback is capped at 60 days before the requested range (constant query count); a working day in a month without budget resets the streak; an HLR alert day counts itself but does not extend the working-day streak.
+- Tests: `tests/Feature/EarlyWarningServiceTest.php` (20 tests). Details: [Early Warning Alert Detection](../dev-docs/features/early-warning-alert-detection.md), [ADR-040](../dev-docs/decisions/040-early-warning-alert-detection-shared-daily-index.md).
 
 ---
 

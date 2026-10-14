@@ -69,6 +69,7 @@ Technical specifications and decision records for the engineering implementation
     - [ADR-037: Separate Tables for Planned vs Realized Overtime](./dev-docs/decisions/037-planned-vs-realized-overtime-tables.md)
     - [ADR-038: Excel-Parity Planning Grid UX](./dev-docs/decisions/038-excel-parity-planning-grid-ux.md)
     - [ADR-039: Department-Default Dashboard Scope with Optional Section Drill-Down](./dev-docs/decisions/039-department-default-dashboard-section-drill-down.md)
+    - [ADR-040: Computed Early Warning Alerts on a Shared Daily Index](./dev-docs/decisions/040-early-warning-alert-detection-shared-daily-index.md)
 - **Technical Feature Design Specifications:**
     - [Authentication & Role-Based Access Control](./dev-docs/features/authentication-rbac.md)
     - [Database Schema Migrations (Full DDL)](./dev-docs/features/database-schema-migrations.md)
@@ -103,6 +104,7 @@ Technical specifications and decision records for the engineering implementation
     - [What-If Scenario Simulation (E09-10)](./dev-docs/features/what-if-scenario-simulation.md)
     - [Overtime Planning OT — Monthly Grid](./dev-docs/features/overtime-planning-ot.md)
     - [SPL Excel Import — Realized Overtime](./dev-docs/features/spl-excel-import.md)
+    - [Early Warning Alert Detection (E10-01)](./dev-docs/features/early-warning-alert-detection.md)
 - **API Reference Design:**
     - [Calendar Classification & Management API](./dev-docs/api/calendar-endpoints.md)
     - [Overtime Policy Check API](./dev-docs/api/overtime-policy-check.md)
