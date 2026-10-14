@@ -11,8 +11,9 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
-import { chartColors } from '@/composables/useChartTheme';
 import { useTrans } from '@/composables/useTrans';
+import { BURN_ZONE_STYLES, normalizeBurnZone } from '@/lib/burnZone';
+import type { BurnZone } from '@/lib/burnZone';
 import { formatCompactRupiah, formatRupiah } from '@/lib/formatters';
 
 export interface DepartmentCostItem {
@@ -26,7 +27,7 @@ export interface DepartmentCostItem {
     formatted_planned_cost: string;
     budget_consumption_pct: number;
     is_over_budget: boolean;
-    burn_zone: 'safe' | 'on_track' | 'warning' | 'danger';
+    burn_zone: BurnZone;
     avg_rate_per_hour: number;
     formatted_avg_rate: string;
     capex_cost: number;
@@ -69,16 +70,11 @@ const datasets = computed<ChartDataset<'bar'>[]>(() => {
 
     const data = sortedCosts.value.map((d) => d.total_cost);
     const backgroundColors = sortedCosts.value.map((d) => {
-        if (d.burn_zone === 'danger' || d.is_over_budget) {
-            return chartColors.isuzuRed;
+        if (d.is_over_budget) {
+            return BURN_ZONE_STYLES.red.hex;
         }
-        if (d.burn_zone === 'warning') {
-            return chartColors.warning;
-        }
-        if (d.burn_zone === 'on_track') {
-            return chartColors.primary;
-        }
-        return chartColors.success;
+
+        return BURN_ZONE_STYLES[normalizeBurnZone(d.burn_zone)].hex;
     });
 
     return [

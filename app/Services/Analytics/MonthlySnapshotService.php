@@ -10,6 +10,7 @@ use App\Models\OvertimeBudget;
 use App\Models\OvertimeItem;
 use App\Models\Section;
 use App\Models\User;
+use App\Services\PolicyThresholdService;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
@@ -18,6 +19,7 @@ class MonthlySnapshotService
 {
     public function __construct(
         public BurnIndexCalculatorService $calculator,
+        public PolicyThresholdService $policyThresholdService,
     ) {}
 
     /**
@@ -110,8 +112,12 @@ class MonthlySnapshotService
      *         total_remaining_hours: float,
      *         department_burn_index_pct: float,
      *         department_burn_zone: string,
+     *         department_tolerance_zone: 'green'|'yellow'|'red',
      *         warning_sections_count: int,
      *         danger_sections_count: int,
+     *         green_sections_count: int,
+     *         yellow_sections_count: int,
+     *         red_sections_count: int,
      *         configured_sections_count: int,
      *         total_sections_count: int
      *     }
@@ -193,8 +199,12 @@ class MonthlySnapshotService
                     'total_remaining_hours' => 0.0,
                     'department_burn_index_pct' => 0.0,
                     'department_burn_zone' => 'ZONE_1_EXCELLENT',
+                    'department_tolerance_zone' => 'green',
                     'warning_sections_count' => 0,
                     'danger_sections_count' => 0,
+                    'green_sections_count' => 0,
+                    'yellow_sections_count' => 0,
+                    'red_sections_count' => 0,
                     'configured_sections_count' => 0,
                     'total_sections_count' => 0,
                 ],
@@ -243,6 +253,7 @@ class MonthlySnapshotService
         $warningCount = 0;
         $dangerCount = 0;
         $configuredCount = 0;
+        $toleranceCounts = ['green' => 0, 'yellow' => 0, 'red' => 0];
 
         foreach ($sections as $section) {
             /** @var MonthlyBurnSnapshot|null $snapshot */
@@ -261,6 +272,9 @@ class MonthlySnapshotService
             $velocity = (float) $snapshot->burn_velocity;
             $zone = (string) $snapshot->burn_zone;
             $isConfigured = $planned > 0.0;
+            $toleranceZone = $isConfigured
+                ? $this->policyThresholdService->classify($burnPct, (int) $section->department_id)->value
+                : 'green';
             $remaining = round($planned - $actual, 2);
             $projectedTotal = round($velocity * 4.3, 1);
 
@@ -319,6 +333,7 @@ class MonthlySnapshotService
                 'trajectory' => $trajectory,
                 'ml_forecast' => $mlForecast,
                 'burn_zone' => $zone,
+                'tolerance_zone' => $toleranceZone,
                 'cumulative_opex_hours' => $opex,
                 'cumulative_capex_hours' => $capex,
                 'capex_ratio_pct' => $capexRatio,
@@ -332,6 +347,7 @@ class MonthlySnapshotService
 
             if ($isConfigured) {
                 $configuredCount++;
+                $toleranceCounts[$toleranceZone]++;
             }
 
             if ($zone === 'ZONE_3_WARNING') {
@@ -388,7 +404,8 @@ class MonthlySnapshotService
 
             $dWarning = $deptSnaps->where('burn_zone', 'ZONE_3_WARNING')->count();
             $dDanger = $deptSnaps->where('burn_zone', 'ZONE_4_POOR')->count();
-            $dConfigured = $deptSnaps->where('is_budget_configured', true)->count();
+            $dConfiguredSnaps = $deptSnaps->where('is_budget_configured', true);
+            $dConfigured = $dConfiguredSnaps->count();
             $dTotal = $deptSnaps->count();
 
             $departmentsSummary[] = [
@@ -400,8 +417,14 @@ class MonthlySnapshotService
                 'total_remaining_hours' => $dRemaining,
                 'department_burn_index_pct' => $dBurnPct,
                 'department_burn_zone' => $dZone,
+                'department_tolerance_zone' => $dPlanned > 0.0
+                    ? $this->policyThresholdService->classify($dBurnPct, (int) $dept['id'])->value
+                    : 'green',
                 'warning_sections_count' => $dWarning,
                 'danger_sections_count' => $dDanger,
+                'green_sections_count' => $dConfiguredSnaps->where('tolerance_zone', 'green')->count(),
+                'yellow_sections_count' => $dConfiguredSnaps->where('tolerance_zone', 'yellow')->count(),
+                'red_sections_count' => $dConfiguredSnaps->where('tolerance_zone', 'red')->count(),
                 'configured_sections_count' => $dConfigured,
                 'total_sections_count' => $dTotal,
             ];
@@ -420,8 +443,14 @@ class MonthlySnapshotService
                 'total_remaining_hours' => round($totalPlanned - $totalActual, 2),
                 'department_burn_index_pct' => $deptBurnPct,
                 'department_burn_zone' => $departmentZone,
+                'department_tolerance_zone' => $totalPlanned > 0.0
+                    ? $this->policyThresholdService->classify($deptBurnPct, $targetDeptId ? (int) $targetDeptId : null)->value
+                    : 'green',
                 'warning_sections_count' => $warningCount,
                 'danger_sections_count' => $dangerCount,
+                'green_sections_count' => $toleranceCounts['green'],
+                'yellow_sections_count' => $toleranceCounts['yellow'],
+                'red_sections_count' => $toleranceCounts['red'],
                 'configured_sections_count' => $configuredCount,
                 'total_sections_count' => count($sections),
             ],
@@ -967,6 +996,9 @@ class MonthlySnapshotService
         $burnIndexPct = $snapshot ? (float) $snapshot->burn_index_pct : ($plannedHours > 0 ? round(($cumActual / $plannedHours) * 100, 2) : 0.0);
         $velocity = $snapshot ? (float) $snapshot->burn_velocity : 0.0;
         $zone = $snapshot ? (string) $snapshot->burn_zone : 'ZONE_1_EXCELLENT';
+        $toleranceZone = $isConfigured
+            ? $this->policyThresholdService->classify($burnIndexPct, (int) $section->department_id)->value
+            : 'green';
         $projectedTotal = round($velocity * 4.3, 1);
 
         if (! $isConfigured) {
@@ -985,6 +1017,7 @@ class MonthlySnapshotService
             'cumulative_actual_hours' => $cumActual,
             'planned_budget_hours' => $plannedHours,
             'burn_zone' => $zone,
+            'tolerance_zone' => $toleranceZone,
             'threshold_hours_75_pct' => round($plannedHours * 0.75, 2),
             'threshold_burn_100_pct' => 100.0,
             'max_x_scale' => max(150.0, ceil($burnIndexPct * 1.15)),
@@ -1009,6 +1042,7 @@ class MonthlySnapshotService
                 'remaining_hours' => round($plannedHours - $cumActual, 2),
                 'burn_index_pct' => $burnIndexPct,
                 'burn_zone' => $zone,
+                'tolerance_zone' => $toleranceZone,
                 'burn_velocity' => $velocity,
                 'projected_total_hours' => $projectedTotal,
                 'trajectory' => $trajectory,
@@ -1073,8 +1107,7 @@ class MonthlySnapshotService
         unset($snap);
 
         $highRiskSections = array_filter($rankedSnapshots, function ($s) {
-            return in_array($s['burn_zone'], ['ZONE_3_WARNING', 'ZONE_4_POOR'], true)
-                || ($s['is_budget_configured'] && $s['burn_index_pct'] > 100);
+            return $s['is_budget_configured'] && in_array($s['tolerance_zone'], ['yellow', 'red'], true);
         });
 
         return [

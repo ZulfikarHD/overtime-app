@@ -2,6 +2,7 @@
 
 namespace App\Services\Analytics;
 
+use App\Enums\BurnZone;
 use App\Models\Department;
 use App\Models\User;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -325,7 +326,7 @@ class AnalyticsExportService
                         number_format($dept['compare_cost'], 0, ',', '.'),
                         "{$dept['cost_variance_pct']}%",
                         "{$dept['burn_index_pct']}%",
-                        strtoupper($dept['burn_zone']),
+                        BurnZone::tryFrom((string) $dept['burn_zone'])?->label() ?? strtoupper((string) $dept['burn_zone']),
                     ]);
                 }
                 fputcsv($handle, []);

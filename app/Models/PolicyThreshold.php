@@ -15,8 +15,8 @@ use Illuminate\Support\Carbon;
  * @property string $weekly_soft_limit_hours
  * @property int $consecutive_weeks_alert
  * @property int $spkl_grace_period_days
- * @property string $burn_warning_pct
- * @property string $burn_danger_pct
+ * @property string $green_max_pct
+ * @property string $yellow_max_pct
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
@@ -33,8 +33,8 @@ class PolicyThreshold extends Model
         'weekly_soft_limit_hours',
         'consecutive_weeks_alert',
         'spkl_grace_period_days',
-        'burn_warning_pct',
-        'burn_danger_pct',
+        'green_max_pct',
+        'yellow_max_pct',
     ];
 
     /**
@@ -46,8 +46,8 @@ class PolicyThreshold extends Model
             'weekly_soft_limit_hours' => 'decimal:1',
             'consecutive_weeks_alert' => 'integer',
             'spkl_grace_period_days' => 'integer',
-            'burn_warning_pct' => 'decimal:2',
-            'burn_danger_pct' => 'decimal:2',
+            'green_max_pct' => 'decimal:2',
+            'yellow_max_pct' => 'decimal:2',
         ];
     }
 

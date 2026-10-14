@@ -13,7 +13,10 @@ import {
     CardTitle,
 } from '@/components/ui/card';
 import { chartColors } from '@/composables/useChartTheme';
+import { useBurnZone } from '@/composables/useBurnZone';
 import { useTrans } from '@/composables/useTrans';
+import { BURN_ZONE_STYLES, normalizeBurnZone } from '@/lib/burnZone';
+import type { BurnZone } from '@/lib/burnZone';
 import { registerChartDefaults } from '@/plugins/chartjs';
 
 registerChartDefaults();
@@ -30,7 +33,7 @@ export interface DepartmentBenchmarkItem {
     compare_cost: number;
     cost_variance_pct: number;
     burn_index_pct: number;
-    burn_zone: 'safe' | 'on_track' | 'warning' | 'danger';
+    burn_zone: BurnZone;
 }
 
 interface Props {
@@ -52,6 +55,7 @@ const props = withDefaults(defineProps<Props>(), {
 });
 
 const { __ } = useTrans();
+const { rangeOf } = useBurnZone();
 
 const hasData = computed(() => {
     if (props.empty) return false;
@@ -187,28 +191,12 @@ const chartOptions = computed<ChartOptions<'bar'>>(() => ({
 }));
 
 function getZoneBadge(zone: string) {
-    switch (zone) {
-        case 'danger':
-            return {
-                label: __('Kritis (>115%)'),
-                class: 'bg-red-50 text-red-700 border-red-200 dark:bg-red-950/40 dark:text-red-300 dark:border-red-900',
-            };
-        case 'warning':
-            return {
-                label: __('Peringatan (101-115%)'),
-                class: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-900',
-            };
-        case 'on_track':
-            return {
-                label: __('Sesuai Target (85-100%)'),
-                class: 'bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-950/40 dark:text-sky-300 dark:border-sky-900',
-            };
-        default:
-            return {
-                label: __('Aman (<85%)'),
-                class: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-900',
-            };
-    }
+    const normalized = normalizeBurnZone(zone);
+
+    return {
+        label: `${__(BURN_ZONE_STYLES[normalized].label)} (${rangeOf(normalized)})`,
+        class: BURN_ZONE_STYLES[normalized].badge,
+    };
 }
 </script>
 

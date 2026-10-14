@@ -93,7 +93,7 @@ const burnIndicator = ref<BurnIndicator>({
     planned_hours: 0,
     actual_hours: 0,
     burn_pct: 0,
-    burn_zone: 'safe',
+    burn_zone: 'green',
 });
 
 const isLoading = ref(false);

@@ -12,7 +12,9 @@ import {
 } from 'chart.js';
 import { computed } from 'vue';
 import { Line } from 'vue-chartjs';
+import { useBurnZone } from '@/composables/useBurnZone';
 import { useTrans } from '@/composables/useTrans';
+import { BURN_ZONE_STYLES } from '@/lib/burnZone';
 
 ChartJS.register(
     CategoryScale,
@@ -48,19 +50,11 @@ const props = defineProps<{
 }>();
 
 const { __ } = useTrans();
+const { boundaries, classify, rangeOf } = useBurnZone();
 
-const actualLineColor = computed(() => {
-    if (props.burnIndexPct > 115) {
-        return '#cc0000'; // ISUZU Red
-    }
-    if (props.burnIndexPct > 100) {
-        return '#d97706'; // Amber Warning
-    }
-    if (props.burnIndexPct >= 85) {
-        return '#0284c7'; // Sky Blue On Track
-    }
-    return '#059669'; // Emerald Safe
-});
+const actualLineColor = computed(
+    () => BURN_ZONE_STYLES[classify(props.burnIndexPct)].hex,
+);
 
 const chartLabels = computed(() => {
     return props.weeks.map((w) => `${w.label}\n(${w.date_range})`);
@@ -122,7 +116,7 @@ const chartData = computed(() => {
     };
 });
 
-// Custom Chart.js plugin to shade the >100% warning zone and 85-100% on-track corridor
+// Custom Chart.js plugin to shade the 3 tolerance zones (Hijau / Kuning / Merah)
 const zoneShadingPlugin: Plugin = {
     id: 'burndownZoneShading',
     beforeDraw(chart) {
@@ -137,66 +131,74 @@ const zoneShadingPlugin: Plugin = {
         }
 
         const { top, bottom, left, right, width } = chartArea;
-        const y100 = Math.min(
-            bottom,
-            Math.max(top, y.getPixelForValue(props.plannedBudgetHours)),
-        );
-        const y85 = Math.min(
-            bottom,
-            Math.max(top, y.getPixelForValue(props.plannedBudgetHours * 0.85)),
-        );
+        const pixelFor = (pct: number): number =>
+            Math.min(
+                bottom,
+                Math.max(
+                    top,
+                    y.getPixelForValue(props.plannedBudgetHours * (pct / 100)),
+                ),
+            );
+
+        const yGreen = pixelFor(boundaries.value.green_max_pct);
+        const yYellow = pixelFor(boundaries.value.yellow_max_pct);
+        const yPlan = pixelFor(100);
 
         ctx.save();
 
-        // 1. Shaded Warning Zone above 100% ceiling
-        if (y100 > top) {
-            ctx.fillStyle = 'rgba(239, 68, 68, 0.08)'; // Light red
-            ctx.fillRect(left, top, width, y100 - top);
-        }
+        // Green zone: 0 → green_max
+        ctx.fillStyle = 'rgba(22, 163, 74, 0.07)';
+        ctx.fillRect(left, yGreen, width, bottom - yGreen);
 
-        // 2. Shaded Safe Corridor 85% - 100%
-        if (y85 > y100) {
-            ctx.fillStyle = 'rgba(2, 132, 199, 0.06)'; // Light blue
-            ctx.fillRect(left, y100, width, y85 - y100);
-        }
+        // Yellow zone: green_max → yellow_max
+        ctx.fillStyle = 'rgba(245, 158, 11, 0.09)';
+        ctx.fillRect(left, yYellow, width, yGreen - yYellow);
 
-        // 3. Dashed line for 100% Quota
-        ctx.strokeStyle = 'rgba(239, 68, 68, 0.4)';
-        ctx.lineWidth = 1;
-        ctx.setLineDash([4, 4]);
-        ctx.beginPath();
-        ctx.moveTo(left, y100);
-        ctx.lineTo(right, y100);
-        ctx.stroke();
+        // Red zone: above yellow_max
+        ctx.fillStyle = 'rgba(220, 38, 38, 0.08)';
+        ctx.fillRect(left, top, width, yYellow - top);
 
-        // Label for 100% ceiling
-        ctx.fillStyle = 'rgba(220, 38, 38, 0.85)';
-        ctx.font = '10px monospace';
-        ctx.textAlign = 'right';
-        ctx.fillText(
-            `100% (${props.plannedBudgetHours.toFixed(1)} jam)`,
-            right - 6,
-            y100 - 4,
+        const drawLine = (
+            yPos: number,
+            color: string,
+            dash: number[],
+            label: string,
+        ) => {
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 1;
+            ctx.setLineDash(dash);
+            ctx.beginPath();
+            ctx.moveTo(left, yPos);
+            ctx.lineTo(right, yPos);
+            ctx.stroke();
+
+            ctx.fillStyle = color;
+            ctx.font = '10px monospace';
+            ctx.textAlign = 'right';
+            ctx.fillText(label, right - 6, yPos - 4);
+        };
+
+        drawLine(
+            yGreen,
+            'rgba(22, 163, 74, 0.8)',
+            [3, 3],
+            `${boundaries.value.green_max_pct}% (${((props.plannedBudgetHours * boundaries.value.green_max_pct) / 100).toFixed(1)} jam)`,
+        );
+        drawLine(
+            yYellow,
+            'rgba(217, 119, 6, 0.85)',
+            [3, 3],
+            `${boundaries.value.yellow_max_pct}% (${((props.plannedBudgetHours * boundaries.value.yellow_max_pct) / 100).toFixed(1)} jam)`,
         );
 
-        // 4. Dashed line for 85% Corridor
-        ctx.strokeStyle = 'rgba(2, 132, 199, 0.35)';
-        ctx.lineWidth = 1;
-        ctx.setLineDash([3, 3]);
-        ctx.beginPath();
-        ctx.moveTo(left, y85);
-        ctx.lineTo(right, y85);
-        ctx.stroke();
-
-        // Label for 85% corridor
-        ctx.fillStyle = 'rgba(2, 132, 199, 0.85)';
-        ctx.font = '10px monospace';
-        ctx.textAlign = 'right';
-        ctx.fillText(
-            `85% (${(props.plannedBudgetHours * 0.85).toFixed(1)} jam)`,
-            right - 6,
-            y85 - 4,
-        );
+        if (yPlan !== yYellow && yPlan !== yGreen) {
+            drawLine(
+                yPlan,
+                'rgba(100, 116, 139, 0.6)',
+                [6, 4],
+                `Plan 100% (${props.plannedBudgetHours.toFixed(1)} jam)`,
+            );
+        }
 
         ctx.restore();
     },
@@ -279,19 +281,30 @@ const chartOptions = computed(() => {
             <div class="flex items-center gap-3">
                 <span
                     class="flex items-center gap-1.5 text-slate-600 dark:text-slate-300"
+                    data-test="burndown-legend-green"
+                >
+                    <span
+                        class="inline-block size-2.5 rounded-xs border border-emerald-300 bg-emerald-100 dark:border-emerald-800 dark:bg-emerald-950/60"
+                    />
+                    <span>{{ __('Hijau') }} ({{ rangeOf('green') }})</span>
+                </span>
+                <span
+                    class="flex items-center gap-1.5 text-slate-600 dark:text-slate-300"
+                    data-test="burndown-legend-yellow"
+                >
+                    <span
+                        class="inline-block size-2.5 rounded-xs border border-amber-300 bg-amber-100 dark:border-amber-800 dark:bg-amber-950/60"
+                    />
+                    <span>{{ __('Kuning') }} ({{ rangeOf('yellow') }})</span>
+                </span>
+                <span
+                    class="flex items-center gap-1.5 text-slate-600 dark:text-slate-300"
+                    data-test="burndown-legend-red"
                 >
                     <span
                         class="inline-block size-2.5 rounded-xs border border-red-300 bg-red-100 dark:border-red-800 dark:bg-red-950/60"
                     />
-                    <span>{{ __('Zona Defisit (>100% Kuota)') }}</span>
-                </span>
-                <span
-                    class="flex items-center gap-1.5 text-slate-600 dark:text-slate-300"
-                >
-                    <span
-                        class="inline-block size-2.5 rounded-xs border border-sky-300 bg-sky-100 dark:border-sky-800 dark:bg-sky-950/60"
-                    />
-                    <span>{{ __('Koridor Terkendali (85–100%)') }}</span>
+                    <span>{{ __('Merah') }} ({{ rangeOf('red') }})</span>
                 </span>
             </div>
             <div

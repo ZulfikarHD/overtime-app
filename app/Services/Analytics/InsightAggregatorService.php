@@ -391,13 +391,13 @@ class InsightAggregatorService
 
         foreach ($snapshots as $snapshot) {
             $threshold = $this->policyThresholdService->getForDepartment($snapshot->department_id);
-            $warningPct = (float) $threshold->burn_warning_pct;
-            $dangerPct = (float) $threshold->burn_danger_pct;
+            $warningPct = (float) $threshold->green_max_pct;
+            $dangerPct = (float) $threshold->yellow_max_pct;
             $burnPct = (float) $snapshot->burn_index_pct;
             $secName = $snapshot->section?->name ?? 'Section #'.$snapshot->section_id;
             $deptName = $snapshot->department?->name ?? $departmentName;
 
-            if ($burnPct > $dangerPct || $burnPct > 100.0) {
+            if ($burnPct > $dangerPct) {
                 $riskId = "risk-budget-{$snapshot->section_id}-{$fiscalYear}-{$fiscalMonth}";
                 $riskItems[] = [
                     'id' => $riskId,

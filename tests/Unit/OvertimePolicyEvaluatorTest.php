@@ -152,8 +152,8 @@ test('evaluateEmployee respects department threshold override over plant default
         'weekly_soft_limit_hours' => 25.0,
         'consecutive_weeks_alert' => 4,
         'spkl_grace_period_days' => 2,
-        'burn_warning_pct' => 100.0,
-        'burn_danger_pct' => 115.0,
+        'green_max_pct' => 70.0,
+        'yellow_max_pct' => 90.0,
     ]);
 
     /** @var OvertimePolicyEvaluator $evaluator */

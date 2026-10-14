@@ -1,3 +1,6 @@
+import { BURN_ZONE_STYLES, classifyBurnPct } from '@/lib/burnZone';
+import type { BurnZone, ZoneBoundaries } from '@/lib/burnZone';
+
 export const chartColors = {
     primary: '#2563eb', // Planned / Budget
     success: '#16a34a', // Under Budget / Approved / Safe
@@ -15,34 +18,23 @@ export const chartColors = {
     gridDark: 'rgba(51, 65, 85, 0.4)',
 } as const;
 
-export type BurnZone = 'safe' | 'on_track' | 'warning' | 'danger';
+export type { BurnZone } from '@/lib/burnZone';
 
-export function getBurnZone(burnIndexPct: number): BurnZone {
-    if (burnIndexPct > 115) {
-        return 'danger';
-    }
-    if (burnIndexPct > 100) {
-        return 'warning';
-    }
-    if (burnIndexPct >= 85) {
-        return 'on_track';
-    }
-    return 'safe';
+/**
+ * Classify an index percentage into the 3-zone tolerance rule.
+ */
+export function getBurnZone(
+    burnIndexPct: number,
+    boundaries?: ZoneBoundaries,
+): BurnZone {
+    return classifyBurnPct(burnIndexPct, boundaries);
 }
 
-export function getBurnZoneColor(burnIndexPct: number): string {
-    const zone = getBurnZone(burnIndexPct);
-    switch (zone) {
-        case 'danger':
-            return chartColors.isuzuRed;
-        case 'warning':
-            return chartColors.warning;
-        case 'on_track':
-            return chartColors.primary;
-        case 'safe':
-        default:
-            return chartColors.success;
-    }
+export function getBurnZoneColor(
+    burnIndexPct: number,
+    boundaries?: ZoneBoundaries,
+): string {
+    return BURN_ZONE_STYLES[getBurnZone(burnIndexPct, boundaries)].hex;
 }
 
 export function useChartTheme() {

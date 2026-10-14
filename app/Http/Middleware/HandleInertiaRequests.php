@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use App\Models\OvertimeSubmission;
 use App\Models\User;
+use App\Services\PolicyThresholdService;
 use App\Services\ShiftScheduleService;
 use App\Support\Features;
 use Illuminate\Http\Request;
@@ -69,6 +70,9 @@ class HandleInertiaRequests extends Middleware
                 'capex_attribution_required' => Features::capexAttributionRequired(),
             ],
             'shiftSchedule' => app(ShiftScheduleService::class)->getActivePayload(),
+            'zoneBoundaries' => $user
+                ? app(PolicyThresholdService::class)->boundariesFor($user->department_id ? (int) $user->department_id : null)
+                : null,
             'flash' => [
                 'success' => $request->session()->get('success'),
                 'error' => $request->session()->get('error'),

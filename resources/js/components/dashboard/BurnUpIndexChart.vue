@@ -4,7 +4,9 @@ import { TrendingDown, TrendingUp } from '@lucide/vue';
 import { computed } from 'vue';
 import BaseBarChart from '@/components/charts/BaseBarChart.vue';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useBurnZone } from '@/composables/useBurnZone';
 import { useTrans } from '@/composables/useTrans';
+import type { BurnZone } from '@/lib/burnZone';
 
 export interface DailyBurnUpIndexData {
     labels: string[];
@@ -35,6 +37,7 @@ const props = withDefaults(defineProps<Props>(), {
 });
 
 const { __ } = useTrans();
+const { classify } = useBurnZone();
 
 // ISUZU palette: Plan = navy blue (#1e3a5f), Actual = ISUZU orange (#e8601c)
 const COLOR_PLAN = '#1e3a5f';
@@ -140,20 +143,15 @@ const chartData = computed<ChartData<'bar'>>(() => ({
     datasets: chartDatasets.value,
 }));
 
-const burnZone = computed(() => {
-    const pct = props.data?.burn_index_pct ?? 0;
-    if (pct > 115) return 'danger';
-    if (pct > 100) return 'warning';
-    if (pct >= 85) return 'on_track';
-    return 'safe';
-});
+const burnZone = computed<BurnZone>(() =>
+    classify(props.data?.burn_index_pct ?? 0),
+);
 
 const burnClass = computed(() => {
     return {
-        danger: 'text-red-600 font-bold',
-        warning: 'text-amber-600 font-bold',
-        on_track: 'text-blue-700 font-semibold',
-        safe: 'text-emerald-700 font-semibold',
+        red: 'text-red-600 font-bold',
+        yellow: 'text-amber-600 font-bold',
+        green: 'text-emerald-700 font-semibold',
     }[burnZone.value];
 });
 </script>
@@ -215,15 +213,14 @@ const burnClass = computed(() => {
                 <div
                     class="inline-flex items-center gap-1 rounded-full px-2 py-0.5"
                     :class="{
-                        'bg-red-100': burnZone === 'danger',
-                        'bg-amber-100': burnZone === 'warning',
-                        'bg-blue-100': burnZone === 'on_track',
-                        'bg-emerald-100': burnZone === 'safe',
+                        'bg-red-100': burnZone === 'red',
+                        'bg-amber-100': burnZone === 'yellow',
+                        'bg-emerald-100': burnZone === 'green',
                     }"
                     data-test="burn-up-chart-pct"
                 >
                     <TrendingUp
-                        v-if="(data?.burn_index_pct ?? 0) > 100"
+                        v-if="burnZone !== 'green'"
                         class="size-3 text-red-600"
                     />
                     <TrendingDown v-else class="size-3 text-emerald-600" />

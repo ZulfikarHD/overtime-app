@@ -101,7 +101,7 @@ class AnalyticsScenarioController extends Controller
             'projected_hours' => ['required', 'numeric', 'min:0'],
             'projected_cost' => ['required', 'numeric', 'min:0'],
             'projected_burn_index' => ['required', 'numeric'],
-            'burn_zone' => ['nullable', 'string', 'in:safe,on_track,warning,danger'],
+            'burn_zone' => ['nullable', 'string', 'in:green,yellow,red'],
             'safety_risk_score' => ['required', 'numeric', 'min:0', 'max:100'],
             'production_volume_impact_pct' => ['required', 'numeric'],
         ]);

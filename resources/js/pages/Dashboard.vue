@@ -39,6 +39,9 @@ import SectionBurnComparisonChart, {
     type SectionBurnComparisonData,
 } from '@/components/dashboard/SectionBurnComparisonChart.vue';
 import CategoryDistributionDonut from '@/components/dashboard/CategoryDistributionDonut.vue';
+import FiveW2HFollowUpPanel, {
+    type AlertFollowUpItem,
+} from '@/components/dashboard/FiveW2HFollowUpPanel.vue';
 import DailyIndexTrendChart, {
     type DailyIndexTrendData,
 } from '@/components/dashboard/DailyIndexTrendChart.vue';
@@ -120,6 +123,7 @@ interface Props {
     dailyIndexTrend?: DailyIndexTrendData;
     dayTypeBreakdown?: DayTypeBreakdownData;
     employeeSummary?: EmployeeSummaryData;
+    alertFollowUps?: AlertFollowUpItem[];
     departments?: DepartmentItem[];
     sections?: SectionItem[];
     selectedDepartmentId?: number | null;
@@ -141,6 +145,7 @@ const props = withDefaults(defineProps<Props>(), {
     dailyIndexTrend: undefined,
     dayTypeBreakdown: undefined,
     employeeSummary: undefined,
+    alertFollowUps: () => [],
     departments: () => [],
     sections: () => [],
     selectedDepartmentId: null,
@@ -254,6 +259,27 @@ watch(
     },
 );
 
+const followUpScopeLabel = computed(() => {
+    const sectionId = props.dailyIndexTrend?.scope.section_id;
+    const departmentId = props.dailyIndexTrend?.scope.department_id;
+
+    if (sectionId) {
+        return (
+            props.sections.find((section) => section.id === sectionId)?.name ??
+            ''
+        );
+    }
+
+    if (departmentId) {
+        return (
+            props.departments.find((dept) => dept.id === departmentId)?.name ??
+            ''
+        );
+    }
+
+    return '';
+});
+
 function applyFilters(overrideSection?: string | null | Event) {
     isFiltering.value = true;
     let targetSection: string | null = filterSection.value;
@@ -289,6 +315,7 @@ function applyFilters(overrideSection?: string | null | Event) {
                 'dailyIndexTrend',
                 'dayTypeBreakdown',
                 'employeeSummary',
+                'alertFollowUps',
                 'sections',
                 'selectedDepartmentId',
                 'selectedSectionId',
@@ -626,6 +653,21 @@ function resetFilters() {
                         :loading="isFiltering"
                     />
                 </div>
+
+                <!-- Early Warning follow-up (5W2H) under the Early Warning chart -->
+                <FiveW2HFollowUpPanel
+                    v-if="dailyIndexTrend"
+                    :follow-ups="alertFollowUps"
+                    :alert="{
+                        average_index: dailyIndexTrend.average_index,
+                        average_zone: dailyIndexTrend.average_zone,
+                    }"
+                    :departments="departments"
+                    :scope-department-id="dailyIndexTrend.scope.department_id"
+                    :scope-section-id="dailyIndexTrend.scope.section_id"
+                    :scope-label="followUpScopeLabel"
+                    :selected-date="selectedDate"
+                />
             </div>
         </div>
 

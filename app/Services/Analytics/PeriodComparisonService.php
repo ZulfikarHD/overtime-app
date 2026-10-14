@@ -8,10 +8,15 @@ use App\Models\OperationalCalendar;
 use App\Models\OvertimeItem;
 use App\Models\Section;
 use App\Models\User;
+use App\Services\PolicyThresholdService;
 use Carbon\Carbon;
 
 class PeriodComparisonService
 {
+    public function __construct(
+        protected PolicyThresholdService $policyThresholdService,
+    ) {}
+
     /**
      * Indonesian month abbreviations for chart labels.
      *
@@ -110,7 +115,7 @@ class PeriodComparisonService
      *         compare_cost: float,
      *         cost_variance_pct: float,
      *         burn_index_pct: float,
-     *         burn_zone: 'safe'|'on_track'|'warning'|'danger'
+     *         burn_zone: 'green'|'yellow'|'red'
      *     }>,
      *     performers: array{
      *         best: array{name: string, code: string, metric_label: string, metric_value: string, burn_zone: string}|null,
@@ -657,7 +662,7 @@ class PeriodComparisonService
      *     compare_cost: float,
      *     cost_variance_pct: float,
      *     burn_index_pct: float,
-     *     burn_zone: 'safe'|'on_track'|'warning'|'danger'
+     *     burn_zone: 'green'|'yellow'|'red'
      * }>
      */
     protected function buildBenchmarks(
@@ -704,7 +709,7 @@ class PeriodComparisonService
                     $burnIndexPct = round(((float) $snapshot->cumulative_actual_hours / (float) $snapshot->planned_budget_hours) * 100, 1);
                 }
 
-                $burnZone = $this->classifyBurnZone($burnIndexPct);
+                $burnZone = $this->classifyBurnZone($burnIndexPct, (int) $section->department_id);
 
                 $benchmarks[] = [
                     'id' => (int) $section->id,
@@ -756,7 +761,7 @@ class PeriodComparisonService
                 ->avg('burn_index_pct');
 
             $burnIndexPct = round((float) ($avgBurn ?? 0.0), 1);
-            $burnZone = $this->classifyBurnZone($burnIndexPct);
+            $burnZone = $this->classifyBurnZone($burnIndexPct, (int) $dept->id);
 
             $benchmarks[] = [
                 'id' => (int) $dept->id,
@@ -934,21 +939,11 @@ class PeriodComparisonService
     }
 
     /**
-     * Classify Burn Index into zone tokens.
+     * Classify Burn Index into the 3-zone tolerance tokens (green|yellow|red).
      */
-    protected function classifyBurnZone(float $burnIndex): string
+    protected function classifyBurnZone(float $burnIndex, ?int $departmentId = null): string
     {
-        if ($burnIndex > 115.0) {
-            return 'danger';
-        }
-        if ($burnIndex > 100.0) {
-            return 'warning';
-        }
-        if ($burnIndex >= 85.0) {
-            return 'on_track';
-        }
-
-        return 'safe';
+        return $this->policyThresholdService->classify($burnIndex, $departmentId)->value;
     }
 
     /**

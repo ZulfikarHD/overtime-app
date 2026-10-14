@@ -260,7 +260,7 @@ test('user can save and delete named scenario in preferences', function () {
         'projected_hours' => 540.0,
         'projected_cost' => 27000000,
         'projected_burn_index' => 90.0,
-        'burn_zone' => 'on_track',
+        'burn_zone' => 'yellow',
         'safety_risk_score' => 14.5,
         'production_volume_impact_pct' => 15.6,
     ]);

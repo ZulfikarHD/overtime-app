@@ -148,6 +148,8 @@ test('snapshots are read from monthly_burn_snapshots table and reflect stored da
         ->where('snapshots.0.planned_budget_hours', 250)
         ->where('snapshots.0.cumulative_actual_hours', 200)
         ->where('snapshots.0.burn_zone', 'ZONE_2_GOOD')
+        ->where('snapshots.0.tolerance_zone', 'yellow')
+        ->where('summary.department_tolerance_zone', 'yellow')
         ->where('snapshots.0.is_budget_configured', true)
         ->where('summary.total_planned_hours', 250)
         ->where('summary.total_actual_hours', 200)

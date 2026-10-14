@@ -38,7 +38,10 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { useBurnZone } from '@/composables/useBurnZone';
 import { useTrans } from '@/composables/useTrans';
+import { BURN_ZONE_STYLES, normalizeBurnZone } from '@/lib/burnZone';
+import type { BurnZone } from '@/lib/burnZone';
 import { burnIndex } from '@/routes/dashboard';
 import type { User } from '@/types';
 
@@ -48,8 +51,12 @@ interface DepartmentSummary {
     total_remaining_hours: number;
     department_burn_index_pct: number;
     department_burn_zone: string;
+    department_tolerance_zone?: 'green' | 'yellow' | 'red';
     warning_sections_count: number;
     danger_sections_count: number;
+    green_sections_count?: number;
+    yellow_sections_count?: number;
+    red_sections_count?: number;
     configured_sections_count: number;
     total_sections_count: number;
 }
@@ -73,6 +80,13 @@ const props = defineProps<{
 }>();
 
 const { __ } = useTrans();
+const { classify, rangeOf } = useBurnZone();
+
+function zoneOf(item: SectionSnapshotData): BurnZone {
+    return item.tolerance_zone
+        ? normalizeBurnZone(item.tolerance_zone)
+        : classify(item.burn_index_pct);
+}
 const page = usePage();
 const currentUser = computed(() => page.props.auth?.user as User | undefined);
 
@@ -88,9 +102,9 @@ const selectedDepartmentId = ref(
           : '',
 );
 const searchQuery = ref('');
-const statusFilter = ref<
-    'all' | 'safe' | 'on_track' | 'warning' | 'danger' | 'unconfigured'
->('all');
+const statusFilter = ref<'all' | 'green' | 'yellow' | 'red' | 'unconfigured'>(
+    'all',
+);
 const isRefreshing = ref(false);
 const activeRangeType = ref(props.capex_opex?.summary?.range_type || 'month');
 const activeStartDate = ref(props.capex_opex?.summary?.start_date || '');
@@ -343,34 +357,16 @@ const filteredSnapshots = computed(() => {
         if (!s.is_budget_configured) {
             return false;
         }
-        if (statusFilter.value === 'danger') {
-            return s.burn_index_pct > 115;
-        }
-        if (statusFilter.value === 'warning') {
-            return s.burn_index_pct > 100 && s.burn_index_pct <= 115;
-        }
-        if (statusFilter.value === 'on_track') {
-            return s.burn_index_pct >= 85 && s.burn_index_pct <= 100;
-        }
-        if (statusFilter.value === 'safe') {
-            return s.burn_index_pct < 85;
-        }
-        return true;
+        return zoneOf(s) === statusFilter.value;
     });
 });
 
 const deptBurnStatusClass = computed(() => {
-    const pct = props.summary.department_burn_index_pct;
-    if (pct > 115) {
-        return 'text-[#cc0000] bg-red-50 dark:bg-red-950/40 border-red-200 dark:border-red-900';
-    }
-    if (pct > 100) {
-        return 'text-amber-700 bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-900';
-    }
-    if (pct >= 85) {
-        return 'text-sky-700 bg-sky-50 dark:bg-sky-950/40 border-sky-200 dark:border-sky-900';
-    }
-    return 'text-emerald-700 bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-900';
+    const zone = props.summary.department_tolerance_zone
+        ? normalizeBurnZone(props.summary.department_tolerance_zone)
+        : classify(props.summary.department_burn_index_pct);
+
+    return `${BURN_ZONE_STYLES[zone].text} ${BURN_ZONE_STYLES[zone].badge}`;
 });
 
 const deptZoneLabel = computed(() => {
@@ -686,37 +682,32 @@ const deptZoneLabel = computed(() => {
                             class="flex items-center gap-1.5 font-mono text-xs font-bold text-[#cc0000] tabular-nums"
                         >
                             <span class="size-2 rounded-full bg-[#cc0000]" />
-                            <span>{{ summary.danger_sections_count }}</span>
+                            <span>{{ summary.red_sections_count ?? 0 }}</span>
                             <span
                                 class="text-muted-foreground font-sans text-[10px] font-normal"
-                                >{{ __('Defisit') }}</span
+                                >{{ __('Merah') }}</span
                             >
                         </div>
                         <div
                             class="flex items-center gap-1.5 font-mono text-xs font-bold text-amber-600 tabular-nums"
                         >
                             <span class="size-2 rounded-full bg-amber-500" />
-                            <span>{{ summary.warning_sections_count }}</span>
+                            <span>{{
+                                summary.yellow_sections_count ?? 0
+                            }}</span>
                             <span
                                 class="text-muted-foreground font-sans text-[10px] font-normal"
-                                >{{ __('Peringatan') }}</span
+                                >{{ __('Kuning') }}</span
                             >
                         </div>
                         <div
                             class="flex items-center gap-1.5 font-mono text-xs font-bold text-emerald-600 tabular-nums"
                         >
                             <CheckCircle2 class="size-3 text-emerald-500" />
-                            <span>{{
-                                Math.max(
-                                    0,
-                                    summary.total_sections_count -
-                                        summary.warning_sections_count -
-                                        summary.danger_sections_count,
-                                )
-                            }}</span>
+                            <span>{{ summary.green_sections_count ?? 0 }}</span>
                             <span
                                 class="text-muted-foreground font-sans text-[10px] font-normal"
-                                >{{ __('Aman') }}</span
+                                >{{ __('Hijau') }}</span
                             >
                         </div>
                     </div>
@@ -822,49 +813,37 @@ const deptZoneLabel = computed(() => {
                         type="button"
                         class="cursor-pointer rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors"
                         :class="
-                            statusFilter === 'safe'
+                            statusFilter === 'green'
                                 ? 'border-transparent bg-emerald-600 text-white'
                                 : 'bg-card border-emerald-200 text-emerald-700 hover:bg-emerald-50 dark:border-emerald-900 dark:text-emerald-400'
                         "
-                        @click="statusFilter = 'safe'"
+                        @click="statusFilter = 'green'"
                     >
-                        {{ __('Aman (<85%)') }}
+                        {{ __('Hijau') + ' (' + rangeOf('green') + ')' }}
                     </button>
                     <button
                         type="button"
                         class="cursor-pointer rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors"
                         :class="
-                            statusFilter === 'on_track'
-                                ? 'border-transparent bg-sky-600 text-white'
-                                : 'bg-card border-sky-200 text-sky-700 hover:bg-sky-50 dark:border-sky-900 dark:text-sky-400'
-                        "
-                        @click="statusFilter = 'on_track'"
-                    >
-                        {{ __('Terkendali (85–100%)') }}
-                    </button>
-                    <button
-                        type="button"
-                        class="cursor-pointer rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors"
-                        :class="
-                            statusFilter === 'warning'
+                            statusFilter === 'yellow'
                                 ? 'border-transparent bg-amber-600 text-white'
                                 : 'bg-card border-amber-200 text-amber-700 hover:bg-amber-50 dark:border-amber-900 dark:text-amber-400'
                         "
-                        @click="statusFilter = 'warning'"
+                        @click="statusFilter = 'yellow'"
                     >
-                        {{ __('Peringatan (101–115%)') }}
+                        {{ __('Kuning') + ' (' + rangeOf('yellow') + ')' }}
                     </button>
                     <button
                         type="button"
                         class="cursor-pointer rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors"
                         :class="
-                            statusFilter === 'danger'
+                            statusFilter === 'red'
                                 ? 'border-transparent bg-[#cc0000] text-white'
                                 : 'bg-card border-red-200 text-[#cc0000] hover:bg-red-50 dark:border-red-900 dark:text-red-400'
                         "
-                        @click="statusFilter = 'danger'"
+                        @click="statusFilter = 'red'"
                     >
-                        {{ __('Defisit (>115%)') }}
+                        {{ __('Merah') + ' (' + rangeOf('red') + ')' }}
                     </button>
                     <button
                         type="button"

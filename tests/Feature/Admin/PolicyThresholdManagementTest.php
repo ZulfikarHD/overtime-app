@@ -23,8 +23,8 @@ test('non-admin users are denied access to administration hub and policy thresho
         'weekly_soft_limit_hours' => 20,
         'consecutive_weeks_alert' => 3,
         'spkl_grace_period_days' => 2,
-        'burn_warning_pct' => 100,
-        'burn_danger_pct' => 115,
+        'green_max_pct' => 70,
+        'yellow_max_pct' => 90,
     ])->assertForbidden();
 
     $plantDefault = PolicyThreshold::factory()->plantDefault()->create();
@@ -33,8 +33,8 @@ test('non-admin users are denied access to administration hub and policy thresho
         'weekly_soft_limit_hours' => 25,
         'consecutive_weeks_alert' => 4,
         'spkl_grace_period_days' => 3,
-        'burn_warning_pct' => 100,
-        'burn_danger_pct' => 120,
+        'green_max_pct' => 70,
+        'yellow_max_pct' => 95,
     ])->assertForbidden();
 
     $this->actingAs($operator)->delete(route('admin.policy-thresholds.destroy', $plantDefault))->assertForbidden();
@@ -52,8 +52,8 @@ test('admin can access administration hub with plant default and department stat
         'weekly_soft_limit_hours' => 20.0,
         'consecutive_weeks_alert' => 3,
         'spkl_grace_period_days' => 2,
-        'burn_warning_pct' => 100.00,
-        'burn_danger_pct' => 115.00,
+        'green_max_pct' => 70.00,
+        'yellow_max_pct' => 90.00,
     ]);
 
     $response = $this->actingAs($admin)->get(route('admin.administration'));
@@ -66,8 +66,8 @@ test('admin can access administration hub with plant default and department stat
             ->where('weekly_soft_limit_hours', fn ($val) => (float) $val == 20.0)
             ->where('consecutive_weeks_alert', 3)
             ->where('spkl_grace_period_days', 2)
-            ->where('burn_warning_pct', fn ($val) => (float) $val == 100.0)
-            ->where('burn_danger_pct', fn ($val) => (float) $val == 115.0)
+            ->where('green_max_pct', fn ($val) => (float) $val == 70.0)
+            ->where('yellow_max_pct', fn ($val) => (float) $val == 90.0)
             ->etc()
         )
         ->has('departments', 1, fn (Assert $item) => $item
@@ -90,8 +90,8 @@ test('admin can update plant-wide default policy threshold', function () {
         'weekly_soft_limit_hours' => 20.0,
         'consecutive_weeks_alert' => 3,
         'spkl_grace_period_days' => 2,
-        'burn_warning_pct' => 100.00,
-        'burn_danger_pct' => 115.00,
+        'green_max_pct' => 70.00,
+        'yellow_max_pct' => 90.00,
     ]);
 
     $payload = [
@@ -99,8 +99,8 @@ test('admin can update plant-wide default policy threshold', function () {
         'weekly_soft_limit_hours' => 25.5,
         'consecutive_weeks_alert' => 4,
         'spkl_grace_period_days' => 3,
-        'burn_warning_pct' => 105.00,
-        'burn_danger_pct' => 120.00,
+        'green_max_pct' => 75.00,
+        'yellow_max_pct' => 95.00,
     ];
 
     $response = $this->actingAs($admin)->post(route('admin.policy-thresholds.store'), $payload);
@@ -113,8 +113,8 @@ test('admin can update plant-wide default policy threshold', function () {
         'weekly_soft_limit_hours' => 25.5,
         'consecutive_weeks_alert' => 4,
         'spkl_grace_period_days' => 3,
-        'burn_warning_pct' => 105.00,
-        'burn_danger_pct' => 120.00,
+        'green_max_pct' => 75.00,
+        'yellow_max_pct' => 95.00,
     ]);
 });
 
@@ -128,8 +128,8 @@ test('admin can update plant default via put route', function () {
         'weekly_soft_limit_hours' => 22.0,
         'consecutive_weeks_alert' => 2,
         'spkl_grace_period_days' => 4,
-        'burn_warning_pct' => 95.00,
-        'burn_danger_pct' => 110.00,
+        'green_max_pct' => 65.00,
+        'yellow_max_pct' => 85.00,
     ]);
 
     $response->assertRedirect(route('admin.administration', ['tab' => 'policies']));
@@ -141,8 +141,8 @@ test('admin can update plant default via put route', function () {
         'weekly_soft_limit_hours' => 22.0,
         'consecutive_weeks_alert' => 2,
         'spkl_grace_period_days' => 4,
-        'burn_warning_pct' => 95.00,
-        'burn_danger_pct' => 110.00,
+        'green_max_pct' => 65.00,
+        'yellow_max_pct' => 85.00,
     ]);
 });
 
@@ -157,8 +157,8 @@ test('admin can create department policy override', function () {
         'weekly_soft_limit_hours' => 30.0,
         'consecutive_weeks_alert' => 5,
         'spkl_grace_period_days' => 5,
-        'burn_warning_pct' => 110.00,
-        'burn_danger_pct' => 125.00,
+        'green_max_pct' => 80.00,
+        'yellow_max_pct' => 100.00,
     ];
 
     $response = $this->actingAs($admin)->post(route('admin.policy-thresholds.store'), $payload);
@@ -171,8 +171,8 @@ test('admin can create department policy override', function () {
         'weekly_soft_limit_hours' => 30.0,
         'consecutive_weeks_alert' => 5,
         'spkl_grace_period_days' => 5,
-        'burn_warning_pct' => 110.00,
-        'burn_danger_pct' => 125.00,
+        'green_max_pct' => 80.00,
+        'yellow_max_pct' => 100.00,
     ]);
 });
 
@@ -184,8 +184,8 @@ test('admin can update an existing department policy override', function () {
         'weekly_soft_limit_hours' => 24.0,
         'consecutive_weeks_alert' => 3,
         'spkl_grace_period_days' => 2,
-        'burn_warning_pct' => 100.00,
-        'burn_danger_pct' => 115.00,
+        'green_max_pct' => 70.00,
+        'yellow_max_pct' => 90.00,
     ]);
 
     $response = $this->actingAs($admin)->put(route('admin.policy-thresholds.update', $override), [
@@ -193,8 +193,8 @@ test('admin can update an existing department policy override', function () {
         'weekly_soft_limit_hours' => 28.0,
         'consecutive_weeks_alert' => 4,
         'spkl_grace_period_days' => 3,
-        'burn_warning_pct' => 105.00,
-        'burn_danger_pct' => 118.00,
+        'green_max_pct' => 75.00,
+        'yellow_max_pct' => 93.00,
     ]);
 
     $response->assertRedirect(route('admin.administration', ['tab' => 'policies']));
@@ -204,7 +204,7 @@ test('admin can update an existing department policy override', function () {
         'id' => $override->id,
         'department_id' => $dept->id,
         'weekly_soft_limit_hours' => 28.0,
-        'burn_danger_pct' => 118.00,
+        'yellow_max_pct' => 93.00,
     ]);
 });
 
@@ -282,8 +282,8 @@ test('policy threshold service auto-creates plant default if database is unseede
         ->and((float) $default->weekly_soft_limit_hours)->toBe(20.0)
         ->and((int) $default->consecutive_weeks_alert)->toBe(3)
         ->and((int) $default->spkl_grace_period_days)->toBe(2)
-        ->and((float) $default->burn_warning_pct)->toBe(100.00)
-        ->and((float) $default->burn_danger_pct)->toBe(115.00);
+        ->and((float) $default->green_max_pct)->toBe(70.00)
+        ->and((float) $default->yellow_max_pct)->toBe(90.00);
 
     $this->assertDatabaseHas('policy_thresholds', [
         'department_id' => null,
@@ -299,8 +299,8 @@ test('validation rejects invalid threshold inputs', function () {
         'weekly_soft_limit_hours' => -5,
         'consecutive_weeks_alert' => 3,
         'spkl_grace_period_days' => 2,
-        'burn_warning_pct' => 100,
-        'burn_danger_pct' => 115,
+        'green_max_pct' => 70,
+        'yellow_max_pct' => 90,
     ])->assertSessionHasErrors(['weekly_soft_limit_hours']);
 
     // 2. Weekly soft limit > 168 hours
@@ -308,8 +308,8 @@ test('validation rejects invalid threshold inputs', function () {
         'weekly_soft_limit_hours' => 200,
         'consecutive_weeks_alert' => 3,
         'spkl_grace_period_days' => 2,
-        'burn_warning_pct' => 100,
-        'burn_danger_pct' => 115,
+        'green_max_pct' => 70,
+        'yellow_max_pct' => 90,
     ])->assertSessionHasErrors(['weekly_soft_limit_hours']);
 
     // 3. Consecutive weeks < 1 or > 52
@@ -317,8 +317,8 @@ test('validation rejects invalid threshold inputs', function () {
         'weekly_soft_limit_hours' => 20,
         'consecutive_weeks_alert' => 0,
         'spkl_grace_period_days' => 2,
-        'burn_warning_pct' => 100,
-        'burn_danger_pct' => 115,
+        'green_max_pct' => 70,
+        'yellow_max_pct' => 90,
     ])->assertSessionHasErrors(['consecutive_weeks_alert']);
 
     // 4. Negative SPKL grace period or > 30 days
@@ -326,8 +326,8 @@ test('validation rejects invalid threshold inputs', function () {
         'weekly_soft_limit_hours' => 20,
         'consecutive_weeks_alert' => 3,
         'spkl_grace_period_days' => 45,
-        'burn_warning_pct' => 100,
-        'burn_danger_pct' => 115,
+        'green_max_pct' => 70,
+        'yellow_max_pct' => 90,
     ])->assertSessionHasErrors(['spkl_grace_period_days']);
 
     // 5. Illogical burn percentages: danger < warning
@@ -335,9 +335,9 @@ test('validation rejects invalid threshold inputs', function () {
         'weekly_soft_limit_hours' => 20,
         'consecutive_weeks_alert' => 3,
         'spkl_grace_period_days' => 2,
-        'burn_warning_pct' => 115,
-        'burn_danger_pct' => 100, // danger is less than warning!
-    ])->assertSessionHasErrors(['burn_danger_pct']);
+        'green_max_pct' => 85,
+        'yellow_max_pct' => 75, // danger is less than warning!
+    ])->assertSessionHasErrors(['yellow_max_pct']);
 
     // 6. Non-existent department_id
     $this->actingAs($admin)->post(route('admin.policy-thresholds.store'), [
@@ -345,7 +345,7 @@ test('validation rejects invalid threshold inputs', function () {
         'weekly_soft_limit_hours' => 20,
         'consecutive_weeks_alert' => 3,
         'spkl_grace_period_days' => 2,
-        'burn_warning_pct' => 100,
-        'burn_danger_pct' => 115,
+        'green_max_pct' => 70,
+        'yellow_max_pct' => 90,
     ])->assertSessionHasErrors(['department_id']);
 });

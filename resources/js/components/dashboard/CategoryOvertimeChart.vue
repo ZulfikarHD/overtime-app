@@ -4,6 +4,7 @@ import { BarChart3, MinusCircle } from '@lucide/vue';
 import { computed } from 'vue';
 import BaseBarChart from '@/components/charts/BaseBarChart.vue';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useBurnZone } from '@/composables/useBurnZone';
 import { useTrans } from '@/composables/useTrans';
 
 export interface CategoryOvertimeCategoryItem {
@@ -40,6 +41,7 @@ const props = withDefaults(defineProps<Props>(), {
 });
 
 const { __ } = useTrans();
+const { classify } = useBurnZone();
 
 const CATEGORY_LABELS: Record<string, string> = {
     production: 'Produksi',
@@ -182,10 +184,12 @@ const totalBurnPct = computed(() => {
                     v-if="totalBurnPct !== null"
                     class="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold tabular-nums"
                     :class="{
-                        'bg-red-100 text-red-700': totalBurnPct > 100,
+                        'bg-red-100 text-red-700':
+                            classify(totalBurnPct) === 'red',
                         'bg-amber-100 text-amber-700':
-                            totalBurnPct > 85 && totalBurnPct <= 100,
-                        'bg-emerald-100 text-emerald-700': totalBurnPct <= 85,
+                            classify(totalBurnPct) === 'yellow',
+                        'bg-emerald-100 text-emerald-700':
+                            classify(totalBurnPct) === 'green',
                     }"
                 >
                     {{ totalBurnPct }}% realisasi

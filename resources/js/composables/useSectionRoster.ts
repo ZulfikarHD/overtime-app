@@ -13,7 +13,7 @@ export interface BurnIndicator {
     planned_hours: number;
     actual_hours: number;
     burn_pct: number;
-    burn_zone: 'safe' | 'caution' | 'danger';
+    burn_zone: 'green' | 'yellow' | 'red';
 }
 
 export function useSectionRoster(
@@ -27,7 +27,7 @@ export function useSectionRoster(
             planned_hours: 0,
             actual_hours: 0,
             burn_pct: 0,
-            burn_zone: 'safe',
+            burn_zone: 'green',
         },
     );
     const isLoading = ref(false);

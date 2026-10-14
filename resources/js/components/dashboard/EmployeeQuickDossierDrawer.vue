@@ -29,6 +29,7 @@ import {
     SheetTitle,
 } from '@/components/ui/sheet';
 import { useTrans } from '@/composables/useTrans';
+import { BURN_ZONE_STYLES, normalizeBurnZone } from '@/lib/burnZone';
 import { show as showEmployeeDossier } from '@/routes/reports/employees';
 
 export interface RecentShiftItem {
@@ -72,7 +73,7 @@ export interface EmployeeSummaryItem {
     categories: EmployeeCategoryItem[];
     planned_hours: number;
     burn_index: number;
-    burn_zone: 'safe' | 'on_track' | 'warning' | 'danger';
+    burn_zone: 'green' | 'yellow' | 'red';
     burn_zone_label: string;
     burn_zone_color: string;
     spkl_status: 'approved' | 'grace_period' | 'overdue' | 'none';
@@ -131,19 +132,9 @@ function categoryLabel(cat: EmployeeCategoryItem): string {
     return labels[cat.key] ?? cat.label;
 }
 
-const zoneBadgeClass = computed(() => {
-    switch (props.employee?.burn_zone) {
-        case 'danger':
-            return 'bg-red-50 text-[#cc0000] border-red-200 dark:bg-red-950/40 dark:text-red-300 dark:border-red-900';
-        case 'warning':
-            return 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-900';
-        case 'on_track':
-            return 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-900';
-        case 'safe':
-        default:
-            return 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-900';
-    }
-});
+const zoneBadgeClass = computed(
+    () => BURN_ZONE_STYLES[normalizeBurnZone(props.employee?.burn_zone)].badge,
+);
 
 const spklBadgeClass = computed(() => {
     switch (props.employee?.spkl_status) {

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Department;
 use App\Models\Section;
 use App\Models\User;
+use App\Services\AlertFollowUpService;
 use App\Services\Analytics\DashboardKpiService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -17,6 +18,7 @@ class DashboardController extends Controller
 {
     public function __construct(
         public DashboardKpiService $kpiService,
+        public AlertFollowUpService $alertFollowUpService,
     ) {}
 
     /**
@@ -54,6 +56,10 @@ class DashboardController extends Controller
         $dailyIndexTrend = $this->kpiService->getDailyIndexTrend($user, $date, $departmentId, $sectionId);
         $dayTypeBreakdown = $this->kpiService->getDayTypeBreakdown($user, $date, $departmentId, $sectionId);
         $employeeSummary = $this->kpiService->getEmployeeSummaryTable($user, $date, $departmentId, $sectionId);
+        $alertFollowUps = $this->alertFollowUpService
+            ->listForScope($user, $date, $departmentId, $sectionId)
+            ->map(fn ($followUp) => $this->alertFollowUpService->toPayload($followUp))
+            ->values();
 
         $tab = $request->query('tab', 'pacing');
         if (! in_array($tab, ['pacing', 'distribution', 'employees'], true)) {
@@ -81,6 +87,7 @@ class DashboardController extends Controller
             'dailyIndexTrend' => $dailyIndexTrend,
             'dayTypeBreakdown' => $dayTypeBreakdown,
             'employeeSummary' => $employeeSummary,
+            'alertFollowUps' => $alertFollowUps,
             'departments' => $departments,
             'sections' => $sections,
             'selectedDepartmentId' => $kpiCards['scope']['department_id'],

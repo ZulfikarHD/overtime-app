@@ -11,6 +11,7 @@ use App\Http\Controllers\Admin\PolicyThresholdController;
 use App\Http\Controllers\Admin\SectionController;
 use App\Http\Controllers\Admin\ShiftScheduleController;
 use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\AlertFollowUpController;
 use App\Http\Controllers\Analytics\MlController;
 use App\Http\Controllers\AnalyticsController;
 use App\Http\Controllers\AnalyticsScenarioController;
@@ -32,17 +33,13 @@ use App\Http\Controllers\Reports\EmployeeReportController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
-use Laravel\Fortify\Features;
 
-Route::get('/', function (Request $request) {
+Route::get('/', function () {
     if (auth()->check()) {
         return redirect()->route('dashboard');
     }
 
-    return Inertia::render('auth/Login', [
-        'canResetPassword' => Features::enabled(Features::resetPasswords()),
-        'status' => $request->session()->get('status'),
-    ]);
+    return Inertia::render('Welcome');
 })->name('home');
 
 Route::post('/locale', [LocaleController::class, 'update'])->name('locale.update');
@@ -59,6 +56,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard/charts/day-type', [DashboardController::class, 'dayTypeBreakdown'])->name('dashboard.charts.day-type');
     Route::get('dashboard/employee-summary', [DashboardController::class, 'employeeSummaryTable'])->name('dashboard.employee-summary');
     Route::get('my/dashboard', [EmployeeSelfServiceController::class, 'index'])->name('my.dashboard');
+
+    // Early Warning alert follow-up (5W2H) - save draft / send by email
+    Route::middleware('role:admin,manager,team_leader')->group(function () {
+        Route::post('dashboard/alert-follow-ups', [AlertFollowUpController::class, 'store'])->name('dashboard.alert-follow-ups.store');
+        Route::put('dashboard/alert-follow-ups/{alertFollowUp}', [AlertFollowUpController::class, 'update'])->name('dashboard.alert-follow-ups.update');
+    });
 
     // Dashboard Burn Index & Budget Analytics (E05 - Admin, Manager, Team Leader)
     Route::middleware(['role:admin,manager,team_leader', 'feature:financial_governance_enabled'])->prefix('dashboard')->name('dashboard.')->group(function () {

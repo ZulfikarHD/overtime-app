@@ -44,8 +44,8 @@ test('manager can view all 5 multi-chart grid widgets on dashboard with proper i
         'weekly_soft_limit_hours' => 20.0,
         'consecutive_weeks_alert' => 3,
         'spkl_grace_period_days' => 2,
-        'burn_warning_pct' => 100.0,
-        'burn_danger_pct' => 115.0,
+        'green_max_pct' => 70.0,
+        'yellow_max_pct' => 90.0,
     ]);
 
     OvertimeBudget::create([
@@ -112,6 +112,9 @@ test('manager can view all 5 multi-chart grid widgets on dashboard with proper i
         ->assertPresent('[data-test="category-distribution-donut-card"]')
         ->assertPresent('[data-test="trend-working-time-card"]')
         ->assertPresent('[data-test="daily-index-trend-card"]')
+        ->assertPresent('[data-test="early-warning-legend-green"]')
+        ->assertPresent('[data-test="early-warning-legend-yellow"]')
+        ->assertPresent('[data-test="early-warning-legend-red"]')
         ->assertPresent('[data-test="day-type-breakdown-card"]')
         ->assertPresent('[data-test="category-legend-grid"]')
         ->assertSee('Top 10')
