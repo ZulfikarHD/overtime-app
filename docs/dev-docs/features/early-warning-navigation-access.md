@@ -35,7 +35,7 @@ No schema change. The badge reads alerts computed by `EarlyWarningService` (E10-
 | Shared prop   | `app/Http/Middleware/HandleInertiaRequests.php` (`early_warning_open_count`) | Lazy closure, skipped on partial reloads that do not request it                               |
 | Nav component | `resources/js/components/NavMain.vue`                                        | `matchChildren` active state, badge and collapsed-mode dot                                    |
 | Nav type      | `resources/js/types/navigation.ts` (`NavItem.matchChildren`)                 | Highlights the item on every page below its URL                                               |
-| Page shells   | `resources/js/pages/early-warning/Index.vue`, `Show.vue`                     | Placeholders filled by E10-03 / E10-04                                                        |
+| Page shells   | `resources/js/pages/early-warning/Index.vue`, `Show.vue`                     | `Index.vue` is the inbox since [E10-03](./early-warning-inbox.md); `Show.vue` is filled by E10-04 |
 | Wayfinder     | `resources/js/routes/early-warning/index.ts` (generated, git-ignored)        | `index()` used by the sidebar; regenerate with `php artisan wayfinder:generate --with-form`   |
 | i18n          | `lang/id.json`, `lang/en.json`                                               | `Early Warning` and page strings                                                              |
 | Tests         | `tests/Feature/EarlyWarningAccessTest.php`                                   | 11 tests: roles, scope isolation, date validation, badge scope and status rules               |

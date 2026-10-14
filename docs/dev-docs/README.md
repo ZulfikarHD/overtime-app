@@ -53,6 +53,7 @@ Deep-dive technical documentation detailing architecture flows, data models, key
 | **[SPL Excel Import (Realized Overtime)](./features/spl-excel-import.md)**                                 | Transition                        | Upload `spl_manual_ot.xlsx`, parse per-day sheets, upsert realized overtime entries using NPK + date + start-time composite key; admin/manager gate.                                   |
 | **[Early Warning Alert Detection](./features/early-warning-alert-detection.md)**                           | [Epic-10](../../scrum/Epic-10.md) | Computed section-day alerts (Kuning/Merah) from the shared daily index, working-day streaks, department scope, follow-up status, and constant-query batch evaluation (E10-01).         |
 | **[Early Warning Menu, Routes & Authorization](./features/early-warning-navigation-access.md)**            | [Epic-10](../../scrum/Epic-10.md) | Sidebar entry, `early-warning.index` / `early-warning.show` routes, role and department-scope authorization, and the cached open-Merah sidebar badge with collapsed-mode dot (E10-02). |
+| **[Early Warning Inbox Page](./features/early-warning-inbox.md)**                                           | [Epic-10](../../scrum/Epic-10.md) | Alert inbox with URL-based filters (department, section, dates, zone, follow-up status), deferred alerts and summary, department lock, pagination, and responsive table / cards (E10-03). |
 
 ---
 
@@ -114,6 +115,7 @@ Durable technical decisions and trade-offs:
 - **[ADR-039: Department-Default Dashboard Scope with Optional Section Drill-Down](./decisions/039-department-default-dashboard-section-drill-down.md)**
 - **[ADR-040: Computed Early Warning Alerts on a Shared Daily Index](./decisions/040-early-warning-alert-detection-shared-daily-index.md)**
 - **[ADR-041: Early Warning Sidebar Badge Cached per Scope and Policy-Based Section Access](./decisions/041-early-warning-sidebar-badge-and-authorization.md)**
+- **[ADR-042: Early Warning Inbox Filters in the URL, Deferred Alerts and a Lenient Redirect](./decisions/042-early-warning-inbox-filters-in-url-and-deferred-alerts.md)**
 
 ---
 

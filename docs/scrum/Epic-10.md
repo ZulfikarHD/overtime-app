@@ -187,34 +187,42 @@ These exist from the previous session and are the foundation of this epic.
 
 **Story Points:** 8  
 **Priority:** Must Have  
-**Status:** 🔴 Not Started
+**Status:** 🟢 Done
 
 Page: `resources/js/pages/early-warning/Index.vue` (route `early-warning.index`). Single root element.
 
 #### Acceptance Criteria
 
-- [ ] Filter bar: **Department** (admin: "Semua Department" + list; others: locked to own department), **Section** (depends on department), **Date range** (default: last 7 days up to today, `Asia/Jakarta`), **Zone** (Semua / Kuning / Merah), **Follow-up status** (Semua / Belum ditindaklanjuti / Draft / Terkirim)
-- [ ] Filters are kept in the URL query string (shareable/reloadable) and applied server-side
-- [ ] Summary strip (ISUZU KPI style, `font-mono tabular-nums`): total alerts, Merah count, Kuning count, **without follow-up** count
-- [ ] Alert list/table: Section, Department, Date, **zone badge** (Hijau/Kuning/Merah styles from `BURN_ZONE_STYLES`), index % , **streak** ("3 hari berturut-turut"), follow-up status pill (Belum / Draft / Terkirim), and a "Tindak Lanjut" action
-- [ ] Clicking a row (or the action) opens the **alert detail page** (E10-04)
-- [ ] Default sort: Merah first, longest streak first
-- [ ] Empty state when no alerts: positive message ("Tidak ada alert pada periode ini") and a hint to widen the date range
-- [ ] Loading uses deferred props with a pulsing skeleton (Inertia v3 guideline)
-- [ ] Pagination (or "load more") when more than 25 alerts
-- [ ] Responsive: table on desktop, stacked cards on mobile (client mockup is mobile-first)
-- [ ] ISUZU design: `#cc0000` for primary actions, tabular numbers, segregated CapEx/OpEx not applicable here
+- [x] Filter bar: **Department** (admin: "Semua Department" + list; others: locked to own department), **Section** (depends on department), **Date range** (default: last 7 days up to today, `Asia/Jakarta`), **Zone** (Semua / Kuning / Merah), **Follow-up status** (Semua / Belum ditindaklanjuti / Draft / Terkirim)
+- [x] Filters are kept in the URL query string (shareable/reloadable) and applied server-side
+- [x] Summary strip (ISUZU KPI style, `font-mono tabular-nums`): total alerts, Merah count, Kuning count, **without follow-up** count
+- [x] Alert list/table: Section, Department, Date, **zone badge** (Hijau/Kuning/Merah styles from `BURN_ZONE_STYLES`), index % , **streak** ("3 hari berturut-turut"), follow-up status pill (Belum / Draft / Terkirim), and a "Tindak Lanjut" action
+- [x] Clicking a row (or the action) opens the **alert detail page** (E10-04)
+- [x] Default sort: Merah first, longest streak first
+- [x] Empty state when no alerts: positive message ("Tidak ada alert pada periode ini") and a hint to widen the date range
+- [x] Loading uses deferred props with a pulsing skeleton (Inertia v3 guideline)
+- [x] Pagination (or "load more") when more than 25 alerts
+- [x] Responsive: table on desktop, stacked cards on mobile (client mockup is mobile-first)
+- [x] ISUZU design: `#cc0000` for primary actions, tabular numbers, segregated CapEx/OpEx not applicable here
 
 #### Technical Tasks
 
-- [ ] `EarlyWarningController@index` passes `alerts` (deferred), `filters`, `summary`, `departments`, `sections`
-- [ ] Create `resources/js/pages/early-warning/Index.vue`
-- [ ] Create `resources/js/components/early-warning/AlertFilterBar.vue`
-- [ ] Create `resources/js/components/early-warning/AlertSummaryStrip.vue`
-- [ ] Create `resources/js/components/early-warning/AlertList.vue` (table + card layout)
-- [ ] Create `resources/js/components/early-warning/AlertZoneBadge.vue` and `FollowUpStatusPill.vue` (shared with detail page)
-- [ ] Use `useBurnZone()` / `BURN_ZONE_STYLES` — do not hardcode zone colors
-- [ ] Browser test: admin sees alerts of two departments, a manager sees only their own, filtering by zone and status works, empty state renders
+- [x] `EarlyWarningController@index` passes `alerts` (deferred), `filters`, `summary`, `departments`, `sections`
+- [x] Create `resources/js/pages/early-warning/Index.vue`
+- [x] Create `resources/js/components/early-warning/AlertFilterBar.vue`
+- [x] Create `resources/js/components/early-warning/AlertSummaryStrip.vue`
+- [x] Create `resources/js/components/early-warning/AlertList.vue` (table + card layout)
+- [x] Create `resources/js/components/early-warning/AlertZoneBadge.vue` and `FollowUpStatusPill.vue` (shared with detail page)
+- [x] Use `useBurnZone()` / `BURN_ZONE_STYLES` — do not hardcode zone colors
+- [x] Browser test: admin sees alerts of two departments, a manager sees only their own, filtering by zone and status works, empty state renders
+
+#### Implementation Notes (delivered)
+
+- `EarlyWarningController@index` uses `EarlyWarningInboxRequest` (validation + defaults; an invalid value redirects to the plain inbox with an `error` flash) and `EarlyWarningService::inboxScope()` / `inboxFor()`. Props: `filters`, `departments`, `sections` (immediate) and `alerts`, `summary` (deferred, group `inbox`, one shared computation).
+- **Deviation:** `summary` is deferred too (the epic lists it as a normal prop) because it comes from the same computation as the list. The summary covers the department / section / date range; the zone and status filters narrow only the list.
+- **Additions not in the epic:** the date range must be shorter than 93 days (bounds the scan); an admin must choose a department before the Section select is enabled; a section outside the offered sections is dropped.
+- Zone and follow-up status use pill buttons (one click) instead of selects. Pages of 25 are sliced in PHP; an out-of-range page falls back to the last page.
+- Tests: `tests/Feature/EarlyWarningInboxTest.php` (19) and `tests/Browser/EarlyWarning/EarlyWarningInboxBrowserTest.php` (10). Details: [Early Warning Inbox Page](../dev-docs/features/early-warning-inbox.md), [ADR-042](../dev-docs/decisions/042-early-warning-inbox-filters-in-url-and-deferred-alerts.md), [user guide](../user-docs/guides/early-warning-inbox.md).
 
 ---
 
@@ -444,7 +452,7 @@ Ranking: each detected cause gets a score = the share of excess hours it explain
 | ---------- | -------------------------------------------------------- | ------- | -------------- |
 | Day 1–2    | Alert detection service + shared daily-index calculation | E10-01  | 🔴 Not Started |
 | Day 3      | Sidebar menu, routes, authorization                      | E10-02  | 🟢 Done        |
-| Day 3–5    | Inbox page                                               | E10-03  | 🔴 Not Started |
+| Day 3–5    | Inbox page                                               | E10-03  | 🟢 Done        |
 | Day 5–6    | Vitals service                                           | E10-05  | 🔴 Not Started |
 | Day 6–8    | 5W2H auto-generator + cause → PIC mapping                | E10-08  | 🔴 Not Started |
 | Day 8–10   | Alert detail page (shows the generated suggestion)       | E10-04  | 🔴 Not Started |

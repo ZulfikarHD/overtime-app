@@ -2,7 +2,7 @@
 
 ## What is Early Warning?
 
-**Early Warning** is the place where the system collects overtime alerts: days when a section used too much of its daily overtime budget (zone **Kuning** or **Merah**). It has its own item in the sidebar, so you can reach it in one click. The list of alerts and the follow-up form are being added step by step; this guide covers how to find the menu and who can use it.
+**Early Warning** is the place where the system collects overtime alerts: days when a section used too much of its daily overtime budget (zone **Kuning** or **Merah**). It has its own item in the sidebar, so you can reach it in one click. The list of alerts is described in the [Early Warning Inbox guide](./early-warning-inbox.md); the follow-up form is being added step by step. This guide covers how to find the menu and who can use it.
 
 ## Who Can Use It?
 
