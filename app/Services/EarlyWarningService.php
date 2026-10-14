@@ -15,6 +15,7 @@ use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -58,6 +59,11 @@ class EarlyWarningService
      * Number of working days (HKN) shown in the alert detail chart.
      */
     public const SERIES_WORKING_DAYS = 7;
+
+    /**
+     * How long the sidebar open-alert count is cached.
+     */
+    public const OPEN_ALERT_COUNT_TTL_SECONDS = 60;
 
     /**
      * Calendar days scanned backwards from the alert date to find the series working days.
@@ -197,6 +203,36 @@ class EarlyWarningService
             'green_max_pct' => (float) $threshold->green_max_pct,
             'yellow_max_pct' => (float) $threshold->yellow_max_pct,
         ];
+    }
+
+    /**
+     * Number of open Merah alerts of the current month (Asia/Jakarta) that have no sent follow-up yet.
+     *
+     * Feeds the sidebar badge, which is rendered on every page, so the result is cached briefly per
+     * visibility scope (one entry per department, one for admins). Users who cannot see alerts get 0
+     * without touching the database.
+     */
+    public function openRedAlertCount(User $user): int
+    {
+        if (! $this->canViewAlerts($user)) {
+            return 0;
+        }
+
+        $scopeKey = $user->isAdmin() ? 'all' : (string) ($user->department_id ?? 'none');
+
+        if ($scopeKey === 'none') {
+            return 0;
+        }
+
+        $today = Carbon::now('Asia/Jakarta')->startOfDay();
+
+        return (int) Cache::remember(
+            sprintf('early-warning:open-red:%s:%s', $scopeKey, $today->toDateString()),
+            self::OPEN_ALERT_COUNT_TTL_SECONDS,
+            fn (): int => $this->alertsFor($user, $today->copy()->startOfMonth(), $today, null, null, BurnZone::Red)
+                ->where('follow_up_status', '!=', 'sent')
+                ->count(),
+        );
     }
 
     /**

@@ -20,6 +20,7 @@ use App\Http\Controllers\Budgets\OvertimeBudgetController;
 use App\Http\Controllers\Budgets\OvertimeBudgetImportController;
 use App\Http\Controllers\DashboardBurnIndexController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\EarlyWarningController;
 use App\Http\Controllers\EmployeeSelfServiceController;
 use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\NotificationController;
@@ -56,6 +57,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard/charts/day-type', [DashboardController::class, 'dayTypeBreakdown'])->name('dashboard.charts.day-type');
     Route::get('dashboard/employee-summary', [DashboardController::class, 'employeeSummaryTable'])->name('dashboard.employee-summary');
     Route::get('my/dashboard', [EmployeeSelfServiceController::class, 'index'])->name('my.dashboard');
+
+    // Early Warning inbox & alert detail (E10-02 - Admin, Manager, Team Leader)
+    Route::middleware('role:admin,manager,team_leader')->prefix('early-warning')->name('early-warning.')->group(function () {
+        Route::get('/', [EarlyWarningController::class, 'index'])->name('index');
+        Route::get('/{section}/{date}', [EarlyWarningController::class, 'show'])->name('show');
+    });
 
     // Early Warning alert follow-up (5W2H) - save draft / send by email
     Route::middleware('role:admin,manager,team_leader')->group(function () {

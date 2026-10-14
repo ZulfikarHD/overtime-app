@@ -2,6 +2,7 @@
 import { Link, usePage } from '@inertiajs/vue3';
 import {
     BarChart3,
+    BellRing,
     ClipboardList,
     Database,
     LayoutGrid,
@@ -28,6 +29,7 @@ import { useTrans } from '@/composables/useTrans';
 import { dashboard } from '@/routes';
 import { dashboard as myDashboard } from '@/routes/my';
 import { administration, masterData } from '@/routes/admin';
+import { index as earlyWarningIndex } from '@/routes/early-warning';
 import { index as reportsEmployees } from '@/routes/reports/employees';
 import { index as planningOtIndex } from '@/routes/overtime/planning';
 import { index as splIndex } from '@/routes/overtime/spl';
@@ -83,6 +85,16 @@ const mainNavItems = computed<NavItem[]>(() => {
             icon: Users,
             testId: 'nav-employee-reports',
             group: __('Operations & Overtime'),
+        });
+
+        items.push({
+            title: __('Early Warning'),
+            href: earlyWarningIndex(),
+            icon: BellRing,
+            group: __('Operations & Overtime'),
+            testId: 'nav-early-warning',
+            badge: page.props.early_warning_open_count ?? 0,
+            matchChildren: true,
         });
     }
 

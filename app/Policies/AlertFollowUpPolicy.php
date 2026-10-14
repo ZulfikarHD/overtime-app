@@ -3,6 +3,7 @@
 namespace App\Policies;
 
 use App\Models\AlertFollowUp;
+use App\Models\Section;
 use App\Models\User;
 
 class AlertFollowUpPolicy
@@ -20,16 +21,15 @@ class AlertFollowUpPolicy
      */
     public function view(User $user, AlertFollowUp $alertFollowUp): bool
     {
-        if (! $this->viewAny($user)) {
-            return false;
-        }
+        return $this->canAccessDepartment($user, $alertFollowUp->department_id);
+    }
 
-        if ($user->isAdmin()) {
-            return true;
-        }
-
-        return $user->department_id !== null
-            && (int) $user->department_id === (int) $alertFollowUp->department_id;
+    /**
+     * Admins may open the alerts of any section; others only those of their own department.
+     */
+    public function viewAlertSection(User $user, Section $section): bool
+    {
+        return $this->canAccessDepartment($user, $section->department_id);
     }
 
     public function create(User $user): bool
@@ -43,5 +43,23 @@ class AlertFollowUpPolicy
     public function update(User $user, AlertFollowUp $alertFollowUp): bool
     {
         return ! $alertFollowUp->isSent() && $this->view($user, $alertFollowUp);
+    }
+
+    /**
+     * Department-scope rule shared by every ability: admin everywhere, others only in their own department.
+     */
+    protected function canAccessDepartment(User $user, ?int $departmentId): bool
+    {
+        if (! $this->viewAny($user)) {
+            return false;
+        }
+
+        if ($user->isAdmin()) {
+            return true;
+        }
+
+        return $user->department_id !== null
+            && $departmentId !== null
+            && (int) $user->department_id === (int) $departmentId;
     }
 }

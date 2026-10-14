@@ -14,6 +14,8 @@ export type NavItem = {
     isActive?: boolean;
     roles?: UserRole[];
     badge?: string | number | null;
+    /** Keep the item highlighted on any page below its URL (e.g. `/early-warning/{section}/{date}`). */
+    matchChildren?: boolean;
     testId?: string;
     group?: string;
 };

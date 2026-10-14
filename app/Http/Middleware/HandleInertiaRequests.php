@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use App\Models\OvertimeSubmission;
 use App\Models\User;
+use App\Services\EarlyWarningService;
 use App\Services\PolicyThresholdService;
 use App\Services\ShiftScheduleService;
 use App\Support\Features;
@@ -63,6 +64,9 @@ class HandleInertiaRequests extends Middleware
             'unread_notifications_count' => $user ? $user->unreadNotifications()->count() : 0,
             'pending_approvals_count' => Features::overtimeApprovalsEnabled()
                 ? $this->pendingApprovalsCount($user)
+                : 0,
+            'early_warning_open_count' => fn (): int => $user
+                ? app(EarlyWarningService::class)->openRedAlertCount($user)
                 : 0,
             'features' => [
                 'financial_governance_enabled' => Features::financialGovernanceEnabled(),
