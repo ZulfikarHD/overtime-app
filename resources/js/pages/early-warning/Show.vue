@@ -3,17 +3,19 @@ import { Head, Link } from '@inertiajs/vue3';
 import { ArrowLeft, ShieldCheck } from '@lucide/vue';
 import { computed } from 'vue';
 import AlertBurnBar from '@/components/early-warning/AlertBurnBar.vue';
-import AlertFollowUpSummary from '@/components/early-warning/AlertFollowUpSummary.vue';
 import AlertHeaderCard from '@/components/early-warning/AlertHeaderCard.vue';
 import AlertIndexChart from '@/components/early-warning/AlertIndexChart.vue';
 import AlertVitalsGrid from '@/components/early-warning/AlertVitalsGrid.vue';
+import FollowUpForm from '@/components/early-warning/FollowUpForm.vue';
 import { useTrans } from '@/composables/useTrans';
 import type { ZoneBoundaries } from '@/lib/burnZone';
 import type {
     AlertFollowUpItem,
     AlertVitals,
     EarlyWarningAlert,
+    FollowUpFields,
     SeriesPoint,
+    WhoDepartmentOption,
 } from '@/lib/earlyWarning';
 import { dashboard } from '@/routes';
 import { index as earlyWarningIndex } from '@/routes/early-warning';
@@ -32,6 +34,10 @@ const props = defineProps<{
     limits: ZoneBoundaries;
     vitals: AlertVitals;
     followUps: AlertFollowUpItem[];
+    /** What the system filled into the 5W2H form; null when the date is not an alert. */
+    suggestion: FollowUpFields | null;
+    /** Active departments offered in the "Who" select. */
+    departments: WhoDepartmentOption[];
     /** Inbox URL including the filters the user came from. */
     backUrl: string;
 }>();
@@ -100,6 +106,13 @@ const currentDay = computed(
 
         <AlertIndexChart :series="series" :limits="limits" :alert-date="date" />
 
-        <AlertFollowUpSummary :follow-ups="followUps" />
+        <FollowUpForm
+            :follow-ups="followUps"
+            :suggestion="suggestion"
+            :departments="departments"
+            :section-id="section.id"
+            :alert-date="date"
+            :has-alert="alert !== null"
+        />
     </div>
 </template>

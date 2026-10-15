@@ -62,12 +62,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::middleware('role:admin,manager,team_leader')->prefix('early-warning')->name('early-warning.')->group(function () {
         Route::get('/', [EarlyWarningController::class, 'index'])->name('index');
         Route::get('/{section}/{date}', [EarlyWarningController::class, 'show'])->name('show');
-    });
 
-    // Early Warning alert follow-up (5W2H) - save draft / send by email
-    Route::middleware('role:admin,manager,team_leader')->group(function () {
-        Route::post('dashboard/alert-follow-ups', [AlertFollowUpController::class, 'store'])->name('dashboard.alert-follow-ups.store');
-        Route::put('dashboard/alert-follow-ups/{alertFollowUp}', [AlertFollowUpController::class, 'update'])->name('dashboard.alert-follow-ups.update');
+        // 5W2H follow-up of an alert (E10-06) - save draft / send by email
+        Route::post('/follow-ups', [AlertFollowUpController::class, 'store'])->name('follow-ups.store');
+        Route::put('/follow-ups/{alertFollowUp}', [AlertFollowUpController::class, 'update'])->name('follow-ups.update');
     });
 
     // Dashboard Burn Index & Budget Analytics (E05 - Admin, Manager, Team Leader)

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\EarlyWarningInboxRequest;
 use App\Models\AlertFollowUp;
+use App\Models\Department;
 use App\Models\Section;
 use App\Services\AlertFollowUpService;
 use App\Services\EarlyWarningService;
@@ -55,7 +56,8 @@ class EarlyWarningController extends Controller
 
     /**
      * Alert detail of one section on one date: the alert (null when the date is not an alert),
-     * the daily index series, the zone limits and the follow-ups already linked to the alert.
+     * the daily index series, the zone limits, the follow-ups already linked to the alert and the
+     * system suggestion the 5W2H form opens with (null when there is no alert to follow up).
      *
      * An invalid date goes back to the inbox with an error; another department's section is a 403.
      */
@@ -94,6 +96,8 @@ class EarlyWarningController extends Controller
                 ->map(fn (AlertFollowUp $followUp): array => $this->followUpService->toPayload($followUp))
                 ->values()
                 ->all(),
+            'suggestion' => $detail['alert'] ? $this->followUpService->suggestionFor($detail['alert']) : null,
+            'departments' => Department::query()->where('is_active', true)->orderBy('name')->get(['id', 'name']),
             'backUrl' => $this->inboxUrl($request),
         ]);
     }

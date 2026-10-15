@@ -62,8 +62,24 @@ class AlertFollowUpMail extends Mailable implements ShouldQueue
                     ?? __('Seluruh Pabrik'),
                 'costLabel' => 'Rp '.number_format($this->followUp->how_much_cost_idr, 0, ',', '.'),
                 'hoursLabel' => number_format((float) $this->followUp->how_much_hours, 1, ',', '.'),
-                'dashboardUrl' => route('dashboard'),
+                'alertDateLabel' => $this->followUp->alert_date?->format('d/m/Y'),
+                'detailUrl' => $this->detailUrl(),
             ],
         );
+    }
+
+    /**
+     * Link to the alert detail page; follow-ups that are not linked to an alert open the inbox.
+     */
+    protected function detailUrl(): string
+    {
+        if ($this->followUp->section_id === null || $this->followUp->alert_date === null) {
+            return route('early-warning.index');
+        }
+
+        return route('early-warning.show', [
+            'section' => $this->followUp->section_id,
+            'date' => $this->followUp->alert_date->toDateString(),
+        ]);
     }
 }

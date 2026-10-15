@@ -85,9 +85,33 @@ export interface AlertVitals {
     manpower_period_label: string | null;
 }
 
-/** A saved follow-up of the alert as the detail page shows it (read-only until E10-06). */
+/**
+ * The 5W2H text fields of a follow-up, keyed like the form. The same shape is the system suggestion
+ * (E10-06 baseline, E10-08 generator) and the `generated_payload` snapshot stored with a follow-up.
+ */
+export interface FollowUpFields {
+    what_text: string;
+    why_text: string;
+    when_date: string;
+    where_location: string;
+    who_department_id: number | null;
+    how_text: string;
+    how_much_cost_idr: number;
+    how_much_hours: number;
+}
+
+/** Department offered in the "Who" select. */
+export interface WhoDepartmentOption {
+    id: number;
+    name: string;
+}
+
+/** A saved follow-up of the alert as the detail page shows it. */
 export interface AlertFollowUpItem {
     id: number;
+    is_editable: boolean;
+    /** What the system generated when the follow-up was created; null for legacy rows. */
+    generated_payload: Partial<FollowUpFields> | null;
     zone: BurnZone;
     index_pct: number;
     streak_days: number;

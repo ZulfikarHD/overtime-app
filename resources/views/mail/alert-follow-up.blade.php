@@ -1,8 +1,11 @@
 <x-mail::message>
 # {{ __('Tindak Lanjut Alert') }} — {{ $followUp->zone->label() }}
 
-**{{ $scopeLabel }}** · {{ sprintf('%02d/%d', $followUp->fiscal_month, $followUp->fiscal_year) }}
+**{{ $scopeLabel }}** · {{ $alertDateLabel ?? sprintf('%02d/%d', $followUp->fiscal_month, $followUp->fiscal_year) }}
 · {{ __('Indeks') }}: **{{ number_format((float) $followUp->index_pct, 1, ',', '.') }}%**
+@if ($followUp->streak_days > 0)
+· **{{ $followUp->streak_days }} {{ __('consecutive days') }}**
+@endif
 
 <x-mail::table>
 | 5W2H | {{ __('Detail') }} |
@@ -21,8 +24,8 @@
 {{ __('pada') }} {{ $followUp->sent_at->timezone('Asia/Jakarta')->format('d/m/Y H:i') }} WIB.
 @endif
 
-<x-mail::button :url="$dashboardUrl">
-{{ __('Buka Dashboard') }}
+<x-mail::button :url="$detailUrl">
+{{ __('Open Alert Detail') }}
 </x-mail::button>
 
 {{ config('app.name') }}

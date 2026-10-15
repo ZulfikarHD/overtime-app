@@ -3,12 +3,12 @@
 namespace App\Services;
 
 use App\Enums\AlertFollowUpStatus;
+use App\Enums\BurnZone;
 use App\Enums\UserRole;
 use App\Mail\AlertFollowUpMail;
 use App\Models\AlertFollowUp;
 use App\Models\Section;
 use App\Models\User;
-use App\Services\Analytics\DashboardKpiService;
 use Carbon\Carbon;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Collection;
@@ -19,39 +19,8 @@ use Illuminate\Validation\ValidationException;
 class AlertFollowUpService
 {
     public function __construct(
-        public DashboardKpiService $kpiService,
+        public EarlyWarningService $earlyWarningService,
     ) {}
-
-    /**
-     * Follow-ups of the exact dashboard scope and fiscal month, newest first.
-     *
-     * @return Collection<int, AlertFollowUp>
-     */
-    public function listForScope(User $user, ?string $date, ?int $departmentId, ?int $sectionId): Collection
-    {
-        [$scopedDepartmentId, $scopedSectionId] = $this->kpiService->resolveScoping(
-            $user,
-            $departmentId ?: null,
-            $sectionId ?: null,
-        );
-
-        $period = $this->resolvePeriod($date);
-
-        $query = AlertFollowUp::query()
-            ->with(['section:id,code,name', 'whoDepartment:id,code,name', 'creator:id,name', 'sender:id,name'])
-            ->where('fiscal_year', $period->year)
-            ->where('fiscal_month', $period->month);
-
-        $scopedDepartmentId
-            ? $query->where('department_id', $scopedDepartmentId)
-            : $query->whereNull('department_id');
-
-        $scopedSectionId
-            ? $query->where('section_id', $scopedSectionId)
-            : $query->whereNull('section_id');
-
-        return $query->latest('id')->limit(10)->get();
-    }
 
     /**
      * Follow-ups of one alert (section + date), newest first.
@@ -71,12 +40,15 @@ class AlertFollowUpService
     }
 
     /**
-     * Create or update a draft; optionally send it by email right away.
+     * Create or update the draft of an alert; optionally send it by email right away.
      *
-     * The alert snapshot (zone / index) is always recomputed server-side from
-     * the Early Warning chart so it cannot be tampered with by the client.
+     * The alert (zone, index, streak) is always recomputed server-side from the daily index, so
+     * client values are never trusted. A follow-up can only exist for a date that is an alert,
+     * a section has at most one draft per alert date, and nothing is saved when sending fails.
      *
-     * @param  array<string, mixed>  $data
+     * @param  array<string, mixed>  $data  What / Why / When / Where / Who / How / How much, plus `section_id` and `alert_date` on create
+     *
+     * @throws ValidationException
      */
     public function save(User $user, array $data, ?AlertFollowUp $followUp = null, bool $send = false): AlertFollowUp
     {
@@ -86,18 +58,46 @@ class AlertFollowUpService
             ]);
         }
 
+        [$section, $alertDate] = $this->resolveAlertTarget($followUp, $data);
+
+        $alert = $this->earlyWarningService->alertDetail($user, $section, $alertDate)['alert'];
+
+        if ($alert === null) {
+            throw ValidationException::withMessages([
+                'alert_date' => __('A follow-up can only be saved for a date that is an alert (Kuning or Merah).'),
+            ]);
+        }
+
         $recipients = collect();
 
-        $followUp = DB::transaction(function () use ($user, $data, $followUp, $send, &$recipients): AlertFollowUp {
-            $followUp ??= new AlertFollowUp(['created_by' => $user->id]);
+        $followUp = DB::transaction(function () use ($user, $data, $followUp, $send, $section, $alertDate, $alert, &$recipients): AlertFollowUp {
+            if ($followUp !== null) {
+                $followUp = AlertFollowUp::query()->lockForUpdate()->findOrFail($followUp->id);
 
-            if (! $followUp->exists) {
-                $followUp->fill($this->resolveAlertSnapshot($user, $data));
+                if ($followUp->isSent()) {
+                    throw ValidationException::withMessages([
+                        'status' => __('A sent follow-up can no longer be edited.'),
+                    ]);
+                }
             } else {
-                $followUp->fill($this->refreshAlertValues($followUp, $user));
+                $this->assertNoOpenDraft($section, $alertDate);
+
+                $followUp = new AlertFollowUp([
+                    'created_by' => $user->id,
+                    'department_id' => $section->department_id,
+                    'section_id' => $section->id,
+                    'alert_date' => $alertDate->toDateString(),
+                    'fiscal_year' => $alertDate->year,
+                    'fiscal_month' => $alertDate->month,
+                    'generated_payload' => $this->suggestionFor($alert),
+                    'generated_at' => Carbon::now('Asia/Jakarta'),
+                ]);
             }
 
             $followUp->fill([
+                'zone' => BurnZone::from($alert['zone']),
+                'index_pct' => $alert['index_pct'],
+                'streak_days' => $alert['streak_days'],
                 'what_text' => $data['what_text'] ?? null,
                 'why_text' => $data['why_text'] ?? null,
                 'when_date' => $data['when_date'] ?? null,
@@ -137,6 +137,50 @@ class AlertFollowUpService
     }
 
     /**
+     * The system's starting 5W2H for an alert, keyed like the form fields.
+     *
+     * Rule-based and deterministic: every number comes from the alert itself. Fields the data cannot
+     * justify yet (Why, How, How much) stay empty instead of being guessed. This is the baseline the
+     * form is prefilled with and that is stored as `generated_payload`; E10-08 replaces it with the
+     * full cause-based generator without changing this shape.
+     *
+     * @param  array<string, mixed>  $alert  An alert as returned by EarlyWarningService (index, zone, streak, limits)
+     * @return array{what_text: string, why_text: string, when_date: string, where_location: string, who_department_id: int, how_text: string, how_much_cost_idr: int, how_much_hours: float}
+     */
+    public function suggestionFor(array $alert): array
+    {
+        $zone = BurnZone::from($alert['zone']);
+        $limit = $zone === BurnZone::Red ? (float) $alert['yellow_max_pct'] : (float) $alert['green_max_pct'];
+        $over = max(0.0, (float) $alert['index_pct'] - $limit);
+        $streak = (int) $alert['streak_days'];
+
+        $what = __('Daily index :section :index% (:zone), :over% above the :limit% limit', [
+            'section' => $alert['section_name'],
+            'index' => $this->formatNumber((float) $alert['index_pct']),
+            'zone' => __($zone->label()),
+            'over' => $this->formatNumber($over),
+            'limit' => $this->formatNumber($limit),
+        ]);
+
+        if ($streak > 0) {
+            $what .= ', '.__(':days consecutive days', ['days' => $streak]);
+        }
+
+        return [
+            'what_text' => $what.'.',
+            'why_text' => '',
+            'when_date' => (string) $alert['alert_date'],
+            'where_location' => filled($alert['department_name'] ?? null)
+                ? $alert['department_name'].' — '.$alert['section_name']
+                : (string) $alert['section_name'],
+            'who_department_id' => (int) $alert['department_id'],
+            'how_text' => '',
+            'how_much_cost_idr' => 0,
+            'how_much_hours' => 0.0,
+        ];
+    }
+
+    /**
      * All active admin / manager / team leader users of the "Who" department.
      *
      * @return Collection<int, User>
@@ -157,7 +201,7 @@ class AlertFollowUpService
     }
 
     /**
-     * Shape a follow-up for the dashboard panel.
+     * Shape a follow-up for the alert detail form.
      *
      * @return array<string, mixed>
      */
@@ -185,6 +229,7 @@ class AlertFollowUpService
             'how_text' => $followUp->how_text,
             'how_much_cost_idr' => $followUp->how_much_cost_idr,
             'how_much_hours' => (float) $followUp->how_much_hours,
+            'generated_payload' => $followUp->generated_payload,
             'status' => $followUp->status->value,
             'status_label' => $followUp->status->label(),
             'is_editable' => ! $followUp->isSent(),
@@ -196,54 +241,59 @@ class AlertFollowUpService
     }
 
     /**
+     * The alert a follow-up belongs to: its own section and date when updating, the request's when creating.
+     *
      * @param  array<string, mixed>  $data
-     * @return array<string, mixed>
+     * @return array{0: Section, 1: Carbon}
+     *
+     * @throws ValidationException
      */
-    protected function resolveAlertSnapshot(User $user, array $data): array
+    protected function resolveAlertTarget(?AlertFollowUp $followUp, array $data): array
     {
-        $trend = $this->kpiService->getDailyIndexTrend(
-            $user,
-            $data['date'] ?? null,
-            ! empty($data['department_id']) ? (int) $data['department_id'] : null,
-            ! empty($data['section_id']) ? (int) $data['section_id'] : null,
-        );
+        if ($followUp !== null) {
+            if ($followUp->section_id === null || $followUp->alert_date === null) {
+                throw ValidationException::withMessages([
+                    'alert_date' => __('This follow-up is not linked to an alert and can no longer be edited.'),
+                ]);
+            }
+
+            return [
+                Section::query()->findOrFail($followUp->section_id),
+                Carbon::createFromFormat('Y-m-d', $followUp->alert_date->toDateString(), 'Asia/Jakarta')->startOfDay(),
+            ];
+        }
 
         return [
-            'department_id' => $trend['scope']['department_id'],
-            'section_id' => $trend['scope']['section_id'],
-            'fiscal_year' => $trend['fiscal_year'],
-            'fiscal_month' => $trend['fiscal_month'],
-            'zone' => $trend['average_zone'],
-            'index_pct' => $trend['average_index'],
+            Section::query()->findOrFail((int) $data['section_id']),
+            Carbon::createFromFormat('Y-m-d', (string) $data['alert_date'], 'Asia/Jakarta')->startOfDay(),
         ];
     }
 
     /**
-     * Refresh zone / index of an existing draft with the latest chart values.
+     * An alert holds at most one draft at a time; sent follow-ups pile up as history.
      *
-     * @return array<string, mixed>
+     * @throws ValidationException
      */
-    protected function refreshAlertValues(AlertFollowUp $followUp, User $user): array
+    protected function assertNoOpenDraft(Section $section, CarbonInterface $alertDate): void
     {
-        $trend = $this->kpiService->getDailyIndexTrend(
-            $user,
-            Carbon::create($followUp->fiscal_year, $followUp->fiscal_month, 1, 0, 0, 0, 'Asia/Jakarta')->toDateString(),
-            $followUp->department_id,
-            $followUp->section_id,
-        );
+        $hasDraft = AlertFollowUp::query()
+            ->where('section_id', $section->id)
+            ->whereDate('alert_date', $alertDate->toDateString())
+            ->where('status', AlertFollowUpStatus::Draft->value)
+            ->lockForUpdate()
+            ->exists();
 
-        return [
-            'zone' => $trend['average_zone'],
-            'index_pct' => $trend['average_index'],
-        ];
+        if ($hasDraft) {
+            throw ValidationException::withMessages([
+                'status' => __('This alert already has a draft. Edit the draft instead of creating a new one.'),
+            ]);
+        }
     }
 
-    protected function resolvePeriod(?string $date): Carbon
+    protected function formatNumber(float $value): string
     {
-        try {
-            return $date ? Carbon::parse($date, 'Asia/Jakarta') : Carbon::now('Asia/Jakarta');
-        } catch (\Throwable) {
-            return Carbon::now('Asia/Jakarta');
-        }
+        return app()->getLocale() === 'en'
+            ? number_format($value, 1, '.', ',')
+            : number_format($value, 1, ',', '.');
     }
 }

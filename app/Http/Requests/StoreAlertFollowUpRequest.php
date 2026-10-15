@@ -19,7 +19,8 @@ class StoreAlertFollowUpRequest extends FormRequest
     /**
      * Get the validation rules that apply to the request.
      *
-     * Draft saves only require "what"; sending by email requires the full 5W2H.
+     * The alert is identified by `section_id` + `alert_date`; zone, index and streak are never accepted
+     * from the client. Draft saves only require "what"; sending by email requires the full 5W2H.
      *
      * @return array<string, array<int, mixed>>
      */
@@ -28,9 +29,8 @@ class StoreAlertFollowUpRequest extends FormRequest
         $requiredWhenSending = Rule::requiredIf(fn (): bool => $this->boolean('send'));
 
         return [
-            'department_id' => ['nullable', 'integer', 'exists:departments,id'],
-            'section_id' => ['nullable', 'integer', 'exists:sections,id'],
-            'date' => ['nullable', 'date_format:Y-m-d'],
+            'section_id' => ['required', 'integer', 'exists:sections,id'],
+            'alert_date' => ['required', 'date_format:Y-m-d'],
             'what_text' => ['required', 'string', 'max:2000'],
             'why_text' => [$requiredWhenSending, 'nullable', 'string', 'max:2000'],
             'when_date' => [$requiredWhenSending, 'nullable', 'date'],

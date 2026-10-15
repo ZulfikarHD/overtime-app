@@ -30,6 +30,8 @@ use Illuminate\Support\Carbon;
  * @property string|null $how_text
  * @property int $how_much_cost_idr
  * @property string $how_much_hours
+ * @property array<string, mixed>|null $generated_payload
+ * @property Carbon|null $generated_at
  * @property AlertFollowUpStatus $status
  * @property int $created_by
  * @property int|null $sent_by
@@ -67,6 +69,8 @@ class AlertFollowUp extends Model
         'how_text',
         'how_much_cost_idr',
         'how_much_hours',
+        'generated_payload',
+        'generated_at',
         'status',
         'created_by',
         'sent_by',
@@ -89,6 +93,8 @@ class AlertFollowUp extends Model
             'who_department_id' => 'integer',
             'how_much_cost_idr' => 'integer',
             'how_much_hours' => 'decimal:2',
+            'generated_payload' => 'array',
+            'generated_at' => 'datetime',
             'status' => AlertFollowUpStatus::class,
             'sent_at' => 'datetime',
         ];

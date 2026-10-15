@@ -83,7 +83,7 @@ test('opening an alert from the inbox shows the header, burn bar, vitals, chart 
         ->assertSeeIn('[data-test="alert-vital-volume-value"]', 'N/A')
         ->assertSeeIn('[data-test="alert-vital-manpower-value"]', 'N/A')
         ->assertPresent('[data-test="alert-index-chart"] canvas')
-        ->assertSeeIn('[data-test="alert-follow-up-summary"]', 'Not followed up yet')
+        ->assertSeeIn('[data-test="followup-panel"]', 'Not followed up yet')
         ->assertNotPresent('[data-test="alert-not-an-alert"]')
         ->assertNoJavaScriptErrors();
 });
@@ -144,14 +144,14 @@ test('a sent follow-up shows who sent it and the history can be switched between
 
     detailBrowserLogin('manager.history@factory.com')
         ->navigate("/early-warning/{$this->merahSection->id}/{$today}")
-        ->assertSeeIn('[data-test="alert-follow-up-what"]', 'Second draft follow-up')
-        ->assertNotPresent('[data-test="alert-follow-up-sent-info"]')
-        ->click("[data-test=\"alert-follow-up-chip-{$first->id}\"]")
-        ->assertSeeIn('[data-test="alert-follow-up-what"]', 'First sent follow-up')
-        ->assertSeeIn('[data-test="alert-follow-up-sent-info"]', '(read-only)')
+        ->assertValue('[data-test="followup-what"]', 'Second draft follow-up')
+        ->assertNotPresent('[data-test="followup-sent-note"]')
+        ->click("[data-test=\"followup-history-item-{$first->id}\"]")
+        ->assertValue('[data-test="followup-what"]', 'First sent follow-up')
+        ->assertSeeIn('[data-test="followup-sent-note"]', '(read-only)')
         ->assertAttribute('[data-test="follow-up-status-pill"]', 'data-status', 'sent')
-        ->click("[data-test=\"alert-follow-up-chip-{$second->id}\"]")
-        ->assertSeeIn('[data-test="alert-follow-up-what"]', 'Second draft follow-up')
+        ->click("[data-test=\"followup-history-item-{$second->id}\"]")
+        ->assertValue('[data-test="followup-what"]', 'Second draft follow-up')
         ->assertNoJavaScriptErrors();
 });
 
