@@ -4,6 +4,7 @@ use App\Enums\AlertCause;
 use App\Models\AlertCausePicMapping;
 use App\Models\Department;
 use App\Models\Employee;
+use App\Models\MlForecastInput;
 use App\Models\MlTrainingData;
 use App\Models\OvertimeBudget;
 use App\Models\OvertimeItem;
@@ -133,6 +134,17 @@ test('manpower shortage is detected from volume up and manpower flat, with headc
         ->and($suggestion['how_much_hours'])->toBe(83.0)
         ->and($suggestion['how_much_cost_idr'])->toBe(4150000)
         ->and($suggestion['cost_note'])->toBeNull();
+});
+
+test('manpower shortage evidence says when the figures are forecast data and not actuals', function () {
+    MlForecastInput::factory()->create(['year' => 2026, 'month' => 9, 'production_volume' => 2000, 'man_power' => 800]);
+    MlForecastInput::factory()->create(['year' => 2026, 'month' => 10, 'production_volume' => 2400, 'man_power' => 800]);
+    ewgenStreak($this->section, 24.0);
+
+    $suggestion = ewgenGenerate();
+
+    expect($suggestion['primary_cause'])->toBe('MANPOWER_SHORTAGE')
+        ->and($suggestion['why'])->toBe('Production volume +20.0% (vs September 2026, forecast data) while manpower is 0.0% (vs September 2026 (plant-wide), forecast data).');
 });
 
 test('manpower shortage is skipped when volume or manpower is unknown, flat volume, or manpower grew', function (callable $seed) {

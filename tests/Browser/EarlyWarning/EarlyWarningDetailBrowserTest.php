@@ -3,6 +3,7 @@
 use App\Models\AlertFollowUp;
 use App\Models\Department;
 use App\Models\Employee;
+use App\Models\MlForecastInput;
 use App\Models\MlTrainingData;
 use App\Models\OvertimeBudget;
 use App\Models\OvertimeItem;
@@ -106,6 +107,33 @@ test('the vitals show the real monthly change with its period, and a decrease an
         ->assertSeeIn('[data-test="alert-vital-manpower-value"]', 'N/A')
         ->assertNotPresent('[data-test="alert-vital-manpower-period"]')
         ->assertPresent('[data-test="alert-vital-manpower-hint"]')
+        ->assertNoJavaScriptErrors();
+});
+
+test('the vitals badge the source: actual in green, forecast fallback in amber with its explanation', function () {
+    $today = detailBrowserSeedToday($this->merahSection, 10.0);
+    $current = Carbon::now('Asia/Jakarta')->startOfMonth();
+    $previous = $current->copy()->subMonthNoOverflow();
+    User::factory()->manager($this->department->id)->create(['email' => 'manager.source@factory.com', 'password' => 'password']);
+
+    MlForecastInput::factory()->create(['year' => $previous->year, 'month' => $previous->month, 'production_volume' => 2000, 'man_power' => 800]);
+    MlForecastInput::factory()->create(['year' => $current->year, 'month' => $current->month, 'production_volume' => 2400, 'man_power' => 840]);
+
+    detailBrowserLogin('manager.source@factory.com')
+        ->navigate("/early-warning/{$this->merahSection->id}/{$today}")
+        ->assertSeeIn('[data-test="alert-vital-volume-value"]', '+20%')
+        ->assertAttribute('[data-test="alert-vital-volume"]', 'data-source', 'forecast')
+        ->assertSeeIn('[data-test="alert-vital-volume-source"]', 'Forecast')
+        ->assertAttribute('[data-test="alert-vital-manpower-source"]', 'data-source', 'forecast')
+        ->assertNoJavaScriptErrors();
+
+    MlTrainingData::factory()->create(['year' => $previous->year, 'month' => $previous->month, 'production_volume' => 2000, 'man_power' => 800]);
+    MlTrainingData::factory()->create(['year' => $current->year, 'month' => $current->month, 'production_volume' => 2400, 'man_power' => 840]);
+
+    detailBrowserLogin('manager.source@factory.com')
+        ->navigate("/early-warning/{$this->merahSection->id}/{$today}")
+        ->assertAttribute('[data-test="alert-vital-volume"]', 'data-source', 'actual')
+        ->assertSeeIn('[data-test="alert-vital-volume-source"]', 'Actual')
         ->assertNoJavaScriptErrors();
 });
 
