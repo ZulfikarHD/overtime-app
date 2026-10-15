@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import type { ChartDataset, ChartOptions } from 'chart.js';
-import { Activity, AlertCircle } from '@lucide/vue';
+import { Link, usePage } from '@inertiajs/vue3';
+import { Activity, AlertCircle, BellRing } from '@lucide/vue';
 import { computed } from 'vue';
 import BaseLineChart from '@/components/charts/BaseLineChart.vue';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import {
     Card,
     CardContent,
@@ -15,6 +17,8 @@ import { useTrans } from '@/composables/useTrans';
 import { useZoneBandsPlugin } from '@/composables/useZoneBandsPlugin';
 import { BURN_ZONE_STYLES, describeZoneRange } from '@/lib/burnZone';
 import type { BurnZone } from '@/lib/burnZone';
+import { index as earlyWarningIndex } from '@/routes/early-warning';
+import type { User } from '@/types';
 
 export interface DailyIndexTrendData {
     labels: string[];
@@ -49,6 +53,46 @@ const props = withDefaults(defineProps<Props>(), {
 });
 
 const { __ } = useTrans();
+const page = usePage();
+
+/** Same roles that see the "Early Warning" sidebar item (operators get 403). */
+const canOpenEarlyWarning = computed(() => {
+    const user = page.props.auth?.user as User | null | undefined;
+
+    return (
+        user?.role === 'admin' ||
+        user?.role === 'manager' ||
+        user?.role === 'team_leader'
+    );
+});
+
+/**
+ * Inbox link carrying the chart's scope: its department / section and the
+ * month up to the chart's cut-off day. Without a cut-off (future month) the
+ * inbox default range applies. The server re-scopes non-admin users.
+ */
+const earlyWarningUrl = computed(() => {
+    const query: Record<string, string | number> = {};
+    const scope = props.data?.scope;
+
+    if (scope?.department_id) {
+        query.department_id = scope.department_id;
+    }
+
+    if (scope?.section_id) {
+        query.section_id = scope.section_id;
+    }
+
+    if (props.data && props.data.cutoff_day > 0) {
+        const month = String(props.data.fiscal_month).padStart(2, '0');
+        const cutoff = String(props.data.cutoff_day).padStart(2, '0');
+
+        query.date_from = `${props.data.fiscal_year}-${month}-01`;
+        query.date_to = `${props.data.fiscal_year}-${month}-${cutoff}`;
+    }
+
+    return earlyWarningIndex.url({ query });
+});
 
 const planPct = computed(() => props.data?.threshold_pct || 100);
 
@@ -244,7 +288,7 @@ const chartOptions = computed<ChartOptions<'line'>>(() => {
                     </CardDescription>
                 </div>
 
-                <div class="flex items-center gap-2">
+                <div class="flex flex-wrap items-center justify-end gap-2">
                     <Badge
                         variant="outline"
                         class="font-mono text-[11px] font-semibold tabular-nums"
@@ -254,6 +298,21 @@ const chartOptions = computed<ChartOptions<'line'>>(() => {
                         {{ __('Rata-rata') }}: {{ data?.average_index ?? 0 }}% ·
                         {{ __(averageStyle.label) }}
                     </Badge>
+
+                    <Button
+                        v-if="canOpenEarlyWarning"
+                        as-child
+                        size="sm"
+                        class="h-7 gap-1 bg-[#cc0000] px-2.5 text-xs text-white hover:bg-[#b30000]"
+                    >
+                        <Link
+                            :href="earlyWarningUrl"
+                            data-test="early-warning-open-link"
+                        >
+                            <BellRing class="size-3.5" />
+                            {{ __('Buka Early Warning') }}
+                        </Link>
+                    </Button>
                 </div>
             </div>
         </CardHeader>
