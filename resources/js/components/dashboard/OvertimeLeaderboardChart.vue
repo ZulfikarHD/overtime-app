@@ -21,7 +21,7 @@ export interface LeaderboardItem {
     total_hours: number;
     soft_limit_hours: number;
     percentage_of_limit: number;
-    zone: 'safe' | 'warning' | 'danger';
+    zone: 'green' | 'yellow' | 'red';
     zone_color: string;
 }
 
@@ -61,7 +61,7 @@ const { __ } = useTrans();
 const softLimit = computed(() => props.data?.soft_limit_hours ?? 80);
 
 const hasOverLimitEmployees = computed(() => {
-    return props.data?.items?.some((i) => i.zone !== 'safe') ?? false;
+    return props.data?.items?.some((i) => i.zone !== 'green') ?? false;
 });
 
 const isEmpty = computed(() => !props.data?.items?.length);

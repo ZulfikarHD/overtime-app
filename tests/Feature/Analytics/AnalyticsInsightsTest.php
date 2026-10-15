@@ -96,8 +96,8 @@ test('budget overrun triggers risk indicator and action item', function () {
 
     PolicyThreshold::factory()->create([
         'department_id' => $dept->id,
-        'burn_warning_pct' => 100.0,
-        'burn_danger_pct' => 115.0,
+        'green_max_pct' => 70.0,
+        'yellow_max_pct' => 90.0,
     ]);
 
     $now = Carbon::now('Asia/Jakarta');

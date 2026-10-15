@@ -27,6 +27,7 @@ import {
     SheetTitle,
 } from '@/components/ui/sheet';
 import { useTrans } from '@/composables/useTrans';
+import type { BurnZone } from '@/lib/burnZone';
 import { destroy as destroyRoute } from '@/routes/analytics/scenario';
 
 export interface SavedScenarioItem {
@@ -43,7 +44,7 @@ export interface SavedScenarioItem {
     projected_cost: number;
     formatted_projected_cost?: string;
     projected_burn_index: number;
-    burn_zone: 'safe' | 'on_track' | 'warning' | 'danger';
+    burn_zone: BurnZone;
     safety_risk_score: number;
     production_volume_impact_pct: number;
 }

@@ -296,10 +296,10 @@
             </td>
             <td class="kpi-card">
                 <div class="kpi-title">Indeks Burn Departemen</div>
-                <div class="kpi-main-val {{ $summary['department_burn_index_pct'] > 115 ? 'status-danger' : ($summary['department_burn_index_pct'] > 100 ? 'status-warning' : ($summary['department_burn_index_pct'] >= 85 ? 'status-on-track' : 'status-safe')) }}">
+                <div class="kpi-main-val {{ ['red' => 'status-danger', 'yellow' => 'status-warning', 'green' => 'status-safe'][$summary['department_tolerance_zone']] }}">
                     {{ number_format($summary['department_burn_index_pct'], 1, ',', '.') }}%
                 </div>
-                <div class="kpi-sub-val">Zona: <strong>{{ str_replace('_', ' ', $summary['department_burn_zone']) }}</strong></div>
+                <div class="kpi-sub-val">Zona: <strong>{{ ['red' => 'Merah', 'yellow' => 'Kuning', 'green' => 'Hijau'][$summary['department_tolerance_zone']] }}</strong></div>
             </td>
             <td class="kpi-card">
                 <div class="kpi-title">Rasio CapEx / OpEx</div>
@@ -336,8 +336,8 @@
         <tbody>
             @forelse($snapshots as $item)
                 @php
-                    $isDanger = $item['burn_zone'] === 'ZONE_4_POOR' || ($item['is_budget_configured'] && $item['burn_index_pct'] > 115);
-                    $isWarning = $item['burn_zone'] === 'ZONE_3_WARNING' || ($item['is_budget_configured'] && $item['burn_index_pct'] > 100 && ! $isDanger);
+                    $isDanger = $item['is_budget_configured'] && $item['tolerance_zone'] === 'red';
+                    $isWarning = $item['is_budget_configured'] && $item['tolerance_zone'] === 'yellow';
                     $rowClass = $isDanger ? 'row-danger' : ($isWarning ? 'row-warning' : '');
                 @endphp
                 <tr class="{{ $rowClass }}">
@@ -357,12 +357,10 @@
                     </td>
                     <td class="text-center">
                         @if($item['is_budget_configured'])
-                            @if($item['burn_index_pct'] > 115)
+                            @if($item['tolerance_zone'] === 'red')
                                 <span class="badge-danger font-mono">{{ number_format($item['burn_index_pct'], 1, ',', '.') }}%</span>
-                            @elseif($item['burn_index_pct'] > 100)
+                            @elseif($item['tolerance_zone'] === 'yellow')
                                 <span class="badge-warning font-mono">{{ number_format($item['burn_index_pct'], 1, ',', '.') }}%</span>
-                            @elseif($item['burn_index_pct'] >= 85)
-                                <span class="badge-on-track font-mono">{{ number_format($item['burn_index_pct'], 1, ',', '.') }}%</span>
                             @else
                                 <span class="badge-safe font-mono">{{ number_format($item['burn_index_pct'], 1, ',', '.') }}%</span>
                             @endif
@@ -461,11 +459,11 @@
                         <td class="text-right font-mono {{ $d['total_remaining_hours'] < 0 ? 'status-danger font-bold' : '' }}">
                             {{ number_format($d['total_remaining_hours'], 1, ',', '.') }}
                         </td>
-                        <td class="text-center font-mono font-bold {{ $d['burn_index_pct'] > 115 ? 'status-danger' : ($d['burn_index_pct'] > 100 ? 'status-warning' : ($d['burn_index_pct'] >= 85 ? 'status-on-track' : 'status-safe')) }}">
-                            {{ number_format($d['burn_index_pct'], 1, ',', '.') }}%
+                        <td class="text-center font-mono font-bold {{ ['red' => 'status-danger', 'yellow' => 'status-warning', 'green' => 'status-safe'][$d['department_tolerance_zone']] }}">
+                            {{ number_format($d['department_burn_index_pct'], 1, ',', '.') }}%
                         </td>
                         <td class="text-center font-bold" style="font-size: 7px;">
-                            {{ str_replace('_', ' ', $d['department_burn_zone']) }}
+                            {{ ['red' => 'Merah', 'yellow' => 'Kuning', 'green' => 'Hijau'][$d['department_tolerance_zone']] }}
                         </td>
                     </tr>
                 @endforeach

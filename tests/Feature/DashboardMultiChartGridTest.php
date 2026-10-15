@@ -218,8 +218,8 @@ test('chart endpoints calculate and aggregate data accurately with approved over
         'weekly_soft_limit_hours' => 20.0,
         'consecutive_weeks_alert' => 3,
         'spkl_grace_period_days' => 2,
-        'burn_warning_pct' => 100.0,
-        'burn_danger_pct' => 115.0,
+        'green_max_pct' => 70.0,
+        'yellow_max_pct' => 90.0,
     ]);
 
     OvertimeBudget::create([
@@ -340,7 +340,11 @@ test('chart endpoints calculate and aggregate data accurately with approved over
     $dailyIndexResponse = $this->getJson(route('dashboard.charts.daily-index', ['date' => $date1]));
     $dailyIndexResponse->assertOk();
     expect($dailyIndexResponse->json('threshold_pct'))->toEqual(100.0)
-        ->and($dailyIndexResponse->json('planned_daily_pacing_hours'))->toBeGreaterThan(0.0);
+        ->and($dailyIndexResponse->json('green_max_pct'))->toEqual(70.0)
+        ->and($dailyIndexResponse->json('yellow_max_pct'))->toEqual(90.0)
+        ->and($dailyIndexResponse->json('planned_daily_pacing_hours'))->toBeGreaterThan(0.0)
+        ->and($dailyIndexResponse->json('daily_zones'))->toHaveCount($dailyIndexResponse->json('days_in_month'))
+        ->and($dailyIndexResponse->json('average_zone'))->toBeIn(['green', 'yellow', 'red']);
 });
 
 test('manager is scoped to their department automatically on chart endpoints', function () {

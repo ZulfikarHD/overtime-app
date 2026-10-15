@@ -7,11 +7,16 @@ use App\Models\OvertimeBudget;
 use App\Models\OvertimeItem;
 use App\Models\Section;
 use App\Models\User;
+use App\Services\PolicyThresholdService;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 
 class CostAnalysisService
 {
+    public function __construct(
+        protected PolicyThresholdService $policyThresholdService,
+    ) {}
+
     /**
      * Indonesian month abbreviations for chart labels.
      *
@@ -65,7 +70,7 @@ class CostAnalysisService
      *         formatted_planned_cost: string,
      *         budget_consumption_pct: float,
      *         is_over_budget: bool,
-     *         burn_zone: 'safe'|'on_track'|'warning'|'danger',
+     *         burn_zone: 'green'|'yellow'|'red',
      *         avg_rate_per_hour: float,
      *         formatted_avg_rate: string,
      *         capex_cost: float,
@@ -148,14 +153,7 @@ class CostAnalysisService
             $isOverBudget = $plannedBudget > 0.0 && $currentMetrics['total_cost'] > $plannedBudget;
 
             // Burn zone classification
-            $burnZone = 'safe';
-            if ($consumptionPct > 115.0) {
-                $burnZone = 'danger';
-            } elseif ($consumptionPct > 100.0) {
-                $burnZone = 'warning';
-            } elseif ($consumptionPct >= 85.0) {
-                $burnZone = 'on_track';
-            }
+            $burnZone = $this->policyThresholdService->classify($consumptionPct, (int) $dept->id)->value;
 
             // MoM trend calculation
             $prevCost = $prevMetrics['total_cost'];

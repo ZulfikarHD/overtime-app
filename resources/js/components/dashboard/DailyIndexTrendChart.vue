@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import type { ChartDataset, ChartOptions } from 'chart.js';
-import { Activity, AlertCircle } from '@lucide/vue';
+import { Link, usePage } from '@inertiajs/vue3';
+import { Activity, AlertCircle, BellRing } from '@lucide/vue';
 import { computed } from 'vue';
 import BaseLineChart from '@/components/charts/BaseLineChart.vue';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import {
     Card,
     CardContent,
@@ -12,6 +14,11 @@ import {
     CardTitle,
 } from '@/components/ui/card';
 import { useTrans } from '@/composables/useTrans';
+import { useZoneBandsPlugin } from '@/composables/useZoneBandsPlugin';
+import { BURN_ZONE_STYLES, describeZoneRange } from '@/lib/burnZone';
+import type { BurnZone } from '@/lib/burnZone';
+import { index as earlyWarningIndex } from '@/routes/early-warning';
+import type { User } from '@/types';
 
 export interface DailyIndexTrendData {
     labels: string[];
@@ -19,7 +26,11 @@ export interface DailyIndexTrendData {
     daily_hours: (number | null)[];
     planned_daily_pacing_hours: number;
     threshold_pct: number;
+    green_max_pct: number;
+    yellow_max_pct: number;
+    daily_zones: (BurnZone | null)[];
     average_index: number;
+    average_zone: BurnZone;
     cutoff_day: number;
     days_in_month: number;
     fiscal_year: number;
@@ -42,55 +53,124 @@ const props = withDefaults(defineProps<Props>(), {
 });
 
 const { __ } = useTrans();
+const page = usePage();
 
-const thresholdLineData = computed(() => {
-    if (!props.data?.labels?.length) {
-        return [];
-    }
-    const threshold = props.data.threshold_pct || 100;
-    return props.data.labels.map(() => threshold);
+/** Same roles that see the "Early Warning" sidebar item (operators get 403). */
+const canOpenEarlyWarning = computed(() => {
+    const user = page.props.auth?.user as User | null | undefined;
+
+    return (
+        user?.role === 'admin' ||
+        user?.role === 'manager' ||
+        user?.role === 'team_leader'
+    );
 });
+
+/**
+ * Inbox link carrying the chart's scope: its department / section and the
+ * month up to the chart's cut-off day. Without a cut-off (future month) the
+ * inbox default range applies. The server re-scopes non-admin users.
+ */
+const earlyWarningUrl = computed(() => {
+    const query: Record<string, string | number> = {};
+    const scope = props.data?.scope;
+
+    if (scope?.department_id) {
+        query.department_id = scope.department_id;
+    }
+
+    if (scope?.section_id) {
+        query.section_id = scope.section_id;
+    }
+
+    if (props.data && props.data.cutoff_day > 0) {
+        const month = String(props.data.fiscal_month).padStart(2, '0');
+        const cutoff = String(props.data.cutoff_day).padStart(2, '0');
+
+        query.date_from = `${props.data.fiscal_year}-${month}-01`;
+        query.date_to = `${props.data.fiscal_year}-${month}-${cutoff}`;
+    }
+
+    return earlyWarningIndex.url({ query });
+});
+
+const planPct = computed(() => props.data?.threshold_pct || 100);
+
+const greenMax = computed(() => props.data?.green_max_pct ?? 70);
+
+const yellowMax = computed(() => props.data?.yellow_max_pct ?? 90);
+
+const boundaries = computed(() => ({
+    green_max_pct: greenMax.value,
+    yellow_max_pct: yellowMax.value,
+}));
+
+const averageStyle = computed(
+    () => BURN_ZONE_STYLES[props.data?.average_zone ?? 'green'],
+);
+
+function constantLine(value: number): number[] {
+    return (props.data?.labels ?? []).map(() => value);
+}
 
 const datasets = computed<ChartDataset<'line'>[]>(() => {
     if (!props.data?.labels?.length) {
         return [];
     }
 
-    const series: ChartDataset<'line'>[] = [
+    return [
         {
             label: __('Indeks Kontribusi Harian (%)'),
             data: props.data.daily_indices,
-            borderColor: '#2563eb',
-            backgroundColor: 'rgba(37, 99, 235, 0.08)',
+            borderColor: '#475569',
+            backgroundColor: 'transparent',
             borderWidth: 2,
-            pointRadius: 3,
-            pointHoverRadius: 6,
-            pointBackgroundColor: props.data.daily_indices.map((val) => {
-                if (val === null) {
-                    return 'transparent';
-                }
-                return val > (props.data?.threshold_pct ?? 100)
-                    ? '#dc2626'
-                    : '#2563eb';
-            }),
-            fill: true,
+            pointRadius: 4,
+            pointHoverRadius: 7,
+            pointBackgroundColor: props.data.daily_zones.map((zone) =>
+                zone ? BURN_ZONE_STYLES[zone].hex : 'transparent',
+            ),
+            pointBorderColor: props.data.daily_zones.map((zone) =>
+                zone ? BURN_ZONE_STYLES[zone].hex : 'transparent',
+            ),
+            fill: false,
             tension: 0.15,
             spanGaps: false,
         },
         {
-            label: __('Batas Kebijakan (100% Pacing)'),
-            data: thresholdLineData.value,
-            borderColor: '#dc2626',
+            label: __('Batas Hijau'),
+            data: constantLine(greenMax.value),
+            borderColor: BURN_ZONE_STYLES.green.hex,
             backgroundColor: 'transparent',
             borderWidth: 1.5,
-            borderDash: [6, 4],
+            borderDash: [4, 4],
+            pointRadius: 0,
+            pointHoverRadius: 0,
+        },
+        {
+            label: __('Batas Kuning'),
+            data: constantLine(yellowMax.value),
+            borderColor: BURN_ZONE_STYLES.yellow.hex,
+            backgroundColor: 'transparent',
+            borderWidth: 1.5,
+            borderDash: [4, 4],
+            pointRadius: 0,
+            pointHoverRadius: 0,
+        },
+        {
+            label: __('Rencana (100% Pacing)'),
+            data: constantLine(planPct.value),
+            borderColor: '#64748b',
+            backgroundColor: 'transparent',
+            borderWidth: 1.5,
+            borderDash: [8, 4],
             pointRadius: 0,
             pointHoverRadius: 0,
         },
     ];
-
-    return series;
 });
+
+const zoneBandsPlugin = useZoneBandsPlugin(boundaries);
 
 const chartOptions = computed<ChartOptions<'line'>>(() => {
     return {
@@ -118,15 +198,22 @@ const chartOptions = computed<ChartOptions<'line'>>(() => {
                         const idx = context.dataIndex;
                         const dsIdx = context.datasetIndex;
                         if (dsIdx === 1) {
-                            return ` ${__('Batas Pacing')}: ${context.parsed.y}%`;
+                            return ` ${__('Batas Hijau')}: ${context.parsed.y}%`;
+                        }
+                        if (dsIdx === 2) {
+                            return ` ${__('Batas Kuning')}: ${context.parsed.y}%`;
+                        }
+                        if (dsIdx === 3) {
+                            return ` ${__('Rencana (100% Pacing)')}: ${context.parsed.y}%`;
                         }
                         const indexVal = props.data?.daily_indices[idx];
                         const hoursVal = props.data?.daily_hours[idx];
                         if (indexVal === null || indexVal === undefined) {
                             return ` ${__('Belum ada data')}`;
                         }
+                        const zone = props.data?.daily_zones[idx];
                         return [
-                            ` ${__('Indeks Burn Harian')}: ${indexVal}%`,
+                            ` ${__('Indeks Burn Harian')}: ${indexVal}%${zone ? ` (${__(BURN_ZONE_STYLES[zone].label)})` : ''}`,
                             ` ${__('Realisasi Jam')}: ${hoursVal ?? 0} ${__('jam')}`,
                         ];
                     },
@@ -148,6 +235,17 @@ const chartOptions = computed<ChartOptions<'line'>>(() => {
             },
             y: {
                 beginAtZero: true,
+                suggestedMax: Math.max(
+                    130,
+                    Math.ceil(
+                        Math.max(
+                            ...(props.data?.daily_indices ?? []).map(
+                                (v) => v ?? 0,
+                            ),
+                            planPct.value,
+                        ) * 1.1,
+                    ),
+                ),
                 grid: {
                     color: 'rgba(226, 232, 240, 0.6)',
                 },
@@ -175,8 +273,10 @@ const chartOptions = computed<ChartOptions<'line'>>(() => {
                     <CardTitle
                         class="flex items-center gap-2 text-base font-bold text-slate-900 dark:text-slate-100"
                     >
-                        <Activity class="size-4 text-blue-600" />
-                        <span>{{ __('Tren Indeks Kontribusi Harian') }}</span>
+                        <Activity class="size-4 text-[#cc0000]" />
+                        <span>{{
+                            __('Early Warning: Indeks Kontribusi Harian')
+                        }}</span>
                     </CardTitle>
                     <CardDescription class="text-xs">
                         {{
@@ -188,13 +288,31 @@ const chartOptions = computed<ChartOptions<'line'>>(() => {
                     </CardDescription>
                 </div>
 
-                <div class="flex items-center gap-2">
+                <div class="flex flex-wrap items-center justify-end gap-2">
                     <Badge
                         variant="outline"
-                        class="border-blue-500/20 bg-blue-500/10 font-mono text-[11px] font-semibold text-blue-700 tabular-nums dark:text-blue-300"
+                        class="font-mono text-[11px] font-semibold tabular-nums"
+                        :class="averageStyle.badge"
+                        data-test="early-warning-average-badge"
                     >
-                        {{ __('Rata-rata') }}: {{ data?.average_index ?? 0 }}%
+                        {{ __('Rata-rata') }}: {{ data?.average_index ?? 0 }}% ·
+                        {{ __(averageStyle.label) }}
                     </Badge>
+
+                    <Button
+                        v-if="canOpenEarlyWarning"
+                        as-child
+                        size="sm"
+                        class="h-7 gap-1 bg-[#cc0000] px-2.5 text-xs text-white hover:bg-[#b30000]"
+                    >
+                        <Link
+                            :href="earlyWarningUrl"
+                            data-test="early-warning-open-link"
+                        >
+                            <BellRing class="size-3.5" />
+                            {{ __('Buka Early Warning') }}
+                        </Link>
+                    </Button>
                 </div>
             </div>
         </CardHeader>
@@ -215,18 +333,30 @@ const chartOptions = computed<ChartOptions<'line'>>(() => {
                     </span>
                 </div>
 
-                <div class="flex items-center gap-2 font-mono text-[11px]">
-                    <span class="flex items-center gap-1">
-                        <span class="inline-block h-0.5 w-3 bg-blue-600" />
-                        <span>{{ __('Indeks Harian') }}</span>
-                    </span>
+                <div
+                    class="flex flex-wrap items-center gap-3 font-mono text-[11px]"
+                    data-test="early-warning-legend"
+                >
                     <span
-                        class="flex items-center gap-1 text-red-600 dark:text-red-400"
+                        v-for="zone in ['green', 'yellow', 'red'] as const"
+                        :key="zone"
+                        class="flex items-center gap-1"
+                        :data-test="`early-warning-legend-${zone}`"
                     >
                         <span
-                            class="inline-block h-0.5 w-3 border-b border-dashed border-red-600"
+                            class="inline-block size-2.5 rounded-xs"
+                            :class="BURN_ZONE_STYLES[zone].solid"
                         />
-                        <span>{{ __('Batas 100%') }}</span>
+                        <span
+                            >{{ __(BURN_ZONE_STYLES[zone].label) }}
+                            {{ describeZoneRange(zone, boundaries) }}</span
+                        >
+                    </span>
+                    <span class="flex items-center gap-1 text-slate-500">
+                        <span
+                            class="inline-block h-0.5 w-3 border-b border-dashed border-slate-500"
+                        />
+                        <span>{{ __('Rencana 100%') }}</span>
                     </span>
                 </div>
             </div>
@@ -236,6 +366,7 @@ const chartOptions = computed<ChartOptions<'line'>>(() => {
                 :labels="data?.labels"
                 :datasets="datasets"
                 :options="chartOptions"
+                :plugins="[zoneBandsPlugin]"
                 :loading="loading"
                 :empty="!data || data.cutoff_day === 0"
                 height-class="h-60"

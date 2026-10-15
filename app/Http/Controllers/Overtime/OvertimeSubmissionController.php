@@ -18,6 +18,7 @@ use App\Models\OvertimeSubmission;
 use App\Models\Section;
 use App\Models\User;
 use App\Services\Policy\OvertimePolicyEvaluator;
+use App\Services\PolicyThresholdService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -31,6 +32,7 @@ class OvertimeSubmissionController extends Controller
     public function __construct(
         public SubmitOvertimeAction $submitOvertimeAction,
         public OvertimePolicyEvaluator $policyEvaluator,
+        public PolicyThresholdService $policyThresholdService,
     ) {}
 
     /**
@@ -572,7 +574,7 @@ class OvertimeSubmissionController extends Controller
      *     planned_hours: float,
      *     actual_hours: float,
      *     burn_pct: float,
-     *     burn_zone: 'safe'|'caution'|'danger'
+     *     burn_zone: 'green'|'yellow'|'red'
      * }
      */
     protected function getSectionBurnIndicator(?int $sectionId): array
@@ -582,7 +584,7 @@ class OvertimeSubmissionController extends Controller
                 'planned_hours' => 0.0,
                 'actual_hours' => 0.0,
                 'burn_pct' => 0.0,
-                'burn_zone' => 'safe',
+                'burn_zone' => 'green',
             ];
         }
 
@@ -605,12 +607,10 @@ class OvertimeSubmissionController extends Controller
 
         $burnPct = $plannedHours > 0 ? round(($actualHours / $plannedHours) * 100, 1) : 0.0;
 
-        $burnZone = 'safe';
-        if ($burnPct > 100.0) {
-            $burnZone = 'danger';
-        } elseif ($burnPct >= 85.0) {
-            $burnZone = 'caution';
-        }
+        $departmentId = Section::query()->whereKey($sectionId)->value('department_id');
+        $burnZone = $this->policyThresholdService
+            ->classify($burnPct, $departmentId ? (int) $departmentId : null)
+            ->value;
 
         return [
             'planned_hours' => $plannedHours,

@@ -2,6 +2,7 @@
 
 namespace App\Services\Analytics;
 
+use App\Enums\BurnZone;
 use App\Models\Department;
 use App\Models\Employee;
 use App\Models\MlPrediction;
@@ -9,8 +10,10 @@ use App\Models\MonthlyBurnSnapshot;
 use App\Models\OperationalCalendar;
 use App\Models\OvertimeBudget;
 use App\Models\OvertimeItem;
+use App\Models\PolicyThreshold;
 use App\Models\Section;
 use App\Models\User;
+use App\Services\EarlyWarningService;
 use App\Services\PolicyThresholdService;
 use Illuminate\Support\Carbon;
 
@@ -67,7 +70,7 @@ class DashboardKpiService
      *         actual_pct: float,
      *         planned_hours: float,
      *         actual_hours: float,
-     *         burn_zone: 'safe'|'on_track'|'warning'|'danger',
+     *         burn_zone: 'green'|'yellow'|'red',
      *         burn_zone_label: string
      *     },
      *     scope: array{
@@ -334,7 +337,7 @@ class DashboardKpiService
      *     actual_pct: float,
      *     planned_hours: float,
      *     actual_hours: float,
-     *     burn_zone: 'safe'|'on_track'|'warning'|'danger',
+     *     burn_zone: 'green'|'yellow'|'red',
      *     burn_zone_label: string
      * }
      */
@@ -359,27 +362,16 @@ class DashboardKpiService
             ? round(($actualHours / $plannedHours) * 100, 1)
             : ($actualHours > 0 ? 100.0 : 0.0);
 
-        $burnZone = match (true) {
-            $actualPct > 115 => 'danger',
-            $actualPct > 100 => 'warning',
-            $actualPct >= 85 => 'on_track',
-            default => 'safe',
-        };
-
-        $burnZoneLabels = [
-            'safe' => 'Aman (<85%)',
-            'on_track' => 'Sesuai Rencana (85–100%)',
-            'warning' => 'Peringatan (101–115%)',
-            'danger' => 'Defisit Kritis (>115%)',
-        ];
+        $zone = $this->resolveBurnZone($actualPct, $this->resolveZoneDepartmentId($departmentId, $sectionId));
 
         return [
             'plan_pct' => 100.0,
             'actual_pct' => $actualPct,
             'planned_hours' => round($plannedHours, 1),
             'actual_hours' => round($actualHours, 1),
-            'burn_zone' => $burnZone,
-            'burn_zone_label' => $burnZoneLabels[$burnZone],
+            'burn_zone' => $zone['zone'],
+            'burn_zone_label' => $zone['label'],
+            'zone_boundaries' => $zone['boundaries'],
         ];
     }
 
@@ -394,7 +386,7 @@ class DashboardKpiService
      *     planned_hours: float,
      *     current_actual_hours: float,
      *     burn_index_pct: float,
-     *     burn_zone: 'safe'|'on_track'|'warning'|'danger',
+     *     burn_zone: 'green'|'yellow'|'red',
      *     burn_zone_label: string,
      *     cutoff_day: int,
      *     days_in_month: int,
@@ -579,19 +571,7 @@ class DashboardKpiService
             ? round(($runningCumulative / $plannedHours) * 100, 1)
             : ($runningCumulative > 0 ? 100.0 : 0.0);
 
-        $burnZone = match (true) {
-            $burnIndexPct > 115 => 'danger',
-            $burnIndexPct > 100 => 'warning',
-            $burnIndexPct >= 85 => 'on_track',
-            default => 'safe',
-        };
-
-        $burnZoneLabels = [
-            'safe' => 'Aman (<85%)',
-            'on_track' => 'Sesuai Rencana (85–100%)',
-            'warning' => 'Peringatan (101–115%)',
-            'danger' => 'Defisit Kritis (>115%)',
-        ];
+        $zone = $this->resolveBurnZone($burnIndexPct, $this->resolveZoneDepartmentId($scopedDepartmentId, $scopedSectionId));
 
         return [
             'labels' => $labels,
@@ -601,8 +581,9 @@ class DashboardKpiService
             'planned_hours' => round($plannedHours, 1),
             'current_actual_hours' => round($runningCumulative, 1),
             'burn_index_pct' => $burnIndexPct,
-            'burn_zone' => $burnZone,
-            'burn_zone_label' => $burnZoneLabels[$burnZone],
+            'burn_zone' => $zone['zone'],
+            'burn_zone_label' => $zone['label'],
+            'zone_boundaries' => $zone['boundaries'],
             'cutoff_day' => $cutoffDay,
             'days_in_month' => $daysInMonth,
             'fiscal_year' => $fiscalYear,
@@ -629,17 +610,16 @@ class DashboardKpiService
      *         planned_hours: float,
      *         actual_hours: float,
      *         burn_index_pct: float,
-     *         zone: 'safe'|'on_track'|'warning'|'danger',
+     *         zone: 'green'|'yellow'|'red',
      *         zone_label: string
      *     }>,
      *     fiscal_year: int,
      *     fiscal_month: int,
      *     month_name: string,
      *     total_sections: int,
-     *     critical_sections_count: int,
-     *     warning_sections_count: int,
-     *     on_track_sections_count: int,
-     *     safe_sections_count: int
+     *     red_sections_count: int,
+     *     yellow_sections_count: int,
+     *     green_sections_count: int
      * }
      */
     public function getSectionBurnComparison(User $user, ?string $date = null, ?int $departmentId = null): array
@@ -673,13 +653,6 @@ class DashboardKpiService
             ->get()
             ->keyBy('section_id');
 
-        $zoneLabels = [
-            'safe' => 'Aman (<85%)',
-            'on_track' => 'Sesuai Rencana (85–100%)',
-            'warning' => 'Peringatan (101–115%)',
-            'danger' => 'Defisit Kritis (>115%)',
-        ];
-
         $sectionList = [];
         foreach ($sections as $section) {
             $snapshot = $snapshots->get($section->id);
@@ -691,12 +664,7 @@ class DashboardKpiService
             $actual = $snapshot ? (float) $snapshot->cumulative_actual_hours : 0.0;
             $burnIndexPct = $snapshot ? (float) $snapshot->burn_index_pct : 0.0;
 
-            $zone = match (true) {
-                $burnIndexPct > 115 => 'danger',
-                $burnIndexPct > 100 => 'warning',
-                $burnIndexPct >= 85 => 'on_track',
-                default => 'safe',
-            };
+            $zone = $this->resolveBurnZone($burnIndexPct, (int) $section->department_id);
 
             $sectionList[] = [
                 'id' => $section->id,
@@ -707,8 +675,8 @@ class DashboardKpiService
                 'planned_hours' => round($planned, 1),
                 'actual_hours' => round($actual, 1),
                 'burn_index_pct' => round($burnIndexPct, 1),
-                'zone' => $zone,
-                'zone_label' => $zoneLabels[$zone],
+                'zone' => $zone['zone'],
+                'zone_label' => $zone['label'],
             ];
         }
 
@@ -726,10 +694,9 @@ class DashboardKpiService
             'fiscal_month' => $fiscalMonth,
             'month_name' => $selectedCarbon->translatedFormat('F Y'),
             'total_sections' => count($sectionList),
-            'critical_sections_count' => count(array_filter($sectionList, fn ($s) => $s['zone'] === 'danger')),
-            'warning_sections_count' => count(array_filter($sectionList, fn ($s) => $s['zone'] === 'warning')),
-            'on_track_sections_count' => count(array_filter($sectionList, fn ($s) => $s['zone'] === 'on_track')),
-            'safe_sections_count' => count(array_filter($sectionList, fn ($s) => $s['zone'] === 'safe')),
+            'red_sections_count' => count(array_filter($sectionList, fn ($s) => $s['zone'] === 'red')),
+            'yellow_sections_count' => count(array_filter($sectionList, fn ($s) => $s['zone'] === 'yellow')),
+            'green_sections_count' => count(array_filter($sectionList, fn ($s) => $s['zone'] === 'green')),
         ];
     }
 
@@ -805,6 +772,114 @@ class DashboardKpiService
     }
 
     /**
+     * Batch variant of {@see resolvePlannedHours()} for many sections at once
+     * (budget first, monthly burn snapshot as fallback) in a constant number of queries.
+     *
+     * Only sections that actually have planned hours > 0 for a period are returned,
+     * so "no budget" can never be mistaken for a Hijau / Merah day.
+     *
+     * @param  list<int>  $sectionIds
+     * @param  list<array{0: int, 1: int}>  $periods  List of [fiscalYear, fiscalMonth]
+     * @return array<int, array<string, float>> sectionId => 'Y-m' => planned hours
+     */
+    public function resolvePlannedHoursForSections(array $sectionIds, array $periods): array
+    {
+        if ($sectionIds === [] || $periods === []) {
+            return [];
+        }
+
+        $wherePeriods = function ($query) use ($periods): void {
+            foreach ($periods as [$year, $month]) {
+                $query->orWhere(fn ($period) => $period
+                    ->where('fiscal_year', $year)
+                    ->where('fiscal_month', $month));
+            }
+        };
+
+        $planned = [];
+
+        $budgets = OvertimeBudget::query()
+            ->whereIn('section_id', $sectionIds)
+            ->where($wherePeriods)
+            ->orderBy('id')
+            ->get(['section_id', 'fiscal_year', 'fiscal_month', 'planned_hours']);
+
+        foreach ($budgets as $budget) {
+            $key = sprintf('%04d-%02d', $budget->fiscal_year, $budget->fiscal_month);
+            $planned[(int) $budget->section_id][$key] ??= (float) $budget->planned_hours;
+        }
+
+        $needsFallback = false;
+        foreach ($sectionIds as $sectionId) {
+            foreach ($periods as [$year, $month]) {
+                if (($planned[$sectionId][sprintf('%04d-%02d', $year, $month)] ?? 0.0) <= 0) {
+                    $needsFallback = true;
+                    break 2;
+                }
+            }
+        }
+
+        if ($needsFallback) {
+            $snapshots = MonthlyBurnSnapshot::query()
+                ->whereIn('section_id', $sectionIds)
+                ->where($wherePeriods)
+                ->orderBy('id')
+                ->get(['section_id', 'fiscal_year', 'fiscal_month', 'planned_budget_hours']);
+
+            $snapshotHours = [];
+            foreach ($snapshots as $snapshot) {
+                $key = sprintf('%04d-%02d', $snapshot->fiscal_year, $snapshot->fiscal_month);
+                $snapshotHours[(int) $snapshot->section_id][$key] ??= (float) $snapshot->planned_budget_hours;
+            }
+
+            foreach ($snapshotHours as $sectionId => $byPeriod) {
+                foreach ($byPeriod as $key => $hours) {
+                    if (($planned[$sectionId][$key] ?? 0.0) <= 0) {
+                        $planned[$sectionId][$key] = $hours;
+                    }
+                }
+            }
+        }
+
+        foreach ($planned as $sectionId => $byPeriod) {
+            foreach ($byPeriod as $key => $hours) {
+                if ($hours > 0) {
+                    $planned[$sectionId][$key] = round($hours, 1);
+                } else {
+                    unset($planned[$sectionId][$key]);
+                }
+            }
+        }
+
+        return $planned;
+    }
+
+    /**
+     * Daily pacing target in hours: the monthly plan spread evenly over the calendar month.
+     */
+    public function calculateDailyPacing(float $plannedHours, int $daysInMonth): float
+    {
+        return $daysInMonth > 0 ? $plannedHours / $daysInMonth : 0.0;
+    }
+
+    /**
+     * Daily burn index (CALC-02 applied per day): approved hours of the day vs. the daily pacing target.
+     *
+     * Single source of truth shared by the Dashboard Early Warning chart and
+     * {@see EarlyWarningService} so both can never diverge.
+     */
+    public function calculateDailyIndex(float $actualHours, float $dailyPacingHours): float
+    {
+        $actual = round($actualHours, 1);
+
+        if ($dailyPacingHours > 0) {
+            return round(($actual / $dailyPacingHours) * 100, 1);
+        }
+
+        return $actual > 0 ? 100.0 : 0.0;
+    }
+
+    /**
      * Build top 10 employee overtime leaderboard dataset (E09-04).
      *
      * @return array{
@@ -817,7 +892,7 @@ class DashboardKpiService
      *         total_hours: float,
      *         soft_limit_hours: float,
      *         percentage_of_limit: float,
-     *         zone: 'safe'|'warning'|'danger',
+     *         zone: 'green'|'yellow'|'red',
      *         zone_color: string
      *     }>,
      *     fiscal_year: int,
@@ -881,17 +956,9 @@ class DashboardKpiService
             $hours = round((float) $row->total_approved_hours, 1);
             $pctOfLimit = $monthlySoftLimit > 0 ? round(($hours / $monthlySoftLimit) * 100, 1) : 0.0;
 
-            $zone = match (true) {
-                $hours > ($monthlySoftLimit * 1.15) => 'danger',
-                $hours > $monthlySoftLimit => 'warning',
-                default => 'safe',
-            };
-
-            $zoneColor = match ($zone) {
-                'danger' => '#dc2626',
-                'warning' => '#d97706',
-                default => '#16a34a',
-            };
+            $zoneInfo = $this->describeBurnZone($pctOfLimit, $threshold);
+            $zone = $zoneInfo['zone'];
+            $zoneColor = $zoneInfo['color'];
 
             $items[] = [
                 'employee_id' => (int) $row->employee_id,
@@ -1179,7 +1246,11 @@ class DashboardKpiService
      *     daily_hours: list<float|null>,
      *     planned_daily_pacing_hours: float,
      *     threshold_pct: float,
+     *     green_max_pct: float,
+     *     yellow_max_pct: float,
+     *     daily_zones: list<'green'|'yellow'|'red'|null>,
      *     average_index: float,
+     *     average_zone: 'green'|'yellow'|'red',
      *     cutoff_day: int,
      *     days_in_month: int,
      *     fiscal_year: int,
@@ -1209,10 +1280,10 @@ class DashboardKpiService
         [$scopedDepartmentId, $scopedSectionId] = $this->resolveScoping($user, $departmentId, $sectionId);
 
         $plannedHours = $this->resolvePlannedHours($fiscalYear, $fiscalMonth, $scopedDepartmentId, $scopedSectionId);
-        $dailyPacing = $daysInMonth > 0 ? $plannedHours / $daysInMonth : 0.0;
+        $dailyPacing = $this->calculateDailyPacing($plannedHours, $daysInMonth);
 
-        $threshold = $this->thresholdService->getForDepartment($scopedDepartmentId);
-        $thresholdPct = (float) $threshold->burn_warning_pct ?: 100.0;
+        $thresholdPct = 100.0;
+        $boundaries = $this->thresholdService->boundariesFor($scopedDepartmentId);
 
         if ($selectedCarbon->year === $now->year && $selectedCarbon->month === $now->month) {
             $cutoffDay = min($now->day, $daysInMonth);
@@ -1249,6 +1320,7 @@ class DashboardKpiService
 
         $labels = [];
         $dailyIndices = [];
+        $dailyZones = [];
         $dailyHours = [];
         $validIndices = [];
 
@@ -1261,20 +1333,19 @@ class DashboardKpiService
                 $actual = round($dailyHoursMap[$dayDate] ?? 0.0, 1);
                 $dailyHours[] = $actual;
 
-                if ($dailyPacing > 0) {
-                    $index = round(($actual / $dailyPacing) * 100, 1);
-                } else {
-                    $index = $actual > 0 ? 100.0 : 0.0;
-                }
+                $index = $this->calculateDailyIndex($actual, $dailyPacing);
                 $dailyIndices[] = $index;
+                $dailyZones[] = BurnZone::classify($index, $boundaries['green_max_pct'], $boundaries['yellow_max_pct'])->value;
                 $validIndices[] = $index;
             } else {
                 $dailyHours[] = null;
                 $dailyIndices[] = null;
+                $dailyZones[] = null;
             }
         }
 
         $averageIndex = count($validIndices) > 0 ? round(array_sum($validIndices) / count($validIndices), 1) : 0.0;
+        $averageZone = BurnZone::classify($averageIndex, $boundaries['green_max_pct'], $boundaries['yellow_max_pct'])->value;
 
         return [
             'labels' => $labels,
@@ -1282,7 +1353,11 @@ class DashboardKpiService
             'daily_hours' => $dailyHours,
             'planned_daily_pacing_hours' => round($dailyPacing, 1),
             'threshold_pct' => $thresholdPct,
+            'green_max_pct' => (float) $boundaries['green_max_pct'],
+            'yellow_max_pct' => (float) $boundaries['yellow_max_pct'],
+            'daily_zones' => $dailyZones,
             'average_index' => $averageIndex,
+            'average_zone' => $averageZone,
             'cutoff_day' => $cutoffDay,
             'days_in_month' => $daysInMonth,
             'fiscal_year' => $fiscalYear,
@@ -1432,7 +1507,7 @@ class DashboardKpiService
      *         }>,
      *         planned_hours: float,
      *         burn_index: float,
-     *         burn_zone: 'safe'|'on_track'|'warning'|'danger',
+     *         burn_zone: 'green'|'yellow'|'red',
      *         burn_zone_label: string,
      *         burn_zone_color: string,
      *         spkl_status: 'approved'|'grace_period'|'overdue'|'none',
@@ -1597,26 +1672,10 @@ class DashboardKpiService
 
             $burnIndex = $indPlanned > 0 ? round(($totalHours / $indPlanned) * 100, 1) : 0.0;
 
-            $burnZone = match (true) {
-                $burnIndex > 115.0 => 'danger',
-                $burnIndex > 100.0 => 'warning',
-                $burnIndex >= 85.0 => 'on_track',
-                default => 'safe',
-            };
-
-            $burnZoneLabel = match ($burnZone) {
-                'danger' => 'Defisit Kritis (>115%)',
-                'warning' => 'Peringatan (101–115%)',
-                'on_track' => 'Sesuai Rencana (85–100%)',
-                'safe' => 'Aman (<85%)',
-            };
-
-            $burnZoneColor = match ($burnZone) {
-                'danger' => '#dc2626',
-                'warning' => '#d97706',
-                'on_track' => '#2563eb',
-                'safe' => '#16a34a',
-            };
+            $employeeZone = $this->describeBurnZone($burnIndex, $threshold);
+            $burnZone = $employeeZone['zone'];
+            $burnZoneLabel = $employeeZone['label'];
+            $burnZoneColor = $employeeZone['color'];
 
             // SPKL Status resolution
             if ($empItems->isEmpty()) {
@@ -2259,6 +2318,56 @@ class DashboardKpiService
             'scope' => [
                 'department_id' => $scopedDepartmentId,
                 'section_id' => $scopedSectionId,
+            ],
+        ];
+    }
+
+    /**
+     * Resolve the department used for tolerance lookup (section scope falls back to its department).
+     */
+    protected function resolveZoneDepartmentId(?int $departmentId, ?int $sectionId): ?int
+    {
+        if ($departmentId) {
+            return $departmentId;
+        }
+
+        if ($sectionId) {
+            $sectionDepartmentId = Section::query()->whereKey($sectionId)->value('department_id');
+
+            return $sectionDepartmentId ? (int) $sectionDepartmentId : null;
+        }
+
+        return null;
+    }
+
+    /**
+     * Classify an index percentage into the 3-zone tolerance rule for a department.
+     *
+     * @return array{zone: 'green'|'yellow'|'red', label: string, color: string, boundaries: array{green_max_pct: float, yellow_max_pct: float}}
+     */
+    protected function resolveBurnZone(float $pct, ?int $departmentId): array
+    {
+        return $this->describeBurnZone($pct, $this->thresholdService->getForDepartment($departmentId));
+    }
+
+    /**
+     * Describe the zone of an index percentage for an already-resolved threshold.
+     *
+     * @return array{zone: 'green'|'yellow'|'red', label: string, color: string, boundaries: array{green_max_pct: float, yellow_max_pct: float}}
+     */
+    protected function describeBurnZone(float $pct, PolicyThreshold $threshold): array
+    {
+        $greenMax = (float) $threshold->green_max_pct;
+        $yellowMax = (float) $threshold->yellow_max_pct;
+        $zone = BurnZone::classify($pct, $greenMax, $yellowMax);
+
+        return [
+            'zone' => $zone->value,
+            'label' => $zone->rangeLabel($greenMax, $yellowMax),
+            'color' => $zone->color(),
+            'boundaries' => [
+                'green_max_pct' => $greenMax,
+                'yellow_max_pct' => $yellowMax,
             ],
         ];
     }

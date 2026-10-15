@@ -1,9 +1,12 @@
 <script setup lang="ts">
 import { computed } from 'vue';
+import { useBurnZone } from '@/composables/useBurnZone';
+import { BURN_ZONE_STYLES, normalizeBurnZone } from '@/lib/burnZone';
+import type { BurnZone } from '@/lib/burnZone';
 
 interface Props {
     percentage: number;
-    zone?: 'safe' | 'on_track' | 'warning' | 'danger';
+    zone?: string;
     showLabel?: boolean;
     heightClass?: string;
 }
@@ -14,52 +17,22 @@ const props = withDefaults(defineProps<Props>(), {
     heightClass: 'h-2',
 });
 
-const resolvedZone = computed<'safe' | 'on_track' | 'warning' | 'danger'>(
-    () => {
-        if (props.zone) {
-            return props.zone;
-        }
-        const pct = props.percentage;
-        if (pct > 115) {
-            return 'danger';
-        }
-        if (pct > 100) {
-            return 'warning';
-        }
-        if (pct >= 85) {
-            return 'on_track';
-        }
-        return 'safe';
-    },
+const { classify } = useBurnZone();
+
+const resolvedZone = computed<BurnZone>(() =>
+    props.zone ? normalizeBurnZone(props.zone) : classify(props.percentage),
 );
 
-const barColorClass = computed(() => {
-    switch (resolvedZone.value) {
-        case 'danger':
-            return 'bg-[#cc0000]';
-        case 'warning':
-            return 'bg-amber-500';
-        case 'on_track':
-            return 'bg-blue-600';
-        case 'safe':
-        default:
-            return 'bg-emerald-500';
-    }
-});
+const barColorClass = computed(
+    () => BURN_ZONE_STYLES[resolvedZone.value].solid,
+);
 
-const textColorClass = computed(() => {
-    switch (resolvedZone.value) {
-        case 'danger':
-            return 'text-[#cc0000] dark:text-red-400 font-semibold';
-        case 'warning':
-            return 'text-amber-600 dark:text-amber-400 font-medium';
-        case 'on_track':
-            return 'text-blue-600 dark:text-blue-400 font-medium';
-        case 'safe':
-        default:
-            return 'text-emerald-600 dark:text-emerald-400 font-medium';
-    }
-});
+const textColorClass = computed(
+    () =>
+        `${BURN_ZONE_STYLES[resolvedZone.value].text} ${
+            resolvedZone.value === 'red' ? 'font-semibold' : 'font-medium'
+        }`,
+);
 
 const barWidth = computed(() => {
     const clamped = Math.min(100, Math.max(0, props.percentage));

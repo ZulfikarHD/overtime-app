@@ -9,8 +9,8 @@ test('admin can navigate to administration hub and view plant default policy', f
         'weekly_soft_limit_hours' => 20.0,
         'consecutive_weeks_alert' => 3,
         'spkl_grace_period_days' => 2,
-        'burn_warning_pct' => 100.00,
-        'burn_danger_pct' => 115.00,
+        'green_max_pct' => 70.00,
+        'yellow_max_pct' => 90.00,
     ]);
 
     $dept = Department::factory()->create([
@@ -42,8 +42,8 @@ test('admin can edit plant-wide default policy threshold', function () {
         'weekly_soft_limit_hours' => 20.0,
         'consecutive_weeks_alert' => 3,
         'spkl_grace_period_days' => 2,
-        'burn_warning_pct' => 100.00,
-        'burn_danger_pct' => 115.00,
+        'green_max_pct' => 70.00,
+        'yellow_max_pct' => 90.00,
     ]);
 
     $admin = User::factory()->admin()->create([
@@ -71,8 +71,8 @@ test('admin can configure and delete department policy override', function () {
         'weekly_soft_limit_hours' => 20.0,
         'consecutive_weeks_alert' => 3,
         'spkl_grace_period_days' => 2,
-        'burn_warning_pct' => 100.00,
-        'burn_danger_pct' => 115.00,
+        'green_max_pct' => 70.00,
+        'yellow_max_pct' => 90.00,
     ]);
 
     $dept = Department::factory()->create([
@@ -97,8 +97,8 @@ test('admin can configure and delete department policy override', function () {
         ->select('#select-department', (string) $dept->id)
         ->fill('#input-weekly-soft-limit', '32')
         ->fill('#input-consecutive-weeks', '4')
-        ->fill('#input-burn-warning', '105')
-        ->fill('#input-burn-danger', '120')
+        ->fill('#input-green-max', '75')
+        ->fill('#input-yellow-max', '95')
         ->click('[data-test="btn-save-policy"]')
         ->assertSee('Department policy override saved successfully.')
         ->assertSee('DEPT_PRESS')
@@ -110,7 +110,26 @@ test('admin can configure and delete department policy override', function () {
         ->assertSee('Department policy override deleted successfully. Department will inherit plant default.');
 });
 
-test('client-side validation warns and prevents saving when danger is less than warning', function () {
+test('zone preview shows the 1.200 plan index boundaries for the default 70/90 rule', function () {
+    PolicyThreshold::factory()->plantDefault()->create();
+
+    User::factory()->admin()->create([
+        'email' => 'admin.policy.preview@factory.com',
+        'password' => 'password',
+    ]);
+
+    visit('/login')
+        ->fill('email', 'admin.policy.preview@factory.com')
+        ->fill('password', 'password')
+        ->click('Log in to System')
+        ->click('Administration')
+        ->click('[data-test="btn-edit-plant-default"]')
+        ->assertSeeIn('[data-test="preview-green"]', '840')
+        ->assertSeeIn('[data-test="preview-yellow"]', '1.080')
+        ->assertSeeIn('[data-test="preview-red"]', '1.080');
+});
+
+test('client-side validation warns and prevents saving when yellow limit is less than green limit', function () {
     PolicyThreshold::factory()->plantDefault()->create();
 
     $dept = Department::factory()->create([
@@ -130,7 +149,7 @@ test('client-side validation warns and prevents saving when danger is less than 
         ->click('Administration')
         ->click('[data-test="btn-add-override"]')
         ->select('#select-department', (string) $dept->id)
-        ->fill('#input-burn-warning', '120')
-        ->fill('#input-burn-danger', '100')
-        ->assertSee('Burn danger percentage must be greater than or equal to burn warning percentage.');
+        ->fill('#input-green-max', '90')
+        ->fill('#input-yellow-max', '70')
+        ->assertSee('Yellow zone limit must be greater than or equal to the green zone limit.');
 });

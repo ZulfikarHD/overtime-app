@@ -21,6 +21,7 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { useTrans } from '@/composables/useTrans';
+import { BURN_ZONE_STYLES, normalizeBurnZone } from '@/lib/burnZone';
 import { formatRupiah } from '@/lib/formatters';
 
 interface Props {
@@ -310,33 +311,17 @@ function roundTo(n: number, decimals: number): number {
                             </td>
                             <td class="px-4 py-3 text-center">
                                 <Badge
-                                    v-if="
-                                        dept.is_over_budget ||
-                                        dept.burn_zone === 'danger'
+                                    variant="outline"
+                                    class="font-mono font-bold tabular-nums"
+                                    :class="
+                                        BURN_ZONE_STYLES[
+                                            dept.is_over_budget
+                                                ? 'red'
+                                                : normalizeBurnZone(
+                                                      dept.burn_zone,
+                                                  )
+                                        ].badge
                                     "
-                                    variant="outline"
-                                    class="border-red-200 bg-red-50 font-mono font-bold text-red-700 tabular-nums dark:border-red-900 dark:bg-red-950/40 dark:text-red-300"
-                                >
-                                    {{ dept.budget_consumption_pct }}%
-                                </Badge>
-                                <Badge
-                                    v-else-if="dept.burn_zone === 'warning'"
-                                    variant="outline"
-                                    class="border-amber-200 bg-amber-50 font-mono font-bold text-amber-700 tabular-nums dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-300"
-                                >
-                                    {{ dept.budget_consumption_pct }}%
-                                </Badge>
-                                <Badge
-                                    v-else-if="dept.burn_zone === 'on_track'"
-                                    variant="outline"
-                                    class="border-blue-200 bg-blue-50 font-mono font-semibold text-blue-700 tabular-nums dark:border-blue-900 dark:bg-blue-950/40 dark:text-blue-300"
-                                >
-                                    {{ dept.budget_consumption_pct }}%
-                                </Badge>
-                                <Badge
-                                    v-else
-                                    variant="outline"
-                                    class="border-emerald-200 bg-emerald-50 font-mono font-semibold text-emerald-700 tabular-nums dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-300"
                                 >
                                     {{ dept.budget_consumption_pct }}%
                                 </Badge>

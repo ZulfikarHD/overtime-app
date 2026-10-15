@@ -10,13 +10,40 @@ import {
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import { useCurrentUrl } from '@/composables/useCurrentUrl';
+import { toUrl } from '@/lib/utils';
 import type { NavItem } from '@/types';
 
 const props = defineProps<{
     items: NavItem[];
 }>();
 
-const { isCurrentUrl } = useCurrentUrl();
+const { isCurrentUrl, isCurrentOrParentUrl } = useCurrentUrl();
+
+function isItemActive(item: NavItem): boolean {
+    if (isCurrentUrl(item.href)) {
+        return true;
+    }
+
+    if (!item.matchChildren) {
+        return false;
+    }
+
+    // Trailing slash keeps `/early-warning` from matching `/early-warning-archive`.
+    return isCurrentOrParentUrl(`${toUrl(item.href).replace(/\/$/, '')}/`);
+}
+
+function hasBadge(item: NavItem): boolean {
+    return (
+        item.badge !== null &&
+        item.badge !== undefined &&
+        item.badge !== '' &&
+        Number(item.badge) > 0
+    );
+}
+
+function badgeLabel(item: NavItem): string {
+    return Number(item.badge) > 99 ? '99+' : String(item.badge);
+}
 
 const groupedItems = computed(() => {
     const groups: { name: string; items: NavItem[] }[] = [];
@@ -52,7 +79,7 @@ const groupedItems = computed(() => {
                 <SidebarMenuItem v-for="item in grp.items" :key="item.title">
                     <SidebarMenuButton
                         as-child
-                        :is-active="isCurrentUrl(item.href)"
+                        :is-active="isItemActive(item)"
                         :tooltip="item.title"
                         class="rounded-lg text-slate-700 transition-colors hover:bg-red-50 hover:text-[#cc0000] data-[active=true]:bg-red-50 data-[active=true]:font-semibold data-[active=true]:text-[#cc0000] dark:text-slate-300 dark:hover:bg-red-950/40 dark:hover:text-red-300 dark:data-[active=true]:bg-red-950/40 dark:data-[active=true]:text-red-300"
                     >
@@ -72,23 +99,24 @@ const groupedItems = computed(() => {
                             />
                             <span class="truncate">{{ item.title }}</span>
                             <span
-                                v-if="isCurrentUrl(item.href)"
+                                v-if="isItemActive(item) && !hasBadge(item)"
                                 class="ml-auto size-1.5 rounded-full bg-[#cc0000] group-data-[collapsible=icon]:hidden"
                             />
                         </Link>
                     </SidebarMenuButton>
                     <SidebarMenuBadge
-                        v-if="
-                            item.badge !== null &&
-                            item.badge !== undefined &&
-                            item.badge !== '' &&
-                            Number(item.badge) > 0
-                        "
+                        v-if="hasBadge(item)"
                         class="bg-[#cc0000] font-mono text-[10px] text-white tabular-nums group-data-[collapsible=icon]:hidden"
-                        data-test="nav-pending-approvals-badge"
+                        :data-test="`${item.testId ?? 'nav'}-badge`"
                     >
-                        {{ item.badge }}
+                        {{ badgeLabel(item) }}
                     </SidebarMenuBadge>
+                    <span
+                        v-if="hasBadge(item)"
+                        class="pointer-events-none absolute top-1 right-1 hidden size-2 rounded-full bg-[#cc0000] ring-2 ring-white group-data-[collapsible=icon]:block dark:ring-slate-900"
+                        :data-test="`${item.testId ?? 'nav'}-dot`"
+                        aria-hidden="true"
+                    />
                 </SidebarMenuItem>
             </SidebarMenu>
         </SidebarGroup>

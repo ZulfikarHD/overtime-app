@@ -2,6 +2,7 @@
 import { computed } from 'vue';
 import type { BurnIndicator } from '@/composables/useSectionRoster';
 import { useTrans } from '@/composables/useTrans';
+import { BURN_ZONE_STYLES, normalizeBurnZone } from '@/lib/burnZone';
 
 const props = defineProps<{
     burn: BurnIndicator;
@@ -10,24 +11,12 @@ const props = defineProps<{
 const { __ } = useTrans();
 
 const statusClass = computed(() => {
-    if (props.burn.burn_zone === 'danger' || props.burn.burn_pct > 100) {
-        return {
-            text: 'text-[#cc0000] dark:text-red-400',
-            bg: 'bg-[#cc0000]',
-            badge: 'bg-red-50 text-[#cc0000] border-red-200 dark:bg-red-950/40 dark:text-red-300 dark:border-red-900',
-        };
-    }
-    if (props.burn.burn_zone === 'caution' || props.burn.burn_pct >= 85) {
-        return {
-            text: 'text-amber-700 dark:text-amber-400',
-            bg: 'bg-amber-500',
-            badge: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-900',
-        };
-    }
+    const style = BURN_ZONE_STYLES[normalizeBurnZone(props.burn.burn_zone)];
+
     return {
-        text: 'text-emerald-700 dark:text-emerald-400',
-        bg: 'bg-emerald-500',
-        badge: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-900',
+        text: style.text,
+        bg: style.solid,
+        badge: style.badge,
     };
 });
 

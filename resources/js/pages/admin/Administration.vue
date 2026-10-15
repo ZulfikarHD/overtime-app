@@ -27,6 +27,9 @@ import {
     XCircle,
 } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
+import AlertCausePicCard, {
+    type AlertCauseMappingRow,
+} from '@/components/admin/AlertCausePicCard.vue';
 import ConfirmationDialog from '@/components/admin/ConfirmationDialog.vue';
 import PolicyThresholdSheet, {
     type DepartmentOption,
@@ -67,8 +70,8 @@ export type DepartmentPolicyStatus = {
     weekly_soft_limit_hours: number;
     consecutive_weeks_alert: number;
     spkl_grace_period_days: number;
-    burn_warning_pct: number;
-    burn_danger_pct: number;
+    green_max_pct: number;
+    yellow_max_pct: number;
     updated_at: string | null;
 };
 
@@ -130,6 +133,7 @@ const props = defineProps<{
     userFilters?: UserFilters;
     availableRoles?: RoleOption[];
     departmentsWithSections?: DepartmentWithSections[];
+    causeMappings?: AlertCauseMappingRow[];
     shiftSchedules?: ShiftScheduleAdminRow[];
     activeShiftSchedule?: {
         id: number | null;
@@ -247,18 +251,18 @@ function openCreateOverride(preselectedDeptId?: number) {
             spkl_grace_period_days:
                 dept?.spkl_grace_period_days ??
                 props.plantDefault.spkl_grace_period_days,
-            burn_warning_pct:
-                dept?.burn_warning_pct ?? props.plantDefault.burn_warning_pct,
-            burn_danger_pct:
-                dept?.burn_danger_pct ?? props.plantDefault.burn_danger_pct,
+            green_max_pct:
+                dept?.green_max_pct ?? props.plantDefault.green_max_pct,
+            yellow_max_pct:
+                dept?.yellow_max_pct ?? props.plantDefault.yellow_max_pct,
         };
     } else {
         selectedThreshold.value = {
             weekly_soft_limit_hours: props.plantDefault.weekly_soft_limit_hours,
             consecutive_weeks_alert: props.plantDefault.consecutive_weeks_alert,
             spkl_grace_period_days: props.plantDefault.spkl_grace_period_days,
-            burn_warning_pct: props.plantDefault.burn_warning_pct,
-            burn_danger_pct: props.plantDefault.burn_danger_pct,
+            green_max_pct: props.plantDefault.green_max_pct,
+            yellow_max_pct: props.plantDefault.yellow_max_pct,
         };
     }
     sheetOpen.value = true;
@@ -274,8 +278,8 @@ function openEditOverride(dept: DepartmentPolicyStatus) {
         weekly_soft_limit_hours: dept.weekly_soft_limit_hours,
         consecutive_weeks_alert: dept.consecutive_weeks_alert,
         spkl_grace_period_days: dept.spkl_grace_period_days,
-        burn_warning_pct: dept.burn_warning_pct,
-        burn_danger_pct: dept.burn_danger_pct,
+        green_max_pct: dept.green_max_pct,
+        yellow_max_pct: dept.yellow_max_pct,
     };
     sheetOpen.value = true;
 }
@@ -849,37 +853,39 @@ const flashSuccess = computed(
                             </div>
                         </div>
 
-                        <!-- Metric 4: Burn Warning -->
+                        <!-- Metric 4: Green zone limit -->
                         <div
                             class="bg-background/90 rounded-lg border p-3 shadow-2xs"
                         >
                             <div
-                                class="flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400"
+                                class="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400"
                             >
                                 <Flame class="size-3.5" />
-                                <span>{{ __('Burn Warning') }}</span>
+                                <span>{{ __('Green Zone Limit') }}</span>
                             </div>
                             <div
-                                class="mt-1 font-mono text-lg font-bold text-amber-600 dark:text-amber-400"
+                                class="mt-1 font-mono text-lg font-bold text-emerald-600 dark:text-emerald-400"
+                                data-test="plant-green-max"
                             >
-                                {{ plantDefault.burn_warning_pct }}%
+                                ≤ {{ plantDefault.green_max_pct }}%
                             </div>
                         </div>
 
-                        <!-- Metric 5: Burn Danger -->
+                        <!-- Metric 5: Yellow zone limit -->
                         <div
                             class="bg-background/90 col-span-2 rounded-lg border p-3 shadow-2xs sm:col-span-1"
                         >
                             <div
-                                class="flex items-center gap-1.5 text-xs text-red-600 dark:text-red-400"
+                                class="flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400"
                             >
                                 <ShieldAlert class="size-3.5" />
-                                <span>{{ __('Burn Danger') }}</span>
+                                <span>{{ __('Yellow Zone Limit') }}</span>
                             </div>
                             <div
-                                class="mt-1 font-mono text-lg font-bold text-red-600 dark:text-red-400"
+                                class="mt-1 font-mono text-lg font-bold text-amber-600 dark:text-amber-400"
+                                data-test="plant-yellow-max"
                             >
-                                {{ plantDefault.burn_danger_pct }}%
+                                ≤ {{ plantDefault.yellow_max_pct }}%
                             </div>
                         </div>
                     </div>
@@ -1007,7 +1013,7 @@ const flashSuccess = computed(
                                     <th
                                         class="px-4 py-3 text-center font-semibold"
                                     >
-                                        {{ __('Burn Alert Levels') }}
+                                        {{ __('Tolerance Zones') }}
                                     </th>
                                     <th
                                         class="px-4 py-3 text-right font-semibold"
@@ -1119,17 +1125,17 @@ const flashSuccess = computed(
                                             class="inline-flex items-center gap-1.5 font-mono text-xs"
                                         >
                                             <span
-                                                class="rounded bg-amber-50 px-1.5 py-0.5 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300"
+                                                class="rounded bg-emerald-50 px-1.5 py-0.5 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300"
                                             >
-                                                {{ dept.burn_warning_pct }}%
+                                                {{ dept.green_max_pct }}%
                                             </span>
                                             <span class="text-muted-foreground"
                                                 >/</span
                                             >
                                             <span
-                                                class="rounded bg-red-50 px-1.5 py-0.5 text-red-700 dark:bg-red-950/50 dark:text-red-300"
+                                                class="rounded bg-amber-50 px-1.5 py-0.5 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300"
                                             >
-                                                {{ dept.burn_danger_pct }}%
+                                                {{ dept.yellow_max_pct }}%
                                             </span>
                                         </div>
                                     </td>
@@ -1202,6 +1208,13 @@ const flashSuccess = computed(
                     </div>
                 </div>
             </div>
+
+            <!-- Early Warning: PIC department per detected cause (E10-08) -->
+            <AlertCausePicCard
+                v-if="causeMappings"
+                :mappings="causeMappings"
+                :departments="availableDepartments"
+            />
         </div>
 
         <!-- Tab 2: User Accounts (E02-05 Full Implementation) -->

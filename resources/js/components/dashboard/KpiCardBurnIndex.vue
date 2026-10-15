@@ -5,13 +5,15 @@ import ChartSkeleton from '@/components/charts/ChartSkeleton.vue';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { useTrans } from '@/composables/useTrans';
+import { BURN_ZONE_STYLES, normalizeBurnZone } from '@/lib/burnZone';
+import type { BurnZone } from '@/lib/burnZone';
 
 export interface BurnIndexCardData {
     plan_pct: number;
     actual_pct: number;
     planned_hours: number;
     actual_hours: number;
-    burn_zone: 'safe' | 'on_track' | 'warning' | 'danger';
+    burn_zone: BurnZone;
     burn_zone_label: string;
 }
 
@@ -26,52 +28,25 @@ const props = withDefaults(defineProps<Props>(), {
         actual_pct: 0.0,
         planned_hours: 0.0,
         actual_hours: 0.0,
-        burn_zone: 'safe',
-        burn_zone_label: 'Aman (<85%)',
+        burn_zone: 'green',
+        burn_zone_label: 'Hijau (≤70%)',
     }),
     loading: false,
 });
 
 const { __ } = useTrans();
 
-const zoneBadgeClass = computed(() => {
-    switch (props.data?.burn_zone) {
-        case 'danger':
-            return 'bg-red-50 text-[#cc0000] border-red-200 dark:bg-red-950/40 dark:text-red-300 dark:border-red-900';
-        case 'warning':
-            return 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-900';
-        case 'on_track':
-            return 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-900';
-        case 'safe':
-        default:
-            return 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-900';
-    }
-});
+const zone = computed(() => normalizeBurnZone(props.data?.burn_zone));
 
-const actualBarColor = computed(() => {
-    switch (props.data?.burn_zone) {
-        case 'danger':
-            return 'bg-[#cc0000]';
-        case 'warning':
-            return 'bg-amber-500';
-        case 'on_track':
-            return 'bg-blue-600';
-        case 'safe':
-        default:
-            return 'bg-emerald-500';
-    }
-});
+const zoneBadgeClass = computed(() => BURN_ZONE_STYLES[zone.value].badge);
 
-const heroPctClass = computed(() => {
-    switch (props.data?.burn_zone) {
-        case 'danger':
-            return 'text-[#cc0000] dark:text-red-400';
-        case 'warning':
-            return 'text-amber-600 dark:text-amber-400';
-        default:
-            return 'text-slate-900 dark:text-white';
-    }
-});
+const actualBarColor = computed(() => BURN_ZONE_STYLES[zone.value].solid);
+
+const heroPctClass = computed(() =>
+    zone.value === 'green'
+        ? 'text-slate-900 dark:text-white'
+        : BURN_ZONE_STYLES[zone.value].text,
+);
 
 const actualBarWidth = computed(() => {
     const pct = props.data?.actual_pct ?? 0;
@@ -91,9 +66,9 @@ const actualBarWidth = computed(() => {
                 <div
                     class="shrink-0 rounded-md p-1.5"
                     :class="
-                        data?.burn_zone === 'danger'
+                        zone === 'red'
                             ? 'bg-red-500/10 text-[#cc0000] dark:bg-red-500/20'
-                            : data?.burn_zone === 'warning'
+                            : zone === 'yellow'
                               ? 'bg-amber-500/10 text-amber-600 dark:bg-amber-500/20'
                               : 'bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20'
                     "
@@ -144,10 +119,7 @@ const actualBarWidth = computed(() => {
                             :class="zoneBadgeClass"
                         >
                             <ShieldAlert
-                                v-if="
-                                    data?.burn_zone === 'danger' ||
-                                    data?.burn_zone === 'warning'
-                                "
+                                v-if="zone !== 'green'"
                                 class="mr-1 size-2.5 shrink-0"
                             />
                             <ShieldCheck

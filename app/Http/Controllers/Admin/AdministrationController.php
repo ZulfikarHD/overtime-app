@@ -6,6 +6,7 @@ use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
 use App\Models\Department;
 use App\Models\User;
+use App\Services\AlertCauseMappingService;
 use App\Services\PolicyThresholdService;
 use App\Services\ShiftScheduleService;
 use App\Services\UserService;
@@ -19,6 +20,7 @@ class AdministrationController extends Controller
         public PolicyThresholdService $policyService,
         public UserService $userService,
         public ShiftScheduleService $shiftScheduleService,
+        public AlertCauseMappingService $alertCauseMappingService,
     ) {}
 
     /**
@@ -112,13 +114,14 @@ class AdministrationController extends Controller
                 'weekly_soft_limit_hours' => (float) $plantDefault->weekly_soft_limit_hours,
                 'consecutive_weeks_alert' => (int) $plantDefault->consecutive_weeks_alert,
                 'spkl_grace_period_days' => (int) $plantDefault->spkl_grace_period_days,
-                'burn_warning_pct' => (float) $plantDefault->burn_warning_pct,
-                'burn_danger_pct' => (float) $plantDefault->burn_danger_pct,
+                'green_max_pct' => (float) $plantDefault->green_max_pct,
+                'yellow_max_pct' => (float) $plantDefault->yellow_max_pct,
                 'updated_at' => $plantDefault->updated_at?->toIso8601String(),
             ],
             'departments' => $departmentsWithStatus->values(),
             'availableDepartments' => $activeDepartments,
             'departmentsWithSections' => $departmentsWithSections,
+            'causeMappings' => $this->alertCauseMappingService->listForAdmin(),
             'policyStats' => [
                 'total_departments' => $departmentsWithStatus->count(),
                 'overrides_count' => $overridesCount,

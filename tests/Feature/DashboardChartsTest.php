@@ -83,10 +83,9 @@ test('section-burn endpoint returns json for authenticated supervisory users', f
         'fiscal_month',
         'month_name',
         'total_sections',
-        'critical_sections_count',
-        'warning_sections_count',
-        'on_track_sections_count',
-        'safe_sections_count',
+        'red_sections_count',
+        'yellow_sections_count',
+        'green_sections_count',
     ]);
 });
 
@@ -284,11 +283,11 @@ test('section-burn comparison orders sections descending by burn_index_pct', fun
 
     expect($data['sections'])->toHaveCount(2)
         ->and($data['sections'][0]['code'])->toBe('SEC_HIGH')
-        ->and($data['sections'][0]['zone'])->toBe('danger')
+        ->and($data['sections'][0]['zone'])->toBe('red')
         ->and($data['sections'][1]['code'])->toBe('SEC_LOW')
-        ->and($data['sections'][1]['zone'])->toBe('safe')
-        ->and($data['critical_sections_count'])->toBe(1)
-        ->and($data['safe_sections_count'])->toBe(1);
+        ->and($data['sections'][1]['zone'])->toBe('green')
+        ->and($data['red_sections_count'])->toBe(1)
+        ->and($data['green_sections_count'])->toBe(1);
 });
 
 test('daily-burn chart handles zero planned hours gracefully without division by zero', function () {
@@ -321,6 +320,6 @@ test('daily-burn chart handles zero planned hours gracefully without division by
 
     expect($data['planned_hours'])->toEqual(0)
         ->and($data['burn_index_pct'])->toEqual(0)
-        ->and($data['burn_zone'])->toBe('safe')
+        ->and($data['burn_zone'])->toBe('green')
         ->and($data['plan_cumulative'][0])->toEqual(0);
 });

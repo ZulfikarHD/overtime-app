@@ -10,6 +10,7 @@ use App\Models\OvertimeItem;
 use App\Models\PolicyThreshold;
 use App\Models\Section;
 use App\Models\User;
+use App\Services\PolicyThresholdService;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 
@@ -27,6 +28,7 @@ class ScenarioCalculatorService
 
     public function __construct(
         public PearsonCorrelationService $pearsonService,
+        protected PolicyThresholdService $policyThresholdService,
     ) {}
 
     /**
@@ -323,14 +325,7 @@ class ScenarioCalculatorService
             ? round(($projectedCost / $budgetAllocation) * 100.0, 1)
             : round(100.0 + $overtimeChangePct, 1);
 
-        $burnZone = 'safe';
-        if ($projectedBurnIndex > 115.0) {
-            $burnZone = 'danger';
-        } elseif ($projectedBurnIndex > 100.0) {
-            $burnZone = 'warning';
-        } elseif ($projectedBurnIndex >= 85.0) {
-            $burnZone = 'on_track';
-        }
+        $burnZone = $this->policyThresholdService->classify($projectedBurnIndex, $departmentId)->value;
 
         // Production Volume Impact % (using r ~ 0.78 empirical correlation)
         $correlationR = 0.78;
@@ -408,7 +403,7 @@ class ScenarioCalculatorService
             'projected_cost' => (float) ($data['projected_cost'] ?? 0.0),
             'formatted_projected_cost' => $this->formatCurrencyCompact((float) ($data['projected_cost'] ?? 0.0)),
             'projected_burn_index' => (float) ($data['projected_burn_index'] ?? 100.0),
-            'burn_zone' => (string) ($data['burn_zone'] ?? 'on_track'),
+            'burn_zone' => (string) ($data['burn_zone'] ?? 'yellow'),
             'safety_risk_score' => (float) ($data['safety_risk_score'] ?? 0.0),
             'production_volume_impact_pct' => (float) ($data['production_volume_impact_pct'] ?? 0.0),
         ];

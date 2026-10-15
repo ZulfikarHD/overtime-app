@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\BurnZone;
 use App\Models\Department;
 use App\Models\PolicyThreshold;
 use Illuminate\Support\Collection;
@@ -9,6 +10,10 @@ use Illuminate\Validation\ValidationException;
 
 class PolicyThresholdService
 {
+    public const DEFAULT_GREEN_MAX_PCT = 70.00;
+
+    public const DEFAULT_YELLOW_MAX_PCT = 90.00;
+
     /**
      * Retrieve the plant-wide default policy threshold.
      * If not found, initializes and returns standard defaults.
@@ -21,10 +26,46 @@ class PolicyThresholdService
                 'weekly_soft_limit_hours' => 20.0,
                 'consecutive_weeks_alert' => 3,
                 'spkl_grace_period_days' => 2,
-                'burn_warning_pct' => 100.00,
-                'burn_danger_pct' => 115.00,
+                'green_max_pct' => self::DEFAULT_GREEN_MAX_PCT,
+                'yellow_max_pct' => self::DEFAULT_YELLOW_MAX_PCT,
             ]
         );
+    }
+
+    /**
+     * Classify an index percentage into Hijau / Kuning / Merah using the
+     * effective tolerance of the department (falls back to plant default).
+     */
+    public function classify(float $pct, ?int $departmentId = null): BurnZone
+    {
+        return $this->classifyWith($pct, $this->getForDepartment($departmentId));
+    }
+
+    /**
+     * Classify an index percentage against an already-resolved threshold.
+     */
+    public function classifyWith(float $pct, PolicyThreshold $threshold): BurnZone
+    {
+        return BurnZone::classify(
+            $pct,
+            (float) $threshold->green_max_pct,
+            (float) $threshold->yellow_max_pct,
+        );
+    }
+
+    /**
+     * Zone boundaries payload shared with the frontend (charts, badges, admin preview).
+     *
+     * @return array{green_max_pct: float, yellow_max_pct: float}
+     */
+    public function boundariesFor(?int $departmentId = null): array
+    {
+        $threshold = $this->getForDepartment($departmentId);
+
+        return [
+            'green_max_pct' => (float) $threshold->green_max_pct,
+            'yellow_max_pct' => (float) $threshold->yellow_max_pct,
+        ];
     }
 
     /**
@@ -73,8 +114,8 @@ class PolicyThresholdService
                 'weekly_soft_limit_hours' => (float) $effectiveThreshold->weekly_soft_limit_hours,
                 'consecutive_weeks_alert' => (int) $effectiveThreshold->consecutive_weeks_alert,
                 'spkl_grace_period_days' => (int) $effectiveThreshold->spkl_grace_period_days,
-                'burn_warning_pct' => (float) $effectiveThreshold->burn_warning_pct,
-                'burn_danger_pct' => (float) $effectiveThreshold->burn_danger_pct,
+                'green_max_pct' => (float) $effectiveThreshold->green_max_pct,
+                'yellow_max_pct' => (float) $effectiveThreshold->yellow_max_pct,
                 'updated_at' => $effectiveThreshold->updated_at?->toIso8601String(),
             ];
         });
@@ -93,8 +134,8 @@ class PolicyThresholdService
             'weekly_soft_limit_hours' => $data['weekly_soft_limit_hours'],
             'consecutive_weeks_alert' => $data['consecutive_weeks_alert'],
             'spkl_grace_period_days' => $data['spkl_grace_period_days'],
-            'burn_warning_pct' => $data['burn_warning_pct'],
-            'burn_danger_pct' => $data['burn_danger_pct'],
+            'green_max_pct' => $data['green_max_pct'],
+            'yellow_max_pct' => $data['yellow_max_pct'],
         ]);
 
         return $plantDefault;
@@ -113,8 +154,8 @@ class PolicyThresholdService
                 'weekly_soft_limit_hours' => $data['weekly_soft_limit_hours'],
                 'consecutive_weeks_alert' => $data['consecutive_weeks_alert'],
                 'spkl_grace_period_days' => $data['spkl_grace_period_days'],
-                'burn_warning_pct' => $data['burn_warning_pct'],
-                'burn_danger_pct' => $data['burn_danger_pct'],
+                'green_max_pct' => $data['green_max_pct'],
+                'yellow_max_pct' => $data['yellow_max_pct'],
             ]
         );
     }

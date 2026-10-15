@@ -7,6 +7,7 @@ use App\Enums\UserRole;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -155,6 +156,24 @@ class User extends Authenticatable implements PasskeyUser
                 ? $this->employee?->id
                 : ($this->npk ? $this->employee()->value('id') : null),
         );
+    }
+
+    /**
+     * Scope: the users who are notified of an Early Warning follow-up addressed to the department
+     * (active admin / manager / team leader with an email address).
+     *
+     * @param  Builder<static>  $query
+     */
+    public function scopeAlertRecipientsOf(Builder $query, int $departmentId): void
+    {
+        $query->where('is_active', true)
+            ->where('department_id', $departmentId)
+            ->whereIn('role', [
+                UserRole::Admin->value,
+                UserRole::Manager->value,
+                UserRole::TeamLeader->value,
+            ])
+            ->whereNotNull('email');
     }
 
     /**

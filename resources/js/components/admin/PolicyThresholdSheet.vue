@@ -33,8 +33,8 @@ export type PolicyThresholdRecord = {
     weekly_soft_limit_hours: number | string;
     consecutive_weeks_alert: number | string;
     spkl_grace_period_days: number | string;
-    burn_warning_pct: number | string;
-    burn_danger_pct: number | string;
+    green_max_pct: number | string;
+    yellow_max_pct: number | string;
 };
 
 export type DepartmentOption = {
@@ -63,8 +63,8 @@ const form = useForm({
     weekly_soft_limit_hours: 20.0,
     consecutive_weeks_alert: 3,
     spkl_grace_period_days: 2,
-    burn_warning_pct: 100.0,
-    burn_danger_pct: 115.0,
+    green_max_pct: 70.0,
+    yellow_max_pct: 90.0,
 });
 
 const isSubmitting = ref(false);
@@ -87,11 +87,9 @@ watch(
             form.spkl_grace_period_days = Number(
                 props.threshold.spkl_grace_period_days ?? 2,
             );
-            form.burn_warning_pct = Number(
-                props.threshold.burn_warning_pct ?? 100.0,
-            );
-            form.burn_danger_pct = Number(
-                props.threshold.burn_danger_pct ?? 115.0,
+            form.green_max_pct = Number(props.threshold.green_max_pct ?? 70.0);
+            form.yellow_max_pct = Number(
+                props.threshold.yellow_max_pct ?? 90.0,
             );
             form.clearErrors();
             formError.value = null;
@@ -100,8 +98,8 @@ watch(
             form.weekly_soft_limit_hours = 20.0;
             form.consecutive_weeks_alert = 3;
             form.spkl_grace_period_days = 2;
-            form.burn_warning_pct = 100.0;
-            form.burn_danger_pct = 115.0;
+            form.green_max_pct = 70.0;
+            form.yellow_max_pct = 90.0;
             form.clearErrors();
             formError.value = null;
         }
@@ -124,12 +122,28 @@ const selectableDepartments = computed(() => {
     });
 });
 
-// Real-time validation warning if danger < warning
+// Real-time validation warning if yellow limit < green limit
 const hasLogicalPercentageMismatch = computed(() => {
-    const warning = Number(form.burn_warning_pct);
-    const danger = Number(form.burn_danger_pct);
-    return !isNaN(warning) && !isNaN(danger) && danger < warning;
+    const green = Number(form.green_max_pct);
+    const yellow = Number(form.yellow_max_pct);
+    return !isNaN(green) && !isNaN(yellow) && yellow < green;
 });
+
+const previewPlanIndex = 1200;
+
+const previewGreenMax = computed(
+    () => (previewPlanIndex * Number(form.green_max_pct || 0)) / 100,
+);
+
+const previewYellowMax = computed(
+    () => (previewPlanIndex * Number(form.yellow_max_pct || 0)) / 100,
+);
+
+function formatIndex(value: number): string {
+    return new Intl.NumberFormat('id-ID', {
+        maximumFractionDigits: 0,
+    }).format(value);
+}
 
 const isSaveDisabled = computed(() => {
     if (isSubmitting.value) {
@@ -145,8 +159,8 @@ const isSaveDisabled = computed(() => {
         Number(form.weekly_soft_limit_hours) < 0 ||
         Number(form.consecutive_weeks_alert) < 1 ||
         Number(form.spkl_grace_period_days) < 0 ||
-        Number(form.burn_warning_pct) < 0 ||
-        Number(form.burn_danger_pct) < 0
+        Number(form.green_max_pct) < 0 ||
+        Number(form.yellow_max_pct) < 0
     ) {
         return true;
     }
@@ -170,8 +184,8 @@ function handleSubmit() {
         weekly_soft_limit_hours: Number(form.weekly_soft_limit_hours),
         consecutive_weeks_alert: Number(form.consecutive_weeks_alert),
         spkl_grace_period_days: Number(form.spkl_grace_period_days),
-        burn_warning_pct: Number(form.burn_warning_pct),
-        burn_danger_pct: Number(form.burn_danger_pct),
+        green_max_pct: Number(form.green_max_pct),
+        yellow_max_pct: Number(form.yellow_max_pct),
     };
 
     const hasId = !!props.threshold?.id;
@@ -478,16 +492,19 @@ function handleSubmit() {
                     <InputError :message="form.errors.spkl_grace_period_days" />
                 </div>
 
-                <!-- Metric 4 & 5: Budget Burn Alert Levels -->
-                <div class="bg-card space-y-4 rounded-lg border p-4">
+                <!-- Metric 4 & 5: 3-Zone Tolerance (Hijau / Kuning / Merah) -->
+                <div
+                    class="bg-card space-y-4 rounded-lg border p-4"
+                    data-test="policy-zone-section"
+                >
                     <div>
                         <div class="text-sm font-semibold">
-                            {{ __('Budget Burn Alert Levels') }}
+                            {{ __('Tolerance Zones (Green / Yellow / Red)') }}
                         </div>
                         <p class="text-muted-foreground mt-0.5 text-xs">
                             {{
                                 __(
-                                    'Define percentage thresholds for department overtime budget consumption warnings and danger limits.',
+                                    'Set the upper limit of the Green and Yellow zones as a percentage of the plan index. Anything above the Yellow limit is Red. Leave defaults to inherit the standard 70% / 90% rule.',
                                 )
                             }}
                         </p>
@@ -505,7 +522,7 @@ function handleSubmit() {
                             <span>
                                 {{
                                     __(
-                                        'Burn danger percentage must be greater than or equal to burn warning percentage.',
+                                        'Yellow zone limit must be greater than or equal to the green zone limit.',
                                     )
                                 }}
                             </span>
@@ -513,23 +530,23 @@ function handleSubmit() {
                     </div>
 
                     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                        <!-- Burn Warning -->
+                        <!-- Green max -->
                         <div class="space-y-2">
                             <div class="flex items-center justify-between">
                                 <Label
-                                    for="input-burn-warning"
-                                    class="text-xs font-medium text-amber-700 dark:text-amber-400"
+                                    for="input-green-max"
+                                    class="text-xs font-medium text-emerald-700 dark:text-emerald-400"
                                 >
-                                    {{ __('Burn Warning Percentage (%)') }}
+                                    {{ __('Green Zone Limit (%)') }}
                                     <span class="text-red-500">*</span>
                                 </Label>
                                 <span class="font-mono text-xs font-semibold">
-                                    {{ form.burn_warning_pct }}%
+                                    {{ form.green_max_pct }}%
                                 </span>
                             </div>
                             <Input
-                                id="input-burn-warning"
-                                v-model.number="form.burn_warning_pct"
+                                id="input-green-max"
+                                v-model.number="form.green_max_pct"
                                 type="number"
                                 min="0"
                                 max="500"
@@ -540,32 +557,30 @@ function handleSubmit() {
                             <p class="text-muted-foreground text-[11px]">
                                 {{
                                     __(
-                                        'Budget burn index threshold triggering amber warning alerts',
+                                        'Index at or below this value is Green (on plan).',
                                     )
                                 }}
                             </p>
-                            <InputError
-                                :message="form.errors.burn_warning_pct"
-                            />
+                            <InputError :message="form.errors.green_max_pct" />
                         </div>
 
-                        <!-- Burn Danger -->
+                        <!-- Yellow max -->
                         <div class="space-y-2">
                             <div class="flex items-center justify-between">
                                 <Label
-                                    for="input-burn-danger"
-                                    class="text-xs font-medium text-red-700 dark:text-red-400"
+                                    for="input-yellow-max"
+                                    class="text-xs font-medium text-amber-700 dark:text-amber-400"
                                 >
-                                    {{ __('Burn Danger Percentage (%)') }}
+                                    {{ __('Yellow Zone Limit (%)') }}
                                     <span class="text-red-500">*</span>
                                 </Label>
                                 <span class="font-mono text-xs font-semibold">
-                                    {{ form.burn_danger_pct }}%
+                                    {{ form.yellow_max_pct }}%
                                 </span>
                             </div>
                             <Input
-                                id="input-burn-danger"
-                                v-model.number="form.burn_danger_pct"
+                                id="input-yellow-max"
+                                v-model.number="form.yellow_max_pct"
                                 type="number"
                                 min="0"
                                 max="500"
@@ -576,13 +591,59 @@ function handleSubmit() {
                             <p class="text-muted-foreground text-[11px]">
                                 {{
                                     __(
-                                        'Budget burn index threshold triggering red critical alert status',
+                                        'Index above the Green limit up to this value is Yellow; above it is Red.',
                                     )
                                 }}
                             </p>
-                            <InputError
-                                :message="form.errors.burn_danger_pct"
-                            />
+                            <InputError :message="form.errors.yellow_max_pct" />
+                        </div>
+                    </div>
+
+                    <!-- Live preview against a plan index of 1.200 -->
+                    <div
+                        class="rounded-md border border-dashed bg-slate-50/70 p-3 dark:bg-slate-900/40"
+                        data-test="policy-zone-preview"
+                    >
+                        <div
+                            class="text-muted-foreground mb-2 text-[11px] font-semibold tracking-wide uppercase"
+                        >
+                            {{
+                                __('Preview (plan index :plan)', {
+                                    plan: formatIndex(previewPlanIndex),
+                                })
+                            }}
+                        </div>
+                        <div class="grid grid-cols-3 gap-2 font-mono text-xs">
+                            <div
+                                class="rounded border border-emerald-200 bg-emerald-50 p-2 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-300"
+                            >
+                                <div class="font-sans font-semibold">
+                                    {{ __('Hijau') }}
+                                </div>
+                                <div data-test="preview-green">
+                                    ≤ {{ formatIndex(previewGreenMax) }}
+                                </div>
+                            </div>
+                            <div
+                                class="rounded border border-amber-200 bg-amber-50 p-2 text-amber-700 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-300"
+                            >
+                                <div class="font-sans font-semibold">
+                                    {{ __('Kuning') }}
+                                </div>
+                                <div data-test="preview-yellow">
+                                    ≤ {{ formatIndex(previewYellowMax) }}
+                                </div>
+                            </div>
+                            <div
+                                class="rounded border border-red-200 bg-red-50 p-2 text-[#cc0000] dark:border-red-900 dark:bg-red-950/40 dark:text-red-300"
+                            >
+                                <div class="font-sans font-semibold">
+                                    {{ __('Merah') }}
+                                </div>
+                                <div data-test="preview-red">
+                                    &gt; {{ formatIndex(previewYellowMax) }}
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

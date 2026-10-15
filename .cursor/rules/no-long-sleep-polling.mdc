@@ -1,0 +1,32 @@
+---
+description: Never waste time with long sleeps or endless polling of slow or flaky commands
+alwaysApply: true
+---
+
+# No Long Sleeps, No Endless Polling
+
+## Rules
+
+1. **Never wait with `sleep` in the shell.** Use `AwaitShell` for background commands, or `block_until_ms` for short ones. No `sleep 120`, no `sleep 290` chains.
+2. **Budget: max 2 waits per task, about 2 minutes total.** If the command is still running after that, stop and report instead of polling again.
+3. **Run the narrowest check first.** A file or `--filter` run, not the whole suite. Run the full suite once, in the background, never in a retry loop.
+4. **Do not retry a failing or hanging command more than once** without new evidence (a changed hypothesis, a fixed cause). Repeating the same run is not evidence.
+5. **Classify failures once.** Compare against a clean `HEAD` copy a single time. If the same test fails there, it is pre-existing: record it and move on.
+6. **Flaky browser harness (Playwright hangs, memory errors) is an environment problem.** Report it and ask the user to run the browser suite locally. Do not spend minutes cycling `pkill` and reruns.
+7. **Ask early.** When a check cannot finish in the budget, say so and let the user decide.
+
+## Examples
+
+```bash
+# ❌ BAD — blind waiting and re-polling
+sleep 290; wc -l /tmp/results.txt
+sleep 290; wc -l /tmp/results.txt
+
+# ✅ GOOD — narrow run, short block, then report
+vendor/bin/pest tests/Feature/EarlyWarningAccessTest.php --compact
+```
+
+```text
+❌ BAD  Full browser suite per file, 3 retries each, 40 minutes.
+✅ GOOD Run only the browser tests of the change. If the harness hangs, report it.
+```

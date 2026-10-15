@@ -4,9 +4,9 @@ use App\Models\Department;
 use App\Models\Section;
 use App\Models\User;
 
-test('guest visiting root / sees tailored automotive isuzu login page with indonesian default and can switch to english', function () {
-    visit('/')
-        ->assertPathIs('/')
+test('guest visiting /login sees tailored automotive isuzu login page with indonesian default and can switch to english', function () {
+    visit('/login')
+        ->assertPathIs('/login')
         ->assertSee('PT ISUZU ASTRA MOTOR INDONESIA')
         ->assertPresent('[data-test="isuzu-logo-plate"]')
         ->assertPresent('[data-test="login-live-clock"]')
@@ -73,7 +73,7 @@ test('user can log in through tailored isuzu automotive login page and view plan
         'section_id' => $section->id,
     ]);
 
-    visit('/')
+    visit('/login')
         ->fill('email', 'plant.manager@isuzu.astra.co.id')
         ->fill('password', 'password')
         ->click('[data-test="login-button"]')
@@ -119,7 +119,7 @@ test('authenticated user sees redesigned sidebar following style guide with tele
         'section_id' => $section->id,
     ]);
 
-    visit('/')
+    visit('/login')
         ->fill('email', 'engineer@isuzu.astra.co.id')
         ->fill('password', 'password')
         ->click('[data-test="login-button"]')

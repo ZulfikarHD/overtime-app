@@ -24,7 +24,10 @@ import { Chart } from 'vue-chartjs';
 import ChartSkeleton from '@/components/charts/ChartSkeleton.vue';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useBurnZone } from '@/composables/useBurnZone';
 import { useTrans } from '@/composables/useTrans';
+import { BURN_ZONE_STYLES } from '@/lib/burnZone';
+import type { BurnZone } from '@/lib/burnZone';
 import { registerChartDefaults } from '@/plugins/chartjs';
 
 ChartJS.register(
@@ -77,6 +80,7 @@ const props = withDefaults(defineProps<Props>(), {
 });
 
 const { __ } = useTrans();
+const { classify } = useBurnZone();
 
 // Category color tokens (match employee summary table)
 const CATEGORY_COLORS = {
@@ -109,28 +113,14 @@ const deviationPct = computed(() => {
     );
 });
 
-const burnZone = computed(() => {
-    const pct = deviationPct.value;
-    if (pct > 115) {
-        return 'danger';
-    }
-    if (pct > 100) {
-        return 'warning';
-    }
-    if (pct >= 85) {
-        return 'on_track';
-    }
-    return 'safe';
-});
+const burnZone = computed<BurnZone>(() => classify(deviationPct.value));
 
 const burnBadgeClass = computed(() => {
     switch (burnZone.value) {
-        case 'danger':
+        case 'red':
             return 'bg-red-500/10 text-red-700 border-red-500/20 dark:text-red-300';
-        case 'warning':
+        case 'yellow':
             return 'bg-amber-500/10 text-amber-700 border-amber-500/20 dark:text-amber-300';
-        case 'on_track':
-            return 'bg-blue-500/10 text-blue-700 border-blue-500/20 dark:text-blue-300';
         default:
             return 'bg-emerald-500/10 text-emerald-700 border-emerald-500/20 dark:text-emerald-300';
     }
@@ -356,11 +346,11 @@ const chartOptions = computed<ChartOptions<'bar'>>(() => ({
                         class="border px-2 py-0.5 font-mono text-xs tabular-nums"
                     >
                         <TrendingUp
-                            v-if="deviationPct > 100"
+                            v-if="burnZone === 'red'"
                             class="mr-1 size-3"
                         />
                         <TrendingDown
-                            v-else-if="deviationPct < 85"
+                            v-else-if="burnZone === 'yellow'"
                             class="mr-1 size-3"
                         />
                         <CheckCircle2 v-else class="mr-1 size-3" />
@@ -503,30 +493,15 @@ const chartOptions = computed<ChartOptions<'bar'>>(() => ({
                                         week.planned_hours > 0
                                     "
                                     class="font-mono text-xs font-semibold tabular-nums"
-                                    :class="{
-                                        'text-[#cc0000]':
-                                            week.actual_total /
-                                                week.planned_hours >
-                                            1.15,
-                                        'text-amber-600 dark:text-amber-400':
-                                            week.actual_total /
-                                                week.planned_hours >
-                                                1.0 &&
-                                            week.actual_total /
-                                                week.planned_hours <=
-                                                1.15,
-                                        'text-blue-600 dark:text-blue-400':
-                                            week.actual_total /
-                                                week.planned_hours >=
-                                                0.85 &&
-                                            week.actual_total /
-                                                week.planned_hours <=
-                                                1.0,
-                                        'text-emerald-600 dark:text-emerald-400':
-                                            week.actual_total /
-                                                week.planned_hours <
-                                            0.85,
-                                    }"
+                                    :class="
+                                        BURN_ZONE_STYLES[
+                                            classify(
+                                                (week.actual_total /
+                                                    week.planned_hours) *
+                                                    100,
+                                            )
+                                        ].text
+                                    "
                                 >
                                     {{
                                         Math.round(

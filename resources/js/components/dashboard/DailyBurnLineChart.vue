@@ -7,15 +7,16 @@ import {
     ChevronLeft,
     ChevronRight,
     HelpCircle,
-    TrendingUp,
 } from '@lucide/vue';
 import { computed } from 'vue';
 import BaseLineChart from '@/components/charts/BaseLineChart.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { chartColors, useChartTheme } from '@/composables/useChartTheme';
+import { chartColors } from '@/composables/useChartTheme';
 import { useTrans } from '@/composables/useTrans';
+import { BURN_ZONE_STYLES, normalizeBurnZone } from '@/lib/burnZone';
+import type { BurnZone } from '@/lib/burnZone';
 
 export interface DailyBurnChartData {
     labels: string[];
@@ -25,7 +26,7 @@ export interface DailyBurnChartData {
     planned_hours: number;
     current_actual_hours: number;
     burn_index_pct: number;
-    burn_zone: 'safe' | 'on_track' | 'warning' | 'danger';
+    burn_zone: BurnZone;
     burn_zone_label: string;
     cutoff_day: number;
     days_in_month: number;
@@ -61,43 +62,31 @@ const emit = defineEmits<{
 }>();
 
 const { __ } = useTrans();
-const { getBurnZoneColor } = useChartTheme();
+const zone = computed(() => normalizeBurnZone(props.data?.burn_zone));
 
 const actualLineColor = computed(() => {
     if (!props.data) {
         return chartColors.primary;
     }
-    return getBurnZoneColor(props.data.burn_index_pct);
+
+    return BURN_ZONE_STYLES[zone.value].hex;
 });
 
 const zoneBadgeClass = computed(() => {
-    const zone = props.data?.burn_zone ?? 'safe';
-    switch (zone) {
-        case 'danger':
+    switch (zone.value) {
+        case 'red':
             return 'bg-red-500/10 text-red-700 border-red-500/20 dark:text-red-300';
-        case 'warning':
+        case 'yellow':
             return 'bg-amber-500/10 text-amber-700 border-amber-500/20 dark:text-amber-300';
-        case 'on_track':
-            return 'bg-blue-500/10 text-blue-700 border-blue-500/20 dark:text-blue-300';
-        case 'safe':
+        case 'green':
         default:
             return 'bg-emerald-500/10 text-emerald-700 border-emerald-500/20 dark:text-emerald-300';
     }
 });
 
-const zoneIcon = computed(() => {
-    const zone = props.data?.burn_zone ?? 'safe';
-    switch (zone) {
-        case 'danger':
-        case 'warning':
-            return AlertTriangle;
-        case 'on_track':
-            return TrendingUp;
-        case 'safe':
-        default:
-            return CheckCircle2;
-    }
-});
+const zoneIcon = computed(() =>
+    zone.value === 'green' ? CheckCircle2 : AlertTriangle,
+);
 
 const datasets = computed<ChartDataset<'line'>[]>(() => {
     if (!props.data) {

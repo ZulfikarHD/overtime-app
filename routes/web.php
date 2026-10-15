@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\AdministrationController;
+use App\Http\Controllers\Admin\AlertCauseMappingController;
 use App\Http\Controllers\Admin\CapexProjectController;
 use App\Http\Controllers\Admin\DepartmentController;
 use App\Http\Controllers\Admin\EmployeeController;
@@ -11,6 +12,7 @@ use App\Http\Controllers\Admin\PolicyThresholdController;
 use App\Http\Controllers\Admin\SectionController;
 use App\Http\Controllers\Admin\ShiftScheduleController;
 use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\AlertFollowUpController;
 use App\Http\Controllers\Analytics\MlController;
 use App\Http\Controllers\AnalyticsController;
 use App\Http\Controllers\AnalyticsScenarioController;
@@ -19,6 +21,7 @@ use App\Http\Controllers\Budgets\OvertimeBudgetController;
 use App\Http\Controllers\Budgets\OvertimeBudgetImportController;
 use App\Http\Controllers\DashboardBurnIndexController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\EarlyWarningController;
 use App\Http\Controllers\EmployeeSelfServiceController;
 use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\NotificationController;
@@ -32,17 +35,13 @@ use App\Http\Controllers\Reports\EmployeeReportController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
-use Laravel\Fortify\Features;
 
-Route::get('/', function (Request $request) {
+Route::get('/', function () {
     if (auth()->check()) {
         return redirect()->route('dashboard');
     }
 
-    return Inertia::render('auth/Login', [
-        'canResetPassword' => Features::enabled(Features::resetPasswords()),
-        'status' => $request->session()->get('status'),
-    ]);
+    return Inertia::render('Welcome');
 })->name('home');
 
 Route::post('/locale', [LocaleController::class, 'update'])->name('locale.update');
@@ -59,6 +58,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard/charts/day-type', [DashboardController::class, 'dayTypeBreakdown'])->name('dashboard.charts.day-type');
     Route::get('dashboard/employee-summary', [DashboardController::class, 'employeeSummaryTable'])->name('dashboard.employee-summary');
     Route::get('my/dashboard', [EmployeeSelfServiceController::class, 'index'])->name('my.dashboard');
+
+    // Early Warning inbox & alert detail (E10-02 - Admin, Manager, Team Leader)
+    Route::middleware('role:admin,manager,team_leader')->prefix('early-warning')->name('early-warning.')->group(function () {
+        Route::get('/', [EarlyWarningController::class, 'index'])->name('index');
+        Route::get('/{section}/{date}', [EarlyWarningController::class, 'show'])->name('show');
+
+        // 5W2H follow-up of an alert (E10-06) - save draft / send by email
+        Route::post('/follow-ups', [AlertFollowUpController::class, 'store'])->name('follow-ups.store');
+        Route::put('/follow-ups/{alertFollowUp}', [AlertFollowUpController::class, 'update'])->name('follow-ups.update');
+    });
 
     // Dashboard Burn Index & Budget Analytics (E05 - Admin, Manager, Team Leader)
     Route::middleware(['role:admin,manager,team_leader', 'feature:financial_governance_enabled'])->prefix('dashboard')->name('dashboard.')->group(function () {
@@ -177,6 +186,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/policy-thresholds', [PolicyThresholdController::class, 'store'])->name('policy-thresholds.store');
         Route::put('/policy-thresholds/{policy_threshold}', [PolicyThresholdController::class, 'update'])->name('policy-thresholds.update');
         Route::delete('/policy-thresholds/{policy_threshold}', [PolicyThresholdController::class, 'destroy'])->name('policy-thresholds.destroy');
+
+        // Early Warning follow-up generator: PIC department per detected cause (E10-08)
+        Route::put('/alert-cause-mappings', [AlertCauseMappingController::class, 'update'])->name('alert-cause-mappings.update');
 
         // Plant Shift Schedule Configuration
         Route::post('/shift-schedules', [ShiftScheduleController::class, 'store'])->name('shift-schedules.store');

@@ -11,7 +11,10 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useBurnZone } from '@/composables/useBurnZone';
 import { useTrans } from '@/composables/useTrans';
+import { BURN_ZONE_STYLES, normalizeBurnZone } from '@/lib/burnZone';
+import type { BurnZone } from '@/lib/burnZone';
 
 export interface DepartmentSummaryItem {
     id: number;
@@ -22,6 +25,10 @@ export interface DepartmentSummaryItem {
     total_remaining_hours: number;
     department_burn_index_pct: number;
     department_burn_zone: string;
+    department_tolerance_zone?: 'green' | 'yellow' | 'red';
+    green_sections_count?: number;
+    yellow_sections_count?: number;
+    red_sections_count?: number;
     warning_sections_count: number;
     danger_sections_count: number;
     configured_sections_count: number;
@@ -37,44 +44,30 @@ const emit = defineEmits<{
 }>();
 
 const { __ } = useTrans();
+const { classify } = useBurnZone();
 
-function getBurnStatusClass(pct: number): string {
-    if (pct > 115) {
-        return 'text-[#cc0000] bg-red-50 dark:bg-red-950/40 border-red-200 dark:border-red-900';
-    }
-    if (pct > 100) {
-        return 'text-amber-700 bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-900';
-    }
-    if (pct >= 85) {
-        return 'text-sky-700 bg-sky-50 dark:bg-sky-950/40 border-sky-200 dark:border-sky-900';
-    }
-    return 'text-emerald-700 bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-900';
+function zoneOf(dept: DepartmentSummaryItem): BurnZone {
+    return dept.department_tolerance_zone
+        ? normalizeBurnZone(dept.department_tolerance_zone)
+        : classify(dept.department_burn_index_pct);
 }
 
-function getZoneBadge(zone: string): { label: string; class: string } {
-    switch (zone) {
-        case 'ZONE_1_EXCELLENT':
-            return {
-                label: __('Zona 1: Sangat Baik'),
-                class: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-300 dark:border-emerald-800',
-            };
-        case 'ZONE_2_GOOD':
-            return {
-                label: __('Zona 2: Baik'),
-                class: 'bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-950/50 dark:text-sky-300 dark:border-sky-800',
-            };
-        case 'ZONE_3_WARNING':
-            return {
-                label: __('Zona 3: Peringatan'),
-                class: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/50 dark:text-amber-300 dark:border-amber-800',
-            };
-        case 'ZONE_4_POOR':
-        default:
-            return {
-                label: __('Zona 4: Defisit'),
-                class: 'bg-red-50 text-[#cc0000] border-red-200 dark:bg-red-950/50 dark:text-red-300 dark:border-red-800',
-            };
-    }
+function getBurnStatusClass(dept: DepartmentSummaryItem): string {
+    const style = BURN_ZONE_STYLES[zoneOf(dept)];
+
+    return `${style.text} ${style.badge}`;
+}
+
+function getZoneBadge(dept: DepartmentSummaryItem): {
+    label: string;
+    class: string;
+} {
+    const zone = zoneOf(dept);
+
+    return {
+        label: __(BURN_ZONE_STYLES[zone].label),
+        class: BURN_ZONE_STYLES[zone].badge,
+    };
 }
 </script>
 
@@ -98,7 +91,7 @@ function getZoneBadge(zone: string): { label: string; class: string } {
                 :key="dept.id"
                 class="shadow-2xs transition-shadow hover:shadow-md"
                 :class="
-                    dept.danger_sections_count > 0
+                    (dept.red_sections_count ?? 0) > 0
                         ? 'border-red-300 dark:border-red-900/60'
                         : ''
                 "
@@ -121,11 +114,9 @@ function getZoneBadge(zone: string): { label: string; class: string } {
                         <Badge
                             variant="outline"
                             class="px-2 py-0.5 text-[10px] font-semibold"
-                            :class="
-                                getZoneBadge(dept.department_burn_zone).class
-                            "
+                            :class="getZoneBadge(dept).class"
                         >
-                            {{ getZoneBadge(dept.department_burn_zone).label }}
+                            {{ getZoneBadge(dept).label }}
                         </Badge>
                     </div>
                 </CardHeader>
@@ -142,11 +133,7 @@ function getZoneBadge(zone: string): { label: string; class: string } {
                         <Badge
                             variant="outline"
                             class="font-mono text-xs font-bold tabular-nums"
-                            :class="
-                                getBurnStatusClass(
-                                    dept.department_burn_index_pct,
-                                )
-                            "
+                            :class="getBurnStatusClass(dept)"
                         >
                             {{ dept.department_burn_index_pct.toFixed(1) }}%
                         </Badge>
@@ -174,15 +161,7 @@ function getZoneBadge(zone: string): { label: string; class: string } {
                         >
                             <div
                                 class="h-full rounded-full transition-all"
-                                :class="
-                                    dept.department_burn_index_pct > 115
-                                        ? 'bg-[#cc0000]'
-                                        : dept.department_burn_index_pct > 100
-                                          ? 'bg-amber-500'
-                                          : dept.department_burn_index_pct >= 85
-                                            ? 'bg-sky-500'
-                                            : 'bg-emerald-500'
-                                "
+                                :class="BURN_ZONE_STYLES[zoneOf(dept)].solid"
                                 :style="{
                                     width: `${Math.min(100, Math.max(0, dept.department_burn_index_pct))}%`,
                                 }"
@@ -220,31 +199,24 @@ function getZoneBadge(zone: string): { label: string; class: string } {
                             class="flex items-center gap-2 font-mono text-[11px]"
                         >
                             <span
-                                v-if="dept.danger_sections_count > 0"
+                                v-if="(dept.red_sections_count ?? 0) > 0"
                                 class="font-bold text-[#cc0000] tabular-nums"
                             >
-                                {{ dept.danger_sections_count }}
-                                {{ __('Defisit') }}
+                                {{ dept.red_sections_count }}
+                                {{ __('Merah') }}
                             </span>
                             <span
-                                v-if="dept.warning_sections_count > 0"
+                                v-if="(dept.yellow_sections_count ?? 0) > 0"
                                 class="font-bold text-amber-600 tabular-nums"
                             >
-                                {{ dept.warning_sections_count }}
-                                {{ __('Peringatan') }}
+                                {{ dept.yellow_sections_count }}
+                                {{ __('Kuning') }}
                             </span>
                             <span
                                 class="font-semibold text-emerald-600 tabular-nums"
                             >
-                                {{
-                                    Math.max(
-                                        0,
-                                        dept.total_sections_count -
-                                            dept.warning_sections_count -
-                                            dept.danger_sections_count,
-                                    )
-                                }}
-                                {{ __('Aman') }}
+                                {{ dept.green_sections_count ?? 0 }}
+                                {{ __('Hijau') }}
                             </span>
                         </div>
                     </div>

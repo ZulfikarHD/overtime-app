@@ -19,8 +19,8 @@ beforeEach(function () {
     );
 
     PolicyThreshold::factory()->plantDefault()->create([
-        'burn_warning_pct' => 85,
-        'burn_danger_pct' => 100,
+        'green_max_pct' => 70,
+        'yellow_max_pct' => 90,
         'weekly_soft_limit_hours' => 14,
     ]);
 });

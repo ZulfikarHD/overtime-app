@@ -18,7 +18,10 @@ import type { SectionSnapshotData } from '@/components/dashboard/BurnIndexCard.v
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { useBurnZone } from '@/composables/useBurnZone';
 import { useTrans } from '@/composables/useTrans';
+import { BURN_ZONE_STYLES, normalizeBurnZone } from '@/lib/burnZone';
+import type { BurnZone } from '@/lib/burnZone';
 
 const props = defineProps<{
     snapshots: SectionSnapshotData[];
@@ -30,11 +33,18 @@ const emit = defineEmits<{
 }>();
 
 const { __ } = useTrans();
+const { classify, rangeOf } = useBurnZone();
+
+function zoneOf(item: SectionSnapshotData): BurnZone {
+    return item.tolerance_zone
+        ? normalizeBurnZone(item.tolerance_zone)
+        : classify(item.burn_index_pct);
+}
 
 const searchQuery = ref('');
-const statusFilter = ref<
-    'all' | 'safe' | 'on_track' | 'warning' | 'danger' | 'unconfigured'
->('all');
+const statusFilter = ref<'all' | 'green' | 'yellow' | 'red' | 'unconfigured'>(
+    'all',
+);
 
 type SortField =
     | 'burn_index_pct'
@@ -81,22 +91,7 @@ const filteredAndSortedSnapshots = computed(() => {
             if (!s.is_budget_configured) {
                 return false;
             }
-            if (statusFilter.value === 'danger') {
-                return s.burn_index_pct > 115 || s.burn_zone === 'ZONE_4_POOR';
-            }
-            if (statusFilter.value === 'warning') {
-                return (
-                    (s.burn_index_pct > 100 && s.burn_index_pct <= 115) ||
-                    s.burn_zone === 'ZONE_3_WARNING'
-                );
-            }
-            if (statusFilter.value === 'on_track') {
-                return s.burn_index_pct >= 85 && s.burn_index_pct <= 100;
-            }
-            if (statusFilter.value === 'safe') {
-                return s.burn_index_pct < 85;
-            }
-            return true;
+            return zoneOf(s) === statusFilter.value;
         });
     }
 
@@ -128,17 +123,8 @@ const filteredAndSortedSnapshots = computed(() => {
     return result;
 });
 
-function getBurnStatusClass(pct: number): string {
-    if (pct > 115) {
-        return 'bg-red-50 text-[#cc0000] border-red-200 dark:bg-red-950/40 dark:text-red-300 dark:border-red-900';
-    }
-    if (pct > 100) {
-        return 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-900';
-    }
-    if (pct >= 85) {
-        return 'bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-950/40 dark:text-sky-300 dark:border-sky-900';
-    }
-    return 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-900';
+function getBurnStatusClass(item: SectionSnapshotData): string {
+    return BURN_ZONE_STYLES[zoneOf(item)].badge;
 }
 
 function getZoneBadge(zone: string): { label: string; class: string } {
@@ -171,12 +157,16 @@ function getRowBackgroundClass(item: SectionSnapshotData): string {
     if (!item.is_budget_configured) {
         return 'hover:bg-slate-50/80 dark:hover:bg-slate-800/40';
     }
-    if (item.burn_zone === 'ZONE_4_POOR' || item.burn_index_pct > 115) {
+
+    const zone = zoneOf(item);
+
+    if (zone === 'red') {
         return 'bg-red-50/40 hover:bg-red-50/80 dark:bg-red-950/15 dark:hover:bg-red-950/30';
     }
-    if (item.burn_zone === 'ZONE_3_WARNING' || item.burn_index_pct > 100) {
+    if (zone === 'yellow') {
         return 'bg-amber-50/40 hover:bg-amber-50/80 dark:bg-amber-950/15 dark:hover:bg-amber-950/30';
     }
+
     return 'hover:bg-slate-50/80 dark:hover:bg-slate-800/40';
 }
 </script>
@@ -219,53 +209,40 @@ function getRowBackgroundClass(item: SectionSnapshotData): string {
                     type="button"
                     class="cursor-pointer rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors"
                     :class="
-                        statusFilter === 'safe'
+                        statusFilter === 'green'
                             ? 'border-transparent bg-emerald-600 text-white'
                             : 'bg-card border-emerald-200 text-emerald-700 hover:bg-emerald-50 dark:border-emerald-900 dark:text-emerald-400'
                     "
-                    @click="statusFilter = 'safe'"
-                    data-test="filter-safe"
+                    @click="statusFilter = 'green'"
+                    data-test="filter-green"
                 >
-                    {{ __('Aman (<85%)') }}
+                    {{ __('Hijau') + ' (' + rangeOf('green') + ')' }}
                 </button>
                 <button
                     type="button"
                     class="cursor-pointer rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors"
                     :class="
-                        statusFilter === 'on_track'
-                            ? 'border-transparent bg-sky-600 text-white'
-                            : 'bg-card border-sky-200 text-sky-700 hover:bg-sky-50 dark:border-sky-900 dark:text-sky-400'
-                    "
-                    @click="statusFilter = 'on_track'"
-                    data-test="filter-on-track"
-                >
-                    {{ __('Terkendali (85–100%)') }}
-                </button>
-                <button
-                    type="button"
-                    class="cursor-pointer rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors"
-                    :class="
-                        statusFilter === 'warning'
+                        statusFilter === 'yellow'
                             ? 'border-transparent bg-amber-600 text-white'
                             : 'bg-card border-amber-200 text-amber-700 hover:bg-amber-50 dark:border-amber-900 dark:text-amber-400'
                     "
-                    @click="statusFilter = 'warning'"
-                    data-test="filter-warning"
+                    @click="statusFilter = 'yellow'"
+                    data-test="filter-yellow"
                 >
-                    {{ __('Peringatan (101–115%)') }}
+                    {{ __('Kuning') + ' (' + rangeOf('yellow') + ')' }}
                 </button>
                 <button
                     type="button"
                     class="cursor-pointer rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors"
                     :class="
-                        statusFilter === 'danger'
+                        statusFilter === 'red'
                             ? 'border-transparent bg-[#cc0000] text-white'
                             : 'bg-card border-red-200 text-[#cc0000] hover:bg-red-50 dark:border-red-900 dark:text-red-400'
                     "
-                    @click="statusFilter = 'danger'"
-                    data-test="filter-danger"
+                    @click="statusFilter = 'red'"
+                    data-test="filter-red"
                 >
-                    {{ __('Defisit (>115%)') }}
+                    {{ __('Merah') + ' (' + rangeOf('red') + ')' }}
                 </button>
                 <button
                     type="button"
@@ -494,9 +471,7 @@ function getRowBackgroundClass(item: SectionSnapshotData): string {
                                     v-if="item.is_budget_configured"
                                     variant="outline"
                                     class="border px-2 py-0.5 font-mono text-[11px] font-bold tabular-nums"
-                                    :class="
-                                        getBurnStatusClass(item.burn_index_pct)
-                                    "
+                                    :class="getBurnStatusClass(item)"
                                     :data-test="`badge-burn-${item.section_code}`"
                                 >
                                     {{ item.burn_index_pct.toFixed(1) }}%

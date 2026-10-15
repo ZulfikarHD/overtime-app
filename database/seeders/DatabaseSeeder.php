@@ -22,6 +22,7 @@ class DatabaseSeeder extends Seeder
             UserSeeder::class,
             OperationalCalendarSeeder::class,
             PolicyThresholdSeeder::class,
+            AlertCausePicMappingSeeder::class,
             ShiftScheduleSeeder::class,
             OvertimeBudgetSeeder::class,
             DummyDataSeeder::class,

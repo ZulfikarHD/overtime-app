@@ -66,8 +66,8 @@ test('all 15 models can be created with fillable attributes and persisted', func
         'weekly_soft_limit_hours' => 20.0,
         'consecutive_weeks_alert' => 3,
         'spkl_grace_period_days' => 2,
-        'burn_warning_pct' => 100.00,
-        'burn_danger_pct' => 115.00,
+        'green_max_pct' => 70.00,
+        'yellow_max_pct' => 90.00,
     ]);
     expect($threshold->exists)->toBeTrue();
 
@@ -261,14 +261,14 @@ test('attribute casting behaves correctly across all models', function () {
         'weekly_soft_limit_hours' => 20,
         'consecutive_weeks_alert' => '3',
         'spkl_grace_period_days' => '2',
-        'burn_warning_pct' => 100,
-        'burn_danger_pct' => 115.5,
+        'green_max_pct' => 70,
+        'yellow_max_pct' => 90.5,
     ]);
     expect($threshold->weekly_soft_limit_hours)->toBe('20.0')
         ->and($threshold->consecutive_weeks_alert)->toBe(3)
         ->and($threshold->spkl_grace_period_days)->toBe(2)
-        ->and($threshold->burn_warning_pct)->toBe('100.00')
-        ->and($threshold->burn_danger_pct)->toBe('115.50');
+        ->and($threshold->green_max_pct)->toBe('70.00')
+        ->and($threshold->yellow_max_pct)->toBe('90.50');
 
     $capex = CapexProject::create([
         'project_code' => 'CPX-2026-002',
@@ -429,8 +429,8 @@ test('relationships navigate correctly across all models and users', function ()
         'weekly_soft_limit_hours' => 20.0,
         'consecutive_weeks_alert' => 3,
         'spkl_grace_period_days' => 2,
-        'burn_warning_pct' => 100.00,
-        'burn_danger_pct' => 115.00,
+        'green_max_pct' => 70.00,
+        'yellow_max_pct' => 90.00,
     ]);
 
     $capex = CapexProject::create([

@@ -4,7 +4,7 @@ use App\Models\User;
 use Inertia\Testing\AssertableInertia as Assert;
 
 test('default application locale is id and shares indonesian translations to inertia', function () {
-    $response = $this->get('/');
+    $response = $this->get('/login');
 
     $response->assertOk();
     $response->assertInertia(fn (Assert $page) => $page
@@ -37,7 +37,7 @@ test('guest can switch locale to english via post /locale', function () {
     $response->assertSessionHas('locale', 'en');
     $response->assertPlainCookie('locale', 'en');
 
-    $followResponse = $this->withSession(['locale' => 'en'])->get('/');
+    $followResponse = $this->withSession(['locale' => 'en'])->get('/login');
     $followResponse->assertOk();
     $followResponse->assertInertia(fn (Assert $page) => $page
         ->component('auth/Login')

@@ -15,7 +15,9 @@ import {
 import { computed } from 'vue';
 import CapexOpexSplitBar from '@/components/dashboard/CapexOpexSplitBar.vue';
 import { Badge } from '@/components/ui/badge';
+import { useBurnZone } from '@/composables/useBurnZone';
 import { useTrans } from '@/composables/useTrans';
+import { BURN_ZONE_STYLES, normalizeBurnZone } from '@/lib/burnZone';
 import { planning } from '@/routes/budgets';
 
 export interface SectionSnapshotData {
@@ -41,6 +43,7 @@ export interface SectionSnapshotData {
         risk_level: string | null;
         fallback_used: boolean;
     } | null;
+    tolerance_zone?: 'green' | 'yellow' | 'red';
     burn_zone:
         | 'ZONE_1_EXCELLENT'
         | 'ZONE_2_GOOD'
@@ -63,6 +66,7 @@ const emit = defineEmits<{
 }>();
 
 const { __ } = useTrans();
+const { classify } = useBurnZone();
 
 const burnStatus = computed(() => {
     const pct = props.snapshot.burn_index_pct;
@@ -78,48 +82,22 @@ const burnStatus = computed(() => {
         };
     }
 
-    if (pct > 115) {
-        return {
-            label: __('Defisit Kritis'),
-            colorText: 'text-[#cc0000] dark:text-red-400',
-            bgBadge:
-                'bg-red-50 text-[#cc0000] border-red-200 dark:bg-red-950/40 dark:text-red-300 dark:border-red-900',
-            barBg: 'bg-[#cc0000]',
-            cardBorder:
-                'burn-card--danger animate-pulse border-red-500 shadow-md shadow-red-500/20',
-        };
-    }
-
-    if (pct > 100) {
-        return {
-            label: __('Peringatan'),
-            colorText: 'text-amber-600 dark:text-amber-400',
-            bgBadge:
-                'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-900',
-            barBg: 'bg-amber-500',
-            cardBorder:
-                'burn-card--warning animate-pulse border-amber-500 shadow-md shadow-amber-500/20',
-        };
-    }
-
-    if (pct >= 85) {
-        return {
-            label: __('Terkendali'),
-            colorText: 'text-sky-600 dark:text-sky-400',
-            bgBadge:
-                'bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-950/40 dark:text-sky-300 dark:border-sky-900',
-            barBg: 'bg-sky-500',
-            cardBorder: 'border-slate-200 dark:border-slate-800',
-        };
-    }
+    const zone = props.snapshot.tolerance_zone
+        ? normalizeBurnZone(props.snapshot.tolerance_zone)
+        : classify(pct);
+    const style = BURN_ZONE_STYLES[zone];
 
     return {
-        label: __('Aman'),
-        colorText: 'text-emerald-600 dark:text-emerald-400',
-        bgBadge:
-            'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-900',
-        barBg: 'bg-emerald-500',
-        cardBorder: 'border-slate-200 dark:border-slate-800',
+        label: __(style.label),
+        colorText: style.text,
+        bgBadge: style.badge,
+        barBg: style.solid,
+        cardBorder:
+            zone === 'red'
+                ? 'burn-card--danger animate-pulse border-red-500 shadow-md shadow-red-500/20'
+                : zone === 'yellow'
+                  ? 'burn-card--warning animate-pulse border-amber-500 shadow-md shadow-amber-500/20'
+                  : 'border-slate-200 dark:border-slate-800',
     };
 });
 

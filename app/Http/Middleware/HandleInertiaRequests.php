@@ -4,6 +4,8 @@ namespace App\Http\Middleware;
 
 use App\Models\OvertimeSubmission;
 use App\Models\User;
+use App\Services\EarlyWarningService;
+use App\Services\PolicyThresholdService;
 use App\Services\ShiftScheduleService;
 use App\Support\Features;
 use Illuminate\Http\Request;
@@ -63,12 +65,18 @@ class HandleInertiaRequests extends Middleware
             'pending_approvals_count' => Features::overtimeApprovalsEnabled()
                 ? $this->pendingApprovalsCount($user)
                 : 0,
+            'early_warning_open_count' => fn (): int => $user
+                ? app(EarlyWarningService::class)->openRedAlertCount($user)
+                : 0,
             'features' => [
                 'financial_governance_enabled' => Features::financialGovernanceEnabled(),
                 'overtime_approvals_enabled' => Features::overtimeApprovalsEnabled(),
                 'capex_attribution_required' => Features::capexAttributionRequired(),
             ],
             'shiftSchedule' => app(ShiftScheduleService::class)->getActivePayload(),
+            'zoneBoundaries' => $user
+                ? app(PolicyThresholdService::class)->boundariesFor($user->department_id ? (int) $user->department_id : null)
+                : null,
             'flash' => [
                 'success' => $request->session()->get('success'),
                 'error' => $request->session()->get('error'),

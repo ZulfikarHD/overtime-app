@@ -200,7 +200,8 @@ test('burn index card reflects snapshot metrics and zone evaluation', function (
         ->and($burnIndex['actual_pct'])->toEqual(92.5)
         ->and($burnIndex['planned_hours'])->toEqual(100.0)
         ->and($burnIndex['actual_hours'])->toEqual(92.5)
-        ->and($burnIndex['burn_zone'])->toBe('on_track');
+        ->and($burnIndex['burn_zone'])->toBe('red')
+        ->and($burnIndex['zone_boundaries'])->toEqual(['green_max_pct' => 70.0, 'yellow_max_pct' => 90.0]);
 });
 
 test('production volume card gracefully degrades when erp is not connected', function () {

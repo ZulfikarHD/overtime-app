@@ -24,7 +24,10 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
+import { useBurnZone } from '@/composables/useBurnZone';
 import { useTrans } from '@/composables/useTrans';
+import { BURN_ZONE_STYLES, normalizeBurnZone } from '@/lib/burnZone';
+import type { BurnZone } from '@/lib/burnZone';
 import {
     calculate as calculateRoute,
     save as saveRoute,
@@ -45,7 +48,7 @@ export interface ScenarioBuilderResult {
     budget_allocation: number;
     formatted_budget_allocation: string;
     projected_burn_index: number;
-    burn_zone: 'safe' | 'on_track' | 'warning' | 'danger';
+    burn_zone: BurnZone;
     safety_risk_score: number;
     safety_risk_zone: 'low' | 'medium' | 'high';
 }
@@ -80,6 +83,7 @@ const emit = defineEmits<{
 }>();
 
 const { __ } = useTrans();
+const { classify, rangeOf } = useBurnZone();
 
 // Builder Controls State
 const overtimeSlider = ref<number>(
@@ -119,7 +123,7 @@ const currentResult = ref<ScenarioBuilderResult>(
         budget_allocation: 150000000,
         formatted_budget_allocation: 'Rp 150,0 Jt',
         projected_burn_index: 90.0,
-        burn_zone: 'on_track',
+        burn_zone: 'yellow',
         safety_risk_score: 12.0,
         safety_risk_zone: 'low',
     },
@@ -161,14 +165,7 @@ function recalculateClientPreview(changePct: number) {
             ? Math.round((projectedCost / budget) * 1000) / 10
             : 100 + changePct;
 
-    let burnZone: 'safe' | 'on_track' | 'warning' | 'danger' = 'safe';
-    if (burnIndex > 115) {
-        burnZone = 'danger';
-    } else if (burnIndex > 100) {
-        burnZone = 'warning';
-    } else if (burnIndex >= 85) {
-        burnZone = 'on_track';
-    }
+    const burnZone: BurnZone = classify(burnIndex);
 
     const volumeImpact = Math.round(changePct * 0.78 * 10) / 10;
 
@@ -735,11 +732,11 @@ function setQuickSlider(val: number) {
                             <div
                                 class="mt-1 font-mono text-lg font-bold tabular-nums"
                                 :class="
-                                    currentResult.burn_zone === 'danger'
-                                        ? 'text-[#cc0000]'
-                                        : currentResult.burn_zone === 'warning'
-                                          ? 'text-amber-600'
-                                          : 'text-emerald-600'
+                                    BURN_ZONE_STYLES[
+                                        normalizeBurnZone(
+                                            currentResult.burn_zone,
+                                        )
+                                    ].text
                                 "
                                 data-test="result-burn-index"
                             >
@@ -753,24 +750,33 @@ function setQuickSlider(val: number) {
                                 class="mt-1 flex items-center gap-1 text-[10px]"
                             >
                                 <span
-                                    v-if="currentResult.burn_zone === 'danger'"
+                                    v-if="
+                                        normalizeBurnZone(
+                                            currentResult.burn_zone,
+                                        ) === 'red'
+                                    "
                                     class="font-semibold text-[#cc0000]"
+                                    data-test="result-burn-zone-red"
                                 >
-                                    {{ __('Defisit Kritis (>115%)') }}
+                                    {{ __('Merah') }} ({{ rangeOf('red') }})
                                 </span>
                                 <span
                                     v-else-if="
-                                        currentResult.burn_zone === 'warning'
+                                        normalizeBurnZone(
+                                            currentResult.burn_zone,
+                                        ) === 'yellow'
                                     "
                                     class="font-semibold text-amber-600"
+                                    data-test="result-burn-zone-yellow"
                                 >
-                                    {{ __('Peringatan (101-115%)') }}
+                                    {{ __('Kuning') }} ({{ rangeOf('yellow') }})
                                 </span>
                                 <span
                                     v-else
                                     class="font-semibold text-emerald-600"
+                                    data-test="result-burn-zone-green"
                                 >
-                                    {{ __('Sesuai Rencana (<100%)') }}
+                                    {{ __('Hijau') }} ({{ rangeOf('green') }})
                                 </span>
                             </div>
                         </div>

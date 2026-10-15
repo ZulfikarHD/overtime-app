@@ -303,19 +303,19 @@
             </td>
             <td class="kpi-card">
                 <div class="kpi-title">Indeks Burn Departemen</div>
-                <div class="kpi-main-val {{ $summary['department_burn_index_pct'] > 115 ? 'status-danger' : ($summary['department_burn_index_pct'] > 100 ? 'status-warning' : ($summary['department_burn_index_pct'] >= 85 ? 'status-on-track' : 'status-safe')) }}">
+                <div class="kpi-main-val {{ ['red' => 'status-danger', 'yellow' => 'status-warning', 'green' => 'status-safe'][$summary['department_tolerance_zone']] }}">
                     {{ number_format($summary['department_burn_index_pct'], 1, ',', '.') }}%
                 </div>
                 <div class="kpi-sub-val">
-                    Zona: <strong>{{ str_replace('_', ' ', $summary['department_burn_zone']) }}</strong>
+                    Zona: <strong>{{ ['red' => 'Merah', 'yellow' => 'Kuning', 'green' => 'Hijau'][$summary['department_tolerance_zone']] }}</strong>
                 </div>
             </td>
             <td class="kpi-card">
                 <div class="kpi-title">Status Risiko Seksi</div>
                 <div style="font-size: 11px; font-weight: bold; margin-top: 2px;">
-                    <span class="status-danger font-mono">{{ $summary['danger_sections_count'] }}</span> Defisit • 
-                    <span class="status-warning font-mono">{{ $summary['warning_sections_count'] }}</span> Peringatan • 
-                    <span class="status-safe font-mono">{{ max(0, $summary['total_sections_count'] - $summary['warning_sections_count'] - $summary['danger_sections_count']) }}</span> Aman
+                    <span class="status-danger font-mono">{{ $summary['red_sections_count'] }}</span> Merah • 
+                    <span class="status-warning font-mono">{{ $summary['yellow_sections_count'] }}</span> Kuning • 
+                    <span class="status-safe font-mono">{{ $summary['green_sections_count'] }}</span> Hijau
                 </div>
                 <div class="kpi-sub-val">{{ $summary['configured_sections_count'] }} dari {{ $summary['total_sections_count'] }} seksi aktif</div>
             </td>
@@ -324,8 +324,8 @@
 
     <!-- High-Risk Intervention Alert Callout if any warning or danger sections -->
     @if(count($high_risk_sections) > 0)
-        <div class="{{ $summary['danger_sections_count'] > 0 ? 'alert-box-danger' : 'alert-box' }}">
-            <strong>PERHATIAN STANDUP PAGI:</strong> Ditemukan {{ count($high_risk_sections) }} seksi berstatus risiko tinggi (Burn Index &gt; 100%).
+        <div class="{{ $summary['red_sections_count'] > 0 ? 'alert-box-danger' : 'alert-box' }}">
+            <strong>PERHATIAN STANDUP PAGI:</strong> Ditemukan {{ count($high_risk_sections) }} seksi berstatus zona Kuning/Merah (Burn Index di atas batas Hijau).
             Harap evaluasi alokasi shift dan tindakan preventif pada seksi: 
             <strong>
                 @foreach($high_risk_sections as $hrs)
@@ -353,8 +353,8 @@
         <tbody>
             @forelse($snapshots as $item)
                 @php
-                    $isDanger = $item['burn_zone'] === 'ZONE_4_POOR' || ($item['is_budget_configured'] && $item['burn_index_pct'] > 115);
-                    $isWarning = $item['burn_zone'] === 'ZONE_3_WARNING' || ($item['is_budget_configured'] && $item['burn_index_pct'] > 100 && ! $isDanger);
+                    $isDanger = $item['is_budget_configured'] && $item['tolerance_zone'] === 'red';
+                    $isWarning = $item['is_budget_configured'] && $item['tolerance_zone'] === 'yellow';
                     $rowClass = $isDanger ? 'row-danger' : ($isWarning ? 'row-warning' : '');
                 @endphp
                 <tr class="{{ $rowClass }}">
@@ -377,12 +377,10 @@
                     </td>
                     <td class="text-center">
                         @if($item['is_budget_configured'])
-                            @if($item['burn_index_pct'] > 115)
+                            @if($item['tolerance_zone'] === 'red')
                                 <span class="badge-danger font-mono">{{ number_format($item['burn_index_pct'], 1, ',', '.') }}%</span>
-                            @elseif($item['burn_index_pct'] > 100)
+                            @elseif($item['tolerance_zone'] === 'yellow')
                                 <span class="badge-warning font-mono">{{ number_format($item['burn_index_pct'], 1, ',', '.') }}%</span>
-                            @elseif($item['burn_index_pct'] >= 85)
-                                <span class="badge-on-track font-mono">{{ number_format($item['burn_index_pct'], 1, ',', '.') }}%</span>
                             @else
                                 <span class="badge-safe font-mono">{{ number_format($item['burn_index_pct'], 1, ',', '.') }}%</span>
                             @endif

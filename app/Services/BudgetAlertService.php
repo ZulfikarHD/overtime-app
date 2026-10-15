@@ -28,14 +28,15 @@ class BudgetAlertService
         }
 
         $threshold = $this->policyThresholdService->getForDepartment($snapshot->department_id);
-        $warningPct = (float) $threshold->burn_warning_pct;
-        $dangerPct = (float) $threshold->burn_danger_pct;
+        // Zona Kuning begins above green_max_pct; Zona Merah begins above yellow_max_pct.
+        $warningPct = (float) $threshold->green_max_pct;
+        $dangerPct = (float) $threshold->yellow_max_pct;
         $burnIndex = (float) $snapshot->burn_index_pct;
 
         $now = Carbon::now('Asia/Jakarta');
 
         // Check danger threshold (critical deficit) first
-        if ($burnIndex >= $dangerPct && $snapshot->danger_at === null) {
+        if ($burnIndex > $dangerPct && $snapshot->danger_at === null) {
             $this->dispatchAlert($snapshot, 'danger', $dangerPct);
 
             $snapshot->danger_at = $now;
@@ -48,7 +49,7 @@ class BudgetAlertService
         }
 
         // Check warning threshold (approaching budget ceiling)
-        if ($burnIndex >= $warningPct && $snapshot->warned_at === null) {
+        if ($burnIndex > $warningPct && $snapshot->warned_at === null) {
             $this->dispatchAlert($snapshot, 'warning', $warningPct);
 
             $snapshot->warned_at = $now;

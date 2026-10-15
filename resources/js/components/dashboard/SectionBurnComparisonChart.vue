@@ -7,14 +7,16 @@ import {
     CheckCircle2,
     ExternalLink,
     Layers,
-    TrendingUp,
 } from '@lucide/vue';
 import { computed } from 'vue';
 import BaseBarChart from '@/components/charts/BaseBarChart.vue';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { chartColors, useChartTheme } from '@/composables/useChartTheme';
+import { chartColors } from '@/composables/useChartTheme';
+import { useBurnZone } from '@/composables/useBurnZone';
 import { useTrans } from '@/composables/useTrans';
+import { BURN_ZONE_STYLES, normalizeBurnZone } from '@/lib/burnZone';
+import type { BurnZone } from '@/lib/burnZone';
 import { burnIndex } from '@/routes/dashboard';
 
 export interface SectionBurnItem {
@@ -26,7 +28,7 @@ export interface SectionBurnItem {
     planned_hours: number;
     actual_hours: number;
     burn_index_pct: number;
-    zone: 'safe' | 'on_track' | 'warning' | 'danger';
+    zone: BurnZone;
     zone_label: string;
 }
 
@@ -36,10 +38,9 @@ export interface SectionBurnComparisonData {
     fiscal_month: number;
     month_name: string;
     total_sections: number;
-    critical_sections_count: number;
-    warning_sections_count: number;
-    on_track_sections_count: number;
-    safe_sections_count: number;
+    red_sections_count: number;
+    yellow_sections_count: number;
+    green_sections_count: number;
 }
 
 interface Props {
@@ -53,7 +54,11 @@ const props = withDefaults(defineProps<Props>(), {
 });
 
 const { __ } = useTrans();
-const { getBurnZoneColor } = useChartTheme();
+const { rangeOf } = useBurnZone();
+
+function zoneColor(section: SectionBurnItem): string {
+    return BURN_ZONE_STYLES[normalizeBurnZone(section.zone)].hex;
+}
 
 function navigateToSectionDetail(section: SectionBurnItem) {
     router.visit(
@@ -80,7 +85,7 @@ const barColors = computed(() => {
     if (!props.data?.sections) {
         return [];
     }
-    return props.data.sections.map((s) => getBurnZoneColor(s.burn_index_pct));
+    return props.data.sections.map((s) => zoneColor(s));
 });
 
 const datasets = computed<ChartDataset<'bar'>[]>(() => {
@@ -240,42 +245,36 @@ const chartOptions = computed<ChartOptions<'bar'>>(() => {
                     data-test="section-burn-zone-summary"
                 >
                     <Badge
-                        v-if="data.critical_sections_count > 0"
+                        v-if="data.red_sections_count > 0"
                         variant="outline"
                         class="border-red-500/20 bg-red-500/10 font-mono text-xs font-semibold text-red-700 tabular-nums dark:text-red-300"
+                        data-test="section-burn-zone-red"
                     >
                         <AlertTriangle class="mr-1 size-3 text-red-600" />
-                        {{ data.critical_sections_count }}
-                        {{ __('Kritis (>115%)') }}
+                        {{ data.red_sections_count }}
+                        {{ __('Merah') }} ({{ rangeOf('red') }})
                     </Badge>
 
                     <Badge
-                        v-if="data.warning_sections_count > 0"
+                        v-if="data.yellow_sections_count > 0"
                         variant="outline"
                         class="border-amber-500/20 bg-amber-500/10 font-mono text-xs font-semibold text-amber-700 tabular-nums dark:text-amber-300"
+                        data-test="section-burn-zone-yellow"
                     >
                         <AlertTriangle class="mr-1 size-3 text-amber-600" />
-                        {{ data.warning_sections_count }}
-                        {{ __('Peringatan (101–115%)') }}
+                        {{ data.yellow_sections_count }}
+                        {{ __('Kuning') }} ({{ rangeOf('yellow') }})
                     </Badge>
 
                     <Badge
-                        v-if="data.on_track_sections_count > 0"
-                        variant="outline"
-                        class="border-blue-500/20 bg-blue-500/10 font-mono text-xs font-semibold text-blue-700 tabular-nums dark:text-blue-300"
-                    >
-                        <TrendingUp class="mr-1 size-3 text-blue-600" />
-                        {{ data.on_track_sections_count }}
-                        {{ __('Sesuai (85–100%)') }}
-                    </Badge>
-
-                    <Badge
-                        v-if="data.safe_sections_count > 0"
+                        v-if="data.green_sections_count > 0"
                         variant="outline"
                         class="border-emerald-500/20 bg-emerald-500/10 font-mono text-xs font-semibold text-emerald-700 tabular-nums dark:text-emerald-300"
+                        data-test="section-burn-zone-green"
                     >
                         <CheckCircle2 class="mr-1 size-3 text-emerald-600" />
-                        {{ data.safe_sections_count }} {{ __('Aman (<85%)') }}
+                        {{ data.green_sections_count }}
+                        {{ __('Hijau') }} ({{ rangeOf('green') }})
                     </Badge>
                 </div>
             </div>
@@ -348,7 +347,7 @@ const chartOptions = computed<ChartOptions<'bar'>>(() => {
                             <span
                                 class="font-mono text-sm font-bold tabular-nums"
                                 :style="{
-                                    color: getBurnZoneColor(sec.burn_index_pct),
+                                    color: zoneColor(sec),
                                 }"
                             >
                                 {{ sec.burn_index_pct }}%

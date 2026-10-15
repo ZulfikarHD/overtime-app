@@ -34,7 +34,9 @@ import {
     SheetTitle,
 } from '@/components/ui/sheet';
 import { Spinner } from '@/components/ui/spinner';
+import { useBurnZone } from '@/composables/useBurnZone';
 import { useTrans } from '@/composables/useTrans';
+import { BURN_ZONE_STYLES } from '@/lib/burnZone';
 import { planning } from '@/routes/budgets';
 import { show as showBurndownRoute } from '@/routes/dashboard/burn-index';
 
@@ -90,6 +92,7 @@ const emit = defineEmits<{
 }>();
 
 const { __ } = useTrans();
+const { classify } = useBurnZone();
 
 const isLoading = ref(false);
 const error = ref<string | null>(null);
@@ -163,27 +166,11 @@ const burnBadge = computed(() => {
             class: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border-slate-200 dark:border-slate-700',
         };
     }
-    if (pct > 115) {
-        return {
-            label: `${pct.toFixed(1)}% • ${__('Defisit')}`,
-            class: 'bg-red-50 text-[#cc0000] border-red-200 dark:bg-red-950/40 dark:text-red-300 dark:border-red-900',
-        };
-    }
-    if (pct > 100) {
-        return {
-            label: `${pct.toFixed(1)}% • ${__('Peringatan')}`,
-            class: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-900',
-        };
-    }
-    if (pct >= 85) {
-        return {
-            label: `${pct.toFixed(1)}% • ${__('Terkendali')}`,
-            class: 'bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-950/40 dark:text-sky-300 dark:border-sky-900',
-        };
-    }
+    const zone = classify(pct);
+
     return {
-        label: `${pct.toFixed(1)}% • ${__('Aman')}`,
-        class: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-900',
+        label: `${pct.toFixed(1)}% • ${__(BURN_ZONE_STYLES[zone].label)}`,
+        class: BURN_ZONE_STYLES[zone].badge,
     };
 });
 

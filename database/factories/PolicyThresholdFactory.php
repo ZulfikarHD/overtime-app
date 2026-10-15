@@ -25,8 +25,8 @@ class PolicyThresholdFactory extends Factory
             'weekly_soft_limit_hours' => 20.0,
             'consecutive_weeks_alert' => 3,
             'spkl_grace_period_days' => 2,
-            'burn_warning_pct' => 100.00,
-            'burn_danger_pct' => 115.00,
+            'green_max_pct' => 70.00,
+            'yellow_max_pct' => 90.00,
         ];
     }
 

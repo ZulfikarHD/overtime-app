@@ -229,8 +229,8 @@ test('employee summary calculates accurate Burn Index, category distribution, an
         'weekly_soft_limit_hours' => 20.0,
         'consecutive_weeks_alert' => 3,
         'spkl_grace_period_days' => 2,
-        'burn_warning_pct' => 100.0,
-        'burn_danger_pct' => 115.0,
+        'green_max_pct' => 70.0,
+        'yellow_max_pct' => 90.0,
     ]);
 
     // Section budget: 100 hours planned for 2 active employees = 50 hours planned per employee
@@ -311,9 +311,9 @@ test('employee summary calculates accurate Burn Index, category distribution, an
     expect($emp1Row['hours_tpm'])->toEqual(5.0);
     expect($emp1Row['capex_hours'])->toEqual(5.0);
     expect($emp1Row['opex_hours'])->toEqual(20.0);
-    // 25 hrs / 50 hrs planned = 50.0% Burn Index (Safe)
+    // 25 hrs / 50 hrs planned = 50.0% Burn Index (Zona Hijau)
     expect($emp1Row['burn_index'])->toEqual(50.0);
-    expect($emp1Row['burn_zone'])->toBe('safe');
+    expect($emp1Row['burn_zone'])->toBe('green');
     expect($emp1Row['spkl_status'])->toBe('approved');
     expect($emp1Row['recent_shifts'])->toHaveCount(1);
     expect($emp1Row['recent_shifts'][0]['spkl_number'])->toBe('SPKL/STP/2026/01');

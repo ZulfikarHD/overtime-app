@@ -22,6 +22,13 @@ beforeEach(function () {
         ['calendar_date' => $todayWib],
         ['day_type' => 'HKN', 'is_holiday' => false]
     );
+
+    // Alert-dedupe scenarios below use plan-relative burn values (103%, 118%, ...),
+    // so pin the plant tolerance to Kuning > 100% and Merah > 115%.
+    PolicyThreshold::factory()->plantDefault()->create([
+        'green_max_pct' => 100.0,
+        'yellow_max_pct' => 115.0,
+    ]);
 });
 
 test('budget alert service sends warning notification when burn index crosses warning threshold', function () {
@@ -257,11 +264,11 @@ test('department custom policy threshold override is respected', function () {
     $section = Section::factory()->create(['department_id' => $dept->id, 'is_active' => true]);
     $manager = User::factory()->manager($dept->id)->create(['is_active' => true]);
 
-    // Custom threshold for this department: warning at 90%, danger at 105%
+    // Custom tolerance for this department: Kuning above 90%, Merah above 105%
     PolicyThreshold::create([
         'department_id' => $dept->id,
-        'burn_warning_pct' => 90.00,
-        'burn_danger_pct' => 105.00,
+        'green_max_pct' => 90.00,
+        'yellow_max_pct' => 105.00,
     ]);
 
     // Snapshot at 92% (below default 100% warning, but above department 90% warning)
@@ -472,4 +479,40 @@ test('budget alert notification is accessible via notification controller index'
         ->assertJsonPath('notifications.0.data.alert_level', 'danger')
         ->assertJsonPath('notifications.0.data.section_id', $section->id)
         ->assertJsonPath('notifications.0.data.burn_index_pct', fn ($val) => (float) $val === 118.0);
+});
+
+test('default 70/90 tolerance raises a warning in Zona Kuning and danger only in Zona Merah', function () {
+    Notification::fake();
+    PolicyThreshold::query()->whereNull('department_id')->update(['green_max_pct' => 70.0, 'yellow_max_pct' => 90.0]);
+
+    $dept = Department::factory()->create(['is_active' => true]);
+    $manager = User::factory()->manager($dept->id)->create(['is_active' => true]);
+    $yellowSection = Section::factory()->create(['department_id' => $dept->id, 'is_active' => true]);
+    $greenSection = Section::factory()->create(['department_id' => $dept->id, 'is_active' => true]);
+
+    $makeSnapshot = fn (Section $section, float $pct) => MonthlyBurnSnapshot::create([
+        'department_id' => $dept->id,
+        'section_id' => $section->id,
+        'fiscal_year' => 2026,
+        'fiscal_month' => 9,
+        'planned_budget_hours' => 1200.0,
+        'cumulative_actual_hours' => 1200.0 * $pct / 100,
+        'burn_index_pct' => $pct,
+        'burn_velocity' => 20.0,
+        'burn_zone' => 'ZONE_1_EXCELLENT',
+        'warned_at' => null,
+        'danger_at' => null,
+        'last_recalculated_at' => Carbon::now('Asia/Jakarta'),
+    ]);
+
+    $service = app(BudgetAlertService::class);
+
+    $service->evaluateAndNotify($greenSection_ = $makeSnapshot($greenSection, 70.0));
+    Notification::assertNothingSent();
+    expect($greenSection_->refresh()->warned_at)->toBeNull();
+
+    $service->evaluateAndNotify($yellow = $makeSnapshot($yellowSection, 75.0));
+    Notification::assertSentTo($manager, BudgetThresholdAlert::class, fn (BudgetThresholdAlert $n) => $n->alertLevel === 'warning' && $n->thresholdPct === 70.0);
+    expect($yellow->refresh()->warned_at)->not->toBeNull()
+        ->and($yellow->danger_at)->toBeNull();
 });

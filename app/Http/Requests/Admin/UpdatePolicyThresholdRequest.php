@@ -31,8 +31,8 @@ class UpdatePolicyThresholdRequest extends FormRequest
             'weekly_soft_limit_hours' => ['required', 'numeric', 'min:0', 'max:168'],
             'consecutive_weeks_alert' => ['required', 'integer', 'min:1', 'max:52'],
             'spkl_grace_period_days' => ['required', 'integer', 'min:0', 'max:30'],
-            'burn_warning_pct' => ['required', 'numeric', 'min:0', 'max:500'],
-            'burn_danger_pct' => ['required', 'numeric', 'min:0', 'max:500', 'gte:burn_warning_pct'],
+            'green_max_pct' => ['required', 'numeric', 'min:0', 'max:500'],
+            'yellow_max_pct' => ['required', 'numeric', 'min:0', 'max:500', 'gte:green_max_pct'],
         ];
     }
 
@@ -50,11 +50,11 @@ class UpdatePolicyThresholdRequest extends FormRequest
             'consecutive_weeks_alert.max' => __('Consecutive weeks alert cannot exceed 52 weeks.'),
             'spkl_grace_period_days.min' => __('SPKL grace period cannot be negative.'),
             'spkl_grace_period_days.max' => __('SPKL grace period cannot exceed 30 days.'),
-            'burn_warning_pct.min' => __('Burn warning percentage cannot be negative.'),
-            'burn_warning_pct.max' => __('Burn warning percentage cannot exceed 500%.'),
-            'burn_danger_pct.min' => __('Burn danger percentage cannot be negative.'),
-            'burn_danger_pct.max' => __('Burn danger percentage cannot exceed 500%.'),
-            'burn_danger_pct.gte' => __('Burn danger percentage must be greater than or equal to burn warning percentage.'),
+            'green_max_pct.min' => __('Green zone limit cannot be negative.'),
+            'green_max_pct.max' => __('Green zone limit cannot exceed 500%.'),
+            'yellow_max_pct.min' => __('Yellow zone limit cannot be negative.'),
+            'yellow_max_pct.max' => __('Yellow zone limit cannot exceed 500%.'),
+            'yellow_max_pct.gte' => __('Yellow zone limit must be greater than or equal to the green zone limit.'),
             'department_id.exists' => __('Selected department does not exist.'),
         ];
     }
