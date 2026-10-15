@@ -57,6 +57,7 @@ Deep-dive technical documentation detailing architecture flows, data models, key
 | **[Early Warning Alert Detail Page](./features/early-warning-alert-detail.md)**                            | [Epic-10](../../scrum/Epic-10.md) | Alert detail with header, burn bar, vitals cards, 7 working day zone-band chart (shared `useZoneBandsPlugin`), follow-up status and history, non-alert banner, filter-preserving back link (E10-04).                                |
 | **[Early Warning Alert Vitals](./features/early-warning-alert-vitals.md)**                                 | [Epic-10](../../scrum/Epic-10.md) | `EarlyWarningService::vitalsFor()`: production volume and plant-wide manpower change, alert month vs previous month, real period labels, `N/A` (null) when data is missing or the previous value is 0 (E10-05).                     |
 | **[Early Warning 5W2H Follow-Up](./features/early-warning-follow-up.md)**                                  | [Epic-10](../../scrum/Epic-10.md) | 5W2H follow-up linked to one alert (section + date): system-prefilled form with "Dibuat sistem" / "Diubah" tags, server-recomputed snapshot, one draft per alert, queued email to the PIC department, read-only once sent (E10-06). |
+| **[Early Warning Dashboard Entry Link & Cleanup](./features/early-warning-dashboard-entry-link.md)**       | [Epic-10](../../scrum/Epic-10.md) | "Buka Early Warning" button in the Dashboard chart header: inbox link built from the chart scope and month-to-date range, role-gated, shown on Hijau too; orphan i18n keys of the removed panel deleted (E10-07).                   |
 
 ---
 
@@ -122,6 +123,7 @@ Durable technical decisions and trade-offs:
 - **[ADR-043: Early Warning Detail Back Link (Referer + Session) and Staged Scope](./decisions/043-early-warning-detail-back-link-and-staged-scope.md)**
 - **[ADR-044: Early Warning Vitals from Monthly Plant Data](./decisions/044-early-warning-vitals-monthly-plant-wide-source.md)**
 - **[ADR-045: Early Warning Follow-Up Linked to an Alert, with a Server-Side Suggestion Baseline](./decisions/045-early-warning-follow-up-alert-link-and-suggestion-baseline.md)**
+- **[ADR-046: Early Warning Dashboard Link Built from the Chart Scope](./decisions/046-early-warning-dashboard-entry-link-built-from-chart-scope.md)**
 
 ---
 

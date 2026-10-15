@@ -373,26 +373,33 @@ The 5W2H behavior is already implemented at the month level (`AlertFollowUpServi
 
 **Story Points:** 3  
 **Priority:** Must Have  
-**Status:** 🟡 Partly Done (panel and old code removed by E10-06; entry link and i18n key move remain)
+**Status:** 🟢 Done (panel and old code removed by E10-06; entry link and i18n cleanup by this story)
 
 #### Acceptance Criteria
 
 - [x] The **Tindak Lanjut / Alert Follow-up (5W2H) panel is removed** from the Dashboard (`Dashboard.vue`) — _done in E10-06_
 - [x] The **Early Warning chart (`DailyIndexTrendChart.vue`) stays** unchanged on the Dashboard ("Distribution & Trends" tab)
-- [ ] A **"Buka Early Warning" / "Tindak Lanjut"** button on the chart header opens the new inbox filtered by the dashboard's current department/section and date; visible only for roles that can access the menu
-- [ ] When the chart's average zone is Hijau, the button is still shown but the inbox will be empty-state ("Tidak ada alert")
+- [x] A **"Buka Early Warning" / "Tindak Lanjut"** button on the chart header opens the new inbox filtered by the dashboard's current department/section and date; visible only for roles that can access the menu
+- [x] When the chart's average zone is Hijau, the button is still shown but the inbox will be empty-state ("Tidak ada alert")
 - [x] No leftover code: `alertFollowUps` prop, the `only: [...]` entry, `followUpScopeLabel`, imports, old routes `dashboard.alert-follow-ups.*`, and `DashboardController` follow-up loading are removed — _done in E10-06_
-- [ ] i18n keys used only by the removed panel are moved (not duplicated) to the new module namespace
+- [x] i18n keys used only by the removed panel are moved (not duplicated) to the new module namespace — _the new form already has its own keys, so the two orphans were deleted from both language files_
 
 #### Technical Tasks
 
 - [x] Edit `resources/js/pages/Dashboard.vue`: remove `<FiveW2HFollowUpPanel>`, prop, partial-reload key, computed, imports — _done in E10-06_
 - [x] Edit `app/Http/Controllers/DashboardController.php`: stop passing `alertFollowUps`; drop unused `AlertFollowUpService` dependency — _done in E10-06_
 - [x] Remove old `dashboard.alert-follow-ups.*` routes (they are replaced in E10-06); regenerate Wayfinder with `--with-form` — _done in E10-06_
-- [ ] Add the entry link in `DailyIndexTrendChart.vue` header (Wayfinder `early-warning.index` with query params)
+- [x] Add the entry link in `DailyIndexTrendChart.vue` header (Wayfinder `early-warning.index` with query params)
 - [x] Update `tests/Feature/AlertFollowUpTest.php` (dashboard no longer exposes `alertFollowUps`; new route names) and `tests/Browser/Dashboard/AlertFollowUpBrowserTest.php` (move to `tests/Browser/EarlyWarning/`) — _done in E10-06_
 - [x] Do **not** delete tests without approval — update/move them
-- [ ] Browser test: the Dashboard no longer shows `followup-panel` _(done in E10-06)_, the link navigates to `/early-warning` with filters applied _(pending the link)_
+- [x] Browser test: the Dashboard no longer shows `followup-panel` _(done in E10-06)_, the link navigates to `/early-warning` with filters applied
+
+#### Implementation Notes (delivered)
+
+- `DailyIndexTrendChart.vue` gets a **Buka Early Warning** button (`data-test="early-warning-open-link"`, Wayfinder `early-warning.index.url({ query })`) in its header. The query is built from the chart's own payload: `scope.department_id` / `scope.section_id`, and `date_from` = first day of `fiscal_year`/`fiscal_month`, `date_to` = the chart's `cutoff_day`. With no cut-off (future month) the dates are left out and the inbox default applies. No backend or prop change; the server still forces a non-admin to their own department.
+- The button shows for `admin`, `manager`, `team_leader` only (same rule as the sidebar item) and is visible when the chart is Hijau.
+- **Deviation (i18n):** instead of "moving" keys, the two keys only the old panel used (`Catat tindak lanjut atas alert Early Warning, lalu kirim via email ke PIC.`, `Early Warning :zone: indeks rata-rata :index% di :scope`) were **deleted** from `lang/id.json` / `lang/en.json`; `FollowUpForm.vue` already uses its own keys. Added `Buka Early Warning`.
+- Tests: `tests/Browser/EarlyWarning/DashboardEntryLinkBrowserTest.php` (3). Details: [Early Warning Dashboard Entry Link & Cleanup](../dev-docs/features/early-warning-dashboard-entry-link.md), [ADR-046](../dev-docs/decisions/046-early-warning-dashboard-entry-link-built-from-chart-scope.md), [user guide](../user-docs/guides/early-warning-dashboard-link.md).
 
 ---
 
@@ -485,7 +492,7 @@ Ranking: each detected cause gets a score = the share of excess hours it explain
 | Day 6–8    | 5W2H auto-generator + cause → PIC mapping                | E10-08  | 🔴 Not Started |
 | Day 8–10   | Alert detail page (shows the generated suggestion)       | E10-04  | 🟡 Partly Done |
 | Day 10–11  | Follow-up linked to alert, edit tags, mail, route move   | E10-06  | 🟢 Done        |
-| Day 12–13  | Dashboard cleanup, test pass, docs, UAT with the client  | E10-07  | 🔴 Not Started |
+| Day 12–13  | Dashboard cleanup, test pass, docs, UAT with the client  | E10-07  | 🟢 Done        |
 
 ---
 
