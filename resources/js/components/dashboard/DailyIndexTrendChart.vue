@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { ChartDataset, ChartOptions, Plugin } from 'chart.js';
+import type { ChartDataset, ChartOptions } from 'chart.js';
 import { Activity, AlertCircle } from '@lucide/vue';
 import { computed } from 'vue';
 import BaseLineChart from '@/components/charts/BaseLineChart.vue';
@@ -12,6 +12,7 @@ import {
     CardTitle,
 } from '@/components/ui/card';
 import { useTrans } from '@/composables/useTrans';
+import { useZoneBandsPlugin } from '@/composables/useZoneBandsPlugin';
 import { BURN_ZONE_STYLES, describeZoneRange } from '@/lib/burnZone';
 import type { BurnZone } from '@/lib/burnZone';
 
@@ -125,38 +126,7 @@ const datasets = computed<ChartDataset<'line'>[]>(() => {
     ];
 });
 
-/**
- * Paints the three tolerance bands (Hijau / Kuning / Merah) behind the line.
- */
-const zoneBandsPlugin = computed<Plugin<'line'>>(() => ({
-    id: 'earlyWarningZoneBands',
-    beforeDatasetsDraw(chart) {
-        const {
-            ctx,
-            chartArea,
-            scales: { y },
-        } = chart;
-
-        if (!chartArea || !y) {
-            return;
-        }
-
-        const { top, bottom, left, width } = chartArea;
-        const clamp = (value: number): number =>
-            Math.min(bottom, Math.max(top, y.getPixelForValue(value)));
-        const yGreen = clamp(greenMax.value);
-        const yYellow = clamp(yellowMax.value);
-
-        ctx.save();
-        ctx.fillStyle = 'rgba(22, 163, 74, 0.08)';
-        ctx.fillRect(left, yGreen, width, bottom - yGreen);
-        ctx.fillStyle = 'rgba(245, 158, 11, 0.12)';
-        ctx.fillRect(left, yYellow, width, yGreen - yYellow);
-        ctx.fillStyle = 'rgba(220, 38, 38, 0.09)';
-        ctx.fillRect(left, top, width, yYellow - top);
-        ctx.restore();
-    },
-}));
+const zoneBandsPlugin = useZoneBandsPlugin(boundaries);
 
 const chartOptions = computed<ChartOptions<'line'>>(() => {
     return {

@@ -5,8 +5,10 @@ namespace App\Http\Controllers;
 use App\Http\Requests\EarlyWarningInboxRequest;
 use App\Models\AlertFollowUp;
 use App\Models\Section;
+use App\Services\AlertFollowUpService;
 use App\Services\EarlyWarningService;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Validator;
@@ -15,7 +17,15 @@ use Inertia\Response;
 
 class EarlyWarningController extends Controller
 {
-    public function __construct(public EarlyWarningService $earlyWarningService) {}
+    /**
+     * Session key holding the last inbox query string, used by the detail page's back link.
+     */
+    protected const INBOX_QUERY_SESSION_KEY = 'early_warning.inbox_query';
+
+    public function __construct(
+        public EarlyWarningService $earlyWarningService,
+        public AlertFollowUpService $followUpService,
+    ) {}
 
     /**
      * Alert inbox. Filters live in the query string; the (heavy) alerts and summary load as deferred props.
@@ -26,6 +36,8 @@ class EarlyWarningController extends Controller
         $filters = $request->filters();
         $scope = $this->earlyWarningService->inboxScope($user, $filters['department_id'], $filters['section_id']);
         $filters = [...$filters, 'department_id' => $scope['department_id'], 'section_id' => $scope['section_id']];
+
+        $request->session()->put(self::INBOX_QUERY_SESSION_KEY, (string) $request->getQueryString());
 
         $inbox = null;
         $loadInbox = function () use (&$inbox, $user, $filters): array {
@@ -42,11 +54,12 @@ class EarlyWarningController extends Controller
     }
 
     /**
-     * Alert detail of one section on one date (content arrives with E10-04).
+     * Alert detail of one section on one date: the alert (null when the date is not an alert),
+     * the daily index series, the zone limits and the follow-ups already linked to the alert.
      *
      * An invalid date goes back to the inbox with an error; another department's section is a 403.
      */
-    public function show(Section $section, string $date): Response|RedirectResponse
+    public function show(Request $request, Section $section, string $date): Response|RedirectResponse
     {
         Gate::authorize('viewAlertSection', [AlertFollowUp::class, $section]);
 
@@ -58,7 +71,8 @@ class EarlyWarningController extends Controller
                 ->with('error', __('The alert date is invalid. Use the format YYYY-MM-DD.'));
         }
 
-        $section->loadMissing('department:id,name');
+        $alertDate = Carbon::createFromFormat('Y-m-d', $date, 'Asia/Jakarta')->startOfDay();
+        $detail = $this->earlyWarningService->alertDetail($request->user(), $section, $alertDate);
 
         return Inertia::render('early-warning/Show', [
             'section' => [
@@ -67,7 +81,44 @@ class EarlyWarningController extends Controller
                 'department_id' => $section->department_id,
                 'department_name' => $section->department?->name,
             ],
-            'date' => Carbon::createFromFormat('Y-m-d', $date, 'Asia/Jakarta')->toDateString(),
+            'date' => $alertDate->toDateString(),
+            'alert' => $detail['alert'],
+            'series' => $detail['series'],
+            'limits' => [
+                'green_max_pct' => $detail['green_max_pct'],
+                'yellow_max_pct' => $detail['yellow_max_pct'],
+            ],
+            // Vitals arrive with E10-05; until then every value is null and the page shows N/A.
+            'vitals' => [
+                'volume_change_pct' => null,
+                'volume_period_label' => null,
+                'manpower_change_pct' => null,
+                'manpower_period_label' => null,
+            ],
+            'followUps' => $this->followUpService
+                ->listForAlert($section, $alertDate)
+                ->map(fn (AlertFollowUp $followUp): array => $this->followUpService->toPayload($followUp))
+                ->values()
+                ->all(),
+            'backUrl' => $this->inboxUrl($request),
         ]);
+    }
+
+    /**
+     * Inbox URL (with its filters) the user came from.
+     *
+     * The same-origin Referer wins; after a reload it falls back to the last inbox query kept in the
+     * session. Only the inbox path plus a query string is ever returned, never a foreign URL.
+     */
+    protected function inboxUrl(Request $request): string
+    {
+        $inboxPath = route('early-warning.index', absolute: false);
+        $referer = parse_url((string) $request->headers->get('referer'));
+
+        $query = ($referer['host'] ?? null) === $request->getHost() && ($referer['path'] ?? null) === $inboxPath
+            ? (string) ($referer['query'] ?? '')
+            : (string) $request->session()->get(self::INBOX_QUERY_SESSION_KEY, '');
+
+        return $query === '' ? $inboxPath : $inboxPath.'?'.$query;
     }
 }

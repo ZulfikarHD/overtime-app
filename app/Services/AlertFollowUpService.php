@@ -6,9 +6,11 @@ use App\Enums\AlertFollowUpStatus;
 use App\Enums\UserRole;
 use App\Mail\AlertFollowUpMail;
 use App\Models\AlertFollowUp;
+use App\Models\Section;
 use App\Models\User;
 use App\Services\Analytics\DashboardKpiService;
 use Carbon\Carbon;
+use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
@@ -36,7 +38,7 @@ class AlertFollowUpService
         $period = $this->resolvePeriod($date);
 
         $query = AlertFollowUp::query()
-            ->with(['section:id,code,name', 'whoDepartment:id,code,name', 'creator:id,name'])
+            ->with(['section:id,code,name', 'whoDepartment:id,code,name', 'creator:id,name', 'sender:id,name'])
             ->where('fiscal_year', $period->year)
             ->where('fiscal_month', $period->month);
 
@@ -49,6 +51,23 @@ class AlertFollowUpService
             : $query->whereNull('section_id');
 
         return $query->latest('id')->limit(10)->get();
+    }
+
+    /**
+     * Follow-ups of one alert (section + date), newest first.
+     *
+     * Authorization is the caller's job (the alert detail route authorizes the section first).
+     *
+     * @return Collection<int, AlertFollowUp>
+     */
+    public function listForAlert(Section $section, CarbonInterface $date): Collection
+    {
+        return AlertFollowUp::query()
+            ->with(['section:id,code,name', 'whoDepartment:id,code,name', 'creator:id,name', 'sender:id,name'])
+            ->where('section_id', $section->id)
+            ->whereDate('alert_date', $date->toDateString())
+            ->latest('id')
+            ->get();
     }
 
     /**
@@ -144,17 +163,19 @@ class AlertFollowUpService
      */
     public function toPayload(AlertFollowUp $followUp): array
     {
-        $followUp->loadMissing(['section:id,code,name', 'whoDepartment:id,code,name', 'creator:id,name']);
+        $followUp->loadMissing(['section:id,code,name', 'whoDepartment:id,code,name', 'creator:id,name', 'sender:id,name']);
 
         return [
             'id' => $followUp->id,
             'department_id' => $followUp->department_id,
             'section_id' => $followUp->section_id,
             'section_name' => $followUp->section?->name,
+            'alert_date' => $followUp->alert_date?->toDateString(),
             'fiscal_year' => $followUp->fiscal_year,
             'fiscal_month' => $followUp->fiscal_month,
             'zone' => $followUp->zone->value,
             'index_pct' => (float) $followUp->index_pct,
+            'streak_days' => $followUp->streak_days,
             'what_text' => $followUp->what_text,
             'why_text' => $followUp->why_text,
             'when_date' => $followUp->when_date?->toDateString(),
@@ -168,6 +189,8 @@ class AlertFollowUpService
             'status_label' => $followUp->status->label(),
             'is_editable' => ! $followUp->isSent(),
             'sent_at' => $followUp->sent_at?->timezone('Asia/Jakarta')->format('d/m/Y H:i'),
+            'sent_by_name' => $followUp->sender?->name,
+            'created_at' => $followUp->created_at?->timezone('Asia/Jakarta')->format('d/m/Y H:i'),
             'created_by_name' => $followUp->creator->name,
         ];
     }
