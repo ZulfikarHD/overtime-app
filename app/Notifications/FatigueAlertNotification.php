@@ -49,7 +49,7 @@ class FatigueAlertNotification extends Notification implements ShouldQueue
         $hoursStr = number_format($this->weeklyHours, 1, '.', '');
         $limitStr = number_format($this->weeklyLimit, 1, '.', '');
 
-        $title = "🚨 Peringatan Kelelahan: {$employeeName} melebihi batas lembur {$this->consecutiveWeeks} minggu berturut-turut!";
+        $title = "Peringatan Kelelahan: {$employeeName} melebihi batas lembur {$this->consecutiveWeeks} minggu berturut-turut!";
         $message = "Karyawan {$employeeName} (NPK: {$npk}) telah melebihi batas lembur mingguan ({$hoursStr}/{$limitStr} jam) selama {$this->consecutiveWeeks} minggu berturut-turut. Evaluasi alokasi shift untuk mencegah risiko kelelahan dan kecelakaan kerja.";
 
         return [

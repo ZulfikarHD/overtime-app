@@ -142,7 +142,7 @@ function getSpklBadge(submission: QueueSubmission) {
 
     if (doc.status === 'PENDING' && isSpklOverdue(doc.due_date)) {
         return {
-            label: __('⚠️ Terlambat'),
+            label: __('Terlambat'),
             class: 'bg-red-50 text-[#cc0000] border-red-200 dark:bg-red-950/40 dark:text-red-300 dark:border-red-900',
             overdue: true,
         };
@@ -318,7 +318,7 @@ const statusBadge = computed(() => getStatusBadge(props.submission.status));
                     >
                         <Bot class="size-3" />
                         {{
-                            __('🤖 :count anomali flagged', {
+                            __(':count anomali flagged', {
                                 count: anomalyCount,
                             })
                         }}
@@ -450,7 +450,11 @@ const statusBadge = computed(() => getStatusBadge(props.submission.status));
                                         "
                                         class="mt-0.5 text-[10px] font-semibold text-violet-700 dark:text-violet-300"
                                     >
-                                        🤖 {{ __('Anomali terdeteksi') }}
+                                        <Bot
+                                            class="mr-0.5 inline size-3 align-text-bottom"
+                                            aria-hidden="true"
+                                        />
+                                        {{ __('Anomali terdeteksi') }}
                                     </div>
                                 </td>
                                 <td

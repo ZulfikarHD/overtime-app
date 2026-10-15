@@ -199,7 +199,7 @@ const chartOptions = computed<ChartOptions<'bar'>>(() => {
                             `${__('Realisasi')}: ${item.actual_hours.toFixed(1)} jam`,
                             `${__('Plafon Anggaran')}: ${item.planned_hours.toFixed(1)} jam`,
                             `------------------------`,
-                            `👉 ${__('Klik untuk lihat detail burndown seksi')}`,
+                            __('Klik untuk lihat detail burndown seksi'),
                         ];
                     },
                 },

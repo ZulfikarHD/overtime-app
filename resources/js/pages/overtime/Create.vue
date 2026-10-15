@@ -12,6 +12,7 @@ import {
     Save,
     Search,
     Send,
+    Star,
     Users,
 } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
@@ -571,14 +572,22 @@ function submitOvertime() {
                                 class="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
                                 data-test="day-type-badge-hkn"
                             >
-                                📅 {{ __('Hari Kerja Normal (HKN)') }}
+                                <CalendarIcon
+                                    class="size-3.5"
+                                    aria-hidden="true"
+                                />
+                                {{ __('Hari Kerja Normal (HKN)') }}
                             </span>
                             <span
                                 v-else
                                 class="inline-flex items-center gap-1 rounded-full border border-red-200 bg-red-50 px-2.5 py-1 text-xs font-bold text-[#cc0000] dark:border-red-900 dark:bg-red-950/40 dark:text-red-300"
                                 data-test="day-type-badge-hlr"
                             >
-                                🔴 {{ __('Hari Libur (HLR)') }}
+                                <CalendarIcon
+                                    class="size-3.5"
+                                    aria-hidden="true"
+                                />
+                                {{ __('Hari Libur (HLR)') }}
                             </span>
 
                             <!-- Day Type Override Toggle Switch -->
@@ -600,7 +609,11 @@ function submitOvertime() {
                             v-if="isHoliday && holidayName"
                             class="text-[11px] text-amber-600 dark:text-amber-400"
                         >
-                            ⭐ {{ holidayName }}
+                            <Star
+                                class="mr-0.5 inline size-3 align-text-bottom"
+                                aria-hidden="true"
+                            />
+                            {{ holidayName }}
                         </p>
                     </div>
 

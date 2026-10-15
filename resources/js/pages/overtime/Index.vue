@@ -5,6 +5,7 @@ import {
     Calendar,
     ChevronLeft,
     ChevronRight,
+    Clock,
     Eye,
     FileText,
     Filter,
@@ -293,10 +294,10 @@ function isSpklOverdue(dueDateStr?: string | null): boolean {
 
 const statusFilterOptions = computed(() => [
     { value: '', label: __('Semua Status') },
-    { value: 'SUBMITTED', label: __('🟡 Menunggu Review') },
-    { value: 'PARTIALLY_APPROVED', label: __('🟠 Disetujui Sebagian') },
-    { value: 'APPROVED', label: __('🟢 Disetujui') },
-    { value: 'REJECTED', label: __('🔴 Ditolak') },
+    { value: 'SUBMITTED', label: __('Menunggu Review') },
+    { value: 'PARTIALLY_APPROVED', label: __('Disetujui Sebagian') },
+    { value: 'APPROVED', label: __('Disetujui') },
+    { value: 'REJECTED', label: __('Ditolak') },
 ]);
 
 const hasActiveFilters = computed(() => {
@@ -461,7 +462,7 @@ const hasActiveFilters = computed(() => {
                                 {{ __('Terverifikasi') }}
                             </option>
                             <option value="OVERDUE">
-                                {{ __('⚠️ Terlambat') }}
+                                {{ __('Terlambat') }}
                             </option>
                         </select>
                     </div>
@@ -694,7 +695,10 @@ const hasActiveFilters = computed(() => {
                                         "
                                         class="inline-flex items-center gap-1 rounded border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300"
                                     >
-                                        📎
+                                        <Paperclip
+                                            class="size-3"
+                                            aria-hidden="true"
+                                        />
                                         {{
                                             sub.spkl_document?.status ===
                                             'VERIFIED'
@@ -710,13 +714,21 @@ const hasActiveFilters = computed(() => {
                                         "
                                         class="inline-flex items-center gap-1 rounded border border-red-200 bg-red-50 px-2 py-0.5 text-[10px] font-bold text-red-700 dark:bg-red-950 dark:text-red-300"
                                     >
-                                        ⚠️ {{ __('SPKL Terlambat') }}
+                                        <AlertTriangle
+                                            class="size-3"
+                                            aria-hidden="true"
+                                        />
+                                        {{ __('SPKL Terlambat') }}
                                     </span>
                                     <span
                                         v-else
                                         class="inline-flex items-center gap-1 rounded border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-700 dark:bg-amber-950 dark:text-amber-300"
                                     >
-                                        ⏳ {{ __('Belum Dilampirkan') }}
+                                        <Clock
+                                            class="size-3"
+                                            aria-hidden="true"
+                                        />
+                                        {{ __('Belum Dilampirkan') }}
                                     </span>
                                 </td>
 

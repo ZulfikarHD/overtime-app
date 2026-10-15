@@ -118,7 +118,7 @@ function handleConfirm() {
                         class="text-base font-bold text-slate-900 dark:text-white"
                         data-test="unlock-modal-title"
                     >
-                        {{ __('⚠️ Buka Kunci Pengajuan (Admin Override)') }}
+                        {{ __('Buka Kunci Pengajuan (Admin Override)') }}
                     </DialogTitle>
                 </div>
                 <DialogDescription

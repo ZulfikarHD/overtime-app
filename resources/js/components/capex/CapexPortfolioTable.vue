@@ -139,7 +139,10 @@ function getRowHighlightClass(item: CapexProjectListItem) {
                             <span class="sr-only">{{
                                 __('Status Risiko')
                             }}</span>
-                            <span title="Status Risiko">⚠️</span>
+                            <AlertTriangle
+                                class="mx-auto size-3.5"
+                                aria-hidden="true"
+                            />
                         </th>
 
                         <!-- Project Code (Sortable) -->
@@ -488,7 +491,10 @@ function getRowHighlightClass(item: CapexProjectListItem) {
                                 "
                                 :data-test="`risk-flag-${item.id}`"
                             >
-                                ⚠️
+                                <AlertTriangle
+                                    class="size-4"
+                                    aria-hidden="true"
+                                />
                             </span>
                             <span v-else class="text-muted-foreground/30"
                                 >—</span

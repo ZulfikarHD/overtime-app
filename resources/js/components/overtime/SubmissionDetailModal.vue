@@ -2,6 +2,7 @@
 import { Link, router, usePage } from '@inertiajs/vue3';
 import {
     AlertCircle,
+    AlertTriangle,
     Calendar,
     CheckCircle2,
     Clock,
@@ -429,21 +430,21 @@ function isSpklOverdue(dueDateStr?: string | null): boolean {
                                     {{
                                         detail.spkl_document.status ===
                                         'ATTACHED'
-                                            ? __('📎 SPKL: Dokumen Terlampir')
+                                            ? __('SPKL: Dokumen Terlampir')
                                             : detail.spkl_document.status ===
                                                 'VERIFIED'
                                               ? __(
-                                                    '✅ SPKL: Terverifikasi oleh Manajer',
+                                                    'SPKL: Terverifikasi oleh Manajer',
                                                 )
                                               : isSpklOverdue(
                                                       detail.spkl_document
                                                           .due_date,
                                                   )
                                                 ? __(
-                                                      '⚠️ SPKL: Terlambat Melampirkan Dokumen Fisik',
+                                                      'SPKL: Terlambat Melampirkan Dokumen Fisik',
                                                   )
                                                 : __(
-                                                      '⏳ SPKL: Belum Dilampirkan (Fleksibel BR-05)',
+                                                      'SPKL: Belum Dilampirkan (Fleksibel BR-05)',
                                                   )
                                     }}
                                 </span>
@@ -674,7 +675,10 @@ function isSpklOverdue(dueDateStr?: string | null): boolean {
                                                     "
                                                     :data-test="`detail-policy-warning-${item.id}`"
                                                 >
-                                                    <span>🔴</span>
+                                                    <AlertCircle
+                                                        class="size-3 shrink-0"
+                                                        aria-hidden="true"
+                                                    />
                                                     <span
                                                         class="font-mono font-bold tabular-nums"
                                                         >{{
@@ -714,7 +718,10 @@ function isSpklOverdue(dueDateStr?: string | null): boolean {
                                                     "
                                                     :data-test="`detail-policy-warning-${item.id}`"
                                                 >
-                                                    <span>⚠️</span>
+                                                    <AlertTriangle
+                                                        class="size-3 shrink-0"
+                                                        aria-hidden="true"
+                                                    />
                                                     <span
                                                         class="font-mono tabular-nums"
                                                         >{{

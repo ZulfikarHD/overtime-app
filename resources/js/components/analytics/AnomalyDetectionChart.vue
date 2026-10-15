@@ -173,7 +173,7 @@ const chartOptions = computed<ChartOptions<'line'>>(() => ({
                         return '';
                     }
                     if (context.dataset.label === __('Titik Anomali')) {
-                        return `${__('⚠️ Lonjakan Anomali')}: ${val.toFixed(1)} ${__('jam')}`;
+                        return `${__('Lonjakan Anomali')}: ${val.toFixed(1)} ${__('jam')}`;
                     }
                     return `${context.dataset.label}: ${val.toFixed(1)} ${__('jam')}`;
                 },

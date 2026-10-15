@@ -176,15 +176,17 @@ function getBurnIndexColor(index: number) {
             <CardContent class="text-muted-foreground text-xs">
                 <span
                     v-if="metrics.burn_index_pct > 115"
-                    class="font-semibold text-[#cc0000]"
+                    class="inline-flex items-center gap-1 font-semibold text-[#cc0000]"
                 >
-                    🚨 {{ __('Overrun Defisit: Melebihi 115% alokasi') }}
+                    <AlertTriangle class="size-3.5" aria-hidden="true" />
+                    {{ __('Overrun Defisit: Melebihi 115% alokasi') }}
                 </span>
                 <span
                     v-else-if="metrics.burn_index_pct > 100"
-                    class="font-semibold text-amber-600"
+                    class="inline-flex items-center gap-1 font-semibold text-amber-600"
                 >
-                    ⚠️ {{ __('Peringatan: Melebihi alokasi jam kerja') }}
+                    <AlertTriangle class="size-3.5" aria-hidden="true" />
+                    {{ __('Peringatan: Melebihi alokasi jam kerja') }}
                 </span>
                 <span
                     v-else-if="metrics.burn_index_pct >= 85"
@@ -237,10 +239,13 @@ function getBurnIndexColor(index: number) {
                 </div>
                 <div
                     v-if="metrics.milestone_burn_ratio > 1.2"
-                    class="rounded-md border border-amber-200 bg-amber-50 p-1.5 text-[10px] leading-tight font-semibold text-amber-700 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-300"
+                    class="flex items-start gap-1 rounded-md border border-amber-200 bg-amber-50 p-1.5 text-[10px] leading-tight font-semibold text-amber-700 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-300"
                     data-test="badge-milestone-warning"
                 >
-                    ⚠️
+                    <AlertTriangle
+                        class="mt-px size-3 shrink-0"
+                        aria-hidden="true"
+                    />
                     {{
                         __(
                             'Pembakaran jam lebih cepat dibanding kemajuan fisik!',

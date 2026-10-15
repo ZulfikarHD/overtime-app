@@ -46,8 +46,8 @@ class BudgetThresholdAlert extends Notification implements ShouldQueue
         $isDanger = $this->alertLevel === 'danger';
 
         $title = $isDanger
-            ? "🚨 Kritis: Seksi {$sectionName} mencapai {$burnIndexPct}% (Melebihi anggaran)!"
-            : "⚠️ Peringatan: Seksi {$sectionName} mencapai {$burnIndexPct}% (Mendekati batas anggaran)";
+            ? "Kritis: Seksi {$sectionName} mencapai {$burnIndexPct}% (Melebihi anggaran)!"
+            : "Peringatan: Seksi {$sectionName} mencapai {$burnIndexPct}% (Mendekati batas anggaran)";
 
         $message = $isDanger
             ? "Seksi {$sectionName} telah mencapai {$burnIndexPct}% dari anggaran bulanan. Diperlukan evaluasi dan tindakan segera."

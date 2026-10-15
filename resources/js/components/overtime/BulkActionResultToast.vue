@@ -125,14 +125,22 @@ function toggleDetails() {
                             <span
                                 class="inline-flex items-center gap-1 text-emerald-700 dark:text-emerald-300"
                             >
-                                ✓ {{ result.processed_items_count }}
+                                <CheckCircle2
+                                    class="size-3.5"
+                                    aria-hidden="true"
+                                />
+                                {{ result.processed_items_count }}
                                 {{ __('item berhasil') }}
                             </span>
                             <span
                                 v-if="hasSkips"
                                 class="inline-flex items-center gap-1 text-amber-700 dark:text-amber-300"
                             >
-                                • ⚠️ {{ result.skipped_items_count }}
+                                <AlertTriangle
+                                    class="size-3.5"
+                                    aria-hidden="true"
+                                />
+                                {{ result.skipped_items_count }}
                                 {{ __('item dilewati') }}
                             </span>
                         </div>

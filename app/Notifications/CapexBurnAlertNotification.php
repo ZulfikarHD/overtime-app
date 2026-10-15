@@ -44,7 +44,7 @@ class CapexBurnAlertNotification extends Notification implements ShouldQueue
         $consumedFormatted = number_format($this->consumedHours, 1, '.', '');
         $allocatedFormatted = number_format($this->allocatedHours, 1, '.', '');
 
-        $title = "⚠️ Peringatan Alokasi CapEx: Proyek [{$this->project->project_code}] telah mencapai {$burnIndexFormatted}%";
+        $title = "Peringatan Alokasi CapEx: Proyek [{$this->project->project_code}] telah mencapai {$burnIndexFormatted}%";
         $message = "Proyek [{$this->project->project_code}] {$this->project->name} telah mengonsumsi {$burnIndexFormatted}% dari alokasi jam kerja ({$consumedFormatted} / {$allocatedFormatted} jam).";
 
         return [

@@ -112,7 +112,7 @@ const dueCountdownText = computed(() => {
         const overdueDays = Math.abs(diffDays);
         return {
             isOverdue: true,
-            label: __('⚠️ SPKL Terlambat: Melewati batas :days hari', {
+            label: __('SPKL Terlambat: Melewati batas :days hari', {
                 days: overdueDays,
             }),
             subtext: __('Jatuh tempo: :date', {
@@ -124,7 +124,7 @@ const dueCountdownText = computed(() => {
     if (diffDays === 0) {
         return {
             isOverdue: false,
-            label: __('⏰ Jatuh tempo hari ini!'),
+            label: __('Jatuh tempo hari ini!'),
             subtext: __('Batas waktu: :date', {
                 date: formatDateIndo(dueStr),
             }),
