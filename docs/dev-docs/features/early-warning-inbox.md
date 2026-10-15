@@ -29,33 +29,33 @@ No schema change. The inbox reads alerts from `EarlyWarningService::alertsFor()`
 
 Props sent to `early-warning/Index`:
 
-| Prop          | Delivery  | Shape                                                                                                             |
-| ------------- | --------- | ----------------------------------------------------------------------------------------------------------------- |
+| Prop          | Delivery  | Shape                                                                                                                                |
+| ------------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------ |
 | `filters`     | immediate | `department_id`, `section_id`, `date_from`, `date_to`, `zone` (`all`/`yellow`/`red`), `status` (`all`/`none`/`draft`/`sent`), `page` |
-| `departments` | immediate | Admin: every active department. Others: only their own                                                            |
-| `sections`    | immediate | Sections of the department in scope (empty for an admin without a department filter)                              |
-| `summary`     | deferred  | `total`, `red`, `yellow`, `without_follow_up`                                                                     |
-| `alerts`      | deferred  | `data` (alerts, 25 per page) and `pagination` (`current_page`, `last_page`, `per_page`, `total`, `from`, `to`)    |
+| `departments` | immediate | Admin: every active department. Others: only their own                                                                               |
+| `sections`    | immediate | Sections of the department in scope (empty for an admin without a department filter)                                                 |
+| `summary`     | deferred  | `total`, `red`, `yellow`, `without_follow_up`                                                                                        |
+| `alerts`      | deferred  | `data` (alerts, 25 per page) and `pagination` (`current_page`, `last_page`, `per_page`, `total`, `from`, `to`)                       |
 
 ## Key Files & UI Mapping
 
-| Layer          | File / Route / Menu                                                  | Purpose                                                                                  |
-| -------------- | -------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| Sidebar Menu   | _Early Warning_ (`data-test="nav-early-warning"`)                    | Entry point (E10-02)                                                                     |
-| Page Component | `resources/js/pages/early-warning/Index.vue`                         | Owns the URL: builds the query string, `router.get`, paging, reset                       |
-| Component      | `resources/js/components/early-warning/AlertFilterBar.vue`           | Department / section selects, date range, zone and status pills, reset, date validation  |
-| Component      | `resources/js/components/early-warning/AlertSummaryStrip.vue`        | Four KPI cards (`font-mono tabular-nums`), skeleton while deferred                       |
-| Component      | `resources/js/components/early-warning/AlertList.vue`                | Skeleton, empty state, table (md+), stacked cards (below md), pagination                 |
-| Component      | `resources/js/components/early-warning/AlertZoneBadge.vue`           | Zone badge from `BURN_ZONE_STYLES` (shared with the detail page)                         |
-| Component      | `resources/js/components/early-warning/FollowUpStatusPill.vue`       | Belum / Draft / Terkirim pill (shared with the detail page)                              |
-| Types          | `resources/js/lib/earlyWarning.ts`                                   | Alert, summary, pagination and filter types, `formatAlertDate()`, `MAX_RANGE_DAYS`       |
-| Controller     | `app/Http/Controllers/EarlyWarningController.php` (`index`)          | Thin: scope, filters, deferred props                                                     |
-| Request        | `app/Http/Requests/EarlyWarningInboxRequest.php`                     | Validates the query string, applies defaults (last 7 days), redirects on invalid input   |
-| Service        | `app/Services/EarlyWarningService.php` (`inboxScope()`, `inboxFor()`) | Department lock, filter options, summary, filtering and pagination                       |
-| Wayfinder      | `@/routes/early-warning` (`index.url()`, `show.url()`)               | Generated, git-ignored; no Ziggy                                                         |
-| i18n           | `lang/id.json`, `lang/en.json`                                       | Labels, hints and error messages (kept in sync, sorted)                                  |
-| Tests          | `tests/Feature/EarlyWarningInboxTest.php`                            | 19 tests: deferral, defaults, scope lock, filters, summary, pagination, invalid input    |
-| Browser tests  | `tests/Browser/EarlyWarning/EarlyWarningInboxBrowserTest.php`        | 10 tests: admin vs manager, filters and URL, department select, row open, empty, paging, mobile |
+| Layer          | File / Route / Menu                                                   | Purpose                                                                                         |
+| -------------- | --------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| Sidebar Menu   | _Early Warning_ (`data-test="nav-early-warning"`)                     | Entry point (E10-02)                                                                            |
+| Page Component | `resources/js/pages/early-warning/Index.vue`                          | Owns the URL: builds the query string, `router.get`, paging, reset                              |
+| Component      | `resources/js/components/early-warning/AlertFilterBar.vue`            | Department / section selects, date range, zone and status pills, reset, date validation         |
+| Component      | `resources/js/components/early-warning/AlertSummaryStrip.vue`         | Four KPI cards (`font-mono tabular-nums`), skeleton while deferred                              |
+| Component      | `resources/js/components/early-warning/AlertList.vue`                 | Skeleton, empty state, table (md+), stacked cards (below md), pagination                        |
+| Component      | `resources/js/components/early-warning/AlertZoneBadge.vue`            | Zone badge from `BURN_ZONE_STYLES` (shared with the detail page)                                |
+| Component      | `resources/js/components/early-warning/FollowUpStatusPill.vue`        | Belum / Draft / Terkirim pill (shared with the detail page)                                     |
+| Types          | `resources/js/lib/earlyWarning.ts`                                    | Alert, summary, pagination and filter types, `formatAlertDate()`, `MAX_RANGE_DAYS`              |
+| Controller     | `app/Http/Controllers/EarlyWarningController.php` (`index`)           | Thin: scope, filters, deferred props                                                            |
+| Request        | `app/Http/Requests/EarlyWarningInboxRequest.php`                      | Validates the query string, applies defaults (last 7 days), redirects on invalid input          |
+| Service        | `app/Services/EarlyWarningService.php` (`inboxScope()`, `inboxFor()`) | Department lock, filter options, summary, filtering and pagination                              |
+| Wayfinder      | `@/routes/early-warning` (`index.url()`, `show.url()`)                | Generated, git-ignored; no Ziggy                                                                |
+| i18n           | `lang/id.json`, `lang/en.json`                                        | Labels, hints and error messages (kept in sync, sorted)                                         |
+| Tests          | `tests/Feature/EarlyWarningInboxTest.php`                             | 19 tests: deferral, defaults, scope lock, filters, summary, pagination, invalid input           |
+| Browser tests  | `tests/Browser/EarlyWarning/EarlyWarningInboxBrowserTest.php`         | 10 tests: admin vs manager, filters and URL, department select, row open, empty, paging, mobile |
 
 ## Flow Explanation
 
@@ -64,7 +64,7 @@ Props sent to `early-warning/Index`:
 3. **Scope** — `inboxScope()` fixes the department for non-admins (a foreign `department_id` is ignored), returns the filter options and drops a `section_id` that is not in the offered sections.
 4. **Deferred data** — `Inertia::render` returns the immediate props; `summary` and `alerts` are two deferred props in the group `inbox`. They share one `inboxFor()` result (memoized in the controller), so the alerts are computed once per request.
 5. **List rules** — `inboxFor()` calls `alertsFor()` for the department / section / date range. The **summary** counts that set; the **list** additionally applies the zone and follow-up status filters, keeps the `alertsFor()` order (Merah first, longest streak, newest date), and returns one page of 25. A page past the end falls back to the last page.
-6. **Response** — the page shows the skeleton until the deferred reload fills the summary and list; a row, or its **Follow Up** button, opens `early-warning.show` (E10-04).
+6. **Response** — the page shows the skeleton until the deferred reload fills the summary and list; a row, or its **Follow Up** button, opens `early-warning.show` ([E10-04](./early-warning-alert-detail.md)), which restores these filters through its back link.
 
 ## API Endpoints & Routes
 
@@ -74,20 +74,20 @@ Props sent to `early-warning/Index`:
 
 Query parameters (all optional):
 
-| Param           | Values                              | Default                     |
-| --------------- | ----------------------------------- | --------------------------- |
-| `department_id` | integer (admin only, ignored for others) | all departments (admin)  |
-| `section_id`    | integer, must belong to the department in scope | all sections    |
-| `date_from`     | `Y-m-d`                             | `date_to` minus 6 days      |
-| `date_to`       | `Y-m-d`                             | today (Asia/Jakarta)        |
-| `zone`          | `all`, `yellow`, `red`              | `all`                       |
-| `status`        | `all`, `none`, `draft`, `sent`      | `all`                       |
-| `page`          | integer ≥ 1                         | 1                           |
+| Param           | Values                                          | Default                 |
+| --------------- | ----------------------------------------------- | ----------------------- |
+| `department_id` | integer (admin only, ignored for others)        | all departments (admin) |
+| `section_id`    | integer, must belong to the department in scope | all sections            |
+| `date_from`     | `Y-m-d`                                         | `date_to` minus 6 days  |
+| `date_to`       | `Y-m-d`                                         | today (Asia/Jakarta)    |
+| `zone`          | `all`, `yellow`, `red`                          | `all`                   |
+| `status`        | `all`, `none`, `draft`, `sent`                  | `all`                   |
+| `page`          | integer ≥ 1                                     | 1                       |
 
-| Response                             | Condition                                                                                   |
-| ------------------------------------ | ------------------------------------------------------------------------------------------- |
-| 403                                  | Operator, or a non-admin without a role that can see alerts                                 |
-| 302 to `early-warning.index` + flash | Invalid filter value, reversed range, or a range of 93 days or more                         |
+| Response                             | Condition                                                           |
+| ------------------------------------ | ------------------------------------------------------------------- |
+| 403                                  | Operator, or a non-admin without a role that can see alerts         |
+| 302 to `early-warning.index` + flash | Invalid filter value, reversed range, or a range of 93 days or more |
 
 ## Decisions & Trade-offs
 
@@ -104,5 +104,6 @@ Query parameters (all optional):
 
 - [Early Warning Alert Detection (E10-01)](./early-warning-alert-detection.md)
 - [Early Warning Menu, Routes & Authorization (E10-02)](./early-warning-navigation-access.md)
+- [Early Warning Alert Detail Page (E10-04)](./early-warning-alert-detail.md)
 - [ADR-042](../decisions/042-early-warning-inbox-filters-in-url-and-deferred-alerts.md)
 - [Epic-10](../../scrum/Epic-10.md)

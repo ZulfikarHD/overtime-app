@@ -72,6 +72,7 @@ Technical specifications and decision records for the engineering implementation
     - [ADR-040: Computed Early Warning Alerts on a Shared Daily Index](./dev-docs/decisions/040-early-warning-alert-detection-shared-daily-index.md)
     - [ADR-041: Early Warning Sidebar Badge Cached per Scope and Policy-Based Section Access](./dev-docs/decisions/041-early-warning-sidebar-badge-and-authorization.md)
     - [ADR-042: Early Warning Inbox Filters in the URL, Deferred Alerts and a Lenient Redirect](./dev-docs/decisions/042-early-warning-inbox-filters-in-url-and-deferred-alerts.md)
+    - [ADR-043: Early Warning Detail Back Link (Referer + Session) and Staged Scope](./dev-docs/decisions/043-early-warning-detail-back-link-and-staged-scope.md)
 - **Technical Feature Design Specifications:**
     - [Authentication & Role-Based Access Control](./dev-docs/features/authentication-rbac.md)
     - [Database Schema Migrations (Full DDL)](./dev-docs/features/database-schema-migrations.md)
@@ -109,6 +110,7 @@ Technical specifications and decision records for the engineering implementation
     - [Early Warning Alert Detection (E10-01)](./dev-docs/features/early-warning-alert-detection.md)
     - [Early Warning Menu, Routes & Authorization (E10-02)](./dev-docs/features/early-warning-navigation-access.md)
     - [Early Warning Inbox Page (E10-03)](./dev-docs/features/early-warning-inbox.md)
+    - [Early Warning Alert Detail Page (E10-04)](./dev-docs/features/early-warning-alert-detail.md)
 - **API Reference Design:**
     - [Calendar Classification & Management API](./dev-docs/api/calendar-endpoints.md)
     - [Overtime Policy Check API](./dev-docs/api/overtime-policy-check.md)
@@ -170,6 +172,7 @@ Plain-language operating guides for factory supervisors, team leaders, and opera
     - [What-If Scenario Simulation Guide](./user-docs/guides/what-if-scenario-simulation.md)
     - [Early Warning Menu Guide](./user-docs/guides/early-warning-menu.md)
     - [Early Warning Inbox Guide](./user-docs/guides/early-warning-inbox.md)
+    - [Early Warning Alert Detail Guide](./user-docs/guides/early-warning-alert-detail.md)
     - [Overtime Planning OT Guide](./user-docs/guides/overtime-planning-ot.md)
     - [Input Lembur — SPL Upload Guide](./user-docs/guides/spl-excel-import.md)
 

@@ -6,12 +6,12 @@ The **Early Warning** page lists every day on which a section used too much of i
 
 ## Who Can Use It?
 
-| Role                | What they see                                                   |
-| ------------------- | --------------------------------------------------------------- |
-| **Administrator**   | Alerts of every department, and can pick one department         |
-| **Manager**         | Alerts of their own department only (department cannot change)  |
-| **Team Leader**     | Alerts of their own department only (department cannot change)  |
-| **Operator / User** | No access                                                       |
+| Role                | What they see                                                  |
+| ------------------- | -------------------------------------------------------------- |
+| **Administrator**   | Alerts of every department, and can pick one department        |
+| **Manager**         | Alerts of their own department only (department cannot change) |
+| **Team Leader**     | Alerts of their own department only (department cannot change) |
+| **Operator / User** | No access                                                      |
 
 ## How to Use
 
@@ -40,7 +40,7 @@ The **Early Warning** page lists every day on which a section used too much of i
 ### Open an alert
 
 1. Click anywhere on a row, or click **Follow Up**
-2. The alert detail page opens, where you can review the situation and write the follow-up
+2. The alert detail page opens, where you can review the situation (see the [Early Warning Alert Detail guide](./early-warning-alert-detail.md)). **Back to Early Warning** returns to this list with your filters
 
 ### Browse many alerts
 
@@ -70,9 +70,9 @@ A: A section without an overtime budget for that month is not evaluated, and a d
 
 ## Troubleshooting
 
-| Issue                                       | Solution                                                                                         |
-| ------------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| Red message under the dates                 | The start date is after the end date, or the range is too long. Correct the dates; nothing changes until they are valid |
-| The numbers at the top show a loading bar   | The alerts are still being calculated; they appear within a moment                               |
-| "No alerts in this period" but I expected some | Widen the date range, choose **All zones** and **All statuses**, or click **Reset**           |
-| Access Restricted page                      | You do not have the Administrator, Manager or Team Leader role                                   |
+| Issue                                          | Solution                                                                                                                |
+| ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| Red message under the dates                    | The start date is after the end date, or the range is too long. Correct the dates; nothing changes until they are valid |
+| The numbers at the top show a loading bar      | The alerts are still being calculated; they appear within a moment                                                      |
+| "No alerts in this period" but I expected some | Widen the date range, choose **All zones** and **All statuses**, or click **Reset**                                     |
+| Access Restricted page                         | You do not have the Administrator, Manager or Team Leader role                                                          |

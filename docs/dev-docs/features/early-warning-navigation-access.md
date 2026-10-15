@@ -24,22 +24,22 @@ No schema change. The badge reads alerts computed by `EarlyWarningService` (E10-
 
 ## Key Files & UI Mapping
 
-| Layer         | File / Route / Menu                                                          | Purpose                                                                                       |
-| ------------- | ---------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| Sidebar Menu  | _Early Warning_ (`data-test="nav-early-warning"`)                            | Entry point, after _Employee Reports_ in _Operations & Overtime_; `BellRing` icon             |
-| Sidebar badge | `nav-early-warning-badge` (expanded) / `nav-early-warning-dot` (collapsed)   | Open Merah alert count, `99+` above 99, hidden when 0                                         |
-| Routes        | `early-warning.index`, `early-warning.show` in `routes/web.php`              | Inbox and alert detail, behind `role:admin,manager,team_leader`                               |
-| Controller    | `app/Http/Controllers/EarlyWarningController.php`                            | Thin: authorize, validate the date, render                                                    |
-| Policy        | `app/Policies/AlertFollowUpPolicy.php` (`viewAny`, `viewAlertSection`)       | Department-scope rule shared with follow-up `view` / `update` through `canAccessDepartment()` |
-| Service       | `app/Services/EarlyWarningService.php` (`openRedAlertCount()`)               | Badge count, cached per scope                                                                 |
-| Shared prop   | `app/Http/Middleware/HandleInertiaRequests.php` (`early_warning_open_count`) | Lazy closure, skipped on partial reloads that do not request it                               |
-| Nav component | `resources/js/components/NavMain.vue`                                        | `matchChildren` active state, badge and collapsed-mode dot                                    |
-| Nav type      | `resources/js/types/navigation.ts` (`NavItem.matchChildren`)                 | Highlights the item on every page below its URL                                               |
-| Page shells   | `resources/js/pages/early-warning/Index.vue`, `Show.vue`                     | `Index.vue` is the inbox since [E10-03](./early-warning-inbox.md); `Show.vue` is filled by E10-04 |
-| Wayfinder     | `resources/js/routes/early-warning/index.ts` (generated, git-ignored)        | `index()` used by the sidebar; regenerate with `php artisan wayfinder:generate --with-form`   |
-| i18n          | `lang/id.json`, `lang/en.json`                                               | `Early Warning` and page strings                                                              |
-| Tests         | `tests/Feature/EarlyWarningAccessTest.php`                                   | 11 tests: roles, scope isolation, date validation, badge scope and status rules               |
-| Browser tests | `tests/Browser/EarlyWarning/EarlyWarningNavigationBrowserTest.php`           | 4 tests: sidebar entry, badge, active state on detail, collapsed dot, operator exclusion      |
+| Layer         | File / Route / Menu                                                          | Purpose                                                                                                                                           |
+| ------------- | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Sidebar Menu  | _Early Warning_ (`data-test="nav-early-warning"`)                            | Entry point, after _Employee Reports_ in _Operations & Overtime_; `BellRing` icon                                                                 |
+| Sidebar badge | `nav-early-warning-badge` (expanded) / `nav-early-warning-dot` (collapsed)   | Open Merah alert count, `99+` above 99, hidden when 0                                                                                             |
+| Routes        | `early-warning.index`, `early-warning.show` in `routes/web.php`              | Inbox and alert detail, behind `role:admin,manager,team_leader`                                                                                   |
+| Controller    | `app/Http/Controllers/EarlyWarningController.php`                            | Thin: authorize, validate the date, render                                                                                                        |
+| Policy        | `app/Policies/AlertFollowUpPolicy.php` (`viewAny`, `viewAlertSection`)       | Department-scope rule shared with follow-up `view` / `update` through `canAccessDepartment()`                                                     |
+| Service       | `app/Services/EarlyWarningService.php` (`openRedAlertCount()`)               | Badge count, cached per scope                                                                                                                     |
+| Shared prop   | `app/Http/Middleware/HandleInertiaRequests.php` (`early_warning_open_count`) | Lazy closure, skipped on partial reloads that do not request it                                                                                   |
+| Nav component | `resources/js/components/NavMain.vue`                                        | `matchChildren` active state, badge and collapsed-mode dot                                                                                        |
+| Nav type      | `resources/js/types/navigation.ts` (`NavItem.matchChildren`)                 | Highlights the item on every page below its URL                                                                                                   |
+| Page shells   | `resources/js/pages/early-warning/Index.vue`, `Show.vue`                     | `Index.vue` is the inbox since [E10-03](./early-warning-inbox.md); `Show.vue` is the alert detail since [E10-04](./early-warning-alert-detail.md) |
+| Wayfinder     | `resources/js/routes/early-warning/index.ts` (generated, git-ignored)        | `index()` used by the sidebar; regenerate with `php artisan wayfinder:generate --with-form`                                                       |
+| i18n          | `lang/id.json`, `lang/en.json`                                               | `Early Warning` and page strings                                                                                                                  |
+| Tests         | `tests/Feature/EarlyWarningAccessTest.php`                                   | 11 tests: roles, scope isolation, date validation, badge scope and status rules                                                                   |
+| Browser tests | `tests/Browser/EarlyWarning/EarlyWarningNavigationBrowserTest.php`           | 4 tests: sidebar entry, badge, active state on detail, collapsed dot, operator exclusion                                                          |
 
 ## Flow Explanation
 
