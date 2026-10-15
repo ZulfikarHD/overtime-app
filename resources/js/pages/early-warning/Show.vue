@@ -60,7 +60,7 @@ const currentDay = computed(
 </script>
 
 <template>
-    <div class="space-y-4" data-test="early-warning-show">
+    <div class="space-y-4 p-4 md:p-6" data-test="early-warning-show">
         <Head :title="__('Early Warning')" />
 
         <Link

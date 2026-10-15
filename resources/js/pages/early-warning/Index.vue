@@ -95,7 +95,7 @@ function resetFilters(): void {
 </script>
 
 <template>
-    <div class="space-y-6" data-test="early-warning-index">
+    <div class="space-y-6 p-4 md:p-6" data-test="early-warning-index">
         <Head :title="__('Early Warning')" />
 
         <Heading
