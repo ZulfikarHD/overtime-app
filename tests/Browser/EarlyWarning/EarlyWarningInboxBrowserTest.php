@@ -186,15 +186,20 @@ test('a department without alerts gets the positive empty state', function () {
         ->assertNoJavaScriptErrors();
 });
 
-test('an invalid date range is explained and never submitted', function () {
+test('picking two days in the calendar sets the date range and the URL', function () {
     inboxBrowserSeedAlerts();
     User::factory()->manager($this->department->id)->create(['email' => 'manager.range@factory.com', 'password' => 'password']);
 
+    $today = Carbon::now('Asia/Jakarta')->toDateString();
+
     inboxBrowserLogin('manager.range@factory.com')
         ->navigate('/early-warning')
-        ->fill('[data-test="filter-date-from"]', '2099-01-01')
-        ->assertPresent('[data-test="filter-date-error"]')
-        ->assertSee('The start date must not be after the end date.')
+        ->click('[data-test="filter-date-trigger"]')
+        ->click("[data-test=\"filter-date-day-{$today}\"]")
+        ->assertPresent('[data-test="filter-date-hint"]')
+        ->click("[data-test=\"filter-date-day-{$today}\"]")
+        ->assertQueryStringHas('date_from', $today)
+        ->assertQueryStringHas('date_to', $today)
         ->assertSee('Assembly Merah')
         ->assertNoJavaScriptErrors();
 });
@@ -233,5 +238,32 @@ test('on a phone the alerts are stacked cards instead of a table', function () {
         ->navigate('/early-warning')
         ->assertVisible('[data-test="alert-card"][data-section="Assembly Merah"]')
         ->assertMissing('[data-test="alert-table"]')
+        ->assertNoJavaScriptErrors();
+});
+
+test('the inbox page content is padded away from the layout edges', function () {
+    User::factory()->admin()->create(['email' => 'admin.padding@factory.com', 'password' => 'password']);
+
+    inboxBrowserLogin('admin.padding@factory.com')
+        ->navigate('/early-warning')
+        ->assertScript('parseFloat(getComputedStyle(document.querySelector(\'[data-test="early-warning-index"]\')).paddingLeft) >= 16', true)
+        ->assertNoJavaScriptErrors();
+});
+
+test('a quick range of the date range picker updates the URL, and reset restores the default range', function () {
+    inboxBrowserSeedAlerts();
+    User::factory()->admin()->create(['email' => 'admin.preset@factory.com', 'password' => 'password']);
+
+    $today = Carbon::now('Asia/Jakarta')->toDateString();
+
+    inboxBrowserLogin('admin.preset@factory.com')
+        ->navigate('/early-warning')
+        ->click('[data-test="filter-date-trigger"]')
+        ->click('[data-test="filter-date-preset-today"]')
+        ->assertQueryStringHas('date_from', $today)
+        ->assertQueryStringHas('date_to', $today)
+        ->assertSee('Assembly Merah')
+        ->click('[data-test="filter-reset"]')
+        ->assertQueryStringMissing('date_from')
         ->assertNoJavaScriptErrors();
 });
