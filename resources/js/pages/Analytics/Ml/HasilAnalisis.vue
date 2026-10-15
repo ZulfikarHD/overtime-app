@@ -567,13 +567,17 @@ const matrixVars = ['X1', 'X2', 'X3', 'Y'];
                                       : 'bg-[#cc0000] text-white',
                             ]"
                         >
-                            {{
-                                modelSummary.verdict === 'layak'
-                                    ? '✓'
-                                    : modelSummary.verdict === 'perhatian'
-                                      ? '!'
-                                      : '✗'
-                            }}
+                            <CheckCircle2
+                                v-if="modelSummary.verdict === 'layak'"
+                                class="size-5"
+                                aria-hidden="true"
+                            />
+                            <AlertCircle
+                                v-else-if="modelSummary.verdict === 'perhatian'"
+                                class="size-5"
+                                aria-hidden="true"
+                            />
+                            <XCircle v-else class="size-5" aria-hidden="true" />
                         </div>
                         <div>
                             <p

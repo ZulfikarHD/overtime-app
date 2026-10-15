@@ -43,7 +43,7 @@ const accentClass = computed(() => {
                     data-test="alert-header-title"
                 >
                     {{
-                        __('Daily Index — :section', {
+                        __('Month-to-Date Index — :section', {
                             section: section.name,
                         })
                     }}

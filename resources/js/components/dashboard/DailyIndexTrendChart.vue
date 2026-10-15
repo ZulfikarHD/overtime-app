@@ -24,6 +24,7 @@ export interface DailyIndexTrendData {
     labels: string[];
     daily_indices: (number | null)[];
     daily_hours: (number | null)[];
+    cumulative_hours: (number | null)[];
     planned_daily_pacing_hours: number;
     threshold_pct: number;
     green_max_pct: number;
@@ -120,7 +121,7 @@ const datasets = computed<ChartDataset<'line'>[]>(() => {
 
     return [
         {
-            label: __('Indeks Kontribusi Harian (%)'),
+            label: __('Indeks Bulan Berjalan (%)'),
             data: props.data.daily_indices,
             borderColor: '#475569',
             backgroundColor: 'transparent',
@@ -207,14 +208,14 @@ const chartOptions = computed<ChartOptions<'line'>>(() => {
                             return ` ${__('Rencana (100% Pacing)')}: ${context.parsed.y}%`;
                         }
                         const indexVal = props.data?.daily_indices[idx];
-                        const hoursVal = props.data?.daily_hours[idx];
+                        const hoursVal = props.data?.cumulative_hours[idx];
                         if (indexVal === null || indexVal === undefined) {
                             return ` ${__('Belum ada data')}`;
                         }
                         const zone = props.data?.daily_zones[idx];
                         return [
-                            ` ${__('Indeks Burn Harian')}: ${indexVal}%${zone ? ` (${__(BURN_ZONE_STYLES[zone].label)})` : ''}`,
-                            ` ${__('Realisasi Jam')}: ${hoursVal ?? 0} ${__('jam')}`,
+                            ` ${__('Indeks Burn Bulan Berjalan')}: ${indexVal}%${zone ? ` (${__(BURN_ZONE_STYLES[zone].label)})` : ''}`,
+                            ` ${__('Realisasi Jam Kumulatif')}: ${hoursVal ?? 0} ${__('jam')}`,
                         ];
                     },
                 },
@@ -275,13 +276,13 @@ const chartOptions = computed<ChartOptions<'line'>>(() => {
                     >
                         <Activity class="size-4 text-[#cc0000]" />
                         <span>{{
-                            __('Early Warning: Indeks Kontribusi Harian')
+                            __('Early Warning: Indeks Burn Bulan Berjalan')
                         }}</span>
                     </CardTitle>
                     <CardDescription class="text-xs">
                         {{
                             __(
-                                'Tingkat konsumsi lembur harian terhadap target pacing pada :month',
+                                'Konsumsi lembur kumulatif sejak awal bulan terhadap target pacing pada :month',
                                 { month: data?.month_name || '' },
                             )
                         }}
@@ -295,7 +296,8 @@ const chartOptions = computed<ChartOptions<'line'>>(() => {
                         :class="averageStyle.badge"
                         data-test="early-warning-average-badge"
                     >
-                        {{ __('Rata-rata') }}: {{ data?.average_index ?? 0 }}% ·
+                        {{ __('Bulan Berjalan') }}:
+                        {{ data?.average_index ?? 0 }}% ·
                         {{ __(averageStyle.label) }}
                     </Badge>
 

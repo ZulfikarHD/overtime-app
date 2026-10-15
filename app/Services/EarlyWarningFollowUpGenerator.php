@@ -87,8 +87,8 @@ class EarlyWarningFollowUpGenerator
         $primary = $causes->first();
         $supporting = $causes->slice(1, self::SUPPORTING_CAUSES)->values();
 
-        $excessPerDay = $this->excessHoursPerDay($window);
         $followUpDays = max(1, (int) config('early_warning.follow_up_days', 7));
+        $excessPerDay = $this->excessHoursPerDay($window, $followUpDays);
         $suggestedHours = round($excessPerDay * $followUpDays, 1);
         $costPerHour = $this->earlyWarningService->costPerOvertimeHour($section, $alertDate);
         $suggestedCost = $costPerHour === null ? 0 : (int) round($suggestedHours * $costPerHour);
@@ -246,20 +246,21 @@ class EarlyWarningFollowUpGenerator
     }
 
     /**
-     * Average daily actual hours minus the average daily pacing target over the streak days, never below 0.
+     * The hours the section is above its pace for the month so far (cumulative hours minus the hours expected by
+     * the alert date), spread over the follow-up days, never below 0.
      *
-     * @param  list<array{date: string, actual_hours: float, pacing_hours: float, is_working_day: bool}>  $window
+     * @param  list<array{date: string, actual_hours: float, pacing_hours: float, cumulative_hours: float, expected_hours: float, is_working_day: bool}>  $window
      */
-    protected function excessHoursPerDay(array $window): float
+    protected function excessHoursPerDay(array $window, int $followUpDays): float
     {
         if ($window === []) {
             return 0.0;
         }
 
-        $actual = array_sum(array_column($window, 'actual_hours')) / count($window);
-        $pacing = array_sum(array_column($window, 'pacing_hours')) / count($window);
+        $alertDay = $window[array_key_last($window)];
+        $overspend = max(0.0, $alertDay['cumulative_hours'] - $alertDay['expected_hours']);
 
-        return max(0.0, round($actual - $pacing, 2));
+        return round($overspend / max(1, $followUpDays), 2);
     }
 
     /**
@@ -272,7 +273,7 @@ class EarlyWarningFollowUpGenerator
         $over = max(0.0, (float) $alert['index_pct'] - $limit);
         $streak = (int) $alert['streak_days'];
 
-        $what = __('Daily index :section :index% (:zone), :over% above the :limit% limit', [
+        $what = __('Month-to-date index :section :index% (:zone), :over% above the :limit% limit', [
             'section' => $alert['section_name'],
             'index' => $this->number((float) $alert['index_pct']),
             'zone' => __($zone->label()),

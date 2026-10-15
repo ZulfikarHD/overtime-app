@@ -206,12 +206,4 @@ export function formatSignedPct(
     return `${rounded > 0 ? '+' : ''}${rounded}%`;
 }
 
-/**
- * Whole days between two `Y-m-d` dates (inclusive count is `result + 1`).
- */
-export function daysBetween(from: string, to: string): number {
-    const start = Date.parse(`${from}T00:00:00Z`);
-    const end = Date.parse(`${to}T00:00:00Z`);
-
-    return Math.round((end - start) / 86_400_000);
-}
+export { daysBetween } from '@/lib/dateRange';

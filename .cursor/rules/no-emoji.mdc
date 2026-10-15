@@ -1,0 +1,12 @@
+---
+description: Never use emoji in UI, notifications, translations, or seeders output
+alwaysApply: true
+---
+
+# No Emoji
+
+Never put emoji (or pictograph symbols such as ⚠️ ✅ 🔴 📎 ⏳) in Vue templates, notification text, `lang/*.json` keys or values, or labels.
+
+- In Vue UI use an icon from `@lucide/vue` (SVG), with `aria-hidden="true"` when decorative. Example: `<AlertTriangle class="size-3.5" aria-hidden="true" />`.
+- In plain text (notifications, console output, translation strings) just write the words, without a symbol.
+- Status colour/meaning must come from icon + text + colour classes, never from a coloured emoji dot.

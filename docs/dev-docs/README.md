@@ -126,6 +126,7 @@ Durable technical decisions and trade-offs:
 - **[ADR-045: Early Warning Follow-Up Linked to an Alert, with a Server-Side Suggestion Baseline](./decisions/045-early-warning-follow-up-alert-link-and-suggestion-baseline.md)**
 - **[ADR-046: Early Warning Dashboard Link Built from the Chart Scope](./decisions/046-early-warning-dashboard-entry-link-built-from-chart-scope.md)**
 - **[ADR-047: Rule-Based Early Warning 5W2H Generator with Evidence and a Cause → PIC Mapping](./decisions/047-early-warning-rule-based-follow-up-generator.md)**
+- **[ADR-048: Early Warning Index Is Month-to-Date](./decisions/048-early-warning-month-to-date-index.md)**
 
 ---
 

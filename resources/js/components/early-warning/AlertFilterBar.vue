@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { RotateCcw } from '@lucide/vue';
-import { computed, ref, watch } from 'vue';
+import { computed, ref } from 'vue';
+import DateRangePicker from '@/components/DateRangePicker.vue';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import {
     Select,
     SelectContent,
@@ -11,7 +11,8 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { useTrans } from '@/composables/useTrans';
-import { MAX_RANGE_DAYS, daysBetween } from '@/lib/earlyWarning';
+import type { DateRangeValue } from '@/lib/dateRange';
+import { MAX_RANGE_DAYS } from '@/lib/earlyWarning';
 import type {
     DepartmentOption,
     InboxFilters,
@@ -34,37 +35,6 @@ const emit = defineEmits<{
 }>();
 
 const { __ } = useTrans();
-
-const dateFrom = ref(props.filters.date_from);
-const dateTo = ref(props.filters.date_to);
-
-watch(
-    () => [props.filters.date_from, props.filters.date_to],
-    ([from, to]) => {
-        dateFrom.value = from;
-        dateTo.value = to;
-    },
-);
-
-const dateError = computed<string | null>(() => {
-    if (!dateFrom.value || !dateTo.value) {
-        return __('Choose both dates.');
-    }
-
-    const span = daysBetween(dateFrom.value, dateTo.value);
-
-    if (span < 0) {
-        return __('The start date must not be after the end date.');
-    }
-
-    if (span >= MAX_RANGE_DAYS) {
-        return __('The date range may not exceed :days days.', {
-            days: MAX_RANGE_DAYS,
-        });
-    }
-
-    return null;
-});
 
 const zoneOptions = computed(() => [
     { value: 'all', label: __('All zones') },
@@ -94,18 +64,16 @@ function changeSection(value: unknown): void {
     change({ section_id: value === ALL ? null : Number(value) });
 }
 
+/** Remounts the date range so an unsent, invalid draft is discarded on reset. */
+const dateRangeKey = ref(0);
+
 function reset(): void {
-    dateFrom.value = props.filters.date_from;
-    dateTo.value = props.filters.date_to;
+    dateRangeKey.value += 1;
     emit('reset');
 }
 
-function changeDates(): void {
-    if (dateError.value !== null) {
-        return;
-    }
-
-    change({ date_from: dateFrom.value, date_to: dateTo.value });
+function changeDates(range: DateRangeValue): void {
+    change({ date_from: range.from, date_to: range.to });
 }
 </script>
 
@@ -183,35 +151,14 @@ function changeDates(): void {
                 </Select>
             </div>
 
-            <div class="space-y-1">
-                <label
-                    class="block text-xs font-medium text-slate-500"
-                    for="filter-date-from"
-                >
-                    {{ __('Date range') }}
-                </label>
-                <div class="flex items-center gap-2">
-                    <Input
-                        id="filter-date-from"
-                        v-model="dateFrom"
-                        type="date"
-                        class="h-9 w-36 font-mono text-xs tabular-nums"
-                        data-test="filter-date-from"
-                        :aria-invalid="dateError !== null"
-                        @change="changeDates"
-                    />
-                    <span class="text-xs text-slate-400">—</span>
-                    <Input
-                        v-model="dateTo"
-                        type="date"
-                        class="h-9 w-36 font-mono text-xs tabular-nums"
-                        data-test="filter-date-to"
-                        :aria-label="__('End date')"
-                        :aria-invalid="dateError !== null"
-                        @change="changeDates"
-                    />
-                </div>
-            </div>
+            <DateRangePicker
+                :key="dateRangeKey"
+                :from="filters.date_from"
+                :to="filters.date_to"
+                :max-days="MAX_RANGE_DAYS"
+                test-id="filter-date"
+                @change="changeDates"
+            />
 
             <Button
                 variant="ghost"
@@ -223,15 +170,6 @@ function changeDates(): void {
                 <RotateCcw class="mr-1 size-3.5" />{{ __('Reset') }}
             </Button>
         </div>
-
-        <p
-            v-if="dateError !== null"
-            class="text-xs text-[#cc0000]"
-            role="alert"
-            data-test="filter-date-error"
-        >
-            {{ dateError }}
-        </p>
 
         <div class="flex flex-wrap items-center gap-x-6 gap-y-2">
             <div

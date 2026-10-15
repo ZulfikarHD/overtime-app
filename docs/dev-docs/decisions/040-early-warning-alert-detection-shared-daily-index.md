@@ -1,7 +1,7 @@
 # ADR-040: Computed Early Warning Alerts on a Shared Daily Index
 
 **Date:** 2026-10-14  
-**Status:** accepted  
+**Status:** accepted (the index formula was changed from per-day to month-to-date by [ADR-048](./048-early-warning-month-to-date-index.md))  
 **Supersedes:** None (builds on ADR-010 and ADR-039)
 
 ## Context
@@ -11,7 +11,7 @@ Epic-10 turns the Dashboard Early Warning chart into an alert workflow. Alerts m
 ## Decision
 
 1. **Alerts are computed, not stored.** `EarlyWarningService` derives them on demand from approved overtime, budgets, the operational calendar and zone limits. Only follow-ups are persisted, linked through the new `alert_follow_ups.alert_date` (+ `section_id`).
-2. **One daily index formula.** `DashboardKpiService::calculateDailyIndex()` / `calculateDailyPacing()` / `resolvePlannedHoursForSections()` are used by both `getDailyIndexTrend()` and `EarlyWarningService`.
+2. **One daily index formula.** `DashboardKpiService::calculateMonthToDateIndex()` / `calculateExpectedHours()` (originally `calculateDailyIndex()` / `calculateDailyPacing()`) / `resolvePlannedHoursForSections()` are used by both `getDailyIndexTrend()` and `EarlyWarningService`.
 3. **Constant query count.** One grouped query for hours over `scan range = range + 60 days`, one each for sections, budgets (+ snapshot fallback), calendar, thresholds and follow-ups.
 4. **Streak** counts consecutive HKN days in Kuning/Merah; HLR days are skipped; a Hijau working day or a month without budget resets it.
 5. **Scope.** Admin sees all (optional filters); Manager and Team Leader see their own department, server-side; other roles see nothing.

@@ -748,7 +748,7 @@ function getBurnIndexBadgeClass(index: number) {
                     v-if="stats.at_risk_count > 0"
                     class="flex items-center gap-1.5 font-semibold text-[#cc0000]"
                 >
-                    <span>⚠️</span>
+                    <AlertTriangle class="size-3.5" aria-hidden="true" />
                     <span>{{
                         __(':count Proyek Berisiko Tinggi', {
                             count: stats.at_risk_count,

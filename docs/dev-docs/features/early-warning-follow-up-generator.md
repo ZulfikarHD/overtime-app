@@ -56,7 +56,7 @@ Migration `create_alert_cause_pic_mappings_table`. `pic_department_id` is `nullO
 | `when_date`, `when_text`                      | Alert date and the streak as a range, e.g. `24–26 Okt 2026 (3 hari kerja berturut-turut)`        |
 | `where`                                       | `Department — Section` (Q8: no production line in the data)                                      |
 | `who_department_id`                           | PIC department (see _Who_)                                                                       |
-| `how_much_hours`, `how_much_cost_idr`         | `excess_hours_per_day × follow_up_days`, and that × the cost of one overtime hour of the section |
+| `how_much_hours`, `how_much_cost_idr`         | the month-to-date overspend (`excess_hours_per_day × follow_up_days`), and that × the cost of one overtime hour of the section |
 | `cost_note`                                   | "Estimasi biaya belum tersedia" when hours exist but no cost basis does                          |
 | `excess_hours_per_day`, `suggested_headcount` | Calculation inputs (`suggested_headcount` only when manpower is the primary cause)               |
 | `primary_cause`, `supporting_causes`          | `AlertCause` values; supporting = next two by score                                              |
@@ -110,7 +110,7 @@ Highest score = primary (drives Who and How); the next two = supporting (only in
     - **Where**: department and section.
     - **Who**: admin mapping of the primary cause (row inactive or without PIC → own department; no row → configured default, e.g. `DEPT_HCM`, if that department exists). A department without active recipients is passed over when another candidate has some; if none has, the first candidate is kept and the send validation explains it.
     - **How**: the primary cause's template with its numbers, plus "Estimated need: N overtime hours (Rp …)" when the daily excess gave hours and a cost basis exists. Manpower: `max(1, ceil(excess / shift_hours))` people for `follow_up_days` working days.
-    - **How much**: `excess_hours_per_day` = average daily actual − average daily pacing over the streak days (never negative); hours = that × `follow_up_days`; cost = hours × the section's average cost per overtime hour (approved items' `total_cost_snapshot / total_hours` of the last 30 days, else the average effective hourly rate of the section's active employees, else 0 with `cost_note`).
+    - **How much**: `excess_hours_per_day` = hours above the pace for the month so far (cumulative hours − hours expected by the alert date, never negative) ÷ `follow_up_days`; hours = that × `follow_up_days`, i.e. the overspend itself; cost = hours × the section's average cost per overtime hour (approved items' `total_cost_snapshot / total_hours` of the last 30 days, else the average effective hourly rate of the section's active employees, else 0 with `cost_note`).
 4. **Response** — `FollowUpForm.vue` fills the fields and compares each against the suggestion: "Dibuat sistem" until edited, then "Diubah" with a reset link. On the first save `AlertFollowUpService::save()` stores the same output as `generated_payload` (server-side, outside the transaction; a client-sent payload is ignored).
 5. **Administration** — an admin saves the six rows in one request; only suggestions generated afterwards change.
 

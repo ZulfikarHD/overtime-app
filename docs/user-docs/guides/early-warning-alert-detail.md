@@ -16,7 +16,7 @@ When a section uses too much of its daily overtime budget, the **Early Warning**
 1. **Header** — the section, the date, the department, the zone (**Kuning** or **Merah**), the index in percent and the streak, for example "3 consecutive days"
 2. **Index bar** — the filled bar is the index of that day. The thin marks show where **Hijau** ends and **Kuning** ends for your department, and **Target 100%** is the plan itself
 3. **Production volume** and **Manpower change** — show whether production or the number of people changed around the alert, compared with the previous month (see the [Alert Vitals guide](./early-warning-alert-vitals.md)). When the data is not available the card shows **N/A**; hover over the information icon to see why
-4. **Last 7 working days** — a chart of the daily index with the green, yellow and red areas behind it. The large dot is the alert day
+4. **Last 7 working days** — a chart of the month-to-date index (hours used since the 1st of the month against the hours expected by that day) with the green, yellow and red areas behind it. The large dot is the alert day
 5. **Follow-up (5W2H)** — shows the status (**Not followed up yet**, **Draft** or **Terkirim**) and the 5W2H form, already filled in by the system. A sent follow-up also shows when it was sent and by whom, and cannot be changed. How to edit, save and send it is explained in the [Follow-Up guide](./early-warning-follow-up.md)
 
 ### Read earlier follow-ups

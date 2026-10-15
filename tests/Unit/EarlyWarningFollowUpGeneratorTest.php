@@ -19,8 +19,10 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 /*
- * Today = Wed 14 Oct 2026. A 310 h October budget paces 10 h/day, so with the default 70 / 90 limits a day of
- * 8 h is Kuning (80 %), 12 h and more is Merah. The alert under test is Tue 13 Oct; Mon 12 Oct is its streak partner.
+ * Today = Wed 14 Oct 2026. The index is month-to-date. A 31 h October budget expects 1 h per calendar day (12 h by
+ * 12 Oct, 13 h by 13 Oct). The standard streak books 24 h on Mon 12 Oct and 24 h on Tue 13 Oct: 200 % and 369.2 %,
+ * both Merah with the default 70 / 90 limits, while every earlier day has no hours and stays Hijau. The alert under
+ * test is Tue 13 Oct (48 h booked, 35 h above the 13 h expected); Mon 12 Oct is its streak partner.
  * Category totals are split evenly by default so no category dominates unless a test asks for it.
  */
 
@@ -38,7 +40,7 @@ beforeEach(function () {
     OvertimeBudget::factory()->forSection($this->section)->create([
         'fiscal_year' => 2026,
         'fiscal_month' => 10,
-        'planned_hours' => 310.0,
+        'planned_hours' => 31.0,
     ]);
 });
 
@@ -108,7 +110,7 @@ test('what states the zone, the index, the distance above the limit and the stre
 
     $suggestion = ewgenGenerate();
 
-    expect($suggestion['what'])->toBe("Daily index {$this->section->name} 240.0% (Red), 150.0% above the 90.0% limit, 2 consecutive days.")
+    expect($suggestion['what'])->toBe("Month-to-date index {$this->section->name} 369.2% (Red), 279.2% above the 90.0% limit, 2 consecutive days.")
         ->and($suggestion['where'])->toBe($this->dept->name.' — '.$this->section->name)
         ->and($suggestion['when_date'])->toBe('2026-10-13')
         ->and($suggestion['when_text'])->toBe('12–13 Oct 2026 (2 consecutive working days)');
@@ -116,19 +118,20 @@ test('what states the zone, the index, the distance above the limit and the stre
 
 test('manpower shortage is detected from volume up and manpower flat, with headcount and cost from the excess hours', function () {
     ewgenVolume(2000, 2400, 800);
-    ewgenStreak($this->section);
+    ewgenStreak($this->section, 24.0);
 
     $suggestion = ewgenGenerate();
 
-    // 24 h/day against a 10 h pacing = 14 h/day excess; x 7 days = 98 h; 14 / 8 h shift = 2 people; 98 h x Rp 50.000.
+    // 96 h booked by 13 Oct against 13 h expected = 83 h above the pace; / 7 days = 11.86 h/day; x 7 days = 83 h;
+    // 11.86 / 8 h shift = 2 people; 83 h x Rp 50.000.
     expect($suggestion['primary_cause'])->toBe('MANPOWER_SHORTAGE')
         ->and($suggestion['supporting_causes'])->toBe([])
         ->and($suggestion['why'])->toBe('Production volume +20.0% (vs September 2026) while manpower is 0.0% (vs September 2026 (plant-wide)).')
-        ->and($suggestion['how'])->toBe('Add 2 people for 7 working days to cover the excess of 14.0 hours per day (8 hours per shift). Estimated need: 98.0 overtime hours (Rp 4.900.000).')
-        ->and($suggestion['excess_hours_per_day'])->toBe(14.0)
+        ->and($suggestion['how'])->toBe('Add 2 people for 7 working days to cover the excess of 11.9 hours per day (8 hours per shift). Estimated need: 83.0 overtime hours (Rp 4.150.000).')
+        ->and($suggestion['excess_hours_per_day'])->toBe(11.86)
         ->and($suggestion['suggested_headcount'])->toBe(2)
-        ->and($suggestion['how_much_hours'])->toBe(98.0)
-        ->and($suggestion['how_much_cost_idr'])->toBe(4900000)
+        ->and($suggestion['how_much_hours'])->toBe(83.0)
+        ->and($suggestion['how_much_cost_idr'])->toBe(4150000)
         ->and($suggestion['cost_note'])->toBeNull();
 });
 
@@ -253,11 +256,12 @@ test('every threshold comes from the configuration', function () {
     expect(ewgenGenerate()['primary_cause'])->toBe('UNKNOWN');
 });
 
-test('headcount is at least one and hours and cost are never negative when the day is below the pacing target', function () {
+test('headcount is at least one and hours and cost are never negative when the month is below its pace', function () {
     ewgenVolume(2000, 2400, 800);
+    // 10 h booked by 13 Oct against 13 h expected = 76.9 %: Kuning, but not above the pace.
     foreach (['2026-10-12', '2026-10-13'] as $date) {
-        ewgenDay($this->section, $date, 'EMP-A', total: 4.0);
-        ewgenDay($this->section, $date, 'EMP-B', total: 4.0);
+        ewgenDay($this->section, $date, 'EMP-A', total: 2.5);
+        ewgenDay($this->section, $date, 'EMP-B', total: 2.5);
     }
 
     $suggestion = ewgenGenerate();
@@ -280,7 +284,7 @@ test('the cost falls back to the average hourly rate of the active employees of 
 
     $withoutBasis = ewgenGenerate();
 
-    expect($withoutBasis['how_much_hours'])->toBe(98.0)
+    expect($withoutBasis['how_much_hours'])->toBe(35.0)
         ->and($withoutBasis['how_much_cost_idr'])->toBe(0)
         ->and($withoutBasis['cost_note'])->toBe('Cost estimate not available yet');
 
@@ -291,7 +295,7 @@ test('the cost falls back to the average hourly rate of the active employees of 
 
     $withFallback = ewgenGenerate();
 
-    expect($withFallback['how_much_cost_idr'])->toBe((int) round(98.0 * 42500))
+    expect($withFallback['how_much_cost_idr'])->toBe((int) round(35.0 * 42500))
         ->and($withFallback['cost_note'])->toBeNull();
 });
 
@@ -355,7 +359,7 @@ test('the configured default PIC applies until an admin saves a mapping for the 
 
 test('the text follows the application locale in Indonesian and English', function () {
     ewgenVolume(2000, 2400, 800);
-    ewgenStreak($this->section);
+    ewgenStreak($this->section, 24.0);
 
     app()->setLocale('id');
     $indonesian = ewgenGenerate();
@@ -363,11 +367,11 @@ test('the text follows the application locale in Indonesian and English', functi
     app()->setLocale('en');
     $english = ewgenGenerate();
 
-    expect($indonesian['what'])->toContain('Indeks harian')->toContain('240,0%')
+    expect($indonesian['what'])->toContain('Indeks bulan berjalan')->toContain('738,5%')
         ->and($indonesian['when_text'])->toBe('12–13 Okt 2026 (2 hari kerja berturut-turut)')
         ->and($indonesian['why'])->toContain('Volume produksi +20,0% (vs September 2026)')
-        ->and($indonesian['how'])->toContain('Tambah 2 orang selama 7 hari kerja')->toContain('Rp 4.900.000')
-        ->and($english['what'])->toContain('Daily index')->toContain('240.0%')
+        ->and($indonesian['how'])->toContain('Tambah 2 orang selama 7 hari kerja')->toContain('Rp 4.150.000')
+        ->and($english['what'])->toContain('Month-to-date index')->toContain('738.5%')
         ->and($english['when_text'])->toBe('12–13 Oct 2026 (2 consecutive working days)');
 });
 

@@ -20,8 +20,9 @@ use Illuminate\Support\Facades\DB;
 
 /*
  * Calendar of the scenarios (today = Wed 14 Oct 2026): 3-4 Oct and 10-11 Oct are weekends (HLR).
- * A 310 h October budget gives a pacing of 10 h/day, so 8 h = 80 % (Kuning) and 10 h = 100 % (Merah)
- * with the default 70 / 90 limits; 5 h = 50 % (Hijau).
+ * The index is month-to-date. A 310 h October budget expects 10 h per calendar day (10 h by 1 Oct, 120 h by 12 Oct,
+ * 140 h by 14 Oct), so with the default 70 / 90 limits the cumulative hours of day D are Hijau up to 7 x D,
+ * Kuning up to 9 x D and Merah above. Hours below are listed per day and accumulate.
  */
 
 beforeEach(function () {
@@ -90,13 +91,13 @@ test('classifies each day with the section department boundaries and never retur
     $standardSection = ewSection($standard, 'Press A');
     $customSection = ewSection($custom, 'Weld B');
 
+    // 100 h by 12 Oct = 83.3 %, 120 h by 13 Oct = 92.3 %.
     foreach ([$standardSection, $customSection] as $section) {
-        ewHours($section, '2026-10-12', 8.0);
-        ewHours($section, '2026-10-13', 10.0);
-        ewHours($section, '2026-10-14', 5.0);
+        ewHours($section, '2026-10-12', 100.0);
+        ewHours($section, '2026-10-13', 20.0);
     }
 
-    $alerts = collect(ewAlerts());
+    $alerts = collect(ewAlerts(to: '2026-10-13'));
 
     $byKey = fn (Section $section, string $date) => $alerts->first(
         fn (array $alert) => $alert['section_id'] === $section->id && $alert['alert_date'] === $date,
@@ -109,13 +110,13 @@ test('classifies each day with the section department boundaries and never retur
         ->and($byKey($customSection, '2026-10-13')['zone'])->toBe('yellow')
         ->and($byKey($customSection, '2026-10-13')['green_max_pct'])->toBe(85.0)
         ->and($byKey($customSection, '2026-10-13')['yellow_max_pct'])->toBe(100.0)
-        ->and($alerts->pluck('alert_date'))->not->toContain('2026-10-14');
+        ->and($alerts->pluck('alert_date'))->not->toContain('2026-10-11');
 });
 
 test('exposes the documented alert fields', function () {
     $department = Department::factory()->create(['name' => 'Press Dept']);
     $section = ewSection($department, 'Press Line 1');
-    ewHours($section, '2026-10-13', 9.5);
+    ewHours($section, '2026-10-13', 120.0);
 
     $alert = ewAlerts()[0];
 
@@ -125,7 +126,7 @@ test('exposes the documented alert fields', function () {
         'department_id' => $department->id,
         'department_name' => 'Press Dept',
         'alert_date' => '2026-10-13',
-        'index_pct' => 95.0,
+        'index_pct' => 92.3,
         'zone' => 'red',
         'streak_days' => 1,
         'green_max_pct' => 70.0,
@@ -137,7 +138,7 @@ test('exposes the documented alert fields', function () {
 
 test('the daily index matches the dashboard early warning chart for the same section', function () {
     $section = ewSection(null, 'Parity Section');
-    ewHours($section, '2026-10-06', 7.3);
+    ewHours($section, '2026-10-06', 70.3);
     ewHours($section, '2026-10-08', 9.7);
     ewHours($section, '2026-10-13', 12.0);
 
@@ -157,21 +158,29 @@ test('the daily index matches the dashboard early warning chart for the same sec
 
 test('only approved hours count toward the daily index', function () {
     $section = ewSection();
-    ewHours($section, '2026-10-13', 10.0, 'pending');
+    ewHours($section, '2026-10-13', 200.0, 'pending');
 
     expect(ewAlerts())->toBeEmpty();
 });
 
+/**
+ * Kuning on Wed 7 - Fri 9 and Mon 12 (cumulative 50, 57, 64 and 86 h), nothing on the weekend or on Tue 13.
+ */
+function ewStreakMonth(Section $section): void
+{
+    ewHours($section, '2026-10-07', 50.0);
+    ewHours($section, '2026-10-08', 7.0);
+    ewHours($section, '2026-10-09', 7.0);
+    ewHours($section, '2026-10-12', 22.0);
+}
+
 test('streak counts consecutive working days across a weekend and resets on a Hijau working day', function () {
     $section = ewSection();
 
-    // Wed 7, Thu 8, Fri 9 Kuning -> weekend (no overtime = Hijau but HLR) -> Mon 12 Kuning
-    foreach (['2026-10-07', '2026-10-08', '2026-10-09', '2026-10-12'] as $date) {
-        ewHours($section, $date, 8.0);
-    }
-    // Tue 13 Hijau resets, Wed 14 Kuning starts again
-    ewHours($section, '2026-10-13', 5.0);
-    ewHours($section, '2026-10-14', 8.0);
+    ewStreakMonth($section);
+    // Wed 7, Thu 8, Fri 9 Kuning -> weekend (HLR, Hijau) -> Mon 12 Kuning. Tue 13 falls back to Hijau (86 h of 130 h
+    // expected = 66 %) and resets the streak, Wed 14 climbs back to Kuning (99 h of 140 h = 70.7 %).
+    ewHours($section, '2026-10-14', 13.0);
 
     $streaks = collect(ewAlerts())->pluck('streak_days', 'alert_date')->all();
 
@@ -187,9 +196,7 @@ test('streak counts consecutive working days across a weekend and resets on a Hi
 test('streak reaches back before the requested range', function () {
     $section = ewSection();
 
-    foreach (['2026-10-07', '2026-10-08', '2026-10-09', '2026-10-12'] as $date) {
-        ewHours($section, $date, 8.0);
-    }
+    ewStreakMonth($section);
 
     $alerts = ewAlerts(from: '2026-10-12', to: '2026-10-14');
 
@@ -203,10 +210,10 @@ test('a weekday holiday does not break the streak and an HLR alert day counts it
 
     OperationalCalendar::factory()->forDate('2026-10-13')->holiday('Cuti Bersama')->create();
 
-    ewHours($section, '2026-10-12', 8.0);   // Mon, HKN
-    ewHours($section, '2026-10-13', 5.0);   // Tue, HLR holiday (Hijau) -> skipped
-    ewHours($section, '2026-10-14', 8.0);   // Wed, HKN -> streak continues
-    ewHours($section, '2026-10-10', 8.0);   // Sat, HLR alert -> counts itself only and is not part of the Mon streak
+    ewHours($section, '2026-10-10', 80.0);  // Sat, HLR alert (80 h of 100 h) -> counts itself only
+    ewHours($section, '2026-10-12', 8.0);   // Mon, HKN (88 h of 120 h = 73 %) -> streak 1, not part of the Sat alert
+    // Tue 13, HLR holiday: 88 h of 130 h = 68 % Hijau -> skipped, does not break the streak
+    ewHours($section, '2026-10-14', 11.0);  // Wed, HKN (99 h of 140 h = 70.7 %) -> streak continues
 
     $streaks = collect(ewAlerts())->pluck('streak_days', 'alert_date')->all();
 
@@ -224,9 +231,12 @@ test('streak continues across a month boundary when both months have a budget', 
         'planned_hours' => 300,
     ]);
 
-    foreach (['2026-09-29', '2026-09-30', '2026-10-01', '2026-10-02'] as $date) {
-        ewHours($section, $date, 8.0);
-    }
+    // September: 210 h by the 29th (72 %), 215 h by the 30th (72 %). October starts again from zero: 8 h by the 1st
+    // (80 % of 10 h) and 16 h by the 2nd (80 % of 20 h).
+    ewHours($section, '2026-09-29', 210.0);
+    ewHours($section, '2026-09-30', 5.0);
+    ewHours($section, '2026-10-01', 8.0);
+    ewHours($section, '2026-10-02', 8.0);
 
     $alerts = ewAlerts(from: '2026-10-01', to: '2026-10-02');
 
@@ -238,7 +248,7 @@ test('streak continues across a month boundary when both months have a budget', 
 
 test('sections without a budget produce no alert while a burn snapshot is an accepted fallback', function () {
     $noBudget = ewSection(null, 'No Budget', 0);
-    ewHours($noBudget, '2026-10-13', 20.0);
+    ewHours($noBudget, '2026-10-13', 200.0);
 
     $snapshotDepartment = Department::factory()->create();
     $snapshotSection = ewSection($snapshotDepartment, 'Snapshot Only', 0);
@@ -247,9 +257,9 @@ test('sections without a budget produce no alert while a burn snapshot is an acc
         'fiscal_month' => 10,
         'planned_budget_hours' => 310,
     ]);
-    ewHours($snapshotSection, '2026-10-13', 10.0);
+    ewHours($snapshotSection, '2026-10-13', 130.0);
 
-    $alerts = ewAlerts();
+    $alerts = ewAlerts(to: '2026-10-13');
 
     expect($alerts)->toHaveCount(1)
         ->and($alerts[0]['section_id'])->toBe($snapshotSection->id)
@@ -260,17 +270,16 @@ test('sorts Merah first, then longest streak, then newest date', function () {
     $sectionA = ewSection(null, 'A Section');
     $sectionB = ewSection(null, 'B Section');
 
-    ewHours($sectionA, '2026-10-12', 8.0);   // yellow, streak 1
-    ewHours($sectionA, '2026-10-13', 8.0);   // yellow, streak 2
-    ewHours($sectionB, '2026-10-13', 8.0);   // yellow, streak 1
-    ewHours($sectionB, '2026-10-12', 10.0);  // red, streak 1 (older)
-    ewHours($sectionA, '2026-10-14', 10.0);  // red, streak 3
+    ewHours($sectionA, '2026-10-12', 100.0); // A: 12 yellow (83 %), 13 yellow (77 %), 14 red after +30 h (93 %)
+    ewHours($sectionA, '2026-10-14', 30.0);
+    ewHours($sectionB, '2026-10-12', 110.0); // B: 12 red (92 %), 13 yellow (85 %), 14 yellow (79 %)
 
     $order = collect(ewAlerts())->map(fn (array $a) => $a['section_name'].' '.$a['alert_date'].' '.$a['zone'])->all();
 
     expect($order)->toBe([
         'A Section 2026-10-14 red',
         'B Section 2026-10-12 red',
+        'B Section 2026-10-14 yellow',
         'A Section 2026-10-13 yellow',
         'B Section 2026-10-13 yellow',
         'A Section 2026-10-12 yellow',
@@ -283,24 +292,27 @@ test('filters by department, section and zone', function () {
     $sectionA = ewSection($deptA);
     $sectionB = ewSection($deptB);
 
+    // 12 Oct: 100 h = 83 % Kuning, 13 Oct: 120 h = 92 % Merah.
     foreach ([$sectionA, $sectionB] as $section) {
-        ewHours($section, '2026-10-12', 8.0);
-        ewHours($section, '2026-10-13', 10.0);
+        ewHours($section, '2026-10-12', 100.0);
+        ewHours($section, '2026-10-13', 20.0);
     }
 
-    expect(ewAlerts())->toHaveCount(4)
-        ->and(ewAlerts(departmentId: $deptA->id))->toHaveCount(2)
-        ->and(collect(ewAlerts(departmentId: $deptA->id))->pluck('department_id')->unique()->all())->toBe([$deptA->id])
-        ->and(ewAlerts(sectionId: $sectionB->id))->toHaveCount(2)
-        ->and(ewAlerts(zone: BurnZone::Red))->toHaveCount(2)
-        ->and(collect(ewAlerts(zone: BurnZone::Yellow))->pluck('zone')->unique()->all())->toBe(['yellow'])
-        ->and(ewAlerts(departmentId: $deptA->id, sectionId: $sectionB->id))->toBeEmpty();
+    $to = '2026-10-13';
+
+    expect(ewAlerts(to: $to))->toHaveCount(4)
+        ->and(ewAlerts(to: $to, departmentId: $deptA->id))->toHaveCount(2)
+        ->and(collect(ewAlerts(to: $to, departmentId: $deptA->id))->pluck('department_id')->unique()->all())->toBe([$deptA->id])
+        ->and(ewAlerts(to: $to, sectionId: $sectionB->id))->toHaveCount(2)
+        ->and(ewAlerts(to: $to, zone: BurnZone::Red))->toHaveCount(2)
+        ->and(collect(ewAlerts(to: $to, zone: BurnZone::Yellow))->pluck('zone')->unique()->all())->toBe(['yellow'])
+        ->and(ewAlerts(to: $to, departmentId: $deptA->id, sectionId: $sectionB->id))->toBeEmpty();
 });
 
 test('ignores future days and empty ranges', function () {
     $section = ewSection();
-    ewHours($section, '2026-10-14', 8.0);
-    ewHours($section, '2026-10-20', 8.0);
+    ewHours($section, '2026-10-14', 120.0);
+    ewHours($section, '2026-10-20', 80.0);
 
     expect(ewAlerts(from: '2026-10-14', to: '2026-10-31'))->toHaveCount(1)
         ->and(ewAlerts(from: '2026-10-15', to: '2026-10-31'))->toBeEmpty()
@@ -313,39 +325,38 @@ test('non-admin users only receive alerts of their own department', function () 
     $ownSection = ewSection($own);
     $otherSection = ewSection($other);
 
-    ewHours($ownSection, '2026-10-13', 8.0);
-    ewHours($otherSection, '2026-10-13', 8.0);
+    ewHours($ownSection, '2026-10-13', 100.0);
+    ewHours($otherSection, '2026-10-13', 100.0);
 
     $manager = User::factory()->manager($own->id)->create();
     $teamLeader = User::factory()->teamLeader($ownSection->id, $own->id)->create();
 
     foreach ([$manager, $teamLeader] as $user) {
-        $alerts = ewAlerts($user);
+        $alerts = ewAlerts($user, to: '2026-10-13');
         expect($alerts)->toHaveCount(1)->and($alerts[0]['section_id'])->toBe($ownSection->id);
 
         // The department filter sent by the client is never trusted.
-        expect(collect(ewAlerts($user, departmentId: $other->id))->pluck('department_id')->unique()->all())->toBe([$own->id])
-            ->and(ewAlerts($user, sectionId: $otherSection->id))->toBeEmpty();
+        expect(collect(ewAlerts($user, to: '2026-10-13', departmentId: $other->id))->pluck('department_id')->unique()->all())->toBe([$own->id])
+            ->and(ewAlerts($user, to: '2026-10-13', sectionId: $otherSection->id))->toBeEmpty();
     }
 });
 
 test('operators and department-less non-admins receive nothing', function () {
     $section = ewSection();
-    ewHours($section, '2026-10-13', 8.0);
+    ewHours($section, '2026-10-13', 100.0);
 
     $operator = User::factory()->user()->create(['department_id' => $section->department_id]);
     $orphanManager = User::factory()->manager(null)->create();
 
     expect(ewAlerts($operator))->toBeEmpty()
         ->and(ewAlerts($orphanManager))->toBeEmpty()
-        ->and(ewAlerts())->toHaveCount(1);
+        ->and(ewAlerts(to: '2026-10-13'))->toHaveCount(1);
 });
 
 test('reports the status of the latest follow-up of each alert', function () {
     $section = ewSection();
-    ewHours($section, '2026-10-12', 8.0);
-    ewHours($section, '2026-10-13', 8.0);
-    ewHours($section, '2026-10-14', 8.0);
+    // 100 h: Kuning on 12, 13 and 14 Oct (83 %, 77 % and 71 %).
+    ewHours($section, '2026-10-12', 100.0);
 
     $draft = AlertFollowUp::factory()->forAlert($section, '2026-10-13')->create();
     AlertFollowUp::factory()->forAlert($section, '2026-10-14')->create();
@@ -375,7 +386,7 @@ test('computing a whole plant range uses a constant number of queries', function
     };
 
     $first = ewSection(null, 'Solo');
-    ewHours($first, '2026-10-13', 8.0);
+    ewHours($first, '2026-10-13', 100.0);
     AlertFollowUp::factory()->forAlert($first, '2026-10-13')->create();
 
     $small = $countQueries();
@@ -383,7 +394,7 @@ test('computing a whole plant range uses a constant number of queries', function
     foreach (range(1, 5) as $i) {
         $section = ewSection(null, "Bulk {$i}");
         foreach (['2026-10-02', '2026-10-05', '2026-10-06', '2026-10-12', '2026-10-13'] as $date) {
-            ewHours($section, $date, 8.0 + ($i % 2));
+            ewHours($section, $date, 80.0 + ($i % 2));
         }
         AlertFollowUp::factory()->forAlert($section, '2026-10-13')->create();
     }
@@ -397,10 +408,12 @@ test('computing a whole plant range uses a constant number of queries', function
 test('alert detail returns the alert, the last seven working days and the zone limits', function () {
     $section = ewSection();
 
-    foreach (['2026-10-05', '2026-10-06', '2026-10-07', '2026-10-08', '2026-10-09', '2026-10-12', '2026-10-13'] as $date) {
-        ewHours($section, $date, 8.0);
+    // Kuning every day from Mon 5 Oct (the weekend is Kuning too but HLR), Merah on the 14th: 140 h of 140 h = 100 %.
+    ewHours($section, '2026-10-05', 40.0);
+    foreach (['2026-10-06', '2026-10-07', '2026-10-08', '2026-10-09', '2026-10-12', '2026-10-13'] as $date) {
+        ewHours($section, $date, 10.0);
     }
-    ewHours($section, '2026-10-14', 10.0);
+    ewHours($section, '2026-10-14', 40.0);
     $followUp = AlertFollowUp::factory()->forAlert($section, '2026-10-14')->create();
 
     $detail = $this->service->alertDetail($this->admin, $section, Carbon::parse('2026-10-14'));
@@ -441,7 +454,7 @@ test('alert detail has no alert for a Hijau, budget-less or future date', functi
 
 test('alert detail rejects users outside the section department', function () {
     $section = ewSection();
-    ewHours($section, '2026-10-13', 8.0);
+    ewHours($section, '2026-10-13', 100.0);
 
     $otherManager = User::factory()->manager(Department::factory()->create()->id)->create();
     $ownManager = User::factory()->manager($section->department_id)->create();
@@ -455,12 +468,41 @@ test('alert detail rejects users outside the section department', function () {
         ->toThrow(AuthorizationException::class);
 });
 
-test('daily index calculation rounds the hours and handles a missing pacing target', function () {
+test('month-to-date index calculation rounds the hours and handles a missing plan', function () {
     $kpi = app(DashboardKpiService::class);
 
-    expect($kpi->calculateDailyIndex(8.04, 10.0))->toBe(80.0)
-        ->and($kpi->calculateDailyIndex(3.0, 0.0))->toBe(100.0)
-        ->and($kpi->calculateDailyIndex(0.0, 0.0))->toBe(0.0)
+    expect($kpi->calculateMonthToDateIndex(8.04, 310.0, 1, 31))->toBe(80.0)
+        ->and($kpi->calculateMonthToDateIndex(100.0, 310.0, 12, 31))->toBe(83.3)
+        ->and($kpi->calculateMonthToDateIndex(310.0, 310.0, 31, 31))->toBe(100.0)
+        ->and($kpi->calculateMonthToDateIndex(3.0, 0.0, 5, 31))->toBe(100.0)
+        ->and($kpi->calculateMonthToDateIndex(0.0, 0.0, 5, 31))->toBe(0.0)
+        ->and($kpi->calculateExpectedHours(310.0, 12, 31))->toBe(120.0)
+        ->and($kpi->calculateExpectedHours(310.0, 40, 31))->toBe(310.0)
+        ->and($kpi->calculateExpectedHours(310.0, 0, 31))->toBe(0.0)
         ->and($kpi->calculateDailyPacing(310.0, 31))->toBe(10.0)
         ->and($kpi->calculateDailyPacing(310.0, 0))->toBe(0.0);
+});
+
+test('one busy day inside a month that is still under its pace is not an alert', function () {
+    $section = ewSection();
+
+    // 12 h on one day is far above the 10 h daily share, but 12 h of the 120 h expected by 12 Oct is only 10 %.
+    ewHours($section, '2026-10-12', 12.0);
+
+    expect(ewAlerts())->toBeEmpty();
+});
+
+test('a month that is over its pace stays flagged on the quiet days that follow', function () {
+    $section = ewSection();
+
+    ewHours($section, '2026-10-12', 130.0);   // 108 % of the 120 h expected by the 12th
+
+    $alerts = collect(ewAlerts())->keyBy('alert_date');
+
+    // No overtime on the 13th and 14th, yet the section is still far above its pace for the month so far.
+    expect($alerts->keys()->sort()->values()->all())->toBe(['2026-10-12', '2026-10-13', '2026-10-14'])
+        ->and($alerts['2026-10-12']['zone'])->toBe('red')
+        ->and($alerts['2026-10-13']['index_pct'])->toBe(100.0)
+        ->and($alerts['2026-10-14']['index_pct'])->toBe(92.9)
+        ->and($alerts['2026-10-14']['streak_days'])->toBe(3);
 });

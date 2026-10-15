@@ -863,17 +863,34 @@ class DashboardKpiService
     }
 
     /**
-     * Daily burn index (CALC-02 applied per day): approved hours of the day vs. the daily pacing target.
+     * Hours the section is expected to have used by the end of the given day of the month:
+     * the monthly plan spread evenly over the calendar month, accumulated up to that day.
+     *
+     * This is the plan line of the Dashboard burn curve (`plannedHours / daysInMonth * day`).
+     */
+    public function calculateExpectedHours(float $plannedHours, int $dayOfMonth, int $daysInMonth): float
+    {
+        if ($daysInMonth <= 0 || $dayOfMonth <= 0) {
+            return 0.0;
+        }
+
+        return $plannedHours * min($dayOfMonth, $daysInMonth) / $daysInMonth;
+    }
+
+    /**
+     * Month-to-date burn index (CALC-02 on the hours used so far): cumulative approved hours from the first
+     * of the month up to the day vs. the hours expected by then.
      *
      * Single source of truth shared by the Dashboard Early Warning chart and
      * {@see EarlyWarningService} so both can never diverge.
      */
-    public function calculateDailyIndex(float $actualHours, float $dailyPacingHours): float
+    public function calculateMonthToDateIndex(float $cumulativeActualHours, float $plannedHours, int $dayOfMonth, int $daysInMonth): float
     {
-        $actual = round($actualHours, 1);
+        $actual = round($cumulativeActualHours, 1);
+        $expected = $this->calculateExpectedHours($plannedHours, $dayOfMonth, $daysInMonth);
 
-        if ($dailyPacingHours > 0) {
-            return round(($actual / $dailyPacingHours) * 100, 1);
+        if ($expected > 0) {
+            return round(($actual / $expected) * 100, 1);
         }
 
         return $actual > 0 ? 100.0 : 0.0;
@@ -1238,12 +1255,18 @@ class DashboardKpiService
     }
 
     /**
-     * Build daily burn index contribution trendline dataset (E09-04).
+     * Build the Early Warning trendline dataset (E09-04): the month-to-date burn index of every day.
+     *
+     * `daily_indices[d]` is the cumulative approved hours of day 1..d against the hours expected by day d
+     * (monthly plan spread over the calendar month), so a quiet day never hides an overspent month and one
+     * busy day is judged against the whole month, not against a single day's share. `daily_hours` stays the
+     * hours of that day. `average_index` / `average_zone` are the month-to-date index of the last day shown.
      *
      * @return array{
      *     labels: list<string>,
      *     daily_indices: list<float|null>,
      *     daily_hours: list<float|null>,
+     *     cumulative_hours: list<float|null>,
      *     planned_daily_pacing_hours: float,
      *     threshold_pct: float,
      *     green_max_pct: float,
@@ -1322,7 +1345,9 @@ class DashboardKpiService
         $dailyIndices = [];
         $dailyZones = [];
         $dailyHours = [];
-        $validIndices = [];
+        $cumulativeHours = [];
+        $runningCumulative = 0.0;
+        $latestIndex = 0.0;
 
         for ($d = 1; $d <= $daysInMonth; $d++) {
             $labels[] = (string) $d;
@@ -1331,26 +1356,31 @@ class DashboardKpiService
 
             if ($d <= $cutoffDay) {
                 $actual = round($dailyHoursMap[$dayDate] ?? 0.0, 1);
+                $runningCumulative += $actual;
                 $dailyHours[] = $actual;
+                $cumulativeHours[] = round($runningCumulative, 1);
 
-                $index = $this->calculateDailyIndex($actual, $dailyPacing);
+                $index = $this->calculateMonthToDateIndex($runningCumulative, $plannedHours, $d, $daysInMonth);
                 $dailyIndices[] = $index;
                 $dailyZones[] = BurnZone::classify($index, $boundaries['green_max_pct'], $boundaries['yellow_max_pct'])->value;
-                $validIndices[] = $index;
+                $latestIndex = $index;
             } else {
                 $dailyHours[] = null;
+                $cumulativeHours[] = null;
                 $dailyIndices[] = null;
                 $dailyZones[] = null;
             }
         }
 
-        $averageIndex = count($validIndices) > 0 ? round(array_sum($validIndices) / count($validIndices), 1) : 0.0;
+        // The headline of the chart is where the month stands today: the month-to-date index of the last day shown.
+        $averageIndex = $cutoffDay > 0 ? $latestIndex : 0.0;
         $averageZone = BurnZone::classify($averageIndex, $boundaries['green_max_pct'], $boundaries['yellow_max_pct'])->value;
 
         return [
             'labels' => $labels,
             'daily_indices' => $dailyIndices,
             'daily_hours' => $dailyHours,
+            'cumulative_hours' => $cumulativeHours,
             'planned_daily_pacing_hours' => round($dailyPacing, 1),
             'threshold_pct' => $thresholdPct,
             'green_max_pct' => (float) $boundaries['green_max_pct'],

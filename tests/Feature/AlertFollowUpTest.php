@@ -18,9 +18,10 @@ use Illuminate\Support\Facades\Mail;
 use Inertia\Testing\AssertableInertia as Assert;
 
 /*
- * Today = Wed 14 Oct 2026. A 310 h October budget paces 10 h/day: 10 h approved = 100 % (Merah),
- * 8 h = 80 % (Kuning), 5 h = 50 % (Hijau) with the default 70 / 90 limits.
- * Seeded days: Mon 12 Oct 8 h (Kuning) and Tue 13 Oct 10 h (Merah) => the 13th is an alert with a 2 day streak.
+ * Today = Wed 14 Oct 2026. The index is month-to-date and a 310 h October budget expects 10 h per calendar day
+ * (120 h by 12 Oct, 130 h by 13 Oct): with the default 70 / 90 limits 70 % or less is Hijau and above 90 % is Merah.
+ * Seeded days: Mon 12 Oct 96 h (80 %, Kuning) and Tue 13 Oct +34 h = 130 h (100 %, Merah) => the 13th is an alert
+ * with a 2 day streak.
  */
 
 beforeEach(function () {
@@ -34,8 +35,8 @@ beforeEach(function () {
     $this->section = Section::factory()->create(['department_id' => $this->dept->id]);
     $this->manager = User::factory()->manager($this->dept->id)->create();
 
-    followUpSeedDay($this->section, '2026-10-12', 8.0);
-    followUpSeedDay($this->section, '2026-10-13', 10.0);
+    followUpSeedDay($this->section, '2026-10-12', 96.0);
+    followUpSeedDay($this->section, '2026-10-13', 34.0);
 });
 
 function followUpSeedDay(Section $section, string $date, float $hours): void

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import {
     AlertCircle,
+    AlertTriangle,
     ChevronDown,
     ChevronUp,
     FolderKanban,
@@ -200,7 +201,10 @@ const rcaCategories = [
                         "
                         :data-test="`policy-warning-badge-${modelValue.employee_id}`"
                     >
-                        <span>🔴</span>
+                        <AlertCircle
+                            class="size-3 shrink-0"
+                            aria-hidden="true"
+                        />
                         <span class="font-mono font-bold tabular-nums">{{
                             __(
                                 'High Workload: :weeks consecutive weeks over limit',
@@ -228,7 +232,10 @@ const rcaCategories = [
                         "
                         :data-test="`policy-warning-badge-${modelValue.employee_id}`"
                     >
-                        <span>⚠️</span>
+                        <AlertTriangle
+                            class="size-3 shrink-0"
+                            aria-hidden="true"
+                        />
                         <span class="font-mono tabular-nums">{{
                             __(
                                 'Weekly limit may be exceeded (:total/:limit hrs)',

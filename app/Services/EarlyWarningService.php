@@ -22,9 +22,10 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Derives Early Warning alerts (section + date in zone Kuning / Merah) from the daily burn index.
+ * Derives Early Warning alerts (section + date in zone Kuning / Merah) from the month-to-date burn index.
  *
- * The daily index itself comes from {@see DashboardKpiService::calculateDailyIndex()} (shared with the
+ * The index of a day is the cumulative approved hours since the first of the month against the hours expected
+ * by that day. It comes from {@see DashboardKpiService::calculateMonthToDateIndex()} (shared with the
  * Dashboard chart) and zones from {@see PolicyThresholdService::classifyWith()}, so alerts never diverge
  * from what the chart shows.
  *
@@ -45,6 +46,9 @@ use Illuminate\Support\Facades\DB;
  * @phpstan-type Day array{
  *     index_pct: float,
  *     actual_hours: float,
+ *     pacing_hours: float,
+ *     cumulative_hours: float,
+ *     expected_hours: float,
  *     zone: BurnZone,
  *     is_working_day: bool,
  *     streak_days: int
@@ -314,11 +318,12 @@ class EarlyWarningService
      * An alert together with the days of its streak, the input of the 5W2H generator (E10-08).
      *
      * `window` holds the days of the current streak (oldest first, the alert date last, at most `streak_days`
-     * entries) with their actual hours and daily pacing target. Returns null when the date is not an alert.
+     * entries) with their actual hours, daily pacing target and the month-to-date hours against the hours expected
+     * by that day. Returns null when the date is not an alert.
      *
      * @return array{
      *     alert: Alert,
-     *     window: list<array{date: string, actual_hours: float, pacing_hours: float, is_working_day: bool}>
+     *     window: list<array{date: string, actual_hours: float, pacing_hours: float, cumulative_hours: float, expected_hours: float, is_working_day: bool}>
      * }|null
      *
      * @throws AuthorizationException
@@ -647,7 +652,7 @@ class EarlyWarningService
      * HLR days in between are skipped, like the streak itself does. At most `$streakDays` days are returned.
      *
      * @param  array<string, Day>  $days
-     * @return list<array{date: string, actual_hours: float, pacing_hours: float, is_working_day: bool}>
+     * @return list<array{date: string, actual_hours: float, pacing_hours: float, cumulative_hours: float, expected_hours: float, is_working_day: bool}>
      */
     protected function buildStreakWindow(array $days, string $alertKey, int $streakDays): array
     {
@@ -677,6 +682,8 @@ class EarlyWarningService
                 'date' => $key,
                 'actual_hours' => $day['actual_hours'],
                 'pacing_hours' => $day['pacing_hours'],
+                'cumulative_hours' => $day['cumulative_hours'],
+                'expected_hours' => $day['expected_hours'],
                 'is_working_day' => $day['is_working_day'],
             ];
 
@@ -703,7 +710,8 @@ class EarlyWarningService
      */
     protected function evaluateSections(EloquentCollection $sections, Carbon $from, Carbon $to): array
     {
-        $scanFrom = $from->copy()->subDays(self::STREAK_LOOKBACK_DAYS);
+        // The index is month-to-date, so the scan always starts on the first of a month to rebuild the cumulative hours.
+        $scanFrom = $from->copy()->subDays(self::STREAK_LOOKBACK_DAYS)->startOfMonth();
         $dates = $this->datesBetween($scanFrom, $to);
         $sectionIds = $sections->modelKeys();
 
@@ -722,11 +730,18 @@ class EarlyWarningService
         foreach ($sections as $section) {
             $threshold = $thresholds[$this->thresholdKey($section)];
             $streak = 0;
+            $cumulative = 0.0;
 
             foreach ($dates as $date) {
                 $key = $date->toDateString();
                 $isWorkingDay = ($dayTypes[$key] ?? ($date->isWeekend() ? 'HLR' : 'HKN')) !== 'HLR';
                 $planned = $plannedHours[$section->id][$date->format('Y-m')] ?? null;
+
+                if ($date->day === 1) {
+                    $cumulative = 0.0;
+                }
+
+                $cumulative += $actualHours[$section->id][$key] ?? 0.0;
 
                 if ($planned === null) {
                     if ($isWorkingDay) {
@@ -738,7 +753,8 @@ class EarlyWarningService
 
                 $actual = $actualHours[$section->id][$key] ?? 0.0;
                 $pacing = $this->kpiService->calculateDailyPacing($planned, $date->daysInMonth);
-                $index = $this->kpiService->calculateDailyIndex($actual, $pacing);
+                $expected = $this->kpiService->calculateExpectedHours($planned, $date->day, $date->daysInMonth);
+                $index = $this->kpiService->calculateMonthToDateIndex($cumulative, $planned, $date->day, $date->daysInMonth);
                 $zone = $this->thresholdService->classifyWith($index, $threshold);
                 $isAlert = $zone !== BurnZone::Green;
 
@@ -753,6 +769,8 @@ class EarlyWarningService
                     'index_pct' => $index,
                     'actual_hours' => round($actual, 1),
                     'pacing_hours' => $pacing,
+                    'cumulative_hours' => round($cumulative, 1),
+                    'expected_hours' => round($expected, 1),
                     'zone' => $zone,
                     'is_working_day' => $isWorkingDay,
                     'streak_days' => $dayStreak,

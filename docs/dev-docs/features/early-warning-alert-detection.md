@@ -2,9 +2,11 @@
 
 ## Overview
 
-`EarlyWarningService` derives Early Warning alerts automatically from the daily burn index. One alert is **one section on one date** whose daily index is in zone **Kuning** or **Merah** (never Hijau). Each alert carries its consecutive-working-day **streak**, the department's zone limits, and the status of the latest 5W2H follow-up. This story is backend-only: the sidebar menu, inbox and detail pages are delivered by E10-02 to E10-04, and the 5W2H save/send flow by E10-06 ([Early Warning Follow-Up](./early-warning-follow-up.md)).
+`EarlyWarningService` derives Early Warning alerts automatically from the **month-to-date** burn index. One alert is **one section on one date** whose index is in zone **Kuning** or **Merah** (never Hijau). Each alert carries its consecutive-working-day **streak**, the department's zone limits, and the status of the latest 5W2H follow-up. This story is backend-only: the sidebar menu, inbox and detail pages are delivered by E10-02 to E10-04, and the 5W2H save/send flow by E10-06 ([Early Warning Follow-Up](./early-warning-follow-up.md)).
 
-The daily index formula is **shared** with the Dashboard Early Warning chart (`DashboardKpiService::getDailyIndexTrend`) so the chart and the alerts can never disagree.
+The index of a day is the cumulative approved hours from the 1st of the month up to that day, divided by the hours expected by then (`plannedHours × day ÷ daysInMonth`, the plan line of the Dashboard burn curve), × 100. It resets on the 1st of every month. A single busy day inside a month that is still under its pace is therefore not an alert, while a month that is over its pace stays flagged on the quiet days that follow ([ADR-048](../decisions/048-early-warning-month-to-date-index.md)).
+
+The index formula is **shared** with the Dashboard Early Warning chart (`DashboardKpiService::getDailyIndexTrend`) so the chart and the alerts can never disagree.
 
 ## Architecture Diagram
 

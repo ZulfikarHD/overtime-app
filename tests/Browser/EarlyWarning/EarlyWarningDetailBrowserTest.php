@@ -13,8 +13,9 @@ use App\Models\User;
 use Illuminate\Support\Carbon;
 
 /**
- * Today's approved hours of a section against a 10 h/day pacing budget:
- * 10 h = 100 % (Merah), 8 h = 80 % (Kuning), 5 h = 50 % (Hijau) with the default 70 / 90 limits.
+ * Today's month-to-date index of a section against a 10 h/day pacing budget, in tenths:
+ * 10 = 100 % (Merah), 8 = 80 % (Kuning), 5 = 50 % (Hijau) with the default 70 / 90 limits.
+ * The hours booked today are `$hours` x the day of the month, the cumulative hours that give that index.
  */
 function detailBrowserSeedToday(Section $section, float $hours): string
 {
@@ -38,7 +39,7 @@ function detailBrowserSeedToday(Section $section, float $hours): string
         ->approved(User::factory()->admin()->create())
         ->create([
             'overtime_submission_id' => $submission->id,
-            'hours_production' => $hours,
+            'hours_production' => $hours * $today->day,
             'hours_tpm' => 0,
             'hours_project' => 0,
             'hours_others' => 0,
@@ -72,7 +73,7 @@ test('opening an alert from the inbox shows the header, burn bar, vitals, chart 
         ->navigate('/early-warning')
         ->click('[data-test="alert-row"][data-section="Assembly Detail"] [data-test="alert-action"]')
         ->assertPathIs("/early-warning/{$this->merahSection->id}/{$today}")
-        ->assertSeeIn('[data-test="alert-header-title"]', 'Daily Index — Assembly Detail')
+        ->assertSeeIn('[data-test="alert-header-title"]', 'Month-to-Date Index — Assembly Detail')
         ->assertAttribute('[data-test="alert-header-card"]', 'data-zone', 'red')
         ->assertAttribute('[data-test="alert-zone-badge"]', 'data-zone', 'red')
         ->assertSeeIn('[data-test="alert-header-index"]', '100.0%')

@@ -68,7 +68,7 @@ const datasets = computed<ChartDataset<'line'>[]>(() => {
 
     return [
         {
-            label: __('Indeks Kontribusi Harian (%)'),
+            label: __('Indeks Bulan Berjalan (%)'),
             data: props.series.map((point) => point.index_pct),
             borderColor: '#475569',
             backgroundColor: 'transparent',
@@ -122,7 +122,7 @@ const chartOptions = computed<ChartOptions<'line'>>(() => ({
                     }
 
                     return [
-                        ` ${__('Indeks Burn Harian')}: ${point.index_pct}% (${__(BURN_ZONE_STYLES[point.zone].label)})`,
+                        ` ${__('Indeks Burn Bulan Berjalan')}: ${point.index_pct}% (${__(BURN_ZONE_STYLES[point.zone].label)})`,
                         ` ${__('Realisasi Jam')}: ${point.actual_hours} ${__('jam')}`,
                     ];
                 },
@@ -165,7 +165,7 @@ const chartOptions = computed<ChartOptions<'line'>>(() => ({
                 <span>{{ __('Last 7 working days') }}</span>
             </CardTitle>
             <CardDescription class="text-xs">
-                {{ __('Daily index against the department limits.') }}
+                {{ __('Month-to-date index against the department limits.') }}
             </CardDescription>
         </CardHeader>
         <CardContent class="pt-0">

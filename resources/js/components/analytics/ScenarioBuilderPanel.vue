@@ -13,6 +13,7 @@ import {
     Sliders,
     TrendingDown,
     TrendingUp,
+    X,
 } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
 import { Badge } from '@/components/ui/badge';
@@ -597,9 +598,10 @@ function setQuickSlider(val: number) {
                         <button
                             type="button"
                             class="text-xs text-slate-400 hover:text-slate-600"
+                            :aria-label="__('Tutup')"
                             @click="saveDialogOpen = false"
                         >
-                            ✕
+                            <X class="size-4" aria-hidden="true" />
                         </button>
                     </div>
                     <div class="flex items-center gap-2">

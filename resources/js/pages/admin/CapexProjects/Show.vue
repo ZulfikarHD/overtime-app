@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Head, Link, router } from '@inertiajs/vue3';
 import {
+    AlertTriangle,
     ArrowLeft,
     Building2,
     Calendar,
@@ -200,9 +201,12 @@ function getStatusBadgeClass(status: string) {
                         </span>
                         <span
                             v-if="metrics.is_overdue"
-                            class="font-bold text-[#cc0000]"
+                            class="inline-flex items-center gap-1 font-bold text-[#cc0000]"
                         >
-                            ⚠️
+                            <AlertTriangle
+                                class="size-3.5"
+                                aria-hidden="true"
+                            />
                             {{
                                 __('Lewat :days hari dari target selesai', {
                                     days: Math.abs(metrics.days_remaining),
@@ -263,7 +267,7 @@ function getStatusBadgeClass(status: string) {
                 </div>
                 <div class="space-y-0.5">
                     <h3 class="text-foreground text-sm font-bold">
-                        🎉 {{ __('Kemajuan Fisik Mencapai 100%') }}
+                        {{ __('Kemajuan Fisik Mencapai 100%') }}
                     </h3>
                     <p class="text-muted-foreground text-xs leading-relaxed">
                         {{

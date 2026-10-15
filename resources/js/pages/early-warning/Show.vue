@@ -60,7 +60,7 @@ const currentDay = computed(
 </script>
 
 <template>
-    <div class="space-y-4" data-test="early-warning-show">
+    <div class="space-y-4 p-4 md:p-6" data-test="early-warning-show">
         <Head :title="__('Early Warning')" />
 
         <Link
@@ -86,7 +86,7 @@ const currentDay = computed(
                 <p class="mt-0.5 text-xs text-slate-500">
                     {{
                         __(
-                            'The daily index is within the Hijau zone or has no budget, so no follow-up can be created.',
+                            'The month-to-date index is within the Hijau zone or has no budget, so no follow-up can be created.',
                         )
                     }}
                 </p>
