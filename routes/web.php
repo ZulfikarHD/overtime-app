@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\AdministrationController;
+use App\Http\Controllers\Admin\AlertCauseMappingController;
 use App\Http\Controllers\Admin\CapexProjectController;
 use App\Http\Controllers\Admin\DepartmentController;
 use App\Http\Controllers\Admin\EmployeeController;
@@ -185,6 +186,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/policy-thresholds', [PolicyThresholdController::class, 'store'])->name('policy-thresholds.store');
         Route::put('/policy-thresholds/{policy_threshold}', [PolicyThresholdController::class, 'update'])->name('policy-thresholds.update');
         Route::delete('/policy-thresholds/{policy_threshold}', [PolicyThresholdController::class, 'destroy'])->name('policy-thresholds.destroy');
+
+        // Early Warning follow-up generator: PIC department per detected cause (E10-08)
+        Route::put('/alert-cause-mappings', [AlertCauseMappingController::class, 'update'])->name('alert-cause-mappings.update');
 
         // Plant Shift Schedule Configuration
         Route::post('/shift-schedules', [ShiftScheduleController::class, 'store'])->name('shift-schedules.store');

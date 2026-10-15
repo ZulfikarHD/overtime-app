@@ -6,6 +6,7 @@ use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
 use App\Models\Department;
 use App\Models\User;
+use App\Services\AlertCauseMappingService;
 use App\Services\PolicyThresholdService;
 use App\Services\ShiftScheduleService;
 use App\Services\UserService;
@@ -19,6 +20,7 @@ class AdministrationController extends Controller
         public PolicyThresholdService $policyService,
         public UserService $userService,
         public ShiftScheduleService $shiftScheduleService,
+        public AlertCauseMappingService $alertCauseMappingService,
     ) {}
 
     /**
@@ -119,6 +121,7 @@ class AdministrationController extends Controller
             'departments' => $departmentsWithStatus->values(),
             'availableDepartments' => $activeDepartments,
             'departmentsWithSections' => $departmentsWithSections,
+            'causeMappings' => $this->alertCauseMappingService->listForAdmin(),
             'policyStats' => [
                 'total_departments' => $departmentsWithStatus->count(),
                 'overrides_count' => $overridesCount,

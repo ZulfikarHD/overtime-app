@@ -1,7 +1,9 @@
 <?php
 
+use App\Enums\AlertCause;
 use App\Enums\AlertFollowUpStatus;
 use App\Mail\AlertFollowUpMail;
+use App\Models\AlertCausePicMapping;
 use App\Models\AlertFollowUp;
 use App\Models\Department;
 use App\Models\Employee;
@@ -51,6 +53,7 @@ function followUpSeedDay(Section $section, string $date, float $hours): void
         'section_id' => $section->id,
         'operational_date' => $date,
         'submission_date' => $date,
+        'day_type' => 'HKN',
     ]);
 
     OvertimeItem::factory()
@@ -134,7 +137,9 @@ test('the system suggestion is stored next to the user text so edits can be audi
         ->and($followUp->generated_payload['when_date'])->toBe('2026-10-13')
         ->and($followUp->generated_payload['where_location'])->toBe($this->dept->name.' — '.$this->section->name)
         ->and($followUp->generated_payload['who_department_id'])->toBe($this->dept->id)
-        ->and($followUp->generated_payload['why_text'])->toBe('');
+        ->and($followUp->generated_payload['why_text'])->toContain('Category Production holds 100.0% of the overtime hours')
+        ->and($followUp->generated_payload['primary_cause'])->toBe('CATEGORY_DOMINANT')
+        ->and($followUp->generated_payload['evidence'])->toBeArray()->not->toBeEmpty();
 });
 
 test('sending queues an email to every active admin manager and team leader of the who department only', function () {
@@ -345,6 +350,52 @@ test('the detail page opens the form with the system suggestion and the active w
 
                 return $ids->contains($this->picDept->id) && ! $ids->contains($inactive->id);
             }));
+});
+
+test('the detail page suggestion fills why, how and how much from the alert data', function () {
+    $this->actingAs($this->manager)
+        ->get(route('early-warning.show', [$this->section, '2026-10-13']))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('suggestion.why_text', 'Category Production holds 100.0% of the overtime hours.')
+            ->where('suggestion.how_text', fn (string $how) => str_starts_with($how, 'Review the workload and scheduling of the Production category'))
+            ->where('suggestion.when_text', '12–13 Oct 2026 (2 consecutive working days)')
+            ->where('suggestion.primary_cause', 'CATEGORY_DOMINANT')
+            ->where('suggestion.how_much_hours', 0)
+            ->where('suggestion.cost_note', null)
+            ->has('suggestion.evidence', 1));
+});
+
+test('a partial reload can ask for the suggestion alone and a save reload does not compute it', function () {
+    $this->actingAs($this->manager)
+        ->get(route('early-warning.show', [$this->section, '2026-10-13']))
+        ->assertInertia(fn (Assert $page) => $page
+            ->reloadOnly('suggestion', fn (Assert $reload) => $reload
+                ->where('suggestion.who_department_id', $this->dept->id)
+                ->missing('followUps'))
+            ->reloadOnly(['followUps', 'flash'], fn (Assert $reload) => $reload->missing('suggestion')));
+});
+
+test('changing the cause PIC mapping only affects new suggestions, never a saved follow-up', function () {
+    $pic = Department::factory()->create(['is_active' => true]);
+    User::factory()->manager($pic->id)->create();
+    $mapping = AlertCausePicMapping::factory()->forCause(AlertCause::CategoryDominant)->create(['pic_department_id' => $this->picDept->id]);
+    User::factory()->manager($this->picDept->id)->create();
+
+    $this->actingAs($this->manager)
+        ->post(route('early-warning.follow-ups.store'), followUpPayload($this->section, $this->picDept))
+        ->assertSessionHasNoErrors();
+
+    $followUp = AlertFollowUp::query()->sole();
+    expect($followUp->generated_payload['who_department_id'])->toBe($this->picDept->id);
+
+    $mapping->update(['pic_department_id' => $pic->id]);
+
+    expect($followUp->fresh()->generated_payload['who_department_id'])->toBe($this->picDept->id)
+        ->and($followUp->fresh()->who_department_id)->toBe($this->picDept->id);
+
+    $this->actingAs($this->manager)
+        ->get(route('early-warning.show', [$this->section, '2026-10-13']))
+        ->assertInertia(fn (Assert $page) => $page->where('suggestion.who_department_id', $pic->id));
 });
 
 test('the detail page has no suggestion for a date that is not an alert', function () {

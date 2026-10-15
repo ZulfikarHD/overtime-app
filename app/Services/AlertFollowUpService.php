@@ -4,7 +4,6 @@ namespace App\Services;
 
 use App\Enums\AlertFollowUpStatus;
 use App\Enums\BurnZone;
-use App\Enums\UserRole;
 use App\Mail\AlertFollowUpMail;
 use App\Models\AlertFollowUp;
 use App\Models\Section;
@@ -20,6 +19,7 @@ class AlertFollowUpService
 {
     public function __construct(
         public EarlyWarningService $earlyWarningService,
+        public EarlyWarningFollowUpGenerator $generator,
     ) {}
 
     /**
@@ -70,7 +70,10 @@ class AlertFollowUpService
 
         $recipients = collect();
 
-        $followUp = DB::transaction(function () use ($user, $data, $followUp, $send, $section, $alertDate, $alert, &$recipients): AlertFollowUp {
+        // Only a new follow-up stores the system's text; computed outside the transaction to keep the lock short.
+        $generated = $followUp === null ? $this->suggestionFor($user, $section, $alertDate) : null;
+
+        $followUp = DB::transaction(function () use ($user, $data, $followUp, $send, $section, $alertDate, $alert, $generated, &$recipients): AlertFollowUp {
             if ($followUp !== null) {
                 $followUp = AlertFollowUp::query()->lockForUpdate()->findOrFail($followUp->id);
 
@@ -89,7 +92,7 @@ class AlertFollowUpService
                     'alert_date' => $alertDate->toDateString(),
                     'fiscal_year' => $alertDate->year,
                     'fiscal_month' => $alertDate->month,
-                    'generated_payload' => $this->suggestionFor($alert),
+                    'generated_payload' => $generated,
                     'generated_at' => Carbon::now('Asia/Jakarta'),
                 ]);
             }
@@ -137,46 +140,50 @@ class AlertFollowUpService
     }
 
     /**
-     * The system's starting 5W2H for an alert, keyed like the form fields.
+     * The system's 5W2H for an alert, keyed like the form fields, or null when the date is not an alert.
      *
-     * Rule-based and deterministic: every number comes from the alert itself. Fields the data cannot
-     * justify yet (Why, How, How much) stay empty instead of being guessed. This is the baseline the
-     * form is prefilled with and that is stored as `generated_payload`; E10-08 replaces it with the
-     * full cause-based generator without changing this shape.
+     * Written by {@see EarlyWarningFollowUpGenerator} (rule-based, every sentence cites its number). The extra
+     * keys (`when_text`, `cost_note`, `primary_cause`, `supporting_causes`, `evidence`) are display hints and
+     * audit data; they are stored with the follow-up as `generated_payload` but never edited by the user.
      *
-     * @param  array<string, mixed>  $alert  An alert as returned by EarlyWarningService (index, zone, streak, limits)
-     * @return array{what_text: string, why_text: string, when_date: string, where_location: string, who_department_id: int, how_text: string, how_much_cost_idr: int, how_much_hours: float}
+     * @return array{
+     *     what_text: string,
+     *     why_text: string,
+     *     when_date: string,
+     *     when_text: string,
+     *     where_location: string,
+     *     who_department_id: int,
+     *     how_text: string,
+     *     how_much_cost_idr: int,
+     *     how_much_hours: float,
+     *     cost_note: ?string,
+     *     primary_cause: string,
+     *     supporting_causes: list<string>,
+     *     evidence: list<array<string, mixed>>
+     * }|null
      */
-    public function suggestionFor(array $alert): array
+    public function suggestionFor(User $user, Section $section, CarbonInterface $date): ?array
     {
-        $zone = BurnZone::from($alert['zone']);
-        $limit = $zone === BurnZone::Red ? (float) $alert['yellow_max_pct'] : (float) $alert['green_max_pct'];
-        $over = max(0.0, (float) $alert['index_pct'] - $limit);
-        $streak = (int) $alert['streak_days'];
+        $generated = $this->generator->generate($user, $section, $date);
 
-        $what = __('Daily index :section :index% (:zone), :over% above the :limit% limit', [
-            'section' => $alert['section_name'],
-            'index' => $this->formatNumber((float) $alert['index_pct']),
-            'zone' => __($zone->label()),
-            'over' => $this->formatNumber($over),
-            'limit' => $this->formatNumber($limit),
-        ]);
-
-        if ($streak > 0) {
-            $what .= ', '.__(':days consecutive days', ['days' => $streak]);
+        if ($generated === null) {
+            return null;
         }
 
         return [
-            'what_text' => $what.'.',
-            'why_text' => '',
-            'when_date' => (string) $alert['alert_date'],
-            'where_location' => filled($alert['department_name'] ?? null)
-                ? $alert['department_name'].' — '.$alert['section_name']
-                : (string) $alert['section_name'],
-            'who_department_id' => (int) $alert['department_id'],
-            'how_text' => '',
-            'how_much_cost_idr' => 0,
-            'how_much_hours' => 0.0,
+            'what_text' => $generated['what'],
+            'why_text' => $generated['why'],
+            'when_date' => $generated['when_date'],
+            'when_text' => $generated['when_text'],
+            'where_location' => $generated['where'],
+            'who_department_id' => $generated['who_department_id'],
+            'how_text' => $generated['how'],
+            'how_much_cost_idr' => $generated['how_much_cost_idr'],
+            'how_much_hours' => $generated['how_much_hours'],
+            'cost_note' => $generated['cost_note'],
+            'primary_cause' => $generated['primary_cause'],
+            'supporting_causes' => $generated['supporting_causes'],
+            'evidence' => $generated['evidence'],
         ];
     }
 
@@ -188,14 +195,7 @@ class AlertFollowUpService
     public function recipientsFor(int $departmentId): Collection
     {
         return User::query()
-            ->where('is_active', true)
-            ->where('department_id', $departmentId)
-            ->whereIn('role', [
-                UserRole::Admin->value,
-                UserRole::Manager->value,
-                UserRole::TeamLeader->value,
-            ])
-            ->whereNotNull('email')
+            ->alertRecipientsOf($departmentId)
             ->orderBy('name')
             ->get();
     }
@@ -288,12 +288,5 @@ class AlertFollowUpService
                 'status' => __('This alert already has a draft. Edit the draft instead of creating a new one.'),
             ]);
         }
-    }
-
-    protected function formatNumber(float $value): string
-    {
-        return app()->getLocale() === 'en'
-            ? number_format($value, 1, '.', ',')
-            : number_format($value, 1, ',', '.');
     }
 }

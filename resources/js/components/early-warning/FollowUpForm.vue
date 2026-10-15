@@ -23,6 +23,7 @@ import { useTrans } from '@/composables/useTrans';
 import type {
     AlertFollowUpItem,
     FollowUpFields,
+    FollowUpSuggestion,
     WhoDepartmentOption,
 } from '@/lib/earlyWarning';
 import { formatRupiah } from '@/lib/formatters';
@@ -33,7 +34,7 @@ const props = defineProps<{
     /** Follow-ups of this alert, newest first. */
     followUps: AlertFollowUpItem[];
     /** System suggestion the form opens with; null when the date is not an alert. */
-    suggestion: FollowUpFields | null;
+    suggestion: FollowUpSuggestion | null;
     departments: WhoDepartmentOption[];
     sectionId: number;
     alertDate: string;
@@ -97,7 +98,7 @@ const canStartNew = computed(
 const showsForm = computed(() => props.hasAlert || props.followUps.length > 0);
 
 /** What the fields are compared with: the snapshot of a saved follow-up, else the suggestion. */
-const baseline = computed<Partial<FollowUpFields> | null>(() =>
+const baseline = computed<Partial<FollowUpSuggestion> | null>(() =>
     activeFollowUp.value
         ? activeFollowUp.value.generated_payload
         : props.suggestion,
@@ -118,7 +119,7 @@ const form = useForm({
 });
 
 function loadForm(
-    source: Partial<FollowUpFields> | AlertFollowUpItem | null,
+    source: Partial<FollowUpSuggestion> | AlertFollowUpItem | null,
 ): void {
     form.clearErrors();
     form.section_id = props.sectionId;
@@ -446,6 +447,13 @@ const fieldClass =
                             :disabled="isReadOnly"
                             data-test="followup-when"
                         />
+                        <p
+                            v-if="baseline?.when_text"
+                            class="text-muted-foreground text-[11px]"
+                            data-test="followup-when-hint"
+                        >
+                            {{ baseline.when_text }}
+                        </p>
                         <InputError :message="form.errors.when_date" />
                     </div>
 
@@ -579,6 +587,13 @@ const fieldClass =
                             data-test="followup-cost-preview"
                         >
                             {{ costPreview }}
+                        </p>
+                        <p
+                            v-if="baseline?.cost_note"
+                            class="text-[11px] text-amber-700 dark:text-amber-400"
+                            data-test="followup-cost-note"
+                        >
+                            {{ baseline.cost_note }}
                         </p>
                         <InputError :message="form.errors.how_much_cost_idr" />
                     </div>

@@ -96,7 +96,10 @@ class EarlyWarningController extends Controller
                 ->map(fn (AlertFollowUp $followUp): array => $this->followUpService->toPayload($followUp))
                 ->values()
                 ->all(),
-            'suggestion' => $detail['alert'] ? $this->followUpService->suggestionFor($detail['alert']) : null,
+            // A closure: skipped by partial reloads that do not ask for it (save / send), recomputed by `only: ['suggestion']`.
+            'suggestion' => fn (): ?array => $detail['alert']
+                ? $this->followUpService->suggestionFor($request->user(), $section, $alertDate)
+                : null,
             'departments' => Department::query()->where('is_active', true)->orderBy('name')->get(['id', 'name']),
             'backUrl' => $this->inboxUrl($request),
         ]);

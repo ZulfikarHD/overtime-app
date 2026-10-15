@@ -15,6 +15,7 @@ use App\Services\Analytics\DashboardKpiService;
 use Carbon\CarbonInterface;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
+use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
@@ -306,6 +307,55 @@ class EarlyWarningService
      */
     public function alertDetail(User $user, Section $section, CarbonInterface $date): array
     {
+        return $this->resolveAlert($user, $section, $date)['detail'];
+    }
+
+    /**
+     * An alert together with the days of its streak, the input of the 5W2H generator (E10-08).
+     *
+     * `window` holds the days of the current streak (oldest first, the alert date last, at most `streak_days`
+     * entries) with their actual hours and daily pacing target. Returns null when the date is not an alert.
+     *
+     * @return array{
+     *     alert: Alert,
+     *     window: list<array{date: string, actual_hours: float, pacing_hours: float, is_working_day: bool}>
+     * }|null
+     *
+     * @throws AuthorizationException
+     */
+    public function alertContext(User $user, Section $section, CarbonInterface $date): ?array
+    {
+        $resolved = $this->resolveAlert($user, $section, $date);
+        $alert = $resolved['detail']['alert'];
+
+        if ($alert === null) {
+            return null;
+        }
+
+        return [
+            'alert' => $alert,
+            'window' => $this->buildStreakWindow($resolved['days'], $resolved['alert_key'], $alert['streak_days']),
+        ];
+    }
+
+    /**
+     * Evaluate one section around the alert date: the public detail plus the raw days it was built from.
+     *
+     * @return array{
+     *     detail: array{
+     *         alert: ?Alert,
+     *         series: list<array{date: string, index_pct: float, actual_hours: float, zone: 'green'|'yellow'|'red', is_working_day: bool}>,
+     *         green_max_pct: float,
+     *         yellow_max_pct: float
+     *     },
+     *     days: array<string, Day>,
+     *     alert_key: string
+     * }
+     *
+     * @throws AuthorizationException
+     */
+    protected function resolveAlert(User $user, Section $section, CarbonInterface $date): array
+    {
         $this->assertCanViewSection($user, $section);
 
         $section->loadMissing('department:id,name');
@@ -333,10 +383,14 @@ class EarlyWarningService
         }
 
         return [
-            'alert' => $alert,
-            'series' => $this->buildSeries($days, $alertKey, $rangeFrom->toDateString()),
-            'green_max_pct' => (float) $threshold->green_max_pct,
-            'yellow_max_pct' => (float) $threshold->yellow_max_pct,
+            'detail' => [
+                'alert' => $alert,
+                'series' => $this->buildSeries($days, $alertKey, $rangeFrom->toDateString()),
+                'green_max_pct' => (float) $threshold->green_max_pct,
+                'yellow_max_pct' => (float) $threshold->yellow_max_pct,
+            ],
+            'days' => $days,
+            'alert_key' => $alertKey,
         ];
     }
 
@@ -422,6 +476,219 @@ class EarlyWarningService
     }
 
     /**
+     * Approved overtime hours of a section per category between two dates (inclusive), one query.
+     *
+     * Read-only input of the 5W2H generator. Authorization is the caller's job (the alert it belongs to
+     * was already resolved through {@see alertContext()}).
+     *
+     * @return array{production: float, tpm: float, project: float, others: float, total: float}
+     */
+    public function categoryBreakdown(Section $section, CarbonInterface $from, CarbonInterface $to): array
+    {
+        $row = $this->approvedItemsQuery($section, $from, $to)
+            ->selectRaw('COALESCE(SUM(overtime_items.hours_production), 0) as production')
+            ->selectRaw('COALESCE(SUM(overtime_items.hours_tpm), 0) as tpm')
+            ->selectRaw('COALESCE(SUM(overtime_items.hours_project), 0) as project')
+            ->selectRaw('COALESCE(SUM(overtime_items.hours_others), 0) as others')
+            ->first();
+
+        $production = round((float) ($row->production ?? 0), 2);
+        $tpm = round((float) ($row->tpm ?? 0), 2);
+        $project = round((float) ($row->project ?? 0), 2);
+        $others = round((float) ($row->others ?? 0), 2);
+
+        return [
+            'production' => $production,
+            'tpm' => $tpm,
+            'project' => $project,
+            'others' => $others,
+            'total' => round($production + $tpm + $project + $others, 2),
+        ];
+    }
+
+    /**
+     * The employees with the most approved overtime hours in the period (most hours first, NPK breaks ties).
+     *
+     * @return list<array{employee_id: int, npk: string, hours: float}>
+     */
+    public function topContributors(Section $section, CarbonInterface $from, CarbonInterface $to, int $limit = 3): array
+    {
+        if ($limit < 1) {
+            return [];
+        }
+
+        return $this->approvedItemsQuery($section, $from, $to)
+            ->groupBy('overtime_items.employee_id')
+            ->selectRaw('overtime_items.employee_id as employee_id')
+            ->selectRaw('MIN(overtime_items.npk_snapshot) as npk')
+            ->selectRaw('SUM(overtime_items.total_hours) as hours')
+            ->orderByRaw('SUM(overtime_items.total_hours) DESC')
+            ->orderBy('npk')
+            ->limit($limit)
+            ->get()
+            ->map(fn (object $row): array => [
+                'employee_id' => (int) $row->employee_id,
+                'npk' => (string) $row->npk,
+                'hours' => round((float) $row->hours, 2),
+            ])
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Share of the period's approved hours worked on non-working days (HLR), one query.
+     *
+     * `share_pct` is null when there are no hours at all (no division by zero).
+     *
+     * @return array{holiday_hours: float, total_hours: float, share_pct: ?float}
+     */
+    public function holidayShare(Section $section, CarbonInterface $from, CarbonInterface $to): array
+    {
+        $row = $this->approvedItemsQuery($section, $from, $to)
+            ->selectRaw("COALESCE(SUM(CASE WHEN overtime_submissions.day_type = 'HLR' THEN overtime_items.total_hours ELSE 0 END), 0) as holiday_hours")
+            ->selectRaw('COALESCE(SUM(overtime_items.total_hours), 0) as total_hours')
+            ->first();
+
+        $holiday = round((float) ($row->holiday_hours ?? 0), 2);
+        $total = round((float) ($row->total_hours ?? 0), 2);
+
+        return [
+            'holiday_hours' => $holiday,
+            'total_hours' => $total,
+            'share_pct' => $total > 0 ? round($holiday / $total * 100, 1) : null,
+        ];
+    }
+
+    /**
+     * Published overtime plan hours versus approved actual hours of a section in the period.
+     *
+     * `overrun_pct` is how far actual is above plan; null when no plan exists (nothing to compare with).
+     *
+     * @return array{planned_hours: float, actual_hours: float, overrun_pct: ?float}
+     */
+    public function plannedVsActual(Section $section, CarbonInterface $from, CarbonInterface $to): array
+    {
+        $planned = DB::table('overtime_plan_items')
+            ->join('overtime_plans', 'overtime_plan_items.overtime_plan_id', '=', 'overtime_plans.id')
+            ->where('overtime_plans.section_id', $section->id)
+            ->where('overtime_plans.status', 'PUBLISHED')
+            ->whereDate('overtime_plan_items.plan_date', '>=', $from->toDateString())
+            ->whereDate('overtime_plan_items.plan_date', '<=', $to->toDateString())
+            ->selectRaw('COALESCE(SUM(overtime_plan_items.hours_production + overtime_plan_items.hours_tpm + overtime_plan_items.hours_project + overtime_plan_items.hours_others), 0) as planned_hours')
+            ->first();
+
+        $actual = $this->approvedItemsQuery($section, $from, $to)
+            ->selectRaw('COALESCE(SUM(overtime_items.total_hours), 0) as actual_hours')
+            ->first();
+
+        $plannedHours = round((float) ($planned->planned_hours ?? 0), 2);
+        $actualHours = round((float) ($actual->actual_hours ?? 0), 2);
+
+        return [
+            'planned_hours' => $plannedHours,
+            'actual_hours' => $actualHours,
+            'overrun_pct' => $plannedHours > 0 ? round(($actualHours - $plannedHours) / $plannedHours * 100, 1) : null,
+        ];
+    }
+
+    /**
+     * Average cost of one overtime hour of the section in Rupiah, or null when no basis exists.
+     *
+     * Same basis as the cost analysis: approved items' `total_cost_snapshot` per hour over the last
+     * `early_warning.cost_lookback_days` days up to the date. Without approved history it falls back to the
+     * average effective hourly rate (own rate, else department default) of the section's active employees.
+     */
+    public function costPerOvertimeHour(Section $section, CarbonInterface $date): ?float
+    {
+        $to = $this->asCalendarDay($date);
+        $from = $to->copy()->subDays((int) config('early_warning.cost_lookback_days', 30));
+
+        $history = $this->approvedItemsQuery($section, $from, $to)
+            ->selectRaw('COALESCE(SUM(overtime_items.total_cost_snapshot), 0) as total_cost')
+            ->selectRaw('COALESCE(SUM(overtime_items.total_hours), 0) as total_hours')
+            ->first();
+
+        $hours = (float) ($history->total_hours ?? 0);
+        $cost = (float) ($history->total_cost ?? 0);
+
+        if ($hours > 0 && $cost > 0) {
+            return round($cost / $hours, 2);
+        }
+
+        $rate = DB::table('employees')
+            ->join('departments', 'employees.department_id', '=', 'departments.id')
+            ->where('employees.section_id', $section->id)
+            ->where('employees.is_active', true)
+            ->selectRaw('AVG(COALESCE(employees.hourly_rate, departments.default_hourly_rate)) as average_rate')
+            ->first();
+
+        $average = (float) ($rate->average_rate ?? 0);
+
+        return $average > 0 ? round($average, 2) : null;
+    }
+
+    /**
+     * Approved overtime items of one section whose operational date lies between the two dates.
+     */
+    protected function approvedItemsQuery(Section $section, CarbonInterface $from, CarbonInterface $to): QueryBuilder
+    {
+        return DB::table('overtime_items')
+            ->join('overtime_submissions', 'overtime_items.overtime_submission_id', '=', 'overtime_submissions.id')
+            ->where('overtime_items.status', 'APPROVED')
+            ->where('overtime_submissions.section_id', $section->id)
+            ->whereDate('overtime_submissions.operational_date', '>=', $from->toDateString())
+            ->whereDate('overtime_submissions.operational_date', '<=', $to->toDateString());
+    }
+
+    /**
+     * The days of the current streak, oldest first, ending on the alert date.
+     *
+     * The alert date is always included (even on HLR); earlier days are working days still in Kuning / Merah.
+     * HLR days in between are skipped, like the streak itself does. At most `$streakDays` days are returned.
+     *
+     * @param  array<string, Day>  $days
+     * @return list<array{date: string, actual_hours: float, pacing_hours: float, is_working_day: bool}>
+     */
+    protected function buildStreakWindow(array $days, string $alertKey, int $streakDays): array
+    {
+        $keys = array_keys($days);
+        rsort($keys);
+
+        $window = [];
+
+        foreach ($keys as $key) {
+            if ($key > $alertKey) {
+                continue;
+            }
+
+            $day = $days[$key];
+
+            if ($key !== $alertKey) {
+                if (! $day['is_working_day']) {
+                    continue;
+                }
+
+                if ($day['zone'] === BurnZone::Green) {
+                    break;
+                }
+            }
+
+            $window[] = [
+                'date' => $key,
+                'actual_hours' => $day['actual_hours'],
+                'pacing_hours' => $day['pacing_hours'],
+                'is_working_day' => $day['is_working_day'],
+            ];
+
+            if (count($window) >= max(1, $streakDays)) {
+                break;
+            }
+        }
+
+        return array_reverse($window);
+    }
+
+    /**
      * Compute index, zone and streak for every day of every section in a constant number of queries.
      *
      * The scan starts STREAK_LOOKBACK_DAYS before $from so streaks reaching into the past are counted.
@@ -485,6 +752,7 @@ class EarlyWarningService
                 $days[$section->id][$key] = [
                     'index_pct' => $index,
                     'actual_hours' => round($actual, 1),
+                    'pacing_hours' => $pacing,
                     'zone' => $zone,
                     'is_working_day' => $isWorkingDay,
                     'streak_days' => $dayStreak,

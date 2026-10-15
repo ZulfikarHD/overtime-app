@@ -87,7 +87,7 @@ export interface AlertVitals {
 
 /**
  * The 5W2H text fields of a follow-up, keyed like the form. The same shape is the system suggestion
- * (E10-06 baseline, E10-08 generator) and the `generated_payload` snapshot stored with a follow-up.
+ * (written by the E10-08 generator) and the `generated_payload` snapshot stored with a follow-up.
  */
 export interface FollowUpFields {
     what_text: string;
@@ -98,6 +98,27 @@ export interface FollowUpFields {
     how_text: string;
     how_much_cost_idr: number;
     how_much_hours: number;
+}
+
+/** One cause the generator detected, with the numbers that justify it (E10-08). */
+export interface SuggestionEvidence {
+    cause: string;
+    score: number;
+    values: Record<string, number | string | null>;
+}
+
+/**
+ * The system suggestion: the form fields plus display hints and audit data of the generator (E10-08).
+ * The extra keys are never edited by the user; they are stored with the follow-up as `generated_payload`.
+ */
+export interface FollowUpSuggestion extends FollowUpFields {
+    /** The streak as a readable range, e.g. "24–26 Okt 2026 (3 hari kerja berturut-turut)". */
+    when_text?: string | null;
+    /** Why the cost is 0 when no cost basis exists. */
+    cost_note?: string | null;
+    primary_cause?: string;
+    supporting_causes?: string[];
+    evidence?: SuggestionEvidence[];
 }
 
 /** Department offered in the "Who" select. */
@@ -111,7 +132,7 @@ export interface AlertFollowUpItem {
     id: number;
     is_editable: boolean;
     /** What the system generated when the follow-up was created; null for legacy rows. */
-    generated_payload: Partial<FollowUpFields> | null;
+    generated_payload: Partial<FollowUpSuggestion> | null;
     zone: BurnZone;
     index_pct: number;
     streak_days: number;

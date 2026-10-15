@@ -13,7 +13,7 @@ import type {
     AlertFollowUpItem,
     AlertVitals,
     EarlyWarningAlert,
-    FollowUpFields,
+    FollowUpSuggestion,
     SeriesPoint,
     WhoDepartmentOption,
 } from '@/lib/earlyWarning';
@@ -35,7 +35,7 @@ const props = defineProps<{
     vitals: AlertVitals;
     followUps: AlertFollowUpItem[];
     /** What the system filled into the 5W2H form; null when the date is not an alert. */
-    suggestion: FollowUpFields | null;
+    suggestion: FollowUpSuggestion | null;
     /** Active departments offered in the "Who" select. */
     departments: WhoDepartmentOption[];
     /** Inbox URL including the filters the user came from. */

@@ -75,7 +75,7 @@ test('the form opens prefilled by the system, tags edits, resets them, then save
         ->assertValue('[data-test="followup-who"]', (string) $this->dept->id)
         ->assertSeeIn('[data-test="followup-tag-what"]', 'System generated')
         ->assertSeeIn('[data-test="followup-tag-where"]', 'System generated')
-        ->assertNotPresent('[data-test="followup-tag-why"]')
+        ->assertSeeIn('[data-test="followup-tag-why"]', 'System generated')
         ->fill('[data-test="followup-what"]', 'My own description of the problem')
         ->assertSeeIn('[data-test="followup-tag-what"]', 'Edited')
         ->click('[data-test="followup-reset-what"]')

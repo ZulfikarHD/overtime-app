@@ -27,6 +27,9 @@ import {
     XCircle,
 } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
+import AlertCausePicCard, {
+    type AlertCauseMappingRow,
+} from '@/components/admin/AlertCausePicCard.vue';
 import ConfirmationDialog from '@/components/admin/ConfirmationDialog.vue';
 import PolicyThresholdSheet, {
     type DepartmentOption,
@@ -130,6 +133,7 @@ const props = defineProps<{
     userFilters?: UserFilters;
     availableRoles?: RoleOption[];
     departmentsWithSections?: DepartmentWithSections[];
+    causeMappings?: AlertCauseMappingRow[];
     shiftSchedules?: ShiftScheduleAdminRow[];
     activeShiftSchedule?: {
         id: number | null;
@@ -1204,6 +1208,13 @@ const flashSuccess = computed(
                     </div>
                 </div>
             </div>
+
+            <!-- Early Warning: PIC department per detected cause (E10-08) -->
+            <AlertCausePicCard
+                v-if="causeMappings"
+                :mappings="causeMappings"
+                :departments="availableDepartments"
+            />
         </div>
 
         <!-- Tab 2: User Accounts (E02-05 Full Implementation) -->
