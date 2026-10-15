@@ -27,11 +27,11 @@ E10-04 builds the alert detail page. Two questions are not answered by the epic 
 
 ### Negative
 
-- Until E10-06 ships, an alert detail has no form: the inbox **Follow Up** button opens a read-only page. The Dashboard panel still works in the meantime.
+- Until E10-06 ships, an alert detail has no form: the inbox **Follow Up** button opens a read-only page. The Dashboard panel still works in the meantime. _(E10-06 shipped: the form is on this page and the Dashboard panel is gone, see [ADR-045](./045-early-warning-follow-up-alert-link-and-suggestion-baseline.md).)_
 - The session fallback is per user, not per tab: with two inbox tabs open, a reload of a detail page returns to the most recently visited inbox filters.
 - The "N/A" tooltip says the data is not available for the period, which is also what users see for sections that do have monthly data until E10-05 lands.
 
 ### Neutral
 
-- `AlertFollowUpSummary.vue` is an additional component beyond the epic's inventory and may be merged with `FollowUpForm.vue` in E10-06.
+- `AlertFollowUpSummary.vue` was an additional component beyond the epic's inventory; E10-06 folded it into `FollowUpForm.vue`.
 - `AlertFollowUpService::toPayload()` gained `alert_date`, `streak_days`, `sent_by_name` and `created_at`; the Dashboard panel ignores them.

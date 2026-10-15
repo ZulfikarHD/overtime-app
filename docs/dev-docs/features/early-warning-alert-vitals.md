@@ -36,27 +36,27 @@ erDiagram
 
 Prop `vitals` of `early-warning/Show` (shape unchanged since E10-04):
 
-| Key                     | Type              | Meaning                                                             |
-| ----------------------- | ----------------- | ------------------------------------------------------------------- |
-| `volume_change_pct`     | `float \| null`   | `(volume − previous volume) / previous volume × 100`, 1 decimal     |
-| `volume_period_label`   | `string \| null`  | `vs September 2026` (locale `en`) / `vs September 2026` (`id`)      |
-| `manpower_change_pct`   | `float \| null`   | Same formula on `man_power` (plant-wide)                            |
-| `manpower_period_label` | `string \| null`  | `vs September 2026 (plant-wide)` / `vs September 2026 (seluruh pabrik)` |
+| Key                     | Type             | Meaning                                                                 |
+| ----------------------- | ---------------- | ----------------------------------------------------------------------- |
+| `volume_change_pct`     | `float \| null`  | `(volume − previous volume) / previous volume × 100`, 1 decimal         |
+| `volume_period_label`   | `string \| null` | `vs September 2026` (locale `en`) / `vs September 2026` (`id`)          |
+| `manpower_change_pct`   | `float \| null`  | Same formula on `man_power` (plant-wide)                                |
+| `manpower_period_label` | `string \| null` | `vs September 2026 (plant-wide)` / `vs September 2026 (seluruh pabrik)` |
 
 ## Key Files & UI Mapping
 
-| Layer          | File / Route / Menu                                                          | Purpose                                                                        |
-| -------------- | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
-| Sidebar Menu   | _Early Warning_ → open an alert                                              | The cards sit under the burn bar of the alert detail (no new item or route)    |
-| Page Component | `resources/js/pages/early-warning/Show.vue`                                  | Unchanged; already passes `vitals` to the grid                                 |
-| Component      | `resources/js/components/early-warning/AlertVitalsGrid.vue`                  | Unchanged; shows the value, trend arrow, period label, or `N/A` + tooltip      |
-| Controller     | `app/Http/Controllers/EarlyWarningController.php` (`show`)                   | Replaces the `null` placeholder with `vitalsFor()` after the policy check      |
-| Service        | `app/Services/EarlyWarningService.php` (`vitalsFor`, `percentChange`, `monthLabel`) | Reads `MlTrainingData`, computes the change and the label               |
-| Model          | `app/Models/MlTrainingData.php`                                              | Monthly volume and man power                                                   |
-| i18n           | `lang/id.json`, `lang/en.json`                                               | `vs :period`, `vs :period (plant-wide)` (kept in sync, sorted)                 |
-| Tests          | `tests/Feature/EarlyWarningVitalsTest.php`                                   | 11 tests: both sources, decrease, rounding, missing, zero, partial, January, locale |
-| Tests          | `tests/Feature/EarlyWarningDetailTest.php`                                   | `vitals` prop with and without data                                            |
-| Browser tests  | `tests/Browser/EarlyWarning/EarlyWarningDetailBrowserTest.php`               | Real value + period + trend arrow, and `N/A` without a period label            |
+| Layer          | File / Route / Menu                                                                 | Purpose                                                                             |
+| -------------- | ----------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| Sidebar Menu   | _Early Warning_ → open an alert                                                     | The cards sit under the burn bar of the alert detail (no new item or route)         |
+| Page Component | `resources/js/pages/early-warning/Show.vue`                                         | Unchanged; already passes `vitals` to the grid                                      |
+| Component      | `resources/js/components/early-warning/AlertVitalsGrid.vue`                         | Unchanged; shows the value, trend arrow, period label, or `N/A` + tooltip           |
+| Controller     | `app/Http/Controllers/EarlyWarningController.php` (`show`)                          | Replaces the `null` placeholder with `vitalsFor()` after the policy check           |
+| Service        | `app/Services/EarlyWarningService.php` (`vitalsFor`, `percentChange`, `monthLabel`) | Reads `MlTrainingData`, computes the change and the label                           |
+| Model          | `app/Models/MlTrainingData.php`                                                     | Monthly volume and man power                                                        |
+| i18n           | `lang/id.json`, `lang/en.json`                                                      | `vs :period`, `vs :period (plant-wide)` (kept in sync, sorted)                      |
+| Tests          | `tests/Feature/EarlyWarningVitalsTest.php`                                          | 11 tests: both sources, decrease, rounding, missing, zero, partial, January, locale |
+| Tests          | `tests/Feature/EarlyWarningDetailTest.php`                                          | `vitals` prop with and without data                                                 |
+| Browser tests  | `tests/Browser/EarlyWarning/EarlyWarningDetailBrowserTest.php`                      | Real value + period + trend arrow, and `N/A` without a period label                 |
 
 ## Flow Explanation
 

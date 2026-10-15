@@ -17,12 +17,12 @@ When a section uses too much of its daily overtime budget, the **Early Warning**
 2. **Index bar** — the filled bar is the index of that day. The thin marks show where **Hijau** ends and **Kuning** ends for your department, and **Target 100%** is the plan itself
 3. **Production volume** and **Manpower change** — show whether production or the number of people changed around the alert, compared with the previous month (see the [Alert Vitals guide](./early-warning-alert-vitals.md)). When the data is not available the card shows **N/A**; hover over the information icon to see why
 4. **Last 7 working days** — a chart of the daily index with the green, yellow and red areas behind it. The large dot is the alert day
-5. **Follow-up** — shows the status (**Not followed up yet**, **Draft** or **Terkirim**). A sent follow-up also shows when it was sent and by whom, and cannot be changed
+5. **Follow-up (5W2H)** — shows the status (**Not followed up yet**, **Draft** or **Terkirim**) and the 5W2H form, already filled in by the system. A sent follow-up also shows when it was sent and by whom, and cannot be changed. How to edit, save and send it is explained in the [Follow-Up guide](./early-warning-follow-up.md)
 
 ### Read earlier follow-ups
 
 1. When an alert has more than one follow-up, small buttons appear next to **Follow-up history**
-2. Click a button to read that follow-up: what, why, when, where, who, how, and how much (cost in Rupiah and overtime hours)
+2. Click a button to read that follow-up: what, why, when, where, who, how, and how much (cost in Rupiah and overtime hours). A sent one is shown read-only
 
 ### Go back to the list
 
@@ -39,8 +39,8 @@ A: On that day the section was in the **Hijau** zone, had no overtime budget, or
 **Q: Why do Production volume and Manpower change show N/A?**
 A: The monthly data for the alert month or the month before has not been entered yet, or the earlier figure was zero. The page never shows an estimated number in its place.
 
-**Q: Why can I not write a follow-up yet?**
-A: Writing, saving and sending the 5W2H follow-up from this page arrives in a later release. Until then, this page shows the follow-ups that already exist.
+**Q: Why is there no form to fill in?**
+A: The form only exists for a date that is an alert. On a day in the Hijau zone, without a budget, or in the future, the page says "No alert on this date" and only shows follow-ups that were already written.
 
 **Q: Why does the chart not show 7 days?**
 A: Only working days count, and a section without a budget for a month has no index for that month.

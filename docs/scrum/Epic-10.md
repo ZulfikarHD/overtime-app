@@ -34,10 +34,10 @@ These exist from the previous session and are the foundation of this epic.
 | Daily index data                  | `DashboardKpiService::getDailyIndexTrend()` returns `daily_zones`, `average_index`, `average_zone`, `green_max_pct`, `yellow_max_pct`, `threshold_pct`                                                                                                                              | Single-scope only (one department/section). Needs a batch variant (E10-01).                                                                     |
 | Scope resolution                  | `DashboardKpiService::resolveScoping()` (public)                                                                                                                                                                                                                                    | Admin = all, others = own department.                                                                                                           |
 | Early Warning chart               | `resources/js/components/dashboard/DailyIndexTrendChart.vue` (Dashboard → tab "Distribution & Trends")                                                                                                                                                                              | **Stays on the Dashboard.**                                                                                                                     |
-| Follow-up table / model           | `alert_follow_ups` migration, `app/Models/AlertFollowUp.php`, factory, `app/Enums/AlertFollowUpStatus.php` (`draft`, `sent`)                                                                                                                                                        | Month-level scope today; needs alert-day link (E10-06).                                                                                         |
+| Follow-up table / model           | `alert_follow_ups` migration, `app/Models/AlertFollowUp.php`, factory, `app/Enums/AlertFollowUpStatus.php` (`draft`, `sent`)                                                                                                                                                        | Linked to an alert (section + date) since E10-06.                                                                                               |
 | Follow-up service / policy / mail | `app/Services/AlertFollowUpService.php` (`listForScope`, `save`, `recipientsFor`, `toPayload`), `AlertFollowUpPolicy`, `StoreAlertFollowUpRequest`, `UpdateAlertFollowUpRequest`, `AlertFollowUpMail` + `resources/views/mail/alert-follow-up.blade.php`, `AlertFollowUpController` | Queued mail, recipients = active admin / manager / team_leader of the "Who" department. Sent = read-only.                                       |
-| Follow-up form UI                 | `resources/js/components/dashboard/FiveW2HFollowUpPanel.vue`                                                                                                                                                                                                                        | **Moves** to the new module (E10-07). Do not keep two copies.                                                                                   |
-| Tests                             | `tests/Feature/AlertFollowUpTest.php` (9 tests), `tests/Browser/Dashboard/AlertFollowUpBrowserTest.php` (2 tests)                                                                                                                                                                   | Must be updated for the new routes (E10-07).                                                                                                    |
+| Follow-up form UI                 | `resources/js/components/dashboard/FiveW2HFollowUpPanel.vue`                                                                                                                                                                                                                        | **Moved** to `components/early-warning/FollowUpForm.vue` by E10-06; the old file is gone.                                                       |
+| Tests                             | `tests/Feature/AlertFollowUpTest.php` (9 tests), `tests/Browser/Dashboard/AlertFollowUpBrowserTest.php` (2 tests)                                                                                                                                                                   | Updated for the new routes by E10-06 (19 + 5 tests; the browser test moved to `tests/Browser/EarlyWarning/`).                                   |
 
 ---
 
@@ -234,7 +234,7 @@ Page: `resources/js/pages/early-warning/Index.vue` (route `early-warning.index`)
 
 **Story Points:** 8  
 **Priority:** Must Have  
-**Status:** 🟡 Partly Done (page, chart, vitals, status and history delivered; 5W2H form and suggestion → E10-06 / E10-08)
+**Status:** 🟡 Partly Done (page, chart, vitals, status, history and the 5W2H form delivered; the full system-written suggestion → E10-08)
 
 Page: `resources/js/pages/early-warning/Show.vue` (route `early-warning.show`). Single root element. Content mirrors the client's draft, adapted to the app's design.
 
@@ -244,12 +244,12 @@ Page: `resources/js/pages/early-warning/Show.vue` (route `early-warning.show`). 
 - [x] **Burn bar**: actual index % filled bar with a marker at the department's limit(s) (green and yellow limits) and the "Target 100%" caption (Q3: limits come from configuration, not hardcoded 60%)
 - [x] **Vitals** (E10-05): "Volume produksi" and "Perubahan MP" with value, trend arrow, and period; `N/A` with tooltip when no data — _UI by `AlertVitalsGrid`, data by `EarlyWarningService::vitalsFor()` (E10-05)_
 - [x] **7 working-day chart** of the daily index with Hijau/Kuning/Merah bands (reuse the band plugin logic of `DailyIndexTrendChart.vue`; extract a shared composable instead of duplicating)
-- [ ] **5W2H follow-up form** (E10-06) below the chart, **generated by the system** (E10-08): What, Why, When, Where, Who, How, and How much are all filled on first open; every field stays editable — _not in this story; a read-only 5W2H of saved follow-ups is shown instead_
+- [ ] **5W2H follow-up form** (E10-06) below the chart, **generated by the system** (E10-08): What, Why, When, Where, Who, How, and How much are all filled on first open; every field stays editable — _form delivered by E10-06 with a baseline suggestion (What, When, Where, Who); Why, How and How much wait for E10-08_
 - [x] **Status block**: "Tindak lanjut" with pill Draft / Terkirim and, when sent, sent time + sender
-- [ ] **History** of earlier follow-ups for the same alert (chips), switchable; "Follow-up baru" button when the latest is sent — _chips and switching done; the "Follow-up baru" button arrives with the form (E10-06)_
+- [x] **History** of earlier follow-ups for the same alert (chips), switchable; "Follow-up baru" button when the latest is sent — _chips on the form; "Tindak Lanjut Baru" button delivered by E10-06_
 - [x] Back link to the inbox preserves the inbox filters (use the previous URL / query string)
 - [x] 404 for unknown section, 422 → redirect for an invalid date, 403 for another department
-- [x] If the date is **no longer an alert** (zone Hijau now), the page still opens but shows a neutral "Tidak ada alert pada tanggal ini" banner and disables the form (cannot create a follow-up for a non-alert) — _banner done; there is no form to disable yet (E10-06 must honour `alert === null`)_
+- [x] If the date is **no longer an alert** (zone Hijau now), the page still opens but shows a neutral "Tidak ada alert pada tanggal ini" banner and disables the form (cannot create a follow-up for a non-alert) — _banner done; E10-06 hides the form for `alert === null` and the server answers 422_
 
 #### Technical Tasks
 
@@ -317,38 +317,51 @@ Page: `resources/js/pages/early-warning/Show.vue` (route `early-warning.show`). 
 
 **Story Points:** 5  
 **Priority:** Must Have  
-**Status:** 🔴 Not Started
+**Status:** 🟢 Done (suggestion is a baseline until E10-08, see Implementation Notes)
 
 The 5W2H behavior is already implemented at the month level (`AlertFollowUpService`). This story **links it to a concrete alert (section + date)** and moves its UI and routes into the new module.
 
 #### Acceptance Criteria
 
-- [ ] Follow-up belongs to an **alert**: `section_id` + `alert_date` (new columns), plus the existing `department_id`, `fiscal_year`, `fiscal_month`
-- [ ] **Zone and index are recomputed server-side** from the alert date at save time (client values ignored); the snapshot is stored (`zone`, `index_pct`, new `streak_days`)
-- [ ] A follow-up can only be created for a date that **is an alert** (Kuning/Merah); otherwise 422 with a clear message
-- [ ] The form **opens prefilled with the system suggestion** from E10-08 (no empty form); the user can edit every field
-- [ ] The saved follow-up keeps a **snapshot of what the system generated** (`generated_payload` JSON + `generated_at`) next to the user's final text, so edits can be shown ("Diubah") and audited
-- [ ] Each field shows a small **"Dibuat sistem"** tag, changing to **"Diubah"** when it differs from the snapshot; a **"Reset ke saran sistem"** button restores that field (or all fields) — draft only
-- [ ] **Simpan Draft**: requires only **What**; can be re-saved/edited any time while `draft`
-- [ ] **Kirim via Email**: requires What, Why, When, Who, How; needs at least one active recipient in the Who department, otherwise a validation error and **nothing is saved/sent** (transaction rolls back)
-- [ ] On send: status → `sent`, `sent_by`, `sent_at` set, one queued mail per recipient (`Mail::to($r)->queue(...)`), toast "Follow-up sent by email to the PIC department."
-- [ ] A **sent follow-up is read-only** (form disabled, update → 403)
-- [ ] At most **one draft per alert** at a time; many sent follow-ups allowed (history). "Follow-up baru" creates a new draft
-- [ ] The email contains: section, date, zone, index %, streak, the 5W2H content, how much (Rp and hours), sender, and a link to the alert detail page (Wayfinder URL helper server-side `route('early-warning.show', …)` is acceptable in PHP)
-- [ ] Authorization: admin all; others own department only; operators none
-- [ ] Rupiah formatting in UI and email (`Rp 7.500.000`), timezone WIB
+- [x] Follow-up belongs to an **alert**: `section_id` + `alert_date` (new columns), plus the existing `department_id`, `fiscal_year`, `fiscal_month`
+- [x] **Zone and index are recomputed server-side** from the alert date at save time (client values ignored); the snapshot is stored (`zone`, `index_pct`, new `streak_days`)
+- [x] A follow-up can only be created for a date that **is an alert** (Kuning/Merah); otherwise 422 with a clear message
+- [x] The form **opens prefilled with the system suggestion** from E10-08 (no empty form); the user can edit every field
+- [x] The saved follow-up keeps a **snapshot of what the system generated** (`generated_payload` JSON + `generated_at`) next to the user's final text, so edits can be shown ("Diubah") and audited
+- [x] Each field shows a small **"Dibuat sistem"** tag, changing to **"Diubah"** when it differs from the snapshot; a **"Reset ke saran sistem"** button restores that field (or all fields) — draft only
+- [x] **Simpan Draft**: requires only **What**; can be re-saved/edited any time while `draft`
+- [x] **Kirim via Email**: requires What, Why, When, Who, How; needs at least one active recipient in the Who department, otherwise a validation error and **nothing is saved/sent** (transaction rolls back)
+- [x] On send: status → `sent`, `sent_by`, `sent_at` set, one queued mail per recipient (`Mail::to($r)->queue(...)`), toast "Follow-up sent by email to the PIC department."
+- [x] A **sent follow-up is read-only** (form disabled, update → 403)
+- [x] At most **one draft per alert** at a time; many sent follow-ups allowed (history). "Follow-up baru" creates a new draft
+- [x] The email contains: section, date, zone, index %, streak, the 5W2H content, how much (Rp and hours), sender, and a link to the alert detail page (Wayfinder URL helper server-side `route('early-warning.show', …)` is acceptable in PHP)
+- [x] Authorization: admin all; others own department only; operators none
+- [x] Rupiah formatting in UI and email (`Rp 7.500.000`), timezone WIB
 
 #### Technical Tasks
 
-- [ ] Migration: add `alert_date` (date, nullable for legacy rows), `streak_days` (unsigned small int, default 0), `generated_payload` (JSON, nullable), `generated_at` (timestamp, nullable); index `(section_id, alert_date)`; backfill legacy rows with `alert_date = created_at date` (migration branches on driver only for DDL if needed)
-- [ ] Update `AlertFollowUp` model, factory (`->forAlert($section, $date)` state), `AlertFollowUpService::save()` / `listForScope()` → `listForAlert(Section, date)`
-- [ ] Update `StoreAlertFollowUpRequest` / `UpdateAlertFollowUpRequest`: add `section_id` + `alert_date` required, validate alert existence via `EarlyWarningService`
-- [ ] Routes: `POST /early-warning/follow-ups` → `early-warning.follow-ups.store`, `PUT /early-warning/follow-ups/{alertFollowUp}` → `early-warning.follow-ups.update` (replace the old `dashboard.alert-follow-ups.*`)
-- [ ] Move `FiveW2HFollowUpPanel.vue` → `resources/js/components/early-warning/FollowUpForm.vue`; use Wayfinder actions; keep the existing data-test ids (`followup-*`) so tests keep working
-- [ ] Update `AlertFollowUpMail` + `alert-follow-up.blade.php` with streak and the detail link
-- [ ] Inertia partial reload `only: ['followUps','flash']`; after **send**, keep the sent item on screen read-only as confirmation (already implemented behavior — preserve it)
-- [ ] Frontend: field-level "Dibuat sistem / Diubah" tags and reset buttons in `FollowUpForm.vue` (computed diff against `generated_payload`)
-- [ ] Re-use existing tests and extend: alert-date validation, one-draft-per-alert, non-alert date rejected, mail contains streak and link
+- [x] Migration: add `alert_date` (date, nullable for legacy rows), `streak_days` (unsigned small int, default 0), `generated_payload` (JSON, nullable), `generated_at` (timestamp, nullable); index `(section_id, alert_date)`; backfill legacy rows with `alert_date = created_at date` (migration branches on driver only for DDL if needed)
+- [x] Update `AlertFollowUp` model, factory (`->forAlert($section, $date)` state), `AlertFollowUpService::save()` / `listForScope()` → `listForAlert(Section, date)`
+- [x] Update `StoreAlertFollowUpRequest` / `UpdateAlertFollowUpRequest`: add `section_id` + `alert_date` required, validate alert existence via `EarlyWarningService`
+- [x] Routes: `POST /early-warning/follow-ups` → `early-warning.follow-ups.store`, `PUT /early-warning/follow-ups/{alertFollowUp}` → `early-warning.follow-ups.update` (replace the old `dashboard.alert-follow-ups.*`)
+- [x] Move `FiveW2HFollowUpPanel.vue` → `resources/js/components/early-warning/FollowUpForm.vue`; use Wayfinder actions; keep the existing data-test ids (`followup-*`) so tests keep working
+- [x] Update `AlertFollowUpMail` + `alert-follow-up.blade.php` with streak and the detail link
+- [x] Inertia partial reload `only: ['followUps','flash']`; after **send**, keep the sent item on screen read-only as confirmation (already implemented behavior — preserve it)
+- [x] Frontend: field-level "Dibuat sistem / Diubah" tags and reset buttons in `FollowUpForm.vue` (computed diff against `generated_payload`)
+- [x] Re-use existing tests and extend: alert-date validation, one-draft-per-alert, non-alert date rejected, mail contains streak and link
+
+---
+
+#### Implementation Notes (delivered)
+
+- `AlertFollowUpService::save()` identifies the alert by `section_id` + `alert_date`, recomputes zone / index / streak with `EarlyWarningService::alertDetail()` (403 for another department, 422 on `alert_date` when the date is not an alert), refuses a second draft per alert inside the transaction (row lock), and writes `generated_payload` / `generated_at` **on the server, on create only**. `listForScope()` and the month-level snapshot code were removed; `listForAlert()` stays.
+- Migration `add_generated_payload_to_alert_follow_ups_table`: `generated_payload` (JSON), `generated_at`, and a PHP backfill of legacy rows (`alert_date` = creation date). The `(section_id, alert_date)` index and `streak_days` came with E10-01.
+- Routes `early-warning.follow-ups.store` / `.update` replace `dashboard.alert-follow-ups.*`. `StoreAlertFollowUpRequest` requires `section_id` + `alert_date`; `UpdateAlertFollowUpRequest` never accepts them (a follow-up cannot move to another alert).
+- `FollowUpForm.vue` (+ `FollowUpFieldTag.vue`) replaces `FiveW2HFollowUpPanel.vue` **and** the E10-04 `AlertFollowUpSummary.vue`; `data-test` ids `followup-*` are kept. `EarlyWarningController@show` adds `suggestion` and `departments`.
+- **Deviation (staged scope):** E10-08 is not built, so `AlertFollowUpService::suggestionFor()` is a baseline: What, When, Where and Who (own department) are filled from the alert; **Why, How and How much stay empty** (no guesses, no fabricated numbers) and carry no tag. Its shape is the contract E10-08 keeps. "Reset ke saran sistem" restores from the local baseline (no `only: ['suggestion']` reload yet). See [ADR-045](../dev-docs/decisions/045-early-warning-follow-up-alert-link-and-suggestion-baseline.md).
+- **Deviation (E10-07 overlap):** moving the form and replacing the routes leaves the Dashboard panel with nothing to use, so the panel, the `alertFollowUps` prop / partial-reload key / `followUpScopeLabel`, the `DashboardController` loading and the old routes are removed **in this story**. The Dashboard browser test moved to `tests/Browser/EarlyWarning/AlertFollowUpBrowserTest.php`.
+- Mail: alert date, index, streak and a button to `early-warning.show`; legacy rows without a link open the inbox.
+- Tests: `tests/Feature/AlertFollowUpTest.php` (19) and `tests/Browser/EarlyWarning/AlertFollowUpBrowserTest.php` (5); `EarlyWarningDetailBrowserTest` updated for the form. Details: [Early Warning Follow-Up](../dev-docs/features/early-warning-follow-up.md), [ADR-045](../dev-docs/decisions/045-early-warning-follow-up-alert-link-and-suggestion-baseline.md), [user guide](../user-docs/guides/early-warning-follow-up.md).
 
 ---
 
@@ -360,26 +373,26 @@ The 5W2H behavior is already implemented at the month level (`AlertFollowUpServi
 
 **Story Points:** 3  
 **Priority:** Must Have  
-**Status:** 🔴 Not Started
+**Status:** 🟡 Partly Done (panel and old code removed by E10-06; entry link and i18n key move remain)
 
 #### Acceptance Criteria
 
-- [ ] The **Tindak Lanjut / Alert Follow-up (5W2H) panel is removed** from the Dashboard (`Dashboard.vue`)
-- [ ] The **Early Warning chart (`DailyIndexTrendChart.vue`) stays** unchanged on the Dashboard ("Distribution & Trends" tab)
+- [x] The **Tindak Lanjut / Alert Follow-up (5W2H) panel is removed** from the Dashboard (`Dashboard.vue`) — _done in E10-06_
+- [x] The **Early Warning chart (`DailyIndexTrendChart.vue`) stays** unchanged on the Dashboard ("Distribution & Trends" tab)
 - [ ] A **"Buka Early Warning" / "Tindak Lanjut"** button on the chart header opens the new inbox filtered by the dashboard's current department/section and date; visible only for roles that can access the menu
 - [ ] When the chart's average zone is Hijau, the button is still shown but the inbox will be empty-state ("Tidak ada alert")
-- [ ] No leftover code: `alertFollowUps` prop, the `only: [...]` entry, `followUpScopeLabel`, imports, old routes `dashboard.alert-follow-ups.*`, and `DashboardController` follow-up loading are removed
+- [x] No leftover code: `alertFollowUps` prop, the `only: [...]` entry, `followUpScopeLabel`, imports, old routes `dashboard.alert-follow-ups.*`, and `DashboardController` follow-up loading are removed — _done in E10-06_
 - [ ] i18n keys used only by the removed panel are moved (not duplicated) to the new module namespace
 
 #### Technical Tasks
 
-- [ ] Edit `resources/js/pages/Dashboard.vue`: remove `<FiveW2HFollowUpPanel>`, prop, partial-reload key, computed, imports
-- [ ] Edit `app/Http/Controllers/DashboardController.php`: stop passing `alertFollowUps`; drop unused `AlertFollowUpService` dependency
-- [ ] Remove old `dashboard.alert-follow-ups.*` routes (they are replaced in E10-06); regenerate Wayfinder with `--with-form`
+- [x] Edit `resources/js/pages/Dashboard.vue`: remove `<FiveW2HFollowUpPanel>`, prop, partial-reload key, computed, imports — _done in E10-06_
+- [x] Edit `app/Http/Controllers/DashboardController.php`: stop passing `alertFollowUps`; drop unused `AlertFollowUpService` dependency — _done in E10-06_
+- [x] Remove old `dashboard.alert-follow-ups.*` routes (they are replaced in E10-06); regenerate Wayfinder with `--with-form` — _done in E10-06_
 - [ ] Add the entry link in `DailyIndexTrendChart.vue` header (Wayfinder `early-warning.index` with query params)
-- [ ] Update `tests/Feature/AlertFollowUpTest.php` (dashboard no longer exposes `alertFollowUps`; new route names) and `tests/Browser/Dashboard/AlertFollowUpBrowserTest.php` (move to `tests/Browser/EarlyWarning/`)
-- [ ] Do **not** delete tests without approval — update/move them
-- [ ] Browser test: the Dashboard no longer shows `followup-panel`, the link navigates to `/early-warning` with filters applied
+- [x] Update `tests/Feature/AlertFollowUpTest.php` (dashboard no longer exposes `alertFollowUps`; new route names) and `tests/Browser/Dashboard/AlertFollowUpBrowserTest.php` (move to `tests/Browser/EarlyWarning/`) — _done in E10-06_
+- [x] Do **not** delete tests without approval — update/move them
+- [ ] Browser test: the Dashboard no longer shows `followup-panel` _(done in E10-06)_, the link navigates to `/early-warning` with filters applied _(pending the link)_
 
 ---
 
@@ -471,7 +484,7 @@ Ranking: each detected cause gets a score = the share of excess hours it explain
 | Day 5–6    | Vitals service                                           | E10-05  | 🟢 Done        |
 | Day 6–8    | 5W2H auto-generator + cause → PIC mapping                | E10-08  | 🔴 Not Started |
 | Day 8–10   | Alert detail page (shows the generated suggestion)       | E10-04  | 🟡 Partly Done |
-| Day 10–11  | Follow-up linked to alert, edit tags, mail, route move   | E10-06  | 🔴 Not Started |
+| Day 10–11  | Follow-up linked to alert, edit tags, mail, route move   | E10-06  | 🟢 Done        |
 | Day 12–13  | Dashboard cleanup, test pass, docs, UAT with the client  | E10-07  | 🔴 Not Started |
 
 ---

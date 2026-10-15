@@ -33,7 +33,7 @@ A: The cards stay neutral on purpose. A change is information to help you judge 
 
 ## Troubleshooting
 
-| Issue                                  | Solution                                                                                                                  |
-| -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| Issue                                  | Solution                                                                                                                     |
+| -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
 | Both cards always show N/A             | The monthly production and manpower data of the alert month and the month before have not been entered. Ask an Administrator |
-| The number does not match my own count | The cards use monthly plant data. Your section head count and daily output are not part of it                             |
+| The number does not match my own count | The cards use monthly plant data. Your section head count and daily output are not part of it                                |
