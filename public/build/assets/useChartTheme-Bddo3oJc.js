@@ -1,0 +1,1 @@
+var e={primary:`#2563eb`,success:`#16a34a`,warning:`#d97706`,danger:`#dc2626`,isuzuRed:`#cc0000`,capex:`#7c3aed`,capexAlt:`#0284c7`,opex:`#0891b2`,opexAlt:`#64748b`,hkn:`#3b82f6`,hlr:`#f59e0b`,neutral:`#94a3b8`,gridLight:`rgba(226, 232, 240, 0.8)`,gridDark:`rgba(51, 65, 85, 0.4)`};export{e as t};

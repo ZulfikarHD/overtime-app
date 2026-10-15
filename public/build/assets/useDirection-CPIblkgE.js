@@ -1,0 +1,1 @@
+import{r as e}from"./Presence-CJe5Uqlk.js";import{Qn as t,X as n}from"./wayfinder-Df0-yT79.js";function r(r){let i=e({dir:t(`ltr`)});return n(()=>r?.value||i.dir?.value||`ltr`)}export{r as t};
