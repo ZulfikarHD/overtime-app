@@ -12,7 +12,7 @@ use App\Models\User;
 use Illuminate\Support\Carbon;
 
 /**
- * Creates today's Merah alert for the section: a 10 h/day pacing budget with 10 h approved = 100 %.
+ * Creates today's Merah alert for the section: a 10 h/day pacing budget with 10 h x the day of the month approved = 100 % month to date.
  */
 function followUpBrowserSeedMerahToday(Section $section): string
 {
@@ -36,7 +36,7 @@ function followUpBrowserSeedMerahToday(Section $section): string
         ->approved(User::factory()->admin()->create())
         ->create([
             'overtime_submission_id' => $submission->id,
-            'hours_production' => 10.0,
+            'hours_production' => 10.0 * $today->day,
             'hours_tpm' => 0,
             'hours_project' => 0,
             'hours_others' => 0,

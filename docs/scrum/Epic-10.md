@@ -102,7 +102,7 @@ These exist from the previous session and are the foundation of this epic.
 #### Definition of an alert
 
 - One alert = **one section on one date** whose daily index is in zone **Kuning** or **Merah** (not Hijau).
-- Daily index = the same formula as the Dashboard's Early Warning chart (daily consumption vs. daily pacing target, `CALC-02` applied per day) — **must not diverge** from `getDailyIndexTrend`.
+- Index = the same formula as the Dashboard's Early Warning chart — **must not diverge** from `getDailyIndexTrend`. **Month-to-date** (ADR-048): cumulative approved hours from the 1st of the month up to the day vs. the hours expected by then (`plannedHours × day ÷ daysInMonth`), `CALC-02` on the month so far. _(E10-01 first applied CALC-02 to a single day, which made almost every day with overtime Merah; changed after review.)_
 - Zone = `PolicyThresholdService::classifyWith()` using the **section's department** boundaries (department override, else plant default).
 - **Severity** = zone of the alert date (Merah > Kuning).
 - **Streak (hari berturut-turut)** = number of consecutive **working days** (HKN, from `operational_calendar`) ending on the alert date whose zone is Kuning or Merah. HLR days are skipped and do not break the streak (Q4).
@@ -445,9 +445,9 @@ Ranking: each detected cause gets a score = the share of excess hours it explain
 
 #### Formulas for "How much" and the manpower suggestion
 
-- `excess_hours_per_day` = average daily actual hours − daily pacing target, over the streak days (never negative)
+- `excess_hours_per_day` = hours above the pace for the month so far (cumulative hours − hours expected at the alert date, never negative) ÷ `period_days` _(ADR-048; originally the average daily actual − daily pacing over the streak days)_
 - `period_days` = D = default follow-up length (Q9: 7 working days)
-- `suggested_hours` = `excess_hours_per_day × D`
+- `suggested_hours` = `excess_hours_per_day × D` (= the month-to-date overspend)
 - `suggested_headcount` (manpower cause only) = `max(1, ceil(excess_hours_per_day / shift_hours))`, `shift_hours` = 8 (Q9)
 - `suggested_cost_idr` = `suggested_hours × average cost per overtime hour of the section` (same cost basis as `CostAnalysisService`, from approved items' `total_cost_snapshot / total_hours` of the last 30 days; fallback = average `effective_hourly_rate` of the section's active employees; if neither exists, return `0` and a note "Estimasi biaya belum tersedia")
 

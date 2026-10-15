@@ -48,7 +48,7 @@ const markers = computed(() => [
         <CardContent class="space-y-3">
             <div class="flex items-baseline justify-between gap-2">
                 <span class="text-xs font-semibold text-slate-500 uppercase">
-                    {{ __('Daily index') }}
+                    {{ __('Month-to-date index') }}
                 </span>
                 <span
                     class="font-mono text-sm font-bold tabular-nums"
@@ -66,7 +66,7 @@ const markers = computed(() => [
                     :aria-valuenow="Math.round(indexPct)"
                     aria-valuemin="0"
                     :aria-valuemax="Math.round(scaleMax)"
-                    :aria-label="__('Daily index')"
+                    :aria-label="__('Month-to-date index')"
                 >
                     <div
                         class="h-full rounded-full transition-all"

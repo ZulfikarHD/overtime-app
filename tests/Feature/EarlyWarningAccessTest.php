@@ -13,8 +13,9 @@ use Illuminate\Support\Carbon;
 use Inertia\Testing\AssertableInertia as Assert;
 
 /*
- * Today = Wed 14 Oct 2026. A 310 h October budget paces 10 h/day, so 10 h approved = 100 % (Merah)
- * and 8 h = 80 % (Kuning) with the default 70 / 90 limits.
+ * Today = Wed 14 Oct 2026. The index is month-to-date and a 310 h October budget expects 10 h per calendar day.
+ * badgeSectionWithHours() takes the index of the day in tenths: 10 = 100 % (Merah), 8 = 80 % (Kuning) with the
+ * default 70 / 90 limits. It books the cumulative hours that give that index on the date (hours x day of month).
  */
 
 beforeEach(function () {
@@ -30,6 +31,8 @@ beforeEach(function () {
 
 function badgeSectionWithHours(Section $section, string $date, float $hours): void
 {
+    $hours *= (int) substr($date, 8, 2);
+
     OvertimeBudget::factory()->forSection($section)->create([
         'fiscal_year' => 2026,
         'fiscal_month' => 10,
@@ -141,19 +144,19 @@ test('an invalid date does not reveal another department section', function () {
 
 test('the sidebar badge counts open Merah alerts of the current month within the user scope', function () {
     // Own department: Merah (counts), Kuning (does not), Merah with a draft (counts), Merah already sent (does not).
-    badgeSectionWithHours($this->section, '2026-10-13', 10.0);
-    badgeSectionWithHours(Section::factory()->create(['department_id' => $this->department->id]), '2026-10-13', 8.0);
+    badgeSectionWithHours($this->section, '2026-10-14', 10.0);
+    badgeSectionWithHours(Section::factory()->create(['department_id' => $this->department->id]), '2026-10-14', 8.0);
 
     $draftSection = Section::factory()->create(['department_id' => $this->department->id]);
-    badgeSectionWithHours($draftSection, '2026-10-12', 10.0);
-    AlertFollowUp::factory()->forAlert($draftSection, '2026-10-12')->create();
+    badgeSectionWithHours($draftSection, '2026-10-14', 10.0);
+    AlertFollowUp::factory()->forAlert($draftSection, '2026-10-14')->create();
 
     $sentSection = Section::factory()->create(['department_id' => $this->department->id]);
-    badgeSectionWithHours($sentSection, '2026-10-12', 10.0);
-    AlertFollowUp::factory()->forAlert($sentSection, '2026-10-12')->sent()->create();
+    badgeSectionWithHours($sentSection, '2026-10-14', 10.0);
+    AlertFollowUp::factory()->forAlert($sentSection, '2026-10-14')->sent()->create();
 
     // Other department: Merah, only visible to admins.
-    badgeSectionWithHours($this->otherSection, '2026-10-13', 10.0);
+    badgeSectionWithHours($this->otherSection, '2026-10-14', 10.0);
 
     $manager = User::factory()->manager($this->department->id)->create();
     $admin = User::factory()->admin()->create();

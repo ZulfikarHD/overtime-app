@@ -462,3 +462,62 @@ test('manager is scoped to their department automatically on chart endpoints', f
         ->and($items[0]['employee_id'])->toBe($empA->id)
         ->and($items[0]['total_hours'])->toEqual(6.0);
 });
+
+test('daily index trend is month-to-date: cumulative hours against the hours expected by each day', function () {
+    $this->travelTo(Carbon::parse('2026-10-14 10:00:00', 'Asia/Jakarta'));
+
+    PolicyThreshold::factory()->plantDefault()->create();
+
+    $section = Section::factory()->create();
+    $employee = Employee::factory()->create();
+    $reviewer = User::factory()->admin()->create();
+
+    // 310 h October budget: 10 h expected per calendar day (50 h by the 5th, 120 h by the 12th, 140 h by the 14th).
+    OvertimeBudget::factory()->forSection($section)->create([
+        'fiscal_year' => 2026,
+        'fiscal_month' => 10,
+        'planned_hours' => 310.0,
+    ]);
+
+    foreach (['2026-10-05' => 40.0, '2026-10-12' => 60.0] as $date => $hours) {
+        $submission = OvertimeSubmission::factory()->create([
+            'department_id' => $section->department_id,
+            'section_id' => $section->id,
+            'operational_date' => $date,
+            'submission_date' => $date,
+        ]);
+
+        OvertimeItem::factory()->forEmployee($employee)->approved($reviewer)->create([
+            'overtime_submission_id' => $submission->id,
+            'hours_production' => $hours,
+            'hours_tpm' => 0,
+            'hours_project' => 0,
+            'hours_others' => 0,
+        ]);
+    }
+
+    $this->actingAs($reviewer);
+
+    $response = $this->getJson(route('dashboard.charts.daily-index', ['date' => '2026-10-14', 'section_id' => $section->id]));
+    $response->assertOk();
+
+    $indices = $response->json('daily_indices');
+    $cumulative = $response->json('cumulative_hours');
+
+    // Day 5: 40 h of 50 h = 80 %. Day 12: 100 h of 120 h = 83.3 %. Day 14: still 100 h of 140 h = 71.4 %, no new hours.
+    expect($indices[3])->toEqual(0.0)
+        ->and($indices[4])->toEqual(80.0)
+        ->and($indices[5])->toEqual(66.7)
+        ->and($indices[11])->toEqual(83.3)
+        ->and($indices[13])->toEqual(71.4)
+        ->and($indices[14])->toBeNull()
+        ->and($response->json('daily_hours')[11])->toEqual(60.0)
+        ->and($cumulative[11])->toEqual(100.0)
+        ->and($cumulative[13])->toEqual(100.0)
+        ->and($cumulative[14])->toBeNull()
+        ->and($response->json('daily_zones')[4])->toEqual('yellow')
+        ->and($response->json('daily_zones')[5])->toEqual('green')
+        // The headline is where the month stands on the last day shown, not an average of the days.
+        ->and($response->json('average_index'))->toEqual(71.4)
+        ->and($response->json('average_zone'))->toEqual('yellow');
+});

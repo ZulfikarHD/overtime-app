@@ -12,8 +12,9 @@ use App\Models\User;
 use Illuminate\Support\Carbon;
 
 /**
- * Today's approved hours of a section against a 10 h/day pacing budget:
- * 10 h = 100 % (Merah), 8 h = 80 % (Kuning) with the default 70 / 90 limits.
+ * Today's month-to-date index of a section against a 10 h/day pacing budget, in tenths:
+ * 10 = 100 % (Merah), 8 = 80 % (Kuning) with the default 70 / 90 limits.
+ * The hours booked today are `$hours` x the day of the month, the cumulative hours that give that index.
  */
 function inboxBrowserAlertToday(Section $section, float $hours): string
 {
@@ -37,7 +38,7 @@ function inboxBrowserAlertToday(Section $section, float $hours): string
         ->approved(User::factory()->admin()->create())
         ->create([
             'overtime_submission_id' => $submission->id,
-            'hours_production' => $hours,
+            'hours_production' => $hours * $today->day,
             'hours_tpm' => 0,
             'hours_project' => 0,
             'hours_others' => 0,

@@ -13,8 +13,8 @@ use App\Models\User;
 use Illuminate\Support\Carbon;
 
 /**
- * Today's Merah alert with excess hours: a 10 h/day pacing budget, 24 h approved from two employees
- * (all Production, Rp 50.000/h) = 14 h/day above the target.
+ * Today's Merah alert with excess hours: a 10 h/day pacing budget, 24 h x the day of the month approved from two
+ * employees (all Production, Rp 50.000/h) = 240 % month to date, 14 h x the day of the month above the pace.
  */
 function generatorBrowserSeedMerahToday(Section $section): string
 {
@@ -40,12 +40,12 @@ function generatorBrowserSeedMerahToday(Section $section): string
             ->approved(User::factory()->admin()->create())
             ->create([
                 'overtime_submission_id' => $submission->id,
-                'hours_production' => 12.0,
+                'hours_production' => 12.0 * $today->day,
                 'hours_tpm' => 0,
                 'hours_project' => 0,
                 'hours_others' => 0,
                 'hourly_rate_snapshot' => 50000,
-                'total_cost_snapshot' => 600000,
+                'total_cost_snapshot' => 600000 * $today->day,
             ]);
     }
 
@@ -72,12 +72,14 @@ beforeEach(function () {
 
 test('an alert opens with all seven fields written by the system, edits are tagged and reset, and it can be sent', function () {
     $today = generatorBrowserSeedMerahToday($this->section);
+    // Hours above the month-to-date pace: 24 h x D booked against 10 h x D expected on day D of the month.
+    $aboveThePace = 14 * Carbon::now('Asia/Jakarta')->day;
 
     generatorBrowserLogin('manager.generator@factory.com')
         ->navigate("/early-warning/{$this->section->id}/{$today}")
         ->assertValue('[data-test="followup-why"]', 'Category Production holds 100.0% of the overtime hours.')
-        ->assertValue('[data-test="followup-hours"]', '98')
-        ->assertValue('[data-test="followup-cost"]', '4900000')
+        ->assertValue('[data-test="followup-hours"]', (string) $aboveThePace)
+        ->assertValue('[data-test="followup-cost"]', (string) ($aboveThePace * 50000))
         ->assertValue('[data-test="followup-who"]', (string) $this->dept->id)
         ->assertSeeIn('[data-test="followup-tag-what"]', 'System generated')
         ->assertSeeIn('[data-test="followup-tag-why"]', 'System generated')
@@ -103,7 +105,7 @@ test('an alert opens with all seven fields written by the system, edits are tagg
     expect($followUp->status->value)->toBe('sent')
         ->and($followUp->why_text)->toBe('Category Production holds 100.0% of the overtime hours.')
         ->and($followUp->generated_payload['primary_cause'])->toBe('CATEGORY_DOMINANT')
-        ->and($followUp->how_much_cost_idr)->toBe(4900000);
+        ->and($followUp->how_much_cost_idr)->toBe($aboveThePace * 50000);
 });
 
 test('an admin picks the PIC department of a cause in Administration and the next suggestion uses it', function () {

@@ -14,8 +14,8 @@ use Illuminate\Support\Carbon;
 use Inertia\Testing\AssertableInertia as Assert;
 
 /*
- * Today = Wed 14 Oct 2026. A 310 h October budget paces 10 h/day, so 10 h approved = 100 % (Merah)
- * and 8 h = 80 % (Kuning) with the default 70 / 90 limits.
+ * Today = Wed 14 Oct 2026. The index is month-to-date and a 310 h October budget expects 10 h per calendar day,
+ * so 100 % (Merah) is 10 h x the day of the month and 80 % (Kuning) is 8 h x the day, with the default 70 / 90 limits.
  */
 
 beforeEach(function () {
@@ -28,8 +28,17 @@ beforeEach(function () {
     $this->manager = User::factory()->manager($this->department->id)->create();
 });
 
-function detailSeedDay(Section $section, string $date, float $hours): void
+/**
+ * Books approved hours on a date. By default `$hours` is the index of the day in tenths (10 = 100 %, 8 = 80 %): the
+ * cumulative hours that give exactly that month-to-date index on the date (hours x day of month, 10 h expected per
+ * day). With `$cumulative = false` the hours are booked as they are.
+ */
+function detailSeedDay(Section $section, string $date, float $hours, bool $cumulative = true): void
 {
+    if ($cumulative) {
+        $hours *= (int) substr($date, 8, 2);
+    }
+
     if (! OvertimeBudget::query()->where('section_id', $section->id)->exists()) {
         OvertimeBudget::factory()->forSection($section)->create([
             'fiscal_year' => 2026,
@@ -58,8 +67,9 @@ function detailSeedDay(Section $section, string $date, float $hours): void
 }
 
 test('the detail page exposes the alert, its streak, the 7 working day series and the zone limits', function () {
+    // 96 h by 12 Oct = 80 % Kuning, +24 h = 120 h by 13 Oct = 92.3 % Merah.
     detailSeedDay($this->section, '2026-10-12', 8.0);
-    detailSeedDay($this->section, '2026-10-13', 10.0);
+    detailSeedDay($this->section, '2026-10-13', 24.0, cumulative: false);
 
     $this->actingAs($this->manager)
         ->get(route('early-warning.show', [$this->section, '2026-10-13']))
@@ -70,7 +80,7 @@ test('the detail page exposes the alert, its streak, the 7 working day series an
             ->where('alert.zone', 'red')
             ->where('alert.streak_days', 2)
             ->where('alert.follow_up_status', 'none')
-            ->where('alert.index_pct', fn ($value) => abs($value - 100.0) < 0.01)
+            ->where('alert.index_pct', fn ($value) => abs($value - 92.3) < 0.01)
             ->has('series', 7)
             ->where('series.6.date', '2026-10-13')
             ->where('series.6.zone', 'red')
