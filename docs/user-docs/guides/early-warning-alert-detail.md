@@ -15,7 +15,7 @@ When a section uses too much of its daily overtime budget, the **Early Warning**
 
 1. **Header** — the section, the date, the department, the zone (**Kuning** or **Merah**), the index in percent and the streak, for example "3 consecutive days"
 2. **Index bar** — the filled bar is the index of that day. The thin marks show where **Hijau** ends and **Kuning** ends for your department, and **Target 100%** is the plan itself
-3. **Production volume** and **Manpower change** — show whether production or the number of people changed around the alert. When the data is not available the card shows **N/A**; hover over the information icon to see why
+3. **Production volume** and **Manpower change** — show whether production or the number of people changed around the alert, compared with the previous month (see the [Alert Vitals guide](./early-warning-alert-vitals.md)). When the data is not available the card shows **N/A**; hover over the information icon to see why
 4. **Last 7 working days** — a chart of the daily index with the green, yellow and red areas behind it. The large dot is the alert day
 5. **Follow-up** — shows the status (**Not followed up yet**, **Draft** or **Terkirim**). A sent follow-up also shows when it was sent and by whom, and cannot be changed
 
@@ -37,7 +37,7 @@ When a section uses too much of its daily overtime budget, the **Early Warning**
 A: On that day the section was in the **Hijau** zone, had no overtime budget, or the date has not happened yet. You can still read the chart, but no follow-up can be created for it.
 
 **Q: Why do Production volume and Manpower change show N/A?**
-A: There is no data for the period yet. The page never shows an estimated number in its place.
+A: The monthly data for the alert month or the month before has not been entered yet, or the earlier figure was zero. The page never shows an estimated number in its place.
 
 **Q: Why can I not write a follow-up yet?**
 A: Writing, saving and sending the 5W2H follow-up from this page arrives in a later release. Until then, this page shows the follow-ups that already exist.

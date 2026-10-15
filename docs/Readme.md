@@ -73,6 +73,7 @@ Technical specifications and decision records for the engineering implementation
     - [ADR-041: Early Warning Sidebar Badge Cached per Scope and Policy-Based Section Access](./dev-docs/decisions/041-early-warning-sidebar-badge-and-authorization.md)
     - [ADR-042: Early Warning Inbox Filters in the URL, Deferred Alerts and a Lenient Redirect](./dev-docs/decisions/042-early-warning-inbox-filters-in-url-and-deferred-alerts.md)
     - [ADR-043: Early Warning Detail Back Link (Referer + Session) and Staged Scope](./dev-docs/decisions/043-early-warning-detail-back-link-and-staged-scope.md)
+    - [ADR-044: Early Warning Vitals from Monthly Plant Data](./dev-docs/decisions/044-early-warning-vitals-monthly-plant-wide-source.md)
 - **Technical Feature Design Specifications:**
     - [Authentication & Role-Based Access Control](./dev-docs/features/authentication-rbac.md)
     - [Database Schema Migrations (Full DDL)](./dev-docs/features/database-schema-migrations.md)
@@ -111,6 +112,7 @@ Technical specifications and decision records for the engineering implementation
     - [Early Warning Menu, Routes & Authorization (E10-02)](./dev-docs/features/early-warning-navigation-access.md)
     - [Early Warning Inbox Page (E10-03)](./dev-docs/features/early-warning-inbox.md)
     - [Early Warning Alert Detail Page (E10-04)](./dev-docs/features/early-warning-alert-detail.md)
+    - [Early Warning Alert Vitals (E10-05)](./dev-docs/features/early-warning-alert-vitals.md)
 - **API Reference Design:**
     - [Calendar Classification & Management API](./dev-docs/api/calendar-endpoints.md)
     - [Overtime Policy Check API](./dev-docs/api/overtime-policy-check.md)
@@ -173,6 +175,7 @@ Plain-language operating guides for factory supervisors, team leaders, and opera
     - [Early Warning Menu Guide](./user-docs/guides/early-warning-menu.md)
     - [Early Warning Inbox Guide](./user-docs/guides/early-warning-inbox.md)
     - [Early Warning Alert Detail Guide](./user-docs/guides/early-warning-alert-detail.md)
+    - [Early Warning Alert Vitals Guide](./user-docs/guides/early-warning-alert-vitals.md)
     - [Overtime Planning OT Guide](./user-docs/guides/overtime-planning-ot.md)
     - [Input Lembur — SPL Upload Guide](./user-docs/guides/spl-excel-import.md)
 

@@ -2,7 +2,7 @@
 
 ## Overview
 
-E10-04 fills the `early-warning.show` page with the **alert detail**: for one section on one date it shows the alert header (zone badge, index, streak), a burn bar against the department's zone limits, the vitals cards (production volume and manpower change), a 7 working day chart with the Hijau / Kuning / Merah bands, and the follow-ups already linked to the alert (status pill, sent information, switchable history). Everything is computed server-side by `EarlyWarningService::alertDetail()` (E10-01); the page only presents it. A date that is **not an alert** (Hijau, no budget, or in the future) still opens, with a neutral banner. This story does not yet contain the 5W2H form, the vitals data or the system-written suggestion; those belong to E10-06, E10-05 and E10-08 (see _Decisions & Trade-offs_).
+E10-04 fills the `early-warning.show` page with the **alert detail**: for one section on one date it shows the alert header (zone badge, index, streak), a burn bar against the department's zone limits, the vitals cards (production volume and manpower change), a 7 working day chart with the Hijau / Kuning / Merah bands, and the follow-ups already linked to the alert (status pill, sent information, switchable history). Everything is computed server-side by `EarlyWarningService::alertDetail()` (E10-01); the page only presents it. A date that is **not an alert** (Hijau, no budget, or in the future) still opens, with a neutral banner. This story does not yet contain the 5W2H form, or the system-written suggestion; those belong to E10-06 and E10-08 (see _Decisions & Trade-offs_). The vitals data now comes from E10-05 ([Early Warning Alert Vitals](./early-warning-alert-vitals.md)).
 
 ## Architecture Diagram
 
@@ -39,7 +39,7 @@ Props sent to `early-warning/Show` (all immediate):
 | `alert`     | The `EarlyWarningService` alert (`zone`, `index_pct`, `streak_days`, limits, `follow_up_status`, `follow_up_id`) or `null` when the date is not an alert        |
 | `series`    | Up to 7 working days ending on the alert date: `date`, `index_pct`, `actual_hours`, `zone`, `is_working_day`. Empty when the section has no budget that month   |
 | `limits`    | `green_max_pct`, `yellow_max_pct` of the section's department (department override, else plant default)                                                         |
-| `vitals`    | `volume_change_pct`, `volume_period_label`, `manpower_change_pct`, `manpower_period_label`. **All `null` until E10-05**, which the page shows as `N/A`          |
+| `vitals`    | `volume_change_pct`, `volume_period_label`, `manpower_change_pct`, `manpower_period_label`. Filled by `EarlyWarningService::vitalsFor()` (E10-05); `null` values show as `N/A`  |
 | `followUps` | Follow-ups of this section + date, newest first, shaped by `AlertFollowUpService::toPayload()` (adds `alert_date`, `streak_days`, `sent_by_name`, `created_at`) |
 | `backUrl`   | Relative inbox URL including the filters the user came from (`/early-warning` or `/early-warning?...`)                                                          |
 
@@ -61,7 +61,7 @@ Props sent to `early-warning/Show` (all immediate):
 | Service        | `app/Services/EarlyWarningService.php` (`alertDetail()`)                  | Alert, series and limits (E10-01, unchanged)                                                   |
 | Service        | `app/Services/AlertFollowUpService.php` (`listForAlert()`, `toPayload()`) | Eager-loaded follow-ups of one alert; payload now includes sender, streak and created time     |
 | i18n           | `lang/id.json`, `lang/en.json`                                            | 12 new keys (kept in sync, sorted)                                                             |
-| Tests          | `tests/Feature/EarlyWarningDetailTest.php`                                | 13 tests: props, department limits, non-alert, empty/future, vitals null, follow-ups, back URL |
+| Tests          | `tests/Feature/EarlyWarningDetailTest.php`                                | 13 tests: props, department limits, non-alert, empty/future, vitals (null and real), follow-ups, back URL |
 | Browser tests  | `tests/Browser/EarlyWarning/EarlyWarningDetailBrowserTest.php`            | 5 tests: open from inbox, back link, neutral banner, history chips, phone layout               |
 
 ## Flow Explanation
@@ -87,7 +87,7 @@ Props sent to `early-warning/Show` (all immediate):
 
 ## Decisions & Trade-offs
 
-- **Scope of this story.** E10-04 consumes three stories that are not built yet. The page delivers everything E10-04 owns and wires it to what exists: vitals are all `null` (`N/A`, never a made-up number) until E10-05 provides `vitalsFor()`; the read-only follow-up summary stands in for the 5W2H form until E10-06 / E10-08; the epic's `departments` prop (the "Who" select) is not sent because only the form needs it. See [ADR-043](../decisions/043-early-warning-detail-back-link-and-staged-scope.md).
+- **Scope of this story.** E10-04 consumes three stories that are not built yet. The page delivers everything E10-04 owns and wires it to what exists: vitals were an all-`null` placeholder until E10-05 provided `vitalsFor()` (done; still `N/A`, never a made-up number, when data is missing); the read-only follow-up summary stands in for the 5W2H form until E10-06 / E10-08; the epic's `departments` prop (the "Who" select) is not sent because only the form needs it. See [ADR-043](../decisions/043-early-warning-detail-back-link-and-staged-scope.md).
 - **`AlertFollowUpSummary` is an extra component** (not in the epic's inventory). `Show.vue` needs a home for the status block and history; E10-06 adds `FollowUpForm.vue` next to it and can fold it in.
 - **Zone band plugin extracted, not copied.** The epic asks for one shared composable; the Dashboard chart now calls it, so both charts paint identical bands.
 - **Back link through Referer + session.** Inertia visits send the inbox URL as Referer, which covers the normal case; the session value covers a reload (where the Referer is lost). Both are reduced to the inbox path plus a query string, so there is no open redirect.
@@ -99,5 +99,6 @@ Props sent to `early-warning/Show` (all immediate):
 - [Early Warning Alert Detection (E10-01)](./early-warning-alert-detection.md)
 - [Early Warning Menu, Routes & Authorization (E10-02)](./early-warning-navigation-access.md)
 - [Early Warning Inbox Page (E10-03)](./early-warning-inbox.md)
+- [Early Warning Alert Vitals (E10-05)](./early-warning-alert-vitals.md)
 - [ADR-043](../decisions/043-early-warning-detail-back-link-and-staged-scope.md)
 - [Epic-10](../../scrum/Epic-10.md)
