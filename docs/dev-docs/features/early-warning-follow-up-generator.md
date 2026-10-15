@@ -50,17 +50,17 @@ Migration `create_alert_cause_pic_mappings_table`. `pic_department_id` is `nullO
 
 ### Generator output
 
-| Key                                           | Meaning                                                                                          |
-| --------------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| `what`, `why`, `how`                          | Texts (`__()` with placeholders, locale of the user)                                             |
-| `when_date`, `when_text`                      | Alert date and the streak as a range, e.g. `24–26 Okt 2026 (3 hari kerja berturut-turut)`        |
-| `where`                                       | `Department — Section` (Q8: no production line in the data)                                      |
-| `who_department_id`                           | PIC department (see _Who_)                                                                       |
+| Key                                           | Meaning                                                                                                                        |
+| --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `what`, `why`, `how`                          | Texts (`__()` with placeholders, locale of the user)                                                                           |
+| `when_date`, `when_text`                      | Alert date and the streak as a range, e.g. `24–26 Okt 2026 (3 hari kerja berturut-turut)`                                      |
+| `where`                                       | `Department — Section` (Q8: no production line in the data)                                                                    |
+| `who_department_id`                           | PIC department (see _Who_)                                                                                                     |
 | `how_much_hours`, `how_much_cost_idr`         | the month-to-date overspend (`excess_hours_per_day × follow_up_days`), and that × the cost of one overtime hour of the section |
-| `cost_note`                                   | "Estimasi biaya belum tersedia" when hours exist but no cost basis does                          |
-| `excess_hours_per_day`, `suggested_headcount` | Calculation inputs (`suggested_headcount` only when manpower is the primary cause)               |
-| `primary_cause`, `supporting_causes`          | `AlertCause` values; supporting = next two by score                                              |
-| `evidence`                                    | One entry per detected cause: code, score and the numbers it was detected from                   |
+| `cost_note`                                   | "Estimasi biaya belum tersedia" when hours exist but no cost basis does                                                        |
+| `excess_hours_per_day`, `suggested_headcount` | Calculation inputs (`suggested_headcount` only when manpower is the primary cause)                                             |
+| `primary_cause`, `supporting_causes`          | `AlertCause` values; supporting = next two by score                                                                            |
+| `evidence`                                    | One entry per detected cause: code, score and the numbers it was detected from                                                 |
 
 ### Cause catalog and scoring
 

@@ -74,15 +74,20 @@ export interface SeriesPoint {
     is_working_day: boolean;
 }
 
+/** Where a vital comes from: entered actuals, or the planned figure of the Forecasting page as a fallback. */
+export type VitalSource = 'actual' | 'forecast';
+
 /**
  * Production volume and manpower change around an alert (E10-05).
- * A `null` value means "no data" and is shown as N/A, never as zero.
+ * A `null` value means "no data" and is shown as N/A, never as zero; its source is then `null` too.
  */
 export interface AlertVitals {
     volume_change_pct: number | null;
     volume_period_label: string | null;
+    volume_source: VitalSource | null;
     manpower_change_pct: number | null;
     manpower_period_label: string | null;
+    manpower_source: VitalSource | null;
 }
 
 /**

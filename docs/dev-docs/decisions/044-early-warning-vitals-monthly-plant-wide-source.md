@@ -17,6 +17,7 @@ E10-05 must show "production volume change" and "manpower change" around an aler
 1. **Both vitals compare the alert month with the previous month** from `ml_training_data`, labelled with the real period ("vs September 2026").
 2. **Manpower uses the monthly `man_power`** (the epic's stated fallback) and its label says it is plant-wide ("vs September 2026 (plant-wide)" / "(seluruh pabrik)"), so a section manager does not read it as their own head count.
 3. **No guessing.** A missing month, or a previous value of 0 or less, gives `null` and no label; the page shows `N/A` with the existing tooltip. The result is rounded to one decimal.
+   3b. **Forecast fallback.** A month without an actual `ml_training_data` row uses the planned figure of `ml_forecast_inputs`. The source (`actual` / `forecast`) is returned per vital and shown as a badge (icon + text + dashed amber card border, never color alone) so an estimate is not read as a fact.
 4. **`vitalsFor(Section, date)` keeps the section parameter** although the current sources ignore it, so a section-level source can replace the plant-wide one later without changing the controller or the E10-08 generator.
 
 ## Consequences

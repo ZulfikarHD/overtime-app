@@ -17,6 +17,13 @@ On the alert page, two small cards help you understand **why** a section used so
 
 > 💡 **Tip:** A volume that grew while manpower did not is a common reason for extra overtime. Use it when you write the **Why** of the follow-up.
 
+### Actual or Forecast badge
+
+Next to the period, a small badge tells where the number comes from:
+
+- **Actual** (green): the figures entered in ML Data Training
+- **Forecast** (amber, dashed card border): no actual figure is entered yet, so the planned figure from Forecasting is used. It is an estimate. Enter the actual figures in ML Data Training to replace it
+
 ## Frequently Asked Questions (FAQ)
 
 **Q: Why does it say "vs September 2026" and not "last 7 days"?**

@@ -2,7 +2,7 @@
 
 ## Overview
 
-E10-05 gives the two vitals cards of the alert detail page their real data: **production volume change** and **manpower change**. `EarlyWarningService::vitalsFor(Section, date)` compares the alert month with the previous month in `ml_training_data` and returns the percentage plus a period label ("vs September 2026"). When a number cannot be computed honestly (a month is missing, or the previous value is 0) it returns `null` with no label, and the page shows `N/A` with a tooltip. The service never defaults to a dummy value. The vitals are also the input the 5W2H generator (E10-08) will read; this story writes no "Why" text.
+E10-05 gives the two vitals cards of the alert detail page their real data: **production volume change** and **manpower change**. `EarlyWarningService::vitalsFor(Section, date)` compares the alert month with the previous month in `ml_training_data` and returns the percentage plus a period label ("vs September 2026"). When a number cannot be computed honestly (a month is missing, or the previous value is 0) it returns `null` with no label, and the page shows `N/A` with a tooltip. The service never defaults to a dummy value. When a month has no actual row, the planned figure of `ml_forecast_inputs` (Forecasting page) is used instead and `volume_source` / `manpower_source` is `forecast` (else `actual`, or `null` for N/A); the card then shows an amber dashed border and an amber **Forecast** badge with a tooltip, and the 5W2H "Why" appends "forecast data". An actual row always wins over a forecast row. The vitals are also the input the 5W2H generator (E10-08) will read; this story writes no "Why" text.
 
 ## Architecture Diagram
 
@@ -10,7 +10,9 @@ E10-05 gives the two vitals cards of the alert detail page their real data: **pr
 flowchart TD
     S[EarlyWarningController@show] -->|authorized section + alert date| V[EarlyWarningService::vitalsFor]
     V -->|one query: alert month + previous month| M[(ml_training_data)]
+    V -->|fallback when a month has no actual row| F[(ml_forecast_inputs)]
     M --> P[percentChange: round 1 decimal, null if missing or previous <= 0]
+    F --> P
     P --> L[monthLabel in active locale]
     L -->|vitals prop| G[AlertVitalsGrid.vue]
     G -->|value| C[trend arrow + signed %]

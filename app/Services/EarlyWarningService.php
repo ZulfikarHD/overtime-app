@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Enums\BurnZone;
 use App\Models\AlertFollowUp;
 use App\Models\Department;
+use App\Models\MlForecastInput;
 use App\Models\MlTrainingData;
 use App\Models\OperationalCalendar;
 use App\Models\OvertimeItem;
@@ -434,14 +435,18 @@ class EarlyWarningService
      *
      * Both come from the monthly `ml_training_data` table (alert month vs. the previous month) because no
      * daily volume exists yet (needs the ERP integration) and `employees` has no hire / termination dates.
-     * Manpower is therefore a plant-wide figure, and its label says so. A missing month or a previous value of
-     * zero gives `null` (shown as N/A) with no label; a number is never invented.
+     * Manpower is therefore a plant-wide figure, and its label says so. When a month has no actual row, the
+     * planned figure of `ml_forecast_inputs` (the Forecasting page) fills in and the source is reported as
+     * `forecast` so the UI can flag the number as an estimate. A missing month in both tables or a previous
+     * value of zero gives `null` (shown as N/A) with no label and no source; a number is never invented.
      *
      * @return array{
      *     volume_change_pct: ?float,
      *     volume_period_label: ?string,
+     *     volume_source: 'actual'|'forecast'|null,
      *     manpower_change_pct: ?float,
-     *     manpower_period_label: ?string
+     *     manpower_period_label: ?string,
+     *     manpower_source: 'actual'|'forecast'|null
      * }
      */
     public function vitalsFor(Section $section, CarbonInterface $date): array
@@ -449,26 +454,61 @@ class EarlyWarningService
         $month = $this->asCalendarDay($date)->startOfMonth();
         $previousMonth = $month->copy()->subMonthNoOverflow();
 
-        $rows = MlTrainingData::query()
-            ->where(fn ($query) => $query->where('year', $month->year)->where('month', $month->month))
-            ->orWhere(fn ($query) => $query->where('year', $previousMonth->year)->where('month', $previousMonth->month))
-            ->get()
-            ->keyBy(fn (MlTrainingData $row): string => sprintf('%04d-%02d', $row->year, $row->month));
+        $monthKey = fn (MlTrainingData|MlForecastInput $row): string => sprintf('%04d-%02d', $row->year, $row->month);
+        $inMonths = fn ($query) => $query
+            ->where(fn ($q) => $q->where('year', $month->year)->where('month', $month->month))
+            ->orWhere(fn ($q) => $q->where('year', $previousMonth->year)->where('month', $previousMonth->month));
 
-        $current = $rows->get($month->format('Y-m'));
-        $previous = $rows->get($previousMonth->format('Y-m'));
+        $actuals = MlTrainingData::query()->where($inMonths)->get()->keyBy($monthKey);
+        $forecasts = MlForecastInput::query()->where($inMonths)->get()->keyBy($monthKey);
 
-        $volumeChange = $this->percentChange($current?->production_volume, $previous?->production_volume);
-        $manpowerChange = $this->percentChange($current?->man_power, $previous?->man_power);
+        $volume = $this->monthlyChange($actuals, $forecasts, $month, $previousMonth, 'production_volume');
+        $manpower = $this->monthlyChange($actuals, $forecasts, $month, $previousMonth, 'man_power');
         $previousLabel = $this->monthLabel($previousMonth);
 
         return [
-            'volume_change_pct' => $volumeChange,
-            'volume_period_label' => $volumeChange === null ? null : __('vs :period', ['period' => $previousLabel]),
-            'manpower_change_pct' => $manpowerChange,
-            'manpower_period_label' => $manpowerChange === null
+            'volume_change_pct' => $volume['change'],
+            'volume_period_label' => $volume['change'] === null ? null : __('vs :period', ['period' => $previousLabel]),
+            'volume_source' => $volume['source'],
+            'manpower_change_pct' => $manpower['change'],
+            'manpower_period_label' => $manpower['change'] === null
                 ? null
                 : __('vs :period (plant-wide)', ['period' => $previousLabel]),
+            'manpower_source' => $manpower['source'],
+        ];
+    }
+
+    /**
+     * Change of one monthly figure between two months, each month taken from the actual row first and from the
+     * forecast row when no actual exists. The source is `forecast` as soon as one of the two months is planned.
+     *
+     * @param  EloquentCollection<string, MlTrainingData>|Collection<string, MlTrainingData>  $actuals
+     * @param  EloquentCollection<string, MlForecastInput>|Collection<string, MlForecastInput>  $forecasts
+     * @return array{change: ?float, source: 'actual'|'forecast'|null}
+     */
+    protected function monthlyChange(Collection $actuals, Collection $forecasts, CarbonInterface $month, CarbonInterface $previousMonth, string $column): array
+    {
+        $resolve = function (CarbonInterface $target) use ($actuals, $forecasts, $column): array {
+            $key = $target->format('Y-m');
+            $actual = $actuals->get($key)?->{$column};
+
+            if ($actual !== null) {
+                return [(int) $actual, false];
+            }
+
+            $planned = $forecasts->get($key)?->{$column};
+
+            return [$planned === null ? null : (int) $planned, $planned !== null];
+        };
+
+        [$current, $currentPlanned] = $resolve($month);
+        [$previous, $previousPlanned] = $resolve($previousMonth);
+
+        $change = $this->percentChange($current, $previous);
+
+        return [
+            'change' => $change,
+            'source' => $change === null ? null : ($currentPlanned || $previousPlanned ? 'forecast' : 'actual'),
         ];
     }
 

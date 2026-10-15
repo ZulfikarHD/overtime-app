@@ -3,6 +3,7 @@
 use App\Models\AlertFollowUp;
 use App\Models\Department;
 use App\Models\Employee;
+use App\Models\MlForecastInput;
 use App\Models\MlTrainingData;
 use App\Models\OvertimeBudget;
 use App\Models\OvertimeItem;
@@ -142,7 +143,9 @@ test('vitals are null without monthly data, so the page shows N/A and never a ma
             ->where('vitals.volume_change_pct', null)
             ->where('vitals.manpower_change_pct', null)
             ->where('vitals.volume_period_label', null)
-            ->where('vitals.manpower_period_label', null));
+            ->where('vitals.manpower_period_label', null)
+            ->where('vitals.volume_source', null)
+            ->where('vitals.manpower_source', null));
 });
 
 test('the detail page exposes the real vitals of the alert month against the previous month', function () {
@@ -156,7 +159,22 @@ test('the detail page exposes the real vitals of the alert month against the pre
             ->where('vitals.volume_change_pct', 20)
             ->where('vitals.volume_period_label', 'vs September 2026')
             ->where('vitals.manpower_change_pct', 0)
-            ->where('vitals.manpower_period_label', 'vs September 2026 (plant-wide)'));
+            ->where('vitals.manpower_period_label', 'vs September 2026 (plant-wide)')
+            ->where('vitals.volume_source', 'actual')
+            ->where('vitals.manpower_source', 'actual'));
+});
+
+test('the detail page falls back to the forecast figures and flags them as forecast', function () {
+    detailSeedDay($this->section, '2026-10-13', 10.0);
+    MlForecastInput::factory()->create(['year' => 2026, 'month' => 9, 'production_volume' => 2000, 'man_power' => 800]);
+    MlForecastInput::factory()->create(['year' => 2026, 'month' => 10, 'production_volume' => 2400, 'man_power' => 800]);
+
+    $this->actingAs($this->manager)
+        ->get(route('early-warning.show', [$this->section, '2026-10-13']))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('vitals.volume_change_pct', 20)
+            ->where('vitals.volume_source', 'forecast')
+            ->where('vitals.manpower_source', 'forecast'));
 });
 
 test('only the follow-ups of this section and date are listed, newest first, with the sender of a sent one', function () {

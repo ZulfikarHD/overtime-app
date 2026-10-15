@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\MlForecastInput;
 use App\Models\MlTrainingData;
 use App\Models\Section;
 use App\Services\EarlyWarningService;
@@ -11,6 +12,16 @@ beforeEach(function () {
     $this->section = Section::factory()->create();
     $this->service = app(EarlyWarningService::class);
 });
+
+function forecastMonth(int $year, int $month, int $volume, int $manpower): void
+{
+    MlForecastInput::factory()->create([
+        'year' => $year,
+        'month' => $month,
+        'production_volume' => $volume,
+        'man_power' => $manpower,
+    ]);
+}
 
 function vitalsMonth(int $year, int $month, int $volume, int $manpower): void
 {
@@ -31,8 +42,10 @@ test('both vitals compare the alert month with the previous month and carry the 
     expect($vitals)->toBe([
         'volume_change_pct' => 20.0,
         'volume_period_label' => 'vs September 2026',
+        'volume_source' => 'actual',
         'manpower_change_pct' => 5.0,
         'manpower_period_label' => 'vs September 2026 (plant-wide)',
+        'manpower_source' => 'actual',
     ]);
 });
 
@@ -61,8 +74,10 @@ test('without any monthly data every value is null with no label and nothing is 
     expect($vitals)->toBe([
         'volume_change_pct' => null,
         'volume_period_label' => null,
+        'volume_source' => null,
         'manpower_change_pct' => null,
         'manpower_period_label' => null,
+        'manpower_source' => null,
     ]);
 });
 
@@ -136,4 +151,44 @@ test('the month of the alert date decides the comparison, even on the last day o
 
     expect($vitals['volume_change_pct'])->toBe(20.0)
         ->and($vitals['volume_period_label'])->toBe('vs July 2026');
+});
+
+test('a month without actual data falls back to the forecast and flags the source', function () {
+    vitalsMonth(2026, 9, 2000, 800);
+    forecastMonth(2026, 10, 2400, 840);
+
+    $vitals = $this->service->vitalsFor($this->section, Carbon::parse('2026-10-13', 'Asia/Jakarta'));
+
+    expect($vitals['volume_change_pct'])->toBe(20.0)
+        ->and($vitals['volume_source'])->toBe('forecast')
+        ->and($vitals['manpower_change_pct'])->toBe(5.0)
+        ->and($vitals['manpower_source'])->toBe('forecast');
+});
+
+test('a forecast previous month is flagged too, and an actual value always wins over the forecast', function () {
+    forecastMonth(2026, 9, 9999, 9999);
+    vitalsMonth(2026, 9, 2000, 800);
+    vitalsMonth(2026, 10, 2400, 840);
+    forecastMonth(2026, 8, 1000, 500);
+    forecastMonth(2026, 7, 1000, 500);
+
+    $actual = $this->service->vitalsFor($this->section, Carbon::parse('2026-10-13', 'Asia/Jakarta'));
+
+    expect($actual['volume_change_pct'])->toBe(20.0)
+        ->and($actual['volume_source'])->toBe('actual');
+
+    $mixed = $this->service->vitalsFor($this->section, Carbon::parse('2026-09-13', 'Asia/Jakarta'));
+
+    expect($mixed['volume_change_pct'])->toBe(100.0)
+        ->and($mixed['volume_source'])->toBe('forecast');
+});
+
+test('no actual and no forecast stays N/A with no source', function () {
+    forecastMonth(2026, 10, 2400, 840);
+
+    $vitals = $this->service->vitalsFor($this->section, Carbon::parse('2026-10-13', 'Asia/Jakarta'));
+
+    expect($vitals['volume_change_pct'])->toBeNull()
+        ->and($vitals['volume_source'])->toBeNull()
+        ->and($vitals['manpower_source'])->toBeNull();
 });

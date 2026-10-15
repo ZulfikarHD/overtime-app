@@ -155,9 +155,9 @@ class EarlyWarningFollowUpGenerator
                 'score' => round($gap / (100 + $gap), 4),
                 'values' => [
                     'volume_change_pct' => $volume,
-                    'volume_period_label' => $vitals['volume_period_label'],
+                    'volume_period_label' => $this->periodWithSource($vitals['volume_period_label'], $vitals['volume_source']),
                     'manpower_change_pct' => $manpower,
-                    'manpower_period_label' => $vitals['manpower_period_label'],
+                    'manpower_period_label' => $this->periodWithSource($vitals['manpower_period_label'], $vitals['manpower_source']),
                 ],
             ];
         }
@@ -226,6 +226,19 @@ class EarlyWarningFollowUpGenerator
         }
 
         return $detected;
+    }
+
+    /**
+     * The period label of a vital, followed by "forecast data" when the figure is a planned one and not an actual,
+     * so the evidence in "Why" never presents an estimate as a fact.
+     */
+    protected function periodWithSource(?string $label, ?string $source): ?string
+    {
+        if ($label === null || $source !== 'forecast') {
+            return $label;
+        }
+
+        return $label.', '.__('forecast data');
     }
 
     /**
