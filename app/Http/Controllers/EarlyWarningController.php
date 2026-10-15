@@ -88,13 +88,7 @@ class EarlyWarningController extends Controller
                 'green_max_pct' => $detail['green_max_pct'],
                 'yellow_max_pct' => $detail['yellow_max_pct'],
             ],
-            // Vitals arrive with E10-05; until then every value is null and the page shows N/A.
-            'vitals' => [
-                'volume_change_pct' => null,
-                'volume_period_label' => null,
-                'manpower_change_pct' => null,
-                'manpower_period_label' => null,
-            ],
+            'vitals' => $this->earlyWarningService->vitalsFor($section, $alertDate),
             'followUps' => $this->followUpService
                 ->listForAlert($section, $alertDate)
                 ->map(fn (AlertFollowUp $followUp): array => $this->followUpService->toPayload($followUp))

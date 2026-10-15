@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Enums\BurnZone;
 use App\Models\AlertFollowUp;
 use App\Models\Department;
+use App\Models\MlTrainingData;
 use App\Models\OperationalCalendar;
 use App\Models\OvertimeItem;
 use App\Models\PolicyThreshold;
@@ -370,6 +371,49 @@ class EarlyWarningService
     }
 
     /**
+     * Context numbers shown next to an alert: production volume change and manpower change.
+     *
+     * Both come from the monthly `ml_training_data` table (alert month vs. the previous month) because no
+     * daily volume exists yet (needs the ERP integration) and `employees` has no hire / termination dates.
+     * Manpower is therefore a plant-wide figure, and its label says so. A missing month or a previous value of
+     * zero gives `null` (shown as N/A) with no label; a number is never invented.
+     *
+     * @return array{
+     *     volume_change_pct: ?float,
+     *     volume_period_label: ?string,
+     *     manpower_change_pct: ?float,
+     *     manpower_period_label: ?string
+     * }
+     */
+    public function vitalsFor(Section $section, CarbonInterface $date): array
+    {
+        $month = $this->asCalendarDay($date)->startOfMonth();
+        $previousMonth = $month->copy()->subMonthNoOverflow();
+
+        $rows = MlTrainingData::query()
+            ->where(fn ($query) => $query->where('year', $month->year)->where('month', $month->month))
+            ->orWhere(fn ($query) => $query->where('year', $previousMonth->year)->where('month', $previousMonth->month))
+            ->get()
+            ->keyBy(fn (MlTrainingData $row): string => sprintf('%04d-%02d', $row->year, $row->month));
+
+        $current = $rows->get($month->format('Y-m'));
+        $previous = $rows->get($previousMonth->format('Y-m'));
+
+        $volumeChange = $this->percentChange($current?->production_volume, $previous?->production_volume);
+        $manpowerChange = $this->percentChange($current?->man_power, $previous?->man_power);
+        $previousLabel = $this->monthLabel($previousMonth);
+
+        return [
+            'volume_change_pct' => $volumeChange,
+            'volume_period_label' => $volumeChange === null ? null : __('vs :period', ['period' => $previousLabel]),
+            'manpower_change_pct' => $manpowerChange,
+            'manpower_period_label' => $manpowerChange === null
+                ? null
+                : __('vs :period (plant-wide)', ['period' => $previousLabel]),
+        ];
+    }
+
+    /**
      * Whether the given date is currently an alert (Kuning / Merah) for the section.
      */
     public function isAlert(User $user, Section $section, CarbonInterface $date): bool
@@ -705,6 +749,24 @@ class EarlyWarningService
         }
 
         return $dates;
+    }
+
+    /**
+     * Percent change from $previous to $current, one decimal; null when either value is missing or the
+     * previous value is not positive (no division by zero).
+     */
+    protected function percentChange(?int $current, ?int $previous): ?float
+    {
+        if ($current === null || $previous === null || $previous <= 0) {
+            return null;
+        }
+
+        return round(($current - $previous) / $previous * 100, 1);
+    }
+
+    protected function monthLabel(CarbonInterface $month): string
+    {
+        return Carbon::parse($month->toDateString())->locale(app()->getLocale())->translatedFormat('F Y');
     }
 
     protected function asCalendarDay(CarbonInterface $date): Carbon

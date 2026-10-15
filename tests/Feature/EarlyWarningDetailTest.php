@@ -3,6 +3,7 @@
 use App\Models\AlertFollowUp;
 use App\Models\Department;
 use App\Models\Employee;
+use App\Models\MlTrainingData;
 use App\Models\OvertimeBudget;
 use App\Models\OvertimeItem;
 use App\Models\OvertimeSubmission;
@@ -122,7 +123,7 @@ test('a section without a budget and a future date open without an alert and wit
         ->assertInertia(fn (Assert $page) => $page->where('alert', null));
 });
 
-test('vitals are null until the vitals story provides data, so the page shows N/A and never a made-up number', function () {
+test('vitals are null without monthly data, so the page shows N/A and never a made-up number', function () {
     detailSeedDay($this->section, '2026-10-13', 10.0);
 
     $this->actingAs($this->manager)
@@ -132,6 +133,20 @@ test('vitals are null until the vitals story provides data, so the page shows N/
             ->where('vitals.manpower_change_pct', null)
             ->where('vitals.volume_period_label', null)
             ->where('vitals.manpower_period_label', null));
+});
+
+test('the detail page exposes the real vitals of the alert month against the previous month', function () {
+    detailSeedDay($this->section, '2026-10-13', 10.0);
+    MlTrainingData::factory()->create(['year' => 2026, 'month' => 9, 'production_volume' => 2000, 'man_power' => 800]);
+    MlTrainingData::factory()->create(['year' => 2026, 'month' => 10, 'production_volume' => 2400, 'man_power' => 800]);
+
+    $this->actingAs($this->manager)
+        ->get(route('early-warning.show', [$this->section, '2026-10-13']))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('vitals.volume_change_pct', 20)
+            ->where('vitals.volume_period_label', 'vs September 2026')
+            ->where('vitals.manpower_change_pct', 0)
+            ->where('vitals.manpower_period_label', 'vs September 2026 (plant-wide)'));
 });
 
 test('only the follow-ups of this section and date are listed, newest first, with the sender of a sent one', function () {
