@@ -17,7 +17,7 @@ The form opens already filled. A small tag shows where each text comes from:
 - **Dibuat sistem**: the text is still what the system wrote.
 - **Diubah**: you changed it.
 
-Fields the system could not fill yet (for example **Why** and **How**) stay empty for you to type.
+The system fills in every field it can, including **Why** and **How**. If a figure is missing (for example the cost), the field stays at 0 for you to type. See [Early Warning Follow-Up Written by the System](./early-warning-follow-up-generator.md).
 
 ### Edit and reset
 

@@ -1,7 +1,7 @@
 # ADR-045: Early Warning Follow-Up Linked to an Alert, with a Server-Side Suggestion Baseline
 
 **Date:** 2026-10-15
-**Status:** accepted
+**Status:** accepted (the suggestion baseline was replaced by the generator of [ADR-047](./047-early-warning-rule-based-follow-up-generator.md); the alert link and snapshot decisions stand)
 **Supersedes:** The "Dashboard panel still works in the meantime" consequence of [ADR-043](./043-early-warning-detail-back-link-and-staged-scope.md)
 
 ## Context
